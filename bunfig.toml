@@ -16,6 +16,9 @@ noOrphans = true # terminate child processes cleanly when parent exits
 [test]
 preload = ["./tests/preload/snapshot_serializers.ts"]
 
+[serve.static]
+env = "PUBLIC_*" # inline only literal process.env.PUBLIC_* references in static/dev HTML bundles
+
 [fmt]
 printWidth = 100
 semi = false
