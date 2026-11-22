@@ -41,6 +41,8 @@ export interface SystemLogSeverityBucket {
   readonly WATCH: number
   readonly NORMAL: number
   readonly total: number
+  /** True when this bucket's total log volume is an elevated activity spike vs the 24h baseline. */
+  readonly isSpike: boolean
 }
 
 export interface SystemLogSeveritySeriesResult {
@@ -51,6 +53,12 @@ export interface SystemLogSeveritySeriesResult {
   readonly totals: SystemLogSeverityCounts24h
   readonly peakHourLabel: string | null
   readonly peakHourCount: number
+  /** Average total log events per hour across all buckets in the 24-hour window. */
+  readonly meanHourlyVolume: number
+  /** Minimum hourly event count considered a spike above the 24h mean + 1.5 sigma. */
+  readonly spikeThreshold: number
+  /** Number of hourly buckets flagged as activity spikes within the 24-hour window. */
+  readonly spikeHourCount: number
   readonly includedLogs: number
   readonly outsideWindowLogs: number
   readonly unparsedTimestampLogs: number
@@ -244,6 +252,18 @@ export function build24HourSeveritySeries<T>(
   let peakHourLabel: string | null = null
   let peakHourCount = 0
 
+  const meanRaw = windowHours > 0 ? includedLogs / windowHours : 0
+  let squaredDiffSum = 0
+  for (const bin of counts) {
+    const binTotal = bin.CRITICAL + bin.HIGH + bin.WATCH + bin.NORMAL
+    const diff = binTotal - meanRaw
+    squaredDiffSum += diff * diff
+  }
+  const stdDev = windowHours > 0 ? Math.sqrt(squaredDiffSum / windowHours) : 0
+  const meanHourlyVolume = Math.round(meanRaw * 100) / 100
+  const spikeThreshold = includedLogs > 0 ? Math.max(3, Math.ceil(meanRaw + 1.5 * stdDev)) : 0
+  let spikeHourCount = 0
+
   const buckets: SystemLogSeverityBucket[] = counts.map((bin, idx) => {
     const bucketStartMs = windowStartMs + idx * SYSTEM_LOG_HOUR_MS
     const bucketEndMs = bucketStartMs + SYSTEM_LOG_HOUR_MS
@@ -253,11 +273,13 @@ export function build24HourSeveritySeries<T>(
     const hoursAgo = windowHours - 1 - idx
     const relativeLabel = hoursAgo === 0 ? "This hr" : `-${hoursAgo}h`
     const total = bin.CRITICAL + bin.HIGH + bin.WATCH + bin.NORMAL
+    const isSpike = spikeThreshold > 0 && total >= spikeThreshold && total > meanRaw * 1.5
 
     totalCritical += bin.CRITICAL
     totalHigh += bin.HIGH
     totalWatch += bin.WATCH
     totalNormal += bin.NORMAL
+    if (isSpike) spikeHourCount += 1
 
     if (total > peakHourCount) {
       peakHourCount = total
@@ -277,6 +299,7 @@ export function build24HourSeveritySeries<T>(
       WATCH: bin.WATCH,
       NORMAL: bin.NORMAL,
       total,
+      isSpike,
     }
   })
 
@@ -294,6 +317,9 @@ export function build24HourSeveritySeries<T>(
     },
     peakHourLabel,
     peakHourCount,
+    meanHourlyVolume,
+    spikeThreshold,
+    spikeHourCount,
     includedLogs,
     outsideWindowLogs,
     unparsedTimestampLogs,

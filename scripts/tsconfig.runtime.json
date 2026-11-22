@@ -15,6 +15,7 @@
     "sportsdesk_cli.ts",
     "verify_runtime_connections.ts",
     "project_customer_history.ts",
+    "check_registry_parity.ts",
     "../tests/bun_csrf.types.ts"
   ]
 }

@@ -37,6 +37,7 @@ const ROOT_DIR = process.cwd()
 
 const CHECK_GATE_SCRIPTS: Readonly<Record<string, readonly string[]>> = {
   lockfile: ["scripts/check_lockfile_integrity.ts"],
+  "registry-parity": ["scripts/check_registry_parity.ts"],
   "route-surface": ["scripts/check_route_surface.ts"],
   "bundle-hygiene": ["scripts/check_bundle_hygiene.ts"],
   "shell-boundary": ["scripts/check_shell_boundary.ts"],
@@ -277,6 +278,7 @@ function handleCheck(subArgs: readonly string[]): number {
 
   const order = [
     "lockfile",
+    "registry-parity",
     "snapshots",
     "route-surface",
     "shell-boundary",

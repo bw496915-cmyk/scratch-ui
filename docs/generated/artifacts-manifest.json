@@ -210,11 +210,12 @@
     "test": "bun test",
     "test:update-snapshots": "TZ=UTC bun test --update-snapshots",
     "check:lockfile": "bun scripts/check_lockfile_integrity.ts",
+    "check:registry-parity": "bun scripts/check_registry_parity.ts",
     "check:route-surface": "bun scripts/check_route_surface.ts",
     "check:bundle-hygiene": "bun scripts/check_bundle_hygiene.ts",
     "check:runtime": "bun scripts/verify_runtime_connections.ts",
     "check:shell-boundary": "bun scripts/check_shell_boundary.ts",
     "check:snapshots": "bun scripts/check_snapshot_hygiene.ts",
-    "check:ci": "bun run format:check && bun run format:debug && bun run check:lockfile && bun run artifacts:check && bun run docs:check && bun test && bun run check:snapshots && bun run check:route-surface && bun run check:bundle-hygiene && bun run check:shell-boundary"
+    "check:ci": "bun run format:check && bun run format:debug && bun run check:lockfile && bun run check:registry-parity && bun run artifacts:check && bun run docs:check && bun test && bun run check:snapshots && bun run check:route-surface && bun run check:bundle-hygiene && bun run check:shell-boundary"
   }
 }

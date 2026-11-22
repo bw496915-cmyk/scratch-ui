@@ -171,7 +171,37 @@ describe("system_log_severity_series: 24-hour hourly bucketing", () => {
     expect(result.includedLogs).toBe(0)
     expect(result.peakHourLabel).toBeNull()
     expect(result.peakHourCount).toBe(0)
+    expect(result.meanHourlyVolume).toBe(0)
+    expect(result.spikeThreshold).toBe(0)
+    expect(result.spikeHourCount).toBe(0)
     expect(result.totals.total).toBe(0)
+  })
+
+  test("identifies total log volume spikes without flagging steady low baseline noise", () => {
+    const burstEntries = [
+      // Steady baseline: 1 event across 8 earlier hours
+      ...Array.from({ length: 8 }, (_, idx) => ({
+        severity: "NORMAL",
+        sourceSortMs: anchorMs - (idx + 4) * SYSTEM_LOG_HOUR_MS,
+      })),
+      // Activity spike in bucket 22: 9 events across severities
+      ...Array.from({ length: 5 }, (_, idx) => ({
+        severity: "CRITICAL",
+        sourceSortMs: anchorMs - SYSTEM_LOG_HOUR_MS - idx * 60_000,
+      })),
+      ...Array.from({ length: 4 }, (_, idx) => ({
+        severity: "HIGH",
+        sourceSortMs: anchorMs - SYSTEM_LOG_HOUR_MS - (idx + 10) * 60_000,
+      })),
+    ]
+
+    const result = buildWebLog24HourSeveritySeries(burstEntries, { anchorMs })
+    expect(result.includedLogs).toBe(17)
+    expect(result.meanHourlyVolume).toBe(Math.round((17 / 24) * 100) / 100)
+    expect(result.spikeHourCount).toBe(1)
+    expect(result.buckets[22]!.total).toBe(9)
+    expect(result.buckets[22]!.isSpike).toBe(true)
+    expect(result.buckets[15]!.isSpike).toBe(false)
   })
 })
 
@@ -213,14 +243,40 @@ describe("SystemLogSeverityBarChart & SystemLogsPanel Recharts UI", () => {
     expect(html).toContain('data-system-logs-severity-chart="true"')
     expect(html).toContain("Log Severity Distribution (Last 24 Hours)")
     expect(html).toContain("4 events (24h)")
+    expect(html).toContain("Avg 0.17/hr")
     expect(html).toContain("recharts-responsive-container")
     expect(html).toContain("recharts-wrapper")
     expect(html).toContain('data-severity-chart-layout="stacked"')
     expect(html).toContain('data-severity-chart-layout="grouped"')
+    expect(html).toContain('data-severity-trend-toggle="total-volume"')
+    expect(html).toContain("Total Trendline")
     for (const sev of LOG_SEVERITY_LEVELS) {
       expect(html).toContain(`data-severity-series-toggle="${sev}"`)
       expect(html).toContain(`<span>${sev}</span><span style="color:#e2e8f0">(1)</span>`)
     }
+  })
+
+  test("highlights spike hour count when hourly volume bursts above baseline", () => {
+    const spikeEntries = [
+      ...sampleWeblogs,
+      ...Array.from({ length: 8 }, (_, idx) => ({
+        severity: "CRITICAL",
+        sourceSortMs: anchorMs - 10 * 60_000 - idx * 30_000,
+        text: `BB55103 spike event ${idx}`,
+      })),
+    ]
+
+    const html = renderToStaticMarkup(
+      React.createElement(SystemLogSeverityBarChart, {
+        mode: "weblogs",
+        weblogEntries: spikeEntries,
+        anchorMs,
+      }),
+    )
+
+    expect(html).toContain("12 events (24h)")
+    expect(html).toContain("1 spike hr")
+    expect(html).toContain("Avg 0.5/hr")
   })
 
   test("synchronizes chart buckets and Filtered/All Loaded toggle with BitwiseLogFilterStore", () => {

@@ -89,8 +89,10 @@ jobs:
       - name: Verify no silent bun.lock schema drops (hasInstallScript & libc)
         run: git diff --exit-code bun.lock
 
-      - name: Lockfile, pinned Bun, bunfig.toml & publishConfig gate
-        run: bun run check:lockfile
+      - name: Lockfile, pinned Bun, bunfig.toml, registry parity & publishConfig gate
+        run: |
+          bun run check:lockfile
+          bun run check:registry-parity
 
       - name: Check for orphaned dependencies
         run: bun prune --check

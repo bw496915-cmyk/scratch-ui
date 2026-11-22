@@ -7,7 +7,18 @@
 
 import type React from "react"
 import { memo, useMemo, useState, useSyncExternalStore } from "react"
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import {
+  Area,
+  Bar,
+  CartesianGrid,
+  ComposedChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  type DotItemDotProps,
+} from "recharts"
 import { SkeletonBlock } from "./PanelSkeleton.tsx"
 import {
   LOG_SEVERITY_MASK_ALL,
@@ -193,10 +204,34 @@ function SystemLogSeverityTooltip({
           fontWeight: 600,
         }}
       >
-        <span>Hour Total</span>
+        <span>
+          Total Volume
+          {bucket.isSpike ? (
+            <span style={{ color: "#fca5a5", marginLeft: "6px", fontWeight: 700 }}>· Spike</span>
+          ) : null}
+        </span>
         <span style={{ fontFamily: MONO_FONT }}>{bucket.total}</span>
       </div>
     </div>
+  )
+}
+
+function renderVolumeSpikeDot(dotProps: DotItemDotProps): React.ReactNode {
+  const { cx, cy, payload, index } = dotProps
+  const bucket = payload as SystemLogSeverityBucket | undefined
+  if (!bucket?.isSpike || typeof cx !== "number" || typeof cy !== "number") {
+    return null
+  }
+  return (
+    <circle
+      key={`volume-spike-dot-${index}`}
+      cx={cx}
+      cy={cy}
+      r={3.5}
+      fill="#f8fafc"
+      stroke="#f59e0b"
+      strokeWidth={1.75}
+    />
   )
 }
 
@@ -233,6 +268,7 @@ export const SystemLogSeverityBarChart = memo(function SystemLogSeverityBarChart
   const [layoutMode, setLayoutMode] = useState<BarLayoutMode>("stacked")
   const [scopeMode, setScopeMode] = useState<ChartScopeMode>("filtered")
   const [isolatedSeverity, setIsolatedSeverity] = useState<SystemLogSeverityLevel | null>(null)
+  const [showVolumeTrendline, setShowVolumeTrendline] = useState<boolean>(true)
 
   const snap = useSyncExternalStore(
     bitwiseStore ? bitwiseStore.subscribeFilter : NOOP_SUBSCRIBE,
@@ -356,6 +392,20 @@ export const SystemLogSeverityBarChart = memo(function SystemLogSeverityBarChart
                 <span aria-hidden="true">·</span>
                 <span style={{ fontFamily: MONO_FONT }}>
                   Peak {series.peakHourLabel} ({series.peakHourCount})
+                </span>
+              </>
+            ) : null}
+            {series.includedLogs > 0 ? (
+              <>
+                <span aria-hidden="true">·</span>
+                <span style={{ fontFamily: MONO_FONT }}>Avg {series.meanHourlyVolume}/hr</span>
+              </>
+            ) : null}
+            {series.spikeHourCount > 0 ? (
+              <>
+                <span aria-hidden="true">·</span>
+                <span style={{ fontFamily: MONO_FONT, color: "#fcd34d" }}>
+                  {series.spikeHourCount} spike {series.spikeHourCount === 1 ? "hr" : "hrs"}
                 </span>
               </>
             ) : null}
@@ -512,6 +562,50 @@ export const SystemLogSeverityBarChart = memo(function SystemLogSeverityBarChart
           )
         })}
 
+        <button
+          type="button"
+          data-severity-trend-toggle="total-volume"
+          aria-pressed={showVolumeTrendline}
+          title={
+            showVolumeTrendline
+              ? "Hide total log volume trendline"
+              : "Show total log volume trendline behind severity bars"
+          }
+          onClick={() => setShowVolumeTrendline((prev) => !prev)}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: "4px 9px",
+            borderRadius: "5px",
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+            fontFamily: MONO_FONT,
+            fontSize: "11px",
+            fontWeight: 600,
+            borderWidth: "1px",
+            borderStyle: "solid",
+            borderColor: showVolumeTrendline ? "rgba(203, 213, 225, 0.45)" : "#1e293b",
+            backgroundColor: showVolumeTrendline ? "rgba(148, 163, 184, 0.14)" : "#070b14",
+            color: showVolumeTrendline ? "#e2e8f0" : "#64748b",
+            opacity: showVolumeTrendline ? 1 : 0.7,
+            transition: "background-color 140ms ease, color 140ms ease, opacity 140ms ease",
+          }}
+        >
+          <svg width="14" height="8" viewBox="0 0 14 8" aria-hidden="true">
+            <path
+              d="M1 6.5 L4.5 3.5 L8 5 L13 1.5"
+              fill="none"
+              stroke="#cbd5e1"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span>Total Trendline</span>
+        </button>
+
         {isolatedSeverity !== null ? (
           <button
             type="button"
@@ -567,11 +661,17 @@ export const SystemLogSeverityBarChart = memo(function SystemLogSeverityBarChart
             height="100%"
             initialDimension={{ width: 640, height: 210 }}
           >
-            <BarChart
+            <ComposedChart
               data={series.buckets as SystemLogSeverityBucket[]}
-              margin={{ top: 8, right: 12, left: 0, bottom: 4 }}
-              barCategoryGap={layoutMode === "stacked" ? "24%" : "18%"}
+              margin={{ top: 12, right: 12, left: 0, bottom: 4 }}
+              barCategoryGap={layoutMode === "stacked" ? "26%" : "20%"}
             >
+              <defs>
+                <linearGradient id="systemLogVolumeFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#94a3b8" stopOpacity={0.22} />
+                  <stop offset="100%" stopColor="#94a3b8" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
               <CartesianGrid
                 stroke="rgba(148, 163, 184, 0.12)"
                 strokeDasharray="3 3"
@@ -596,6 +696,28 @@ export const SystemLogSeverityBarChart = memo(function SystemLogSeverityBarChart
                 content={<SystemLogSeverityTooltip />}
                 cursor={{ fill: "rgba(56, 189, 248, 0.08)" }}
               />
+              {showVolumeTrendline && series.meanHourlyVolume > 0 ? (
+                <ReferenceLine
+                  y={series.meanHourlyVolume}
+                  stroke="rgba(148, 163, 184, 0.32)"
+                  strokeDasharray="4 4"
+                  ifOverflow="extendDomain"
+                />
+              ) : null}
+              {showVolumeTrendline ? (
+                <Area
+                  type="monotone"
+                  dataKey="total"
+                  name="Total Volume"
+                  stroke="#cbd5e1"
+                  strokeWidth={2}
+                  fill="url(#systemLogVolumeFill)"
+                  fillOpacity={1}
+                  dot={renderVolumeSpikeDot}
+                  activeDot={{ r: 4, fill: "#f8fafc", stroke: "#cbd5e1", strokeWidth: 2 }}
+                  isAnimationActive={false}
+                />
+              ) : null}
               {activeLevels.map((sev, idx) => {
                 const meta = LOG_SEVERITY_SERIES_META[sev]
                 const isTopStacked = layoutMode === "stacked" && idx === activeLevels.length - 1
@@ -614,7 +736,7 @@ export const SystemLogSeverityBarChart = memo(function SystemLogSeverityBarChart
                   />
                 )
               })}
-            </BarChart>
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       ) : (
