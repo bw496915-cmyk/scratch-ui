@@ -1630,7 +1630,7 @@ const CONSTANT_AND_VARIABLE_SPECS: readonly ConfigItemSpec[] = [
     category: "Server & Runtime",
     valueType: "string",
     description:
-      "Read-only introspection of Bun globals (3 tiers), Bun.* Zig/C++ utilities, core Bun.*/bun:* APIs, and live Object.getOwnPropertyNames(Bun) exports.",
+      "Read-only introspection of Bun globals (3 tiers), Bun.* Zig/C++ utilities, core Bun.*/bun:* modules, namespaces, classes, constants, symbol kinds, and interactive Bun.markdown.render / AnsiTheme studio.",
     sourceFile: "packages/contracts/src/bun_runtime_surface.ts",
     sensitive: false,
     editable: false,
@@ -1639,12 +1639,12 @@ const CONSTANT_AND_VARIABLE_SPECS: readonly ConfigItemSpec[] = [
       {
         component: "packages/api/src/bun_runtime_surface_loader.ts",
         layer: "api",
-        usage: "Executes live surface audit in-process under Bun or via scrubbed read-only binary probe",
+        usage: "Executes deep read-only surface audit (Bun.* kinds, namespaces, classes, bun:* modules) in-process or via scrubbed binary probe",
       },
       {
         component: "StatusDashboardPanel",
         layer: "ui",
-        usage: "Renders Bun Runtime Surface inspector, live exports table, and utility sandbox",
+        usage: "Renders Bun Runtime Surface inspector, Modules & Classes explorer, live exports table, and Bun.markdown.render + AnsiTheme studio",
         tabId: "status-dashboard",
       },
     ],

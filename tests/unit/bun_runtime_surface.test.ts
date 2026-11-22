@@ -2,17 +2,23 @@ import { describe, expect, test } from "bun:test"
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import {
+  BUN_ANSI_THEME_PRESETS,
   BUN_CORE_API_DOMAINS,
   BUN_GLOBAL_TIERS,
+  BUN_MARKDOWN_CALLBACK_SPECS,
   BUN_UTILITIES_CATALOG,
   BUN_UTILITY_CATEGORIES,
+  DEEP_SURFACE_AUDIT_SNIPPET,
+  DEFAULT_BUN_MARKDOWN_STUDIO_SAMPLE,
   LIVE_SURFACE_AUDIT_SNIPPET,
   bunDeepEquals,
+  classifyBunSymbolKind,
   decodeUuidV7TimestampIso,
   evaluateBunColorConversions,
   evaluateBunStringUtilities,
   formatInspectTable,
   generateBunUuidV7,
+  renderBunMarkdownStudio,
   runBunSurfaceAudit,
 } from "../../packages/contracts/src/bun_runtime_surface.ts"
 import { loadBunRuntimeSurfaceAudit } from "../../packages/api/src/bun_runtime_surface_loader.ts"
@@ -56,9 +62,13 @@ describe("Bun Runtime Surface catalog & live audit engine", () => {
     ])
     expect(LIVE_SURFACE_AUDIT_SNIPPET).toContain("Object.getOwnPropertyNames(Bun)")
     expect(LIVE_SURFACE_AUDIT_SNIPPET).toContain('Bun.inspect.table(bunKeys, ["key", "type"])')
+    expect(DEEP_SURFACE_AUDIT_SNIPPET).toContain("bun:sqlite")
+    expect(DEEP_SURFACE_AUDIT_SNIPPET).toContain("Bun.markdown")
+    expect(BUN_ANSI_THEME_PRESETS.length).toBeGreaterThanOrEqual(4)
+    expect(BUN_MARKDOWN_CALLBACK_SPECS.length).toBeGreaterThanOrEqual(10)
   })
 
-  test("runs live surface audit against the active Bun runtime without exposing secrets", () => {
+  test("runs live surface audit with symbol kinds, deep bun:* modules, namespaces, and classes without exposing secrets", () => {
     const audit = runBunSurfaceAudit()
 
     expect(audit.source).toBe("bun-in-process")
@@ -68,6 +78,37 @@ describe("Bun Runtime Surface catalog & live audit engine", () => {
     expect(audit.processEnvEqualsBunEnv).toBe(true)
     expect(audit.exportCount).toBeGreaterThan(30)
 
+    // Symbol kind classification breakdown
+    expect(audit.kindCounts.class).toBeGreaterThan(5)
+    expect(audit.kindCounts.namespace).toBeGreaterThan(5)
+    expect(audit.kindCounts.function).toBeGreaterThan(20)
+    expect(audit.kindCounts.constant).toBeGreaterThan(2)
+    expect(
+      audit.kindCounts.class +
+        audit.kindCounts.namespace +
+        audit.kindCounts.function +
+        audit.kindCounts.constant +
+        audit.kindCounts.object,
+    ).toBe(audit.exportCount)
+
+    // Redaction of sensitive Bun namespaces
+    const envExport = audit.exports.find((e) => e.key === "env")
+    expect(envExport?.redacted).toBe(true)
+    expect(envExport?.safePreview).toContain("REDACTED")
+
+    // Safe constant previews & class/namespace metadata
+    const versionExport = audit.exports.find((e) => e.key === "version")
+    expect(versionExport?.kind).toBe("constant")
+    expect(versionExport?.safePreview).toBe(Bun.version)
+
+    const markdownExport = audit.exports.find((e) => e.key === "markdown")
+    expect(markdownExport?.kind).toBe("namespace")
+    expect((markdownExport?.memberCount ?? 0)).toBeGreaterThanOrEqual(4)
+
+    const s3ClassExport = audit.exports.find((e) => e.key === "S3Client")
+    expect(s3ClassExport?.kind).toBe("class")
+    expect((s3ClassExport?.prototypeMethodCount ?? 0)).toBeGreaterThan(3)
+
     // Exports are sorted alphabetically by key
     const keys = audit.exports.map((e) => e.key)
     const sortedKeys = [...keys].sort((a, b) => a.localeCompare(b))
@@ -76,14 +117,90 @@ describe("Bun Runtime Surface catalog & live audit engine", () => {
     expect(keys).toContain("inspect")
     expect(keys).toContain("nanoseconds")
     expect(keys).toContain("deepEquals")
+    expect(keys).toContain("markdown")
 
     expect(audit.inspectTableText).toContain(`Bun ${Bun.version} (${Bun.revision.slice(0, 8)})`)
     expect(audit.inspectTableText).toContain("serve")
 
-    // Loader returns matching live audit under Bun
+    // Loader returns matching live audit WITH deep bun:* built-in module inspections
     const loaded = loadBunRuntimeSurfaceAudit()
     expect(loaded.bunDetected).toBe(true)
     expect(loaded.exportCount).toBe(audit.exportCount)
+    expect(loaded.deepInspections.length).toBeGreaterThan(20)
+
+    const mdDeep = loaded.deepInspections.find((d) => d.id === "Bun.markdown")
+    expect(mdDeep?.available).toBe(true)
+    expect(mdDeep?.members.map((m) => m.name)).toEqual(
+      expect.arrayContaining(["html", "ansi", "render", "react"]),
+    )
+
+    const sqliteDeep = loaded.deepInspections.find((d) => d.id === "bun:sqlite")
+    expect(sqliteDeep?.available).toBe(true)
+    expect(sqliteDeep?.members.some((m) => m.name === "Database" && m.kind === "class")).toBe(true)
+    expect(sqliteDeep?.members.some((m) => m.name.startsWith("constants.SQLITE_"))).toBe(true)
+
+    const ffiDeep = loaded.deepInspections.find((d) => d.id === "bun:ffi")
+    expect(ffiDeep?.available).toBe(true)
+    expect(ffiDeep?.members.some((m) => m.name.startsWith("FFIType."))).toBe(true)
+
+    const jscDeep = loaded.deepInspections.find((d) => d.id === "bun:jsc")
+    expect(jscDeep?.available).toBe(true)
+    expect(jscDeep?.functionCount).toBeGreaterThan(10)
+
+    const s3Deep = loaded.deepInspections.find((d) => d.id === "Bun.S3Client")
+    expect(s3Deep?.available).toBe(true)
+    expect(s3Deep?.members.some((m) => m.scope === "prototype")).toBe(true)
+  })
+
+  test("classifies symbol kinds accurately across classes, namespaces, functions, constants, and objects", () => {
+    class SampleClass {
+      run(): number {
+        return 1
+      }
+    }
+    expect(classifyBunSymbolKind(SampleClass, "SampleClass")).toBe("class")
+    expect(classifyBunSymbolKind(() => 42, "helper")).toBe("function")
+    expect(classifyBunSymbolKind({ parse: () => null }, "YAML")).toBe("namespace")
+    expect(classifyBunSymbolKind("1.4.4", "version")).toBe("constant")
+    expect(classifyBunSymbolKind(true, "isMainThread")).toBe("constant")
+    expect(classifyBunSymbolKind({ plain: 1 }, "meta")).toBe("object")
+  })
+
+  test("evaluates Bun.markdown.render callbacks, Bun.markdown.ansi AnsiTheme, and HTML modes safely", () => {
+    const callbacksRes = renderBunMarkdownStudio(DEFAULT_BUN_MARKDOWN_STUDIO_SAMPLE, {
+      mode: "render-callbacks",
+      presetId: "obsidian-desk",
+      theme: { colors: true, hyperlinks: true, light: false, columns: 76 },
+    })
+    expect(callbacksRes.engine).toBe("bun-native")
+    expect(callbacksRes.ansi).toContain("\u001b[38;2;56;189;248m") // heading #38bdf8
+    expect(callbacksRes.ansi).toContain("\u001b[38;2;239;68;68m[REDACTED:TOKEN]") // redacted #ef4444
+    expect(callbacksRes.ansi).toContain("\u001b]8;;https://fantasy402.com/") // safe OSC-8 link
+    expect(callbacksRes.ansi).not.toContain("javascript:alert") // unsafe link stripped
+    expect(callbacksRes.callbacksInvoked).toEqual(
+      expect.arrayContaining(["heading", "strong", "codespan", "link", "blockquote"]),
+    )
+
+    const ansiThemeRes = renderBunMarkdownStudio(DEFAULT_BUN_MARKDOWN_STUDIO_SAMPLE, {
+      mode: "ansi-theme",
+      presetId: "light-paper",
+      theme: { colors: true, light: true, hyperlinks: true, columns: 72 },
+    })
+    expect(ansiThemeRes.engine).toBe("bun-native")
+    expect(ansiThemeRes.ansiTheme.light).toBe(true)
+    expect(ansiThemeRes.ansi).not.toContain("javascript:alert")
+    expect(ansiThemeRes.plain).toContain("SportsDesk Ops")
+
+    const signedS3Test = renderBunMarkdownStudio(
+      "[Signed](https://r2.example.com/obj?X-Amz-Signature=secret123&X-Amz-Credential=abc)",
+      { mode: "render-callbacks", theme: { colors: true, hyperlinks: true } },
+    )
+    expect(signedS3Test.ansi).not.toContain("X-Amz-Signature")
+
+    const htmlRes = renderBunMarkdownStudio("**bold** `code`", { mode: "html" })
+    expect(htmlRes.engine).toBe("bun-native")
+    expect(htmlRes.html).toContain("<strong>bold</strong>")
+    expect(htmlRes.html).toContain("<code>code</code>")
   })
 
   test("handles Node/browser fallback scope cleanly when Bun global is absent", () => {
@@ -96,6 +213,13 @@ describe("Bun Runtime Surface catalog & live audit engine", () => {
     expect(audit.source).toBe("node-fallback")
     expect(audit.bunDetected).toBe(false)
     expect(audit.exportCount).toBe(0)
+    expect(audit.kindCounts).toEqual({
+      class: 0,
+      namespace: 0,
+      function: 0,
+      constant: 0,
+      object: 0,
+    })
     expect(audit.globalProbes.find((g) => g.name === "fetch")?.present).toBe(true)
     expect(audit.globalProbes.find((g) => g.name === "Bun")?.present).toBe(false)
   })
@@ -135,7 +259,7 @@ describe("Bun Runtime Surface catalog & live audit engine", () => {
 })
 
 describe("StatusDashboardPanel & BunRuntimeSurfaceSection integration", () => {
-  test("attaches runtimeSurface to ConfigStatusStore without leaking secrets and renders all sub-views", () => {
+  test("attaches runtimeSurface to ConfigStatusStore without leaking secrets and renders all 6 sub-views", () => {
     const store = createConfigStatusStore({
       env: {
         PORT: "3000",
@@ -148,9 +272,10 @@ describe("StatusDashboardPanel & BunRuntimeSurfaceSection integration", () => {
     expect(serialized).not.toContain("top-secret-runtime-audit-token-never-leak")
     expect(snapshot.runtimeSurface?.bunDetected).toBe(true)
     expect(snapshot.runtimeSurface?.exportCount).toBeGreaterThan(30)
+    expect(snapshot.runtimeSurface?.deepInspections.length).toBeGreaterThan(20)
     expect(snapshot.items.some((i) => i.key === "BUN_RUNTIME.surfaceAudit")).toBe(true)
 
-    // Verify all 5 sub-tabs render cleanly via SSR
+    // Verify all 6 sub-tabs render cleanly via SSR
     const globalsHtml = renderToStaticMarkup(
       React.createElement(BunRuntimeSurfaceSection, {
         audit: snapshot.runtimeSurface,
@@ -181,6 +306,18 @@ describe("StatusDashboardPanel & BunRuntimeSurfaceSection integration", () => {
     expect(coreApisHtml).toContain("HTTP &amp; Networking")
     expect(coreApisHtml).toContain("bun:sqlite")
 
+    const modulesClassesHtml = renderToStaticMarkup(
+      React.createElement(BunRuntimeSurfaceSection, {
+        audit: snapshot.runtimeSurface,
+        initialSubTab: "modules-classes",
+      }),
+    )
+    expect(modulesClassesHtml).toContain('data-runtime-view="modules-classes"')
+    expect(modulesClassesHtml).toContain('data-deep-target-id="Bun.markdown"')
+    expect(modulesClassesHtml).toContain('data-deep-target-id="bun:sqlite"')
+    expect(modulesClassesHtml).toContain('data-deep-target-id="bun:ffi"')
+    expect(modulesClassesHtml).toContain('data-deep-target-id="Bun.S3Client"')
+
     const liveAuditHtml = renderToStaticMarkup(
       React.createElement(BunRuntimeSurfaceSection, {
         audit: snapshot.runtimeSurface,
@@ -190,6 +327,8 @@ describe("StatusDashboardPanel & BunRuntimeSurfaceSection integration", () => {
     expect(liveAuditHtml).toContain('data-runtime-view="live-audit"')
     expect(liveAuditHtml).toContain("Object.getOwnPropertyNames(Bun)")
     expect(liveAuditHtml).toContain("Bun.serve")
+    expect(liveAuditHtml).toContain('data-bun-export-kind="class"')
+    expect(liveAuditHtml).toContain('data-bun-export-kind="namespace"')
 
     const sandboxHtml = renderToStaticMarkup(
       React.createElement(BunRuntimeSurfaceSection, {
@@ -198,6 +337,10 @@ describe("StatusDashboardPanel & BunRuntimeSurfaceSection integration", () => {
       }),
     )
     expect(sandboxHtml).toContain('data-runtime-view="sandbox"')
+    expect(sandboxHtml).toContain('data-bun-markdown-studio="true"')
+    expect(sandboxHtml).toContain('data-markdown-ansi-preview="true"')
+    expect(sandboxHtml).toContain("Bun.markdown.render()")
+    expect(sandboxHtml).toContain("AnsiTheme")
     expect(sandboxHtml).toContain("Bun.deepEquals")
     expect(sandboxHtml).toContain("Generate UUIDv7")
 

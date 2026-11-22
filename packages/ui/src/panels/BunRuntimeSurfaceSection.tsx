@@ -1,35 +1,48 @@
 import type React from "react";
 import { useMemo, useState } from "react";
 import {
+  Box,
   Check,
   Code2,
   Copy,
   Cpu,
   Download,
+  FileText,
   FlaskConical,
   Globe,
   Layers,
   RefreshCw,
   Search,
   ShieldCheck,
+  Terminal,
   Wrench,
 } from "lucide-react";
 import {
+  BUN_ANSI_THEME_PRESETS,
   BUN_CORE_API_DOMAINS,
   BUN_GLOBAL_TIERS,
+  BUN_MARKDOWN_CALLBACK_SPECS,
   BUN_UTILITIES_CATALOG,
   BUN_UTILITY_CATEGORIES,
+  DEEP_SURFACE_AUDIT_SNIPPET,
+  DEFAULT_BUN_MARKDOWN_STUDIO_SAMPLE,
   LIVE_SURFACE_AUDIT_SNIPPET,
   bunDeepEquals,
   decodeUuidV7TimestampIso,
   evaluateBunColorConversions,
   evaluateBunStringUtilities,
   generateBunUuidV7,
+  renderBunMarkdownStudio,
   runBunSurfaceAudit,
+  type BunDeepInspectionCategory,
+  type BunExportKind,
+  type BunMarkdownRenderMode,
+  type BunMarkdownRenderPresetId,
   type BunRuntimeSurfaceAuditSnapshot,
   type BunUtilityCategoryId,
   type GlobalTierId,
 } from "@sportsdesk-ops/contracts";
+import { renderAnsiReact } from "../ansi.tsx";
 import { CopyBunTerminalAnsiButton } from "./SyntaxHighlightedPre.tsx";
 
 const MONO_FONT =
@@ -39,6 +52,7 @@ export type RuntimeSurfaceSubTab =
   | "globals"
   | "utilities"
   | "core-apis"
+  | "modules-classes"
   | "live-audit"
   | "sandbox";
 
@@ -59,6 +73,36 @@ function sourceLabel(source: BunRuntimeSurfaceAuditSnapshot["source"]): string {
     case "browser-fallback":
       return "Browser runtime probe";
   }
+}
+
+function kindColor(kind: BunExportKind): string {
+  switch (kind) {
+    case "class":
+      return "#f59e0b";
+    case "namespace":
+      return "#c084fc";
+    case "function":
+      return "#38bdf8";
+    case "constant":
+      return "#4ade80";
+    case "object":
+      return "#94a3b8";
+  }
+}
+
+function categoryLabel(category: BunDeepInspectionCategory): string {
+  switch (category) {
+    case "builtin-module":
+      return "bun:* Module";
+    case "bun-namespace":
+      return "Bun.* Namespace";
+    case "bun-class":
+      return "Bun.* Class";
+  }
+}
+
+function escapeAnsiForDisplay(raw: string): string {
+  return raw.replace(/\u001b/g, "\\x1b");
 }
 
 export function BunRuntimeSurfaceSection({
@@ -86,12 +130,32 @@ export function BunRuntimeSurfaceSection({
   // Core APIs filter state
   const [coreApiSearch, setCoreApiSearch] = useState<string>("");
 
+  // Deep Modules, Namespaces & Classes filter state
+  const [deepCategoryFilter, setDeepCategoryFilter] = useState<
+    "all" | BunDeepInspectionCategory
+  >("all");
+  const [deepKindFilter, setDeepKindFilter] = useState<"all" | BunExportKind>("all");
+  const [deepSearch, setDeepSearch] = useState<string>("");
+  const [expandedDeepIds, setExpandedDeepIds] = useState<Readonly<Record<string, boolean>>>({});
+
   // Live Surface Audit state
   const [auditSearch, setAuditSearch] = useState<string>("");
+  const [auditKindFilter, setAuditKindFilter] = useState<"all" | BunExportKind>("all");
   const [auditTypeFilter, setAuditTypeFilter] = useState<string>("all");
   const [auditDisplayMode, setAuditDisplayMode] = useState<"table" | "inspect">("table");
+  const [auditSnippetMode, setAuditSnippetMode] = useState<"basic" | "deep">("basic");
   const [copiedSnippet, setCopiedSnippet] = useState<boolean>(false);
   const [copiedTable, setCopiedTable] = useState<boolean>(false);
+
+  // Bun.markdown.render & AnsiTheme Studio state
+  const [mdSource, setMdSource] = useState<string>(DEFAULT_BUN_MARKDOWN_STUDIO_SAMPLE);
+  const [mdMode, setMdMode] = useState<BunMarkdownRenderMode>("render-callbacks");
+  const [mdPresetId, setMdPresetId] = useState<BunMarkdownRenderPresetId>("obsidian-desk");
+  const [mdColors, setMdColors] = useState<boolean>(true);
+  const [mdLight, setMdLight] = useState<boolean>(false);
+  const [mdHyperlinks, setMdHyperlinks] = useState<boolean>(true);
+  const [mdColumns, setMdColumns] = useState<number>(76);
+  const [mdOutputView, setMdOutputView] = useState<"terminal" | "raw-ansi" | "html">("terminal");
 
   // Utility Sandbox state
   const [sandboxStringInput, setSandboxStringInput] = useState<string>(
@@ -218,13 +282,116 @@ export function BunRuntimeSurfaceSection({
   const filteredExports = useMemo(() => {
     const q = auditSearch.trim().toLowerCase();
     return effectiveAudit.exports.filter((entry) => {
+      if (auditKindFilter !== "all" && entry.kind !== auditKindFilter) return false;
       if (auditTypeFilter !== "all" && entry.type !== auditTypeFilter) return false;
-      if (q && !entry.key.toLowerCase().includes(q) && !entry.type.toLowerCase().includes(q)) {
-        return false;
+      if (q) {
+        const hay = `${entry.key} ${entry.kind} ${entry.type} ${entry.safePreview ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
       }
       return true;
     });
-  }, [effectiveAudit.exports, auditSearch, auditTypeFilter]);
+  }, [effectiveAudit.exports, auditSearch, auditKindFilter, auditTypeFilter]);
+
+  const deepSummary = useMemo(() => {
+    const all = effectiveAudit.deepInspections ?? [];
+    let available = 0;
+    let totalMembers = 0;
+    let modules = 0;
+    let namespaces = 0;
+    let classes = 0;
+    for (const item of all) {
+      if (item.available) available += 1;
+      totalMembers += item.memberCount;
+      if (item.category === "builtin-module") modules += 1;
+      else if (item.category === "bun-namespace") namespaces += 1;
+      else if (item.category === "bun-class") classes += 1;
+    }
+    return {
+      total: all.length,
+      available,
+      totalMembers,
+      modules,
+      namespaces,
+      classes,
+    };
+  }, [effectiveAudit.deepInspections]);
+
+  const filteredDeepInspections = useMemo(() => {
+    const q = deepSearch.trim().toLowerCase();
+    const list = effectiveAudit.deepInspections ?? [];
+    return list
+      .filter((entry) => {
+        if (deepCategoryFilter !== "all" && entry.category !== deepCategoryFilter) return false;
+        const matchingMembers = entry.members.filter((m) => {
+          if (deepKindFilter !== "all" && m.kind !== deepKindFilter) return false;
+          if (!q) return true;
+          return (
+            m.name.toLowerCase().includes(q) ||
+            m.kind.toLowerCase().includes(q) ||
+            m.scope.toLowerCase().includes(q) ||
+            (m.safePreview?.toLowerCase().includes(q) ?? false)
+          );
+        });
+        if (!q && deepKindFilter === "all") return true;
+        const headerMatch =
+          q.length > 0 &&
+          (entry.label.toLowerCase().includes(q) ||
+            entry.domain.toLowerCase().includes(q) ||
+            entry.notes.toLowerCase().includes(q));
+        if (deepKindFilter !== "all") {
+          return matchingMembers.length > 0;
+        }
+        return headerMatch || matchingMembers.length > 0;
+      })
+      .map((entry) => {
+        const qMatchesHeader =
+          q.length > 0 &&
+          (entry.label.toLowerCase().includes(q) ||
+            entry.domain.toLowerCase().includes(q) ||
+            entry.notes.toLowerCase().includes(q));
+        const filteredMembers = entry.members.filter((m) => {
+          if (deepKindFilter !== "all" && m.kind !== deepKindFilter) return false;
+          if (!q || qMatchesHeader) return true;
+          return (
+            m.name.toLowerCase().includes(q) ||
+            m.kind.toLowerCase().includes(q) ||
+            m.scope.toLowerCase().includes(q) ||
+            (m.safePreview?.toLowerCase().includes(q) ?? false)
+          );
+        });
+        return {
+          ...entry,
+          filteredMembers,
+        };
+      });
+  }, [effectiveAudit.deepInspections, deepCategoryFilter, deepKindFilter, deepSearch]);
+
+  // Bun.markdown.render & AnsiTheme Studio live evaluation
+  const mdStudioResult = useMemo(
+    () =>
+      renderBunMarkdownStudio(mdSource, {
+        mode: mdMode,
+        presetId: mdPresetId,
+        theme: {
+          colors: mdColors,
+          light: mdLight,
+          hyperlinks: mdHyperlinks,
+          columns: mdColumns,
+        },
+      }),
+    [mdSource, mdMode, mdPresetId, mdColors, mdLight, mdHyperlinks, mdColumns],
+  );
+
+  const handleSelectMdPreset = (presetId: BunMarkdownRenderPresetId) => {
+    setMdPresetId(presetId);
+    const preset = BUN_ANSI_THEME_PRESETS.find((p) => p.id === presetId);
+    if (preset) {
+      setMdLight(preset.defaultTheme.light);
+      setMdColumns(preset.defaultTheme.columns);
+      setMdColors(preset.defaultTheme.colors);
+      setMdHyperlinks(preset.defaultTheme.hyperlinks);
+    }
+  };
 
   // Sandbox evaluations
   const stringProbe = useMemo(
@@ -251,9 +418,12 @@ export function BunRuntimeSurfaceSection({
     }
   }, [deepEqLeft, deepEqRight, deepEqStrict]);
 
+  const activeAuditSnippet =
+    auditSnippetMode === "deep" ? DEEP_SURFACE_AUDIT_SNIPPET : LIVE_SURFACE_AUDIT_SNIPPET;
+
   const handleCopySnippet = async () => {
     try {
-      await navigator.clipboard.writeText(LIVE_SURFACE_AUDIT_SNIPPET);
+      await navigator.clipboard.writeText(activeAuditSnippet);
       setCopiedSnippet(true);
       setTimeout(() => setCopiedSnippet(false), 1800);
     } catch {
@@ -438,31 +608,26 @@ export function BunRuntimeSurfaceSection({
                 ? `v${effectiveAudit.bunVersion}`
                 : effectiveAudit.hostRuntime,
               sub: effectiveAudit.bunRevisionShort
-                ? `rev ${effectiveAudit.bunRevisionShort} · mainThread=${String(effectiveAudit.isMainThread)}`
+                ? `rev ${effectiveAudit.bunRevisionShort} · mainThread=${String(effectiveAudit.isMainThread)} · ansi=${String(effectiveAudit.enableAnsiColors ?? false)}`
                 : "No Bun binary detected on PATH",
             },
             {
-              label: "Bun Namespace Exports",
+              label: "Bun.* Symbol Kinds",
               value: `${effectiveAudit.exportCount} exports`,
               sub:
                 effectiveAudit.exportCount > 0
-                  ? `${effectiveAudit.exportTypeCounts.function ?? 0} fn · ${effectiveAudit.exportTypeCounts.object ?? 0} obj · ${effectiveAudit.exportTypeCounts.string ?? 0} str`
+                  ? `${effectiveAudit.kindCounts.class} cls · ${effectiveAudit.kindCounts.namespace} ns · ${effectiveAudit.kindCounts.function} fn · ${effectiveAudit.kindCounts.constant} const`
                   : "Run under Bun to enumerate Bun.*",
             },
             {
-              label: "Globals (3 Tiers)",
-              value: `${presentGlobalsCount}/${effectiveAudit.globalProbes.length} live`,
-              sub:
-                effectiveAudit.processEnvEqualsBunEnv === true
-                  ? "process.env === Bun.env verified"
-                  : effectiveAudit.processEnvEqualsBunEnv === false
-                    ? "process.env !== Bun.env"
-                    : "Web & Node compat globals probed",
+              label: "Modules, Namespaces & Classes",
+              value: `${deepSummary.available}/${deepSummary.total} inspected`,
+              sub: `${deepSummary.totalMembers} symbols · ${deepSummary.modules} bun:* · ${deepSummary.namespaces} ns · ${deepSummary.classes} cls`,
             },
             {
-              label: "Utilities & Core APIs",
-              value: `${availableUtilitiesCount}/${BUN_UTILITIES_CATALOG.length} utils · ${availableCoreApisCount}/${totalCoreApisProbed} APIs`,
-              sub: `${BUN_UTILITY_CATEGORIES.length} utility groups · ${BUN_CORE_API_DOMAINS.length} core domains`,
+              label: "Globals, Utils & Core APIs",
+              value: `${presentGlobalsCount}/${effectiveAudit.globalProbes.length} globals · ${availableUtilitiesCount}/${BUN_UTILITIES_CATALOG.length} utils`,
+              sub: `${availableCoreApisCount}/${totalCoreApisProbed} core APIs · ${effectiveAudit.processEnvEqualsBunEnv === true ? "process.env === Bun.env" : `${BUN_CORE_API_DOMAINS.length} domains`}`,
             },
           ].map((kpi) => (
             <div
@@ -534,11 +699,16 @@ export function BunRuntimeSurfaceSection({
               icon: Layers,
             },
             {
+              id: "modules-classes",
+              label: `04. Modules & Classes (${deepSummary.total})`,
+              icon: Box,
+            },
+            {
               id: "live-audit",
-              label: `04. Live Surface Audit (${effectiveAudit.exportCount})`,
+              label: `05. Live Surface Audit (${effectiveAudit.exportCount})`,
               icon: Cpu,
             },
-            { id: "sandbox", label: "Utility Sandbox", icon: FlaskConical },
+            { id: "sandbox", label: "06. Markdown & Sandbox", icon: FlaskConical },
           ] as const
         ).map((tab) => {
           const Icon = tab.icon;
@@ -1276,7 +1446,414 @@ export function BunRuntimeSurfaceSection({
         </div>
       ) : null}
 
-      {/* VIEW 4: LIVE SURFACE AUDIT */}
+      {/* VIEW 4: MODULES, NAMESPACES & CLASSES DEEP INTROSPECTION */}
+      {subTab === "modules-classes" ? (
+        <div
+          data-runtime-view="modules-classes"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px",
+          }}
+        >
+          <div
+            style={{
+              borderRadius: "8px",
+              borderWidth: "1px",
+              borderStyle: "solid",
+              borderColor: "var(--border-default, #1e293b)",
+              backgroundColor: "var(--surface-panel, #0f172a)",
+              padding: "10px 14px",
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "10px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              <div
+                role="group"
+                aria-label="Filter deep targets by category"
+                style={{
+                  display: "inline-flex",
+                  flexWrap: "wrap",
+                  gap: "2px",
+                  padding: "2px",
+                  borderRadius: "6px",
+                  borderWidth: "1px",
+                  borderStyle: "solid",
+                  borderColor: "var(--border-default, #1e293b)",
+                  backgroundColor: "var(--surface-overlay, #0a101d)",
+                }}
+              >
+                {(
+                  [
+                    { id: "all", label: `All (${deepSummary.total})` },
+                    { id: "builtin-module", label: `bun:* Modules (${deepSummary.modules})` },
+                    { id: "bun-namespace", label: `Bun.* Namespaces (${deepSummary.namespaces})` },
+                    { id: "bun-class", label: `Bun.* Classes (${deepSummary.classes})` },
+                  ] as const
+                ).map((cat) => {
+                  const active = deepCategoryFilter === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setDeepCategoryFilter(cat.id)}
+                      style={{
+                        padding: "4px 9px",
+                        borderRadius: "4px",
+                        border: "none",
+                        backgroundColor: active ? "rgba(56, 189, 248, 0.14)" : "transparent",
+                        color: active ? "#38bdf8" : "var(--text-muted, #94a3b8)",
+                        fontSize: "11px",
+                        fontWeight: active ? 600 : 500,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {cat.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div
+                role="group"
+                aria-label="Filter deep members by symbol kind"
+                style={{
+                  display: "inline-flex",
+                  flexWrap: "wrap",
+                  gap: "4px",
+                }}
+              >
+                {(["all", "class", "namespace", "function", "constant"] as const).map((k) => {
+                  const active = deepKindFilter === k;
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setDeepKindFilter(k)}
+                      style={{
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                        borderWidth: "1px",
+                        borderStyle: "solid",
+                        borderColor: active
+                          ? k === "all"
+                            ? "#38bdf8"
+                            : kindColor(k)
+                          : "var(--border-strong, #334155)",
+                        backgroundColor: active ? "rgba(56, 189, 248, 0.1)" : "transparent",
+                        color: active ? (k === "all" ? "#38bdf8" : kindColor(k)) : "#94a3b8",
+                        fontSize: "11px",
+                        fontFamily: MONO_FONT,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {k}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div
+              style={{
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                width: "240px",
+              }}
+            >
+              <Search
+                size={13}
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  left: "9px",
+                  color: "#64748b",
+                  pointerEvents: "none",
+                }}
+              />
+              <input
+                type="search"
+                aria-label="Filter modules, classes, constants, and methods"
+                value={deepSearch}
+                onChange={(e) => setDeepSearch(e.target.value)}
+                placeholder="Search SQLITE_*, FFIType, render…"
+                style={{
+                  width: "100%",
+                  padding: "5px 10px 5px 28px",
+                  borderRadius: "6px",
+                  borderWidth: "1px",
+                  borderStyle: "solid",
+                  borderColor: "var(--border-strong, #334155)",
+                  backgroundColor: "var(--surface-overlay, #0a101d)",
+                  color: "var(--text-primary, #f1f5f9)",
+                  fontSize: "11.5px",
+                  fontFamily: MONO_FONT,
+                }}
+              />
+            </div>
+          </div>
+
+          {filteredDeepInspections.length === 0 ? (
+            <div
+              style={{
+                borderRadius: "8px",
+                borderWidth: "1px",
+                borderStyle: "solid",
+                borderColor: "var(--border-default, #1e293b)",
+                backgroundColor: "var(--surface-panel, #0f172a)",
+                padding: "20px 14px",
+                fontSize: "12px",
+                color: "#94a3b8",
+              }}
+            >
+              No inspected Bun modules, namespaces, or classes match the active filter.
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
+                gap: "12px",
+              }}
+            >
+              {filteredDeepInspections.map((entry) => {
+                const isExpanded = Boolean(expandedDeepIds[entry.id]);
+                const visibleMembers = isExpanded
+                  ? entry.filteredMembers
+                  : entry.filteredMembers.slice(0, 14);
+                const hiddenCount = Math.max(0, entry.filteredMembers.length - visibleMembers.length);
+
+                return (
+                  <div
+                    key={entry.id}
+                    data-deep-target-id={entry.id}
+                    style={{
+                      borderRadius: "8px",
+                      borderWidth: "1px",
+                      borderStyle: "solid",
+                      borderColor: "var(--border-default, #1e293b)",
+                      backgroundColor: "var(--surface-panel, #0f172a)",
+                      overflow: "hidden",
+                      display: "flex",
+                      flexDirection: "column",
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding: "10px 14px",
+                        borderBottomWidth: "1px",
+                        borderBottomStyle: "solid",
+                        borderBottomColor: "var(--border-default, #1e293b)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "4px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "8px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontFamily: MONO_FONT,
+                            fontSize: "12.5px",
+                            fontWeight: 700,
+                            color: "var(--text-primary, #f8fafc)",
+                          }}
+                        >
+                          {entry.label}
+                        </div>
+                        <div
+                          style={{
+                            fontFamily: MONO_FONT,
+                            fontSize: "10.5px",
+                            color: entry.available ? "#4ade80" : "#fbbf24",
+                            fontWeight: 600,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {entry.available ? `${entry.memberCount} members` : "Unavailable on host"}
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: MONO_FONT,
+                          fontSize: "10.5px",
+                          color: "#94a3b8",
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        {categoryLabel(entry.category)} · {entry.domain} · {entry.classCount} cls ·{" "}
+                        {entry.functionCount} fn · {entry.constantCount} const
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#64748b", lineHeight: 1.45 }}>
+                        {entry.notes}
+                      </div>
+                      {entry.id === "Bun.markdown" ? (
+                        <div style={{ marginTop: "4px" }}>
+                          <button
+                            type="button"
+                            onClick={() => setSubTab("sandbox")}
+                            style={{
+                              padding: "3px 8px",
+                              borderRadius: "5px",
+                              borderWidth: "1px",
+                              borderStyle: "solid",
+                              borderColor: "#38bdf8",
+                              backgroundColor: "rgba(56, 189, 248, 0.1)",
+                              color: "#38bdf8",
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Launch Bun.markdown.render &amp; AnsiTheme Studio →
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    {entry.filteredMembers.length > 0 ? (
+                      <div style={{ flex: 1 }}>
+                        <table
+                          style={{
+                            width: "100%",
+                            borderCollapse: "collapse",
+                            fontFamily: MONO_FONT,
+                            fontSize: "11px",
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          <thead>
+                            <tr
+                              style={{
+                                textAlign: "left",
+                                fontSize: "10px",
+                                color: "#64748b",
+                                borderBottomWidth: "1px",
+                                borderBottomStyle: "solid",
+                                borderBottomColor: "var(--border-default, #1e293b)",
+                              }}
+                            >
+                              <th style={{ padding: "5px 12px" }}>Symbol</th>
+                              <th style={{ padding: "5px 8px", width: "74px" }}>Scope</th>
+                              <th style={{ padding: "5px 8px", width: "78px" }}>Kind</th>
+                              <th style={{ padding: "5px 12px", textAlign: "right" }}>
+                                Type / Value
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {visibleMembers.map((member) => (
+                              <tr
+                                key={`${member.scope}:${member.name}`}
+                                style={{
+                                  borderBottomWidth: "1px",
+                                  borderBottomStyle: "solid",
+                                  borderBottomColor: "rgba(30, 41, 59, 0.45)",
+                                }}
+                              >
+                                <td
+                                  style={{
+                                    padding: "4px 12px",
+                                    color: "var(--text-primary, #e2e8f0)",
+                                    fontWeight: 500,
+                                    wordBreak: "break-word",
+                                  }}
+                                >
+                                  {member.name}
+                                </td>
+                                <td style={{ padding: "4px 8px", color: "#64748b" }}>
+                                  {member.scope}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "4px 8px",
+                                    color: kindColor(member.kind),
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {member.kind}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "4px 12px",
+                                    textAlign: "right",
+                                    color:
+                                      member.safePreview !== undefined ? "#86efac" : "#94a3b8",
+                                  }}
+                                >
+                                  {member.safePreview !== undefined
+                                    ? `${member.type} = ${member.safePreview}`
+                                    : member.type}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+
+                        {entry.filteredMembers.length > 14 ? (
+                          <div
+                            style={{
+                              padding: "6px 12px",
+                              borderTopWidth: "1px",
+                              borderTopStyle: "solid",
+                              borderTopColor: "var(--border-default, #1e293b)",
+                              display: "flex",
+                              justifyContent: "flex-end",
+                            }}
+                          >
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedDeepIds((prev) => ({
+                                  ...prev,
+                                  [entry.id]: !prev[entry.id],
+                                }))
+                              }
+                              style={{
+                                background: "none",
+                                border: "none",
+                                color: "#38bdf8",
+                                fontFamily: MONO_FONT,
+                                fontSize: "11px",
+                                cursor: "pointer",
+                                padding: 0,
+                              }}
+                            >
+                              {isExpanded
+                                ? "Show fewer symbols"
+                                : `Show ${hiddenCount} more symbols (${entry.filteredMembers.length} total)`}
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <div style={{ padding: "12px 14px", fontSize: "11px", color: "#64748b" }}>
+                        {entry.available
+                          ? "No members match the active symbol filter."
+                          : "Target not exposed in this host environment."}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      {/* VIEW 5: LIVE SURFACE AUDIT */}
       {subTab === "live-audit" ? (
         <div
           data-runtime-view="live-audit"
@@ -1286,7 +1863,7 @@ export function BunRuntimeSurfaceSection({
             gap: "12px",
           }}
         >
-          {/* Section 4 Snippet Card */}
+          {/* Section 5 Snippet Card */}
           <div
             style={{
               borderRadius: "8px",
@@ -1314,7 +1891,8 @@ export function BunRuntimeSurfaceSection({
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "6px",
+                  gap: "8px",
+                  flexWrap: "wrap",
                   fontSize: "12px",
                   fontWeight: 700,
                   color: "var(--text-primary, #f8fafc)",
@@ -1322,6 +1900,47 @@ export function BunRuntimeSurfaceSection({
               >
                 <Code2 size={14} aria-hidden="true" />
                 <span>Live Surface Audit Snippet (Object.getOwnPropertyNames(Bun))</span>
+                <div
+                  role="group"
+                  aria-label="Select audit snippet variant"
+                  style={{
+                    display: "inline-flex",
+                    padding: "2px",
+                    borderRadius: "5px",
+                    borderWidth: "1px",
+                    borderStyle: "solid",
+                    borderColor: "var(--border-default, #1e293b)",
+                    backgroundColor: "var(--surface-overlay, #0a101d)",
+                  }}
+                >
+                  {(
+                    [
+                      { id: "basic", label: "Quick Audit" },
+                      { id: "deep", label: "Deep Kinds + bun:*" },
+                    ] as const
+                  ).map((variant) => {
+                    const active = auditSnippetMode === variant.id;
+                    return (
+                      <button
+                        key={variant.id}
+                        type="button"
+                        onClick={() => setAuditSnippetMode(variant.id)}
+                        style={{
+                          padding: "2px 7px",
+                          borderRadius: "3px",
+                          border: "none",
+                          backgroundColor: active ? "rgba(56, 189, 248, 0.14)" : "transparent",
+                          color: active ? "#38bdf8" : "#94a3b8",
+                          fontSize: "10.5px",
+                          fontWeight: active ? 600 : 500,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {variant.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               <button
                 type="button"
@@ -1364,7 +1983,7 @@ export function BunRuntimeSurfaceSection({
                 overflowX: "auto",
               }}
             >
-              {LIVE_SURFACE_AUDIT_SNIPPET}
+              {activeAuditSnippet}
             </pre>
           </div>
 
@@ -1438,69 +2057,86 @@ export function BunRuntimeSurfaceSection({
                   })}
                 </div>
 
-                {auditDisplayMode === "table" && exportTypes.length > 0 ? (
+                {auditDisplayMode === "table" ? (
                   <div
                     role="group"
-                    aria-label="Filter exports by typeof"
+                    aria-label="Filter exports by symbol kind"
                     style={{
                       display: "inline-flex",
                       flexWrap: "wrap",
                       gap: "4px",
                     }}
                   >
-                    <button
-                      type="button"
-                      onClick={() => setAuditTypeFilter("all")}
-                      style={{
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        borderWidth: "1px",
-                        borderStyle: "solid",
-                        borderColor:
-                          auditTypeFilter === "all"
-                            ? "#38bdf8"
-                            : "var(--border-strong, #334155)",
-                        backgroundColor:
-                          auditTypeFilter === "all"
-                            ? "rgba(56, 189, 248, 0.12)"
-                            : "transparent",
-                        color: auditTypeFilter === "all" ? "#38bdf8" : "#94a3b8",
-                        fontSize: "11px",
-                        fontFamily: MONO_FONT,
-                        cursor: "pointer",
-                      }}
-                    >
-                      all ({effectiveAudit.exportCount})
-                    </button>
-                    {exportTypes.map((t) => {
-                      const active = auditTypeFilter === t;
+                    {(
+                      [
+                        { id: "all", label: `all kinds (${effectiveAudit.exportCount})` },
+                        { id: "class", label: `class (${effectiveAudit.kindCounts.class})` },
+                        {
+                          id: "namespace",
+                          label: `namespace (${effectiveAudit.kindCounts.namespace})`,
+                        },
+                        {
+                          id: "function",
+                          label: `function (${effectiveAudit.kindCounts.function})`,
+                        },
+                        {
+                          id: "constant",
+                          label: `constant (${effectiveAudit.kindCounts.constant})`,
+                        },
+                        { id: "object", label: `object (${effectiveAudit.kindCounts.object})` },
+                      ] as const
+                    ).map((item) => {
+                      const active = auditKindFilter === item.id;
+                      const accent = item.id === "all" ? "#38bdf8" : kindColor(item.id);
                       return (
                         <button
-                          key={t}
+                          key={item.id}
                           type="button"
-                          onClick={() => setAuditTypeFilter(t)}
+                          onClick={() => setAuditKindFilter(item.id)}
                           style={{
                             padding: "4px 8px",
                             borderRadius: "4px",
                             borderWidth: "1px",
                             borderStyle: "solid",
-                            borderColor: active
-                              ? "#38bdf8"
-                              : "var(--border-strong, #334155)",
-                            backgroundColor: active
-                              ? "rgba(56, 189, 248, 0.12)"
-                              : "transparent",
-                            color: active ? "#38bdf8" : "#94a3b8",
+                            borderColor: active ? accent : "var(--border-strong, #334155)",
+                            backgroundColor: active ? "rgba(56, 189, 248, 0.1)" : "transparent",
+                            color: active ? accent : "#94a3b8",
                             fontSize: "11px",
                             fontFamily: MONO_FONT,
                             cursor: "pointer",
                           }}
                         >
-                          {t} ({effectiveAudit.exportTypeCounts[t] ?? 0})
+                          {item.label}
                         </button>
                       );
                     })}
                   </div>
+                ) : null}
+
+                {auditDisplayMode === "table" && exportTypes.length > 0 ? (
+                  <select
+                    aria-label="Filter exports by typeof"
+                    value={auditTypeFilter}
+                    onChange={(e) => setAuditTypeFilter(e.target.value)}
+                    style={{
+                      padding: "4px 8px",
+                      borderRadius: "4px",
+                      borderWidth: "1px",
+                      borderStyle: "solid",
+                      borderColor: "var(--border-strong, #334155)",
+                      backgroundColor: "var(--surface-overlay, #0a101d)",
+                      color: "var(--text-primary, #e2e8f0)",
+                      fontSize: "11px",
+                      fontFamily: MONO_FONT,
+                    }}
+                  >
+                    <option value="all">typeof: all ({effectiveAudit.exportCount})</option>
+                    {exportTypes.map((t) => (
+                      <option key={t} value={t}>
+                        typeof: {t} ({effectiveAudit.exportTypeCounts[t] ?? 0})
+                      </option>
+                    ))}
+                  </select>
                 ) : null}
               </div>
 
@@ -1609,7 +2245,7 @@ export function BunRuntimeSurfaceSection({
                   : "No Bun namespace exports match the current filter."}
               </div>
             ) : (
-              <div style={{ maxHeight: "420px", overflowY: "auto" }}>
+              <div style={{ maxHeight: "440px", overflowY: "auto" }}>
                 <table
                   style={{
                     width: "100%",
@@ -1630,59 +2266,89 @@ export function BunRuntimeSurfaceSection({
                         borderBottomColor: "var(--border-default, #1e293b)",
                       }}
                     >
-                      <th style={{ padding: "7px 14px", width: "54px", textAlign: "right" }}>
+                      <th style={{ padding: "7px 14px", width: "48px", textAlign: "right" }}>
                         #
                       </th>
                       <th style={{ padding: "7px 14px" }}>Export Key (Bun.*)</th>
-                      <th style={{ padding: "7px 14px", width: "130px" }}>typeof</th>
+                      <th style={{ padding: "7px 14px", width: "105px" }}>Kind</th>
+                      <th style={{ padding: "7px 14px", width: "95px" }}>typeof</th>
+                      <th style={{ padding: "7px 14px" }}>Members / Safe Preview</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredExports.map((entry, idx) => (
-                      <tr
-                        key={entry.key}
-                        data-bun-export-key={entry.key}
-                        style={{
-                          borderBottomWidth: "1px",
-                          borderBottomStyle: "solid",
-                          borderBottomColor: "rgba(30, 41, 59, 0.55)",
-                        }}
-                      >
-                        <td
+                    {filteredExports.map((entry, idx) => {
+                      const detail = entry.redacted
+                        ? entry.safePreview ?? "[REDACTED]"
+                        : entry.kind === "class" &&
+                            (entry.staticMemberCount !== undefined ||
+                              entry.prototypeMethodCount !== undefined)
+                          ? `${entry.staticMemberCount ?? 0} static · ${entry.prototypeMethodCount ?? 0} prototype`
+                          : entry.kind === "namespace" && entry.memberCount !== undefined
+                            ? `${entry.memberCount} exports`
+                            : entry.safePreview !== undefined
+                              ? entry.safePreview
+                              : "—";
+                      return (
+                        <tr
+                          key={entry.key}
+                          data-bun-export-key={entry.key}
+                          data-bun-export-kind={entry.kind}
                           style={{
-                            padding: "6px 14px",
-                            textAlign: "right",
-                            color: "#64748b",
+                            borderBottomWidth: "1px",
+                            borderBottomStyle: "solid",
+                            borderBottomColor: "rgba(30, 41, 59, 0.55)",
                           }}
                         >
-                          {idx}
-                        </td>
-                        <td
-                          style={{
-                            padding: "6px 14px",
-                            color: "var(--text-primary, #f1f5f9)",
-                            fontWeight: 600,
-                          }}
-                        >
-                          Bun.{entry.key}
-                        </td>
-                        <td
-                          style={{
-                            padding: "6px 14px",
-                            color:
-                              entry.type === "function"
-                                ? "#7dd3fc"
-                                : entry.type === "object"
-                                  ? "#c084fc"
-                                  : entry.type === "string"
-                                    ? "#86efac"
-                                    : "#fbbf24",
-                          }}
-                        >
-                          {entry.type}
-                        </td>
-                      </tr>
-                    ))}
+                          <td
+                            style={{
+                              padding: "6px 14px",
+                              textAlign: "right",
+                              color: "#64748b",
+                            }}
+                          >
+                            {idx}
+                          </td>
+                          <td
+                            style={{
+                              padding: "6px 14px",
+                              color: "var(--text-primary, #f1f5f9)",
+                              fontWeight: 600,
+                            }}
+                          >
+                            Bun.{entry.key}
+                          </td>
+                          <td
+                            style={{
+                              padding: "6px 14px",
+                              color: kindColor(entry.kind),
+                              fontWeight: 600,
+                            }}
+                          >
+                            {entry.kind}
+                          </td>
+                          <td
+                            style={{
+                              padding: "6px 14px",
+                              color: "#94a3b8",
+                            }}
+                          >
+                            {entry.type}
+                          </td>
+                          <td
+                            style={{
+                              padding: "6px 14px",
+                              color: entry.redacted
+                                ? "#f87171"
+                                : entry.safePreview !== undefined
+                                  ? "#86efac"
+                                  : "#94a3b8",
+                            }}
+                          >
+                            {detail}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1691,7 +2357,7 @@ export function BunRuntimeSurfaceSection({
         </div>
       ) : null}
 
-      {/* VIEW 5: INTERACTIVE UTILITY SANDBOX */}
+      {/* VIEW 6: MARKDOWN STUDIO & INTERACTIVE UTILITY SANDBOX */}
       {subTab === "sandbox" ? (
         <div
           data-runtime-view="sandbox"
@@ -1701,6 +2367,605 @@ export function BunRuntimeSurfaceSection({
             gap: "12px",
           }}
         >
+          {/* Full-width Studio Card: Bun.markdown.render & AnsiTheme */}
+          <div
+            data-bun-markdown-studio="true"
+            style={{
+              gridColumn: "1 / -1",
+              borderRadius: "8px",
+              borderWidth: "1px",
+              borderStyle: "solid",
+              borderColor: "var(--border-default, #1e293b)",
+              backgroundColor: "var(--surface-panel, #0f172a)",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {/* Studio Header */}
+            <div
+              style={{
+                padding: "10px 14px",
+                borderBottomWidth: "1px",
+                borderBottomStyle: "solid",
+                borderBottomColor: "var(--border-default, #1e293b)",
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "10px",
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "7px",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    color: "var(--text-primary, #f8fafc)",
+                  }}
+                >
+                  <FileText size={14} aria-hidden="true" />
+                  <span>Bun.markdown.render() &amp; AnsiTheme Terminal Studio</span>
+                </div>
+                <div
+                  style={{
+                    marginTop: "2px",
+                    fontFamily: MONO_FONT,
+                    fontSize: "10.5px",
+                    color: "#94a3b8",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  engine {mdStudioResult.engine} · mode {mdStudioResult.mode} ·{" "}
+                  {mdStudioResult.lineCount} lines · max {mdStudioResult.maxColumns} cols ·{" "}
+                  {mdStudioResult.ansiByteLength} B
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                <CopyBunTerminalAnsiButton
+                  text={mdStudioResult.ansi}
+                  format="markdown"
+                  compact
+                />
+                <button
+                  type="button"
+                  onClick={() => setMdSource(DEFAULT_BUN_MARKDOWN_STUDIO_SAMPLE)}
+                  style={{
+                    padding: "5px 9px",
+                    borderRadius: "5px",
+                    borderWidth: "1px",
+                    borderStyle: "solid",
+                    borderColor: "var(--border-strong, #334155)",
+                    backgroundColor: "transparent",
+                    color: "#94a3b8",
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Reset Sample
+                </button>
+              </div>
+            </div>
+
+            {/* Studio Controls Toolbar */}
+            <div
+              style={{
+                padding: "9px 14px",
+                borderBottomWidth: "1px",
+                borderBottomStyle: "solid",
+                borderBottomColor: "var(--border-default, #1e293b)",
+                backgroundColor: "var(--surface-overlay, #0a101d)",
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "10px",
+              }}
+            >
+              {/* Mode selector */}
+              <div
+                role="group"
+                aria-label="Bun.markdown render mode"
+                style={{
+                  display: "inline-flex",
+                  flexWrap: "wrap",
+                  gap: "2px",
+                  padding: "2px",
+                  borderRadius: "6px",
+                  borderWidth: "1px",
+                  borderStyle: "solid",
+                  borderColor: "var(--border-default, #1e293b)",
+                  backgroundColor: "var(--surface-panel, #0f172a)",
+                }}
+              >
+                {(
+                  [
+                    { id: "render-callbacks", label: "Bun.markdown.render(callbacks)" },
+                    { id: "ansi-theme", label: "Bun.markdown.ansi(AnsiTheme)" },
+                    { id: "html", label: "Bun.markdown.html()" },
+                  ] as const
+                ).map((m) => {
+                  const active = mdMode === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      data-md-mode={m.id}
+                      onClick={() => {
+                        setMdMode(m.id);
+                        if (m.id === "html") setMdOutputView("html");
+                        else if (mdOutputView === "html") setMdOutputView("terminal");
+                      }}
+                      style={{
+                        padding: "4px 9px",
+                        borderRadius: "4px",
+                        border: "none",
+                        backgroundColor: active ? "rgba(56, 189, 248, 0.14)" : "transparent",
+                        color: active ? "#38bdf8" : "#94a3b8",
+                        fontFamily: MONO_FONT,
+                        fontSize: "11px",
+                        fontWeight: active ? 600 : 500,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {m.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Preset & AnsiTheme controls */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                <div
+                  role="group"
+                  aria-label="AnsiTheme presets"
+                  style={{ display: "inline-flex", gap: "4px", flexWrap: "wrap" }}
+                >
+                  {BUN_ANSI_THEME_PRESETS.map((preset) => {
+                    const active = mdPresetId === preset.id;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        data-md-preset={preset.id}
+                        onClick={() => handleSelectMdPreset(preset.id)}
+                        style={{
+                          padding: "3px 8px",
+                          borderRadius: "4px",
+                          borderWidth: "1px",
+                          borderStyle: "solid",
+                          borderColor: active
+                            ? preset.paletteHex.heading
+                            : "var(--border-strong, #334155)",
+                          backgroundColor: active ? "rgba(56, 189, 248, 0.08)" : "transparent",
+                          color: active ? preset.paletteHex.heading : "#94a3b8",
+                          fontSize: "11px",
+                          fontWeight: active ? 600 : 500,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <label
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    fontSize: "11px",
+                    fontFamily: MONO_FONT,
+                    color: "#cbd5e1",
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={mdColors}
+                    onChange={(e) => setMdColors(e.target.checked)}
+                  />
+                  colors
+                </label>
+
+                <label
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    fontSize: "11px",
+                    fontFamily: MONO_FONT,
+                    color: "#cbd5e1",
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={mdLight}
+                    onChange={(e) => setMdLight(e.target.checked)}
+                  />
+                  light
+                </label>
+
+                <label
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    fontSize: "11px",
+                    fontFamily: MONO_FONT,
+                    color: "#cbd5e1",
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={mdHyperlinks}
+                    onChange={(e) => setMdHyperlinks(e.target.checked)}
+                  />
+                  OSC-8
+                </label>
+
+                <label
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    fontSize: "11px",
+                    fontFamily: MONO_FONT,
+                    color: "#94a3b8",
+                  }}
+                >
+                  <span>cols</span>
+                  <select
+                    aria-label="AnsiTheme columns width"
+                    value={mdColumns}
+                    onChange={(e) => setMdColumns(Number(e.target.value))}
+                    style={{
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                      borderWidth: "1px",
+                      borderStyle: "solid",
+                      borderColor: "var(--border-strong, #334155)",
+                      backgroundColor: "var(--surface-panel, #0f172a)",
+                      color: "var(--text-primary, #f1f5f9)",
+                      fontFamily: MONO_FONT,
+                      fontSize: "11px",
+                    }}
+                  >
+                    {[56, 72, 76, 80, 100].map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            {/* Semantic TrueColor Palette Strip */}
+            <div
+              style={{
+                padding: "7px 14px",
+                borderBottomWidth: "1px",
+                borderBottomStyle: "solid",
+                borderBottomColor: "var(--border-default, #1e293b)",
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                gap: "12px",
+                fontFamily: MONO_FONT,
+                fontSize: "10.5px",
+                color: "#94a3b8",
+              }}
+            >
+              <span style={{ color: "#64748b", fontWeight: 600 }}>AnsiTheme TrueColor tokens:</span>
+              {(
+                Object.entries(mdStudioResult.paletteHex) as [
+                  keyof typeof mdStudioResult.paletteHex,
+                  string,
+                ][]
+              ).map(([token, hex]) => (
+                <span
+                  key={token}
+                  style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: "9px",
+                      height: "9px",
+                      borderRadius: "2px",
+                      backgroundColor: hex,
+                      display: "inline-block",
+                    }}
+                  />
+                  <span style={{ color: "#cbd5e1" }}>{token}</span>
+                  <span style={{ color: "#64748b" }}>{hex}</span>
+                </span>
+              ))}
+            </div>
+
+            {/* Split Editor + Live Rendered ANSI Terminal Preview */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+                gap: "1px",
+                backgroundColor: "var(--border-default, #1e293b)",
+              }}
+            >
+              {/* Left: Markdown Source */}
+              <div
+                style={{
+                  backgroundColor: "var(--surface-panel, #0f172a)",
+                  padding: "12px 14px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "6px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontFamily: MONO_FONT,
+                    fontSize: "11px",
+                    color: "#94a3b8",
+                  }}
+                >
+                  <span>Markdown Source Input</span>
+                  <span>{mdSource.length} chars</span>
+                </div>
+                <textarea
+                  aria-label="Bun.markdown studio markdown input"
+                  value={mdSource}
+                  onChange={(e) => setMdSource(e.target.value)}
+                  rows={11}
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    padding: "10px",
+                    borderRadius: "6px",
+                    borderWidth: "1px",
+                    borderStyle: "solid",
+                    borderColor: "var(--border-strong, #334155)",
+                    backgroundColor: "var(--surface-overlay, #0a101d)",
+                    color: "var(--text-primary, #f1f5f9)",
+                    fontFamily: MONO_FONT,
+                    fontSize: "11.5px",
+                    lineHeight: 1.5,
+                    resize: "vertical",
+                  }}
+                />
+              </div>
+
+              {/* Right: Live ANSI / Escapes / HTML Output */}
+              <div
+                style={{
+                  backgroundColor: "var(--surface-panel, #0f172a)",
+                  padding: "12px 14px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "6px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      fontFamily: MONO_FONT,
+                      fontSize: "11px",
+                      color: "#94a3b8",
+                    }}
+                  >
+                    <Terminal size={12} aria-hidden="true" />
+                    <span>Rendered Output</span>
+                  </div>
+                  <div
+                    role="group"
+                    aria-label="Markdown output preview format"
+                    style={{
+                      display: "inline-flex",
+                      gap: "2px",
+                      padding: "2px",
+                      borderRadius: "5px",
+                      borderWidth: "1px",
+                      borderStyle: "solid",
+                      borderColor: "var(--border-default, #1e293b)",
+                      backgroundColor: "var(--surface-overlay, #0a101d)",
+                    }}
+                  >
+                    {(
+                      [
+                        { id: "terminal", label: "ANSI Terminal" },
+                        { id: "raw-ansi", label: "Raw SGR / OSC-8" },
+                        { id: "html", label: "HTML Output" },
+                      ] as const
+                    ).map((view) => {
+                      const active = mdOutputView === view.id;
+                      return (
+                        <button
+                          key={view.id}
+                          type="button"
+                          onClick={() => setMdOutputView(view.id)}
+                          style={{
+                            padding: "2px 8px",
+                            borderRadius: "3px",
+                            border: "none",
+                            backgroundColor: active ? "rgba(56, 189, 248, 0.14)" : "transparent",
+                            color: active ? "#38bdf8" : "#94a3b8",
+                            fontSize: "10.5px",
+                            fontWeight: active ? 600 : 500,
+                            cursor: "pointer",
+                          }}
+                        >
+                          {view.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {mdOutputView === "terminal" ? (
+                  <pre
+                    data-markdown-ansi-preview="true"
+                    style={{
+                      margin: 0,
+                      padding: "11px 12px",
+                      minHeight: "208px",
+                      maxHeight: "290px",
+                      overflow: "auto",
+                      borderRadius: "6px",
+                      borderWidth: "1px",
+                      borderStyle: "solid",
+                      borderColor: mdLight ? "#cbd5e1" : "var(--border-strong, #334155)",
+                      backgroundColor: mdLight ? "#f8fafc" : "#070c17",
+                      color: mdLight ? "#0f172a" : "#e2e8f0",
+                      fontFamily: MONO_FONT,
+                      fontSize: "11.5px",
+                      lineHeight: 1.5,
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {renderAnsiReact(mdStudioResult.ansi)}
+                  </pre>
+                ) : mdOutputView === "raw-ansi" ? (
+                  <pre
+                    data-markdown-raw-ansi="true"
+                    style={{
+                      margin: 0,
+                      padding: "11px 12px",
+                      minHeight: "208px",
+                      maxHeight: "290px",
+                      overflow: "auto",
+                      borderRadius: "6px",
+                      borderWidth: "1px",
+                      borderStyle: "solid",
+                      borderColor: "var(--border-strong, #334155)",
+                      backgroundColor: "var(--surface-overlay, #0a101d)",
+                      color: "#cbd5e1",
+                      fontFamily: MONO_FONT,
+                      fontSize: "11px",
+                      lineHeight: 1.5,
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-all",
+                    }}
+                  >
+                    {escapeAnsiForDisplay(mdStudioResult.ansi)}
+                  </pre>
+                ) : (
+                  <pre
+                    data-markdown-html-output="true"
+                    style={{
+                      margin: 0,
+                      padding: "11px 12px",
+                      minHeight: "208px",
+                      maxHeight: "290px",
+                      overflow: "auto",
+                      borderRadius: "6px",
+                      borderWidth: "1px",
+                      borderStyle: "solid",
+                      borderColor: "var(--border-strong, #334155)",
+                      backgroundColor: "var(--surface-overlay, #0a101d)",
+                      color: "#93c5fd",
+                      fontFamily: MONO_FONT,
+                      fontSize: "11px",
+                      lineHeight: 1.5,
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {mdStudioResult.html}
+                  </pre>
+                )}
+              </div>
+            </div>
+
+            {/* Active Callback Trace & Render Hook Contract Reference */}
+            <div
+              style={{
+                padding: "9px 14px",
+                borderTopWidth: "1px",
+                borderTopStyle: "solid",
+                borderTopColor: "var(--border-default, #1e293b)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: MONO_FONT,
+                  fontSize: "11px",
+                  color: "#94a3b8",
+                }}
+              >
+                <span style={{ color: "#cbd5e1", fontWeight: 600 }}>Callbacks invoked: </span>
+                {mdStudioResult.callbacksInvoked.length > 0
+                  ? mdStudioResult.callbacksInvoked.join(" · ")
+                  : "none"}
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
+                  gap: "6px 14px",
+                  paddingTop: "6px",
+                  borderTopWidth: "1px",
+                  borderTopStyle: "solid",
+                  borderTopColor: "rgba(30, 41, 59, 0.55)",
+                  fontSize: "10.5px",
+                }}
+              >
+                {BUN_MARKDOWN_CALLBACK_SPECS.map((spec) => {
+                  const hit = mdStudioResult.callbacksInvoked.includes(spec.hook);
+                  return (
+                    <div
+                      key={spec.hook}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "1px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontFamily: MONO_FONT,
+                          color: hit ? "#38bdf8" : "#cbd5e1",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {spec.hook}{" "}
+                        <span style={{ color: "#64748b", fontWeight: 400 }}>{spec.signature}</span>
+                      </div>
+                      <div style={{ color: "#64748b" }}>{spec.role}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
           {/* Card A: Strings & Terminal Utilities */}
           <div
             style={{
