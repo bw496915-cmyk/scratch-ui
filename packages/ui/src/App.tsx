@@ -98,6 +98,7 @@ import {
   readStoredDashboardTheme,
   readStoredR2AutoRefreshSeconds,
   readStoredRankingsHeatMap,
+  readStoredStaleKeysDangerThreshold,
   RiskOverviewPanel,
   ShiftDurationTimer,
   ShiftHandoffModal,
@@ -112,6 +113,7 @@ import {
   type WebLogSeverityFilter,
   writeStoredR2AutoRefreshSeconds,
   writeStoredRankingsHeatMap,
+  writeStoredStaleKeysDangerThreshold,
 } from "./panels/index.tsx"
 import { WsSyncStatusIndicator } from "./panels/WsSyncStatusIndicator.tsx"
 import {
@@ -453,6 +455,9 @@ export function App(): React.ReactElement {
   const [r2PipelineHistoryError, setR2PipelineHistoryError] = useState<string | null>(null)
   const [r2AutoRefreshSeconds, setR2AutoRefreshSeconds] = useState<R2AutoRefreshIntervalSec>(() =>
     readStoredR2AutoRefreshSeconds(),
+  )
+  const [r2StaleDangerThreshold, setR2StaleDangerThreshold] = useState<number>(() =>
+    readStoredStaleKeysDangerThreshold(),
   )
   const [r2NextRefreshAtMs, setR2NextRefreshAtMs] = useState<number | null>(null)
   const [r2RefreshCycleNonce, setR2RefreshCycleNonce] = useState<number>(0)
@@ -5333,6 +5338,11 @@ export function App(): React.ReactElement {
               onAutoRefreshChange={(seconds) => {
                 setR2AutoRefreshSeconds(seconds)
                 writeStoredR2AutoRefreshSeconds(seconds)
+              }}
+              staleKeysDangerThreshold={r2StaleDangerThreshold}
+              onStaleKeysDangerThresholdChange={(threshold) => {
+                setR2StaleDangerThreshold(threshold)
+                writeStoredStaleKeysDangerThreshold(threshold)
               }}
               onRefresh={(force) => {
                 void (async () => {

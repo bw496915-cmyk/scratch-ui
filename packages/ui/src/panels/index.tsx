@@ -133,15 +133,26 @@ export {
 } from "./PanelSkeleton.tsx"
 export {
   DEFAULT_R2_AUTO_REFRESH_SECONDS,
+  DEFAULT_STALE_KEYS_DANGER_THRESHOLD,
   R2_AUTO_REFRESH_OPTIONS,
   R2_AUTO_REFRESH_STORAGE_KEY,
   R2PipelineTabPanel,
+  STALE_KEYS_DANGER_THRESHOLD_STORAGE_KEY,
+  StaleKeysSparkline,
+  buildStaleKeysTrendSeries,
+  computeStaleKeysSparklineGeometry,
   formatAutoRefreshStatus,
   normalizeR2AutoRefreshSeconds,
+  normalizeStaleKeysDangerThreshold,
   readStoredR2AutoRefreshSeconds,
+  readStoredStaleKeysDangerThreshold,
   writeStoredR2AutoRefreshSeconds,
+  writeStoredStaleKeysDangerThreshold,
   type R2AutoRefreshIntervalSec,
   type R2PipelineTabPanelProps,
+  type StaleKeysSparklineGeometry,
+  type StaleKeysSparklineProps,
+  type StaleKeysTrendPoint,
 } from "./R2PipelineTabPanel.tsx"
 export {
   RankingsHeatMapLegend,

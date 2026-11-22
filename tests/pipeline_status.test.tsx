@@ -11,14 +11,20 @@ import {
 } from "../packages/backend/src/r2_pipeline.ts"
 import {
   buildStaleKeysTrendSeries,
+  computeStaleKeysSparklineGeometry,
   DEFAULT_R2_AUTO_REFRESH_SECONDS,
+  DEFAULT_STALE_KEYS_DANGER_THRESHOLD,
   formatAutoRefreshStatus,
   normalizeR2AutoRefreshSeconds,
+  normalizeStaleKeysDangerThreshold,
   R2_AUTO_REFRESH_OPTIONS,
   R2_AUTO_REFRESH_STORAGE_KEY,
   R2PipelineTabPanel,
   readStoredR2AutoRefreshSeconds,
+  readStoredStaleKeysDangerThreshold,
+  STALE_KEYS_DANGER_THRESHOLD_STORAGE_KEY,
   writeStoredR2AutoRefreshSeconds,
+  writeStoredStaleKeysDangerThreshold,
 } from "../packages/ui/src/panels/R2PipelineTabPanel.tsx"
 import {
   buildNodeAutomationsSnapshot,
@@ -324,6 +330,23 @@ describe("pipeline publication versus data freshness", () => {
     // t-10m: ticker(stale) + agent(fresh) + gslive(fresh) + weekly(fresh carried) = 1
     expect(series.map((p) => p.staleCount)).toEqual([3, 2, 1])
 
+    const geometry = computeStaleKeysSparklineGeometry({
+      points: series,
+      fallbackStaleCount: result.staleKeys.length,
+      totalSinks: 4,
+      dangerThreshold: 2,
+    })
+    expect(geometry.linePath).toMatch(/^M[\d.,CL-]+$/)
+    expect(geometry.areaPath).toMatch(/^M[\d.,CL-]+Z$/)
+    expect(geometry.coords).toHaveLength(3)
+    expect(geometry.coords[0]!.x).toBeLessThan(geometry.coords[1]!.x)
+    expect(geometry.coords[1]!.x).toBeLessThan(geometry.coords[2]!.x)
+    expect(geometry.coords[0]!.y).toBeLessThan(geometry.thresholdY)
+    expect(geometry.coords[1]!.y).toBeCloseTo(geometry.thresholdY, 4)
+    expect(geometry.coords[2]!.y).toBeGreaterThan(geometry.thresholdY)
+    expect(geometry.coords[0]!.exceeded).toBe(true)
+    expect(geometry.coords[2]!.exceeded).toBe(false)
+
     const html = renderToStaticMarkup(
       <R2PipelineTabPanel
         data={result}
@@ -334,12 +357,15 @@ describe("pipeline publication versus data freshness", () => {
       />,
     )
     expect(html).toContain('data-stale-keys-sparkline="true"')
+    expect(html).toContain('data-chart-engine="d3"')
     expect(html).toContain("staleKeys · 60m")
     expect(html).toContain("1/4")
     expect(html).toContain("peak 3 · 3 pts")
     expect(html).toContain("↓ -2")
-    expect(html).toContain("<polyline")
-    expect(html).toContain("<polygon")
+    expect(html).toContain('data-d3-sparkline-line="true"')
+    expect(html).toContain('data-d3-sparkline-area="true"')
+    expect(html).toContain("<linearGradient")
+    expect(html).toContain('data-stale-breach-point="true"')
     expect(html).toContain(
       "staleKeys trend over last 60 minutes: latest 1 of 4 stale across 3 samples (min 1, max 3)",
     )
@@ -404,15 +430,16 @@ describe("pipeline publication versus data freshness", () => {
       />,
     )
     expect(html30).toContain('data-r2-auto-refresh="30"')
-    expect(html30).toContain('role="radiogroup"')
+    expect(html30).toContain("<select")
+    expect(html30).toContain('data-r2-refresh-select="true"')
     expect(html30).toContain('aria-label="R2 pipeline auto-refresh interval"')
-    expect(html30).toContain('aria-checked="true" data-r2-refresh-option="30"')
+    expect(html30).toMatch(/<option[^>]*value="30"[^>]*selected=""/)
     expect(html30).toContain("Every 30s")
-    expect(html30).toContain(">Off<")
-    expect(html30).toContain(">15s<")
-    expect(html30).toContain(">30s<")
-    expect(html30).toContain(">60s<")
-    expect(html30).toContain(">5m<")
+    expect(html30).toContain(">Off (Manual)<")
+    expect(html30).toContain(">Every 15s<")
+    expect(html30).toContain(">Every 30s<")
+    expect(html30).toContain(">Every 60s<")
+    expect(html30).toContain(">Every 5m<")
 
     const htmlOff = renderToStaticMarkup(
       <R2PipelineTabPanel
@@ -425,7 +452,125 @@ describe("pipeline publication versus data freshness", () => {
       />,
     )
     expect(htmlOff).toContain('data-r2-auto-refresh="0"')
-    expect(htmlOff).toContain('aria-checked="true" data-r2-refresh-option="0"')
+    expect(htmlOff).toMatch(/<option[^>]*value="0"[^>]*selected=""/)
     expect(htmlOff).toContain('data-r2-auto-refresh-status="true"')
+  })
+
+  test("staleKeys sparkline renders configurable danger threshold line, breach markers, and danger alert state", async () => {
+    expect(DEFAULT_STALE_KEYS_DANGER_THRESHOLD).toBe(2)
+
+    expect(normalizeStaleKeysDangerThreshold(0, 4)).toBe(0)
+    expect(normalizeStaleKeysDangerThreshold("1", 4)).toBe(1)
+    expect(normalizeStaleKeysDangerThreshold(3, 4)).toBe(3)
+    expect(normalizeStaleKeysDangerThreshold(9, 4)).toBe(3)
+    expect(normalizeStaleKeysDangerThreshold(-1, 4)).toBe(2)
+    expect(normalizeStaleKeysDangerThreshold("abc", 4)).toBe(2)
+    expect(normalizeStaleKeysDangerThreshold("", 4)).toBe(2)
+    expect(normalizeStaleKeysDangerThreshold(2, 1)).toBe(0)
+
+    const backing = new Map<string, string>()
+    const fakeStorage = {
+      getItem: (key: string) => backing.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        backing.set(key, value)
+      },
+    }
+    expect(readStoredStaleKeysDangerThreshold(fakeStorage)).toBe(2)
+    writeStoredStaleKeysDangerThreshold(1, fakeStorage)
+    expect(backing.get(STALE_KEYS_DANGER_THRESHOLD_STORAGE_KEY)).toBe("1")
+    expect(readStoredStaleKeysDangerThreshold(fakeStorage)).toBe(1)
+
+    const result = await createPipeline({ capturedAt: now().toISOString() }).probeAll()
+    const baseMs = now().getTime()
+    const isoMinus = (mins: number) => new Date(baseMs - mins * 60_000).toISOString()
+
+    // Series yields stale counts [1, 3] across 4 sinks (latest = 3)
+    const history = {
+      schemaVersion: 1 as const,
+      observedAt: now().toISOString(),
+      source: "process-memory" as const,
+      sampledSince: isoMinus(40),
+      minSampleIntervalSeconds: 60,
+      sinks: [
+        {
+          id: "f402-bet-ticker",
+          label: "Bet Ticker",
+          slaSeconds: 900,
+          sampleCount: 2,
+          samples: [
+            { at: isoMinus(30), ageSeconds: 1200, state: "stale" as const, dataAgeSeconds: 1200 },
+            { at: isoMinus(5), ageSeconds: 1500, state: "stale" as const, dataAgeSeconds: 1500 },
+          ],
+        },
+        {
+          id: "f402-agent-tree",
+          label: "Agent Tree",
+          slaSeconds: 3600,
+          sampleCount: 2,
+          samples: [
+            { at: isoMinus(30), ageSeconds: 120, state: "fresh" as const, dataAgeSeconds: 120 },
+            { at: isoMinus(5), ageSeconds: 4000, state: "stale" as const, dataAgeSeconds: 4000 },
+          ],
+        },
+        {
+          id: "gslive-tally",
+          label: "GSLive Tally",
+          slaSeconds: 1800,
+          sampleCount: 2,
+          samples: [
+            { at: isoMinus(30), ageSeconds: 100, state: "fresh" as const, dataAgeSeconds: 100 },
+            { at: isoMinus(5), ageSeconds: null, state: "missing" as const, dataAgeSeconds: null },
+          ],
+        },
+        {
+          id: "f402-weekly-rollup",
+          label: "Weekly Rollup",
+          slaSeconds: 3600,
+          sampleCount: 2,
+          samples: [
+            { at: isoMinus(30), ageSeconds: 100, state: "fresh" as const, dataAgeSeconds: 100 },
+            { at: isoMinus(5), ageSeconds: 120, state: "fresh" as const, dataAgeSeconds: 120 },
+          ],
+        },
+      ],
+    }
+
+    // Threshold 2 with latest 3 -> DANGER exceeded
+    const htmlDanger = renderToStaticMarkup(
+      <R2PipelineTabPanel
+        data={result}
+        history={history}
+        loading={false}
+        error={null}
+        onRefresh={() => {}}
+        staleKeysDangerThreshold={2}
+      />,
+    )
+    expect(htmlDanger).toContain('data-stale-danger-threshold="2"')
+    expect(htmlDanger).toContain('data-stale-danger-exceeded="true"')
+    expect(htmlDanger).toContain('data-stale-threshold-line="true"')
+    expect(htmlDanger).toContain('data-threshold-value="2"')
+    expect(htmlDanger).toContain('data-stale-danger-zone="true"')
+    expect(htmlDanger).toContain('data-stale-danger-badge="true"')
+    expect(htmlDanger).toContain("DANGER")
+    expect(htmlDanger).toContain("danger &gt;2")
+    expect(htmlDanger).toContain("danger threshold &gt;2 (DANGER: threshold exceeded)")
+
+    // Raise threshold to 3 with latest 3 -> not exceeded (3 is not > 3)
+    const htmlSafe = renderToStaticMarkup(
+      <R2PipelineTabPanel
+        data={result}
+        history={history}
+        loading={false}
+        error={null}
+        onRefresh={() => {}}
+        staleKeysDangerThreshold={3}
+      />,
+    )
+    expect(htmlSafe).toContain('data-stale-danger-threshold="3"')
+    expect(htmlSafe).toContain('data-stale-danger-exceeded="false"')
+    expect(htmlSafe).toContain('data-threshold-value="3"')
+    expect(htmlSafe).not.toContain('data-stale-danger-badge="true"')
+    expect(htmlSafe).toContain("danger &gt;3")
   })
 })
