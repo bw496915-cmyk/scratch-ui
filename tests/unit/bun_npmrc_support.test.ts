@@ -1,20 +1,27 @@
 import { afterEach, describe, expect, test } from "bun:test"
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
+
+import { createConfigStatusStore } from "../../packages/api/src/config_status.ts"
+import {
+  loadBunNpmrcFromDisk,
+  loadRedactedNpmrcStatusSummary,
+} from "../../packages/api/src/npmrc_loader.ts"
 import {
   parseBunLockFile,
   resolveDefaultInstallLinkerStrategy,
   summarizeBunLockFile,
 } from "../../packages/contracts/src/bun_lockfile.ts"
 import {
-  ERR_NPMRC_INVALID_CREDENTIAL,
-  ERR_NPMRC_INVALID_SCHEME,
   auditRegistryCredentialMatch,
   buildRegistryCredentialLookupKeys,
   convertNpmrcToBunfigToml,
+  ERR_NPMRC_INVALID_CREDENTIAL,
+  ERR_NPMRC_INVALID_SCHEME,
   expandNpmrcEnvVars,
   matchRegistryCredentials,
   parseBunfigInstallToml,
@@ -22,11 +29,6 @@ import {
   parseNpmrcBoolean,
   resolveBunPackageConfig,
 } from "../../packages/contracts/src/npmrc.ts"
-import {
-  loadBunNpmrcFromDisk,
-  loadRedactedNpmrcStatusSummary,
-} from "../../packages/api/src/npmrc_loader.ts"
-import { createConfigStatusStore } from "../../packages/api/src/config_status.ts"
 import { NpmrcSupportSection } from "../../packages/ui/src/panels/NpmrcSupportSection.tsx"
 
 const tempDirs: string[] = []

@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test"
+
+import { createHttpAuthController } from "../../lib/http_auth.ts"
+import { createDashboardApi } from "../../packages/api/src/router.ts"
 import {
   resetApiUsage,
   setDevCsrfToken,
@@ -10,8 +13,6 @@ import {
   hydrateDashboardFeeds,
   normalizeRankingsResponse,
 } from "../../packages/ui/src/hydration.ts"
-import { createDashboardApi } from "../../packages/api/src/router.ts"
-import { createHttpAuthController } from "../../lib/http_auth.ts"
 
 describe("Post-Login Hydration & Rankings Normalization", () => {
   const originalFetch = globalThis.fetch

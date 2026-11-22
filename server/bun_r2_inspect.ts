@@ -7,11 +7,11 @@ import {
   isR2ObjectProbeKey,
   R2_CREDENTIALS,
   requireR2AdminScope,
-  sealGlobalBunS3,
-  SealedR2Handle,
   type S3ObjectProbe,
   type S3StorageClass,
   type S3WriteObjectResult,
+  SealedR2Handle,
+  sealGlobalBunS3,
 } from "../src/s3/sealed_r2_handle.ts"
 import { readBunDnsCacheStats } from "./bun_dns.ts"
 

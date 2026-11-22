@@ -1,5 +1,3 @@
-import type React from "react"
-import { useMemo, useState } from "react"
 import {
   Box,
   Check,
@@ -17,6 +15,9 @@ import {
   Terminal,
   Wrench,
 } from "lucide-react"
+import type React from "react"
+import { useMemo, useState } from "react"
+
 import {
   BUN_ANSI_THEME_PRESETS,
   BUN_CORE_API_DOMAINS,
@@ -24,26 +25,27 @@ import {
   BUN_MARKDOWN_CALLBACK_SPECS,
   BUN_UTILITIES_CATALOG,
   BUN_UTILITY_CATEGORIES,
-  DEEP_SURFACE_AUDIT_SNIPPET,
-  DEFAULT_BUN_MARKDOWN_STUDIO_SAMPLE,
-  LIVE_SURFACE_AUDIT_SNIPPET,
   bunDeepEquals,
-  decodeUuidV7TimestampIso,
-  evaluateBunColorConversions,
-  evaluateBunStringUtilities,
-  generateBunUuidV7,
-  probeBunCapabilityMatrix,
-  renderBunMarkdownStudio,
-  runBunSurfaceAudit,
   type BunDeepInspectionCategory,
   type BunExportKind,
   type BunMarkdownRenderMode,
   type BunMarkdownRenderPresetId,
   type BunRuntimeSurfaceAuditSnapshot,
   type BunUtilityCategoryId,
+  decodeUuidV7TimestampIso,
+  DEEP_SURFACE_AUDIT_SNIPPET,
+  DEFAULT_BUN_MARKDOWN_STUDIO_SAMPLE,
+  evaluateBunColorConversions,
+  evaluateBunStringUtilities,
+  generateBunUuidV7,
   type GlobalTierId,
+  LIVE_SURFACE_AUDIT_SNIPPET,
   type LiveCapabilityItemProbe,
+  probeBunCapabilityMatrix,
+  renderBunMarkdownStudio,
+  runBunSurfaceAudit,
 } from "@sportsdesk-ops/contracts"
+
 import { renderAnsiReact } from "../ansi.tsx"
 import { CopyBunTerminalAnsiButton } from "./SyntaxHighlightedPre.tsx"
 

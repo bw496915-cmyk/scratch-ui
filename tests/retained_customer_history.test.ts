@@ -2,11 +2,12 @@ import { afterEach, expect, test } from "bun:test"
 import { mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { projectRetainedCustomerHistory } from "../packages/backend/src/retained_customer_history.ts"
+
 import { createLiveCustomerBook } from "../packages/backend/src/live_customer_book.ts"
+import { projectRetainedCustomerHistory } from "../packages/backend/src/retained_customer_history.ts"
+import { parseCustomerRetainedHistory } from "../packages/contracts/src/customer_history.ts"
 import { bookRowsToProfiles } from "../packages/ui/src/profile_rows.ts"
 import { buildCustomerProfileFromRow, buildCustomerRatingFromRow } from "../server/adapters.ts"
-import { parseCustomerRetainedHistory } from "../packages/contracts/src/customer_history.ts"
 const row = (patch: Record<string, unknown> = {}) => ({
   CustomerID: "ACCOUNT1 ",
   TicketNumber: "T1",

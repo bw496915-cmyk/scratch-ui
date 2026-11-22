@@ -7,6 +7,7 @@ import { spawn } from "node:child_process"
 import { realpathSync, statSync } from "node:fs"
 import { readFile } from "node:fs/promises"
 import { extname, isAbsolute, relative, resolve } from "node:path"
+
 import { getImageAssetsDiagnostics } from "./adapters.ts"
 
 export const ALLOWED_ASSET_ROOTS = [

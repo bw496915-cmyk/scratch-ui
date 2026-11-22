@@ -19,6 +19,7 @@
  */
 
 import type { WagerChannel } from "@sportsdesk-ops/contracts"
+
 import { SPORT_CATEGORIES } from "./sport_taxonomy.ts"
 
 export interface LiveWagerLeg {

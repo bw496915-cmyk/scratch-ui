@@ -1,18 +1,20 @@
 import { describe, expect, test } from "bun:test"
+
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
+
 import {
   buildConfigStatusUrl,
+  type ConfigStatusSnapshot,
   createConfigStatusStore,
   createDashboardApi,
   parseEnvExample,
-  type ConfigStatusSnapshot,
 } from "../../packages/api/src/index.ts"
-import { StatusDashboardPanel } from "../../packages/ui/src/panels/StatusDashboardPanel.tsx"
 import {
   GLOBAL_KEYBOARD_SHORTCUTS,
   KeyboardShortcutsPanel,
 } from "../../packages/ui/src/panels/KeyboardShortcutsPanel.tsx"
+import { StatusDashboardPanel } from "../../packages/ui/src/panels/StatusDashboardPanel.tsx"
 
 function buildTestApi(
   options: {

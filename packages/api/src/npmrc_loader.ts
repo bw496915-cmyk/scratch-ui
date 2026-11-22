@@ -22,19 +22,20 @@
 import { existsSync, readFileSync } from "node:fs"
 import { homedir } from "node:os"
 import { dirname, resolve } from "node:path"
-import { parseBunLockFile, type BunLockFile } from "../../contracts/src/bun_lockfile.ts"
+
+import { type BunLockFile, parseBunLockFile } from "../../contracts/src/bun_lockfile.ts"
 import {
-  parseBunfigInstallToml,
-  parseNpmrc,
-  redactResolvedBunPackageConfig,
-  resolveBunPackageConfig,
-  resolveNpmrcPath,
   type BunCliInstallFlags,
   type NpmrcLayerStatus,
+  parseBunfigInstallToml,
   type ParsedBunfigInstallConfig,
   type ParsedNpmrcFile,
+  parseNpmrc,
   type RedactedNpmrcStatusSummary,
+  redactResolvedBunPackageConfig,
+  resolveBunPackageConfig,
   type ResolvedBunPackageConfig,
+  resolveNpmrcPath,
 } from "../../contracts/src/npmrc.ts"
 
 export interface LoadBunNpmrcFromDiskOptions {

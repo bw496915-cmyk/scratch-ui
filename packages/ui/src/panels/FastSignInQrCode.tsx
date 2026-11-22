@@ -1,6 +1,7 @@
+import { Check, ChevronDown, Copy, Download, LogIn, QrCode, RefreshCw } from "lucide-react"
 import type React from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Check, ChevronDown, Copy, Download, LogIn, QrCode, RefreshCw } from "lucide-react"
+
 import { copyText } from "../clipboard.ts"
 import {
   buildFastSignInBookmarkUrl,

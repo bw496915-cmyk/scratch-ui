@@ -9,6 +9,7 @@
  */
 
 import { FEATURES } from "@sportsdesk-ops/contracts"
+
 import type { BuildMatrixRow } from "./types.ts"
 
 /** Retained-branch probes carried by every matrix row. */

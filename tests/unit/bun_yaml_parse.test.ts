@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test"
+
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
+
+import { createConfigStatusStore } from "../../packages/api/src/config_status.ts"
+import { loadWorkspaceYamlConfigSummary } from "../../packages/api/src/yaml_loader.ts"
 import {
   ERR_YAML_TOO_LARGE,
   isNativeBunYamlAvailable,
@@ -10,10 +14,8 @@ import {
   safeJsonPreview,
   stringifyBunYaml,
 } from "../../packages/contracts/src/bun_yaml.ts"
-import { loadWorkspaceYamlConfigSummary } from "../../packages/api/src/yaml_loader.ts"
-import { createConfigStatusStore } from "../../packages/api/src/config_status.ts"
-import { YamlRuntimeSection } from "../../packages/ui/src/panels/YamlRuntimeSection.tsx"
 import { StatusDashboardPanel } from "../../packages/ui/src/panels/StatusDashboardPanel.tsx"
+import { YamlRuntimeSection } from "../../packages/ui/src/panels/YamlRuntimeSection.tsx"
 
 describe("Bun.YAML.parse & YAML 1.2 cross-runtime engine", () => {
   test("parses YAML 1.2 scalars, nested objects, and arrays identically on native Bun.YAML.parse and TS fallback", () => {

@@ -17,6 +17,7 @@
 
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
+
 import type { BunRuntimeSurfaceAuditSnapshot } from "../../contracts/src/bun_runtime_surface.ts"
 import type { WorkspaceYamlConfigSummary } from "../../contracts/src/bun_yaml.ts"
 import type { RedactedNpmrcStatusSummary } from "../../contracts/src/npmrc.ts"

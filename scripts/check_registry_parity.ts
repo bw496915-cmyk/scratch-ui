@@ -7,15 +7,16 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { homedir } from "node:os"
 import { dirname, join, resolve } from "node:path"
+
 import { parseBunLockFile } from "../packages/contracts/src/bun_lockfile.ts"
 import { eq, isValidSemver, safeSatisfies } from "../packages/contracts/src/bun_semver.ts"
 import {
   DEFAULT_NPM_REGISTRY,
   parseBunfigInstallToml,
-  parseNpmrc,
-  resolveNpmrcPath,
   type ParsedBunfigInstallConfig,
   type ParsedNpmrcFile,
+  parseNpmrc,
+  resolveNpmrcPath,
 } from "../packages/contracts/src/npmrc.ts"
 
 export interface RegistryParityBunVersionReport {

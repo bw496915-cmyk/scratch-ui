@@ -1,6 +1,6 @@
+import { area, curveMonotoneX, line, max, min, scaleLinear, scaleTime } from "d3"
 import type React from "react"
 import { useId, useMemo } from "react"
-import { area, curveMonotoneX, line, max, min, scaleLinear, scaleTime } from "d3"
 
 export const CLOCK_DRIFT_WINDOW_MS = 15 * 60 * 1000
 

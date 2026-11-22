@@ -1,6 +1,7 @@
+import { AlertCircle, Check, Copy, Download, Search, ShieldCheck } from "lucide-react"
 import type React from "react"
 import { useMemo, useState } from "react"
-import { AlertCircle, Check, Copy, Download, Search, ShieldCheck } from "lucide-react"
+
 import {
   parseBunYamlWithMeta,
   redactYamlSensitiveValues,
@@ -8,6 +9,7 @@ import {
   stringifyBunYaml,
   type WorkspaceYamlConfigSummary,
 } from "@sportsdesk-ops/contracts"
+
 import {
   CopyBunTerminalAnsiButton,
   SyntaxHighlightedPre,

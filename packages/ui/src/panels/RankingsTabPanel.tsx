@@ -1,5 +1,3 @@
-import type React from "react"
-import { useEffect, useMemo, useState } from "react"
 import {
   ArrowDown,
   ArrowUp,
@@ -18,11 +16,14 @@ import {
   Users,
   X,
 } from "lucide-react"
+import type React from "react"
+import { useEffect, useMemo, useState } from "react"
+
 import { copyText } from "../clipboard.ts"
 import { styles } from "../dashboard_styles.ts"
-import { getFantasy402PortalLinkProps } from "../portal_link.ts"
 import { type NormalizedRankingsResult, RANKINGS_ENDPOINT } from "../hydration.ts"
 import { getLocalAgentHref, getLocalCustomerHref } from "../links.ts"
+import { getFantasy402PortalLinkProps } from "../portal_link.ts"
 import type {
   MasterAgentDownline30d,
   ProxyConduit30d,
@@ -39,14 +40,14 @@ import {
 import { SkeletonBlock, SkeletonTableRows } from "./PanelSkeleton.tsx"
 import { PopulationStrip } from "./PopulationStrip.tsx"
 import {
-  HEAT_BUCKETS,
-  RANKINGS_HEATMAP_STORAGE_KEY,
-  type HandleHeatCellMetrics,
-  type HandleHeatScale,
   buildHandleHeatLookup,
   evaluateHandleHeatCell,
   formatHeatCurrencyCompact,
+  type HandleHeatCellMetrics,
+  type HandleHeatScale,
+  HEAT_BUCKETS,
   parseStoredRankingsHeatMapValue,
+  RANKINGS_HEATMAP_STORAGE_KEY,
   readStoredRankingsHeatMap,
   writeStoredRankingsHeatMap,
 } from "./rankings_heatmap.ts"

@@ -3,6 +3,11 @@
  * @description Injectable dashboard HTTP API router + in-memory `fetch()` dispatcher for zero-port testing & `Bun.serve({ routes })`.
  */
 
+import { DnsBoundaryError } from "../../../src/lib/dns_boundary.ts"
+import {
+  resolveProfileTerminalOptions,
+  validateTerminalCommand as defaultValidateTerminalCommand,
+} from "../../../src/lib/shell_boundary.ts"
 import {
   parseFiniteNumber,
   parseRepriceMode,
@@ -18,12 +23,6 @@ import {
   type SportFilter,
   type SubSportFilter,
 } from "../../contracts/src/index.ts"
-import { DnsBoundaryError } from "../../../src/lib/dns_boundary.ts"
-import {
-  resolveProfileTerminalOptions,
-  validateTerminalCommand as defaultValidateTerminalCommand,
-} from "../../../src/lib/shell_boundary.ts"
-import type { DashboardApiDeps, EncodedResponseSpec, RouteRequestWithParams } from "./types.ts"
 import {
   DASHBOARD_ROUTES,
   extractRawRouteParam,
@@ -37,6 +36,7 @@ import {
   parseShiftSinceMs,
   sanitizeShiftLogText,
 } from "./shift_logs.ts"
+import type { DashboardApiDeps, EncodedResponseSpec, RouteRequestWithParams } from "./types.ts"
 import { createDashboardWebSocketHandler, publishDashboardTopicEvent, type WsLike } from "./ws.ts"
 
 export const AGENT_DETAIL_ROUTE = DASHBOARD_ROUTES.agentById

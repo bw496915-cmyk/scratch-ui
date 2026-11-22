@@ -1,4 +1,3 @@
-import React from "react"
 import {
   AlertTriangle,
   Check,
@@ -9,6 +8,8 @@ import {
   RefreshCw,
   RotateCcw,
 } from "lucide-react"
+import React from "react"
+
 import { copyText } from "../clipboard.ts"
 
 const MONO_FONT =

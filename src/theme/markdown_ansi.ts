@@ -1,4 +1,5 @@
 import { stripVTControlCharacters } from "node:util"
+
 import {
   ANSI_SGR,
   hasControlChars,
@@ -6,8 +7,8 @@ import {
   normalizeTerminalColumns,
   resolveAnsiPalette,
   resolveAnsiTheme,
-  stripControls,
   type SemanticAnsiPalette,
+  stripControls,
 } from "./ansi_tokens.ts"
 
 declare const Bun: Pick<typeof import("bun"), "markdown" | "stringWidth" | "wrapAnsi">

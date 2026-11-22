@@ -1,4 +1,5 @@
 import { open } from "node:fs/promises"
+
 import type {
   ParlayAccountComposition,
   ParlayComparisonResponse,
@@ -6,6 +7,7 @@ import type {
   ParlayComposition,
   ParsedParlayLeg,
 } from "@sportsdesk-ops/contracts"
+
 import {
   isPartialParlayPeriod,
   parseParlayLegs,

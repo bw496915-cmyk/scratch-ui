@@ -1,6 +1,9 @@
-import { extractMarkdownTelemetry } from "@sportsdesk-ops/contracts"
 import type React from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
+
+import { extractMarkdownTelemetry } from "@sportsdesk-ops/contracts"
+
+import type { ReverseDnsForensicsView } from "../../../../lib/reverse_dns_forensics.ts"
 import { DASHBOARD_PANELS } from "../config/dashboard.ts"
 import { styles } from "../dashboard_styles.ts"
 import {
@@ -13,17 +16,16 @@ import {
   type SurveillanceHeaderSyncRecord,
 } from "../surveillance_api.ts"
 import type { DashboardData, DnsData } from "../types.ts"
-import type { ReverseDnsForensicsView } from "../../../../lib/reverse_dns_forensics.ts"
+import { VIZ_COLORS } from "../viz/perceptual.ts"
 import { ApiUsageCard } from "./ApiUsageCard.tsx"
-import { ReverseDnsForensicsCard } from "./ReverseDnsForensicsCard.tsx"
-import { ThresholdsPanel } from "./ThresholdsPanel.tsx"
 import { SkeletonBlock, SkeletonSurveillanceBrief } from "./PanelSkeleton.tsx"
+import { ReverseDnsForensicsCard } from "./ReverseDnsForensicsCard.tsx"
 import {
   CopyBunTerminalAnsiButton,
   SyntaxHighlightedPre,
   SyntaxTokenLegend,
 } from "./SyntaxHighlightedPre.tsx"
-import { VIZ_COLORS } from "../viz/perceptual.ts"
+import { ThresholdsPanel } from "./ThresholdsPanel.tsx"
 
 const DNS_CACHE_CAPACITY = DASHBOARD_PANELS.dns_cache_capacity
 

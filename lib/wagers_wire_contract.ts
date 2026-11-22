@@ -15,11 +15,13 @@
  * the same pattern as `policy_version`: a stable probe instead of a build hash.
  */
 
-import type { WagersWireContractSummary, WagersWireViolation } from "@sportsdesk-ops/contracts"
 import { existsSync } from "node:fs"
 import { readFile, stat } from "node:fs/promises"
 import { basename, dirname, resolve, sep } from "node:path"
 import { fileURLToPath } from "node:url"
+
+import type { WagersWireContractSummary, WagersWireViolation } from "@sportsdesk-ops/contracts"
+
 import { assertRelativePath, SLAB_SERVER } from "./slab_config.ts"
 
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url))

@@ -1,5 +1,3 @@
-import type React from "react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Activity,
   AlertTriangle,
@@ -21,23 +19,31 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react"
+import type React from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+
 import { styles } from "../dashboard_styles.ts"
-import type {
-  DashboardAlertRecord,
-  DashboardSourceProvenance,
-  HealthData,
-  LiveWager,
-  R2PipelineApiResponse,
-  ShowcaseCustomer,
-  TerminalHistoryEntry,
-} from "../types.ts"
 import {
-  WebLogsInspectorSection,
-  type WebLogSeverityCounts,
-  type WebLogSeverityFilter,
-  type WebLogSnapshot,
-} from "./WebLogsInspectorSection.tsx"
-import { SystemLogSeverityBarChart } from "./SystemLogSeverityBarChart.tsx"
+  playRiskBreachTone,
+  readStoredRiskBreachSoundPrefs,
+  type RiskBreachSoundPrefs,
+  shouldTriggerRiskBreachSound,
+  writeStoredRiskBreachSoundPrefs,
+} from "../risk_breach_audio.ts"
+import {
+  buildRiskOverviewAccountsCsv,
+  buildRiskOverviewCsvFilename,
+  downloadRiskCsvBlob,
+} from "../risk_csv_export.ts"
+import { buildRolling60MinRiskSeries, formatRiskCompactUsd } from "../risk_exposure_series.ts"
+import {
+  DEFAULT_RISK_EXPOSURE_LIMIT_USD,
+  DEFAULT_RISK_EXPOSURE_WARNING_LIMIT_USD,
+  evaluateRiskExposureThreshold,
+  RISK_EXPOSURE_WARN_RATIO,
+  type RiskExposureThresholds,
+  type RiskThresholdEvaluation,
+} from "../risk_threshold_alert.ts"
 import {
   BitwiseLogFilterStore,
   buildBitwiseLogIndex,
@@ -51,34 +57,29 @@ import {
   selectBitwiseFilteredRows,
   type UnifiedSystemLogRow,
 } from "../system_logs_json_export.ts"
+import type {
+  DashboardAlertRecord,
+  DashboardSourceProvenance,
+  HealthData,
+  LiveWager,
+  R2PipelineApiResponse,
+  ShowcaseCustomer,
+  TerminalHistoryEntry,
+} from "../types.ts"
+import { RiskExposureChart } from "./RiskExposureChart.tsx"
+import { RiskRecentAlertsSidebar } from "./RiskRecentAlertsSidebar.tsx"
+import { RiskThresholdModal } from "./RiskThresholdModal.tsx"
 import {
   SystemLogBitwiseSearchBar,
   useBitwiseTableDomFilter,
 } from "./SystemLogBitwiseSearchBar.tsx"
-import { RiskExposureChart } from "./RiskExposureChart.tsx"
-import { RiskRecentAlertsSidebar } from "./RiskRecentAlertsSidebar.tsx"
-import { RiskThresholdModal } from "./RiskThresholdModal.tsx"
-import { buildRolling60MinRiskSeries, formatRiskCompactUsd } from "../risk_exposure_series.ts"
+import { SystemLogSeverityBarChart } from "./SystemLogSeverityBarChart.tsx"
 import {
-  DEFAULT_RISK_EXPOSURE_LIMIT_USD,
-  DEFAULT_RISK_EXPOSURE_WARNING_LIMIT_USD,
-  evaluateRiskExposureThreshold,
-  RISK_EXPOSURE_WARN_RATIO,
-  type RiskExposureThresholds,
-  type RiskThresholdEvaluation,
-} from "../risk_threshold_alert.ts"
-import {
-  buildRiskOverviewAccountsCsv,
-  buildRiskOverviewCsvFilename,
-  downloadRiskCsvBlob,
-} from "../risk_csv_export.ts"
-import {
-  playRiskBreachTone,
-  readStoredRiskBreachSoundPrefs,
-  shouldTriggerRiskBreachSound,
-  writeStoredRiskBreachSoundPrefs,
-  type RiskBreachSoundPrefs,
-} from "../risk_breach_audio.ts"
+  type WebLogSeverityCounts,
+  type WebLogSeverityFilter,
+  WebLogsInspectorSection,
+  type WebLogSnapshot,
+} from "./WebLogsInspectorSection.tsx"
 
 function formatUsd(amount: number): string {
   return amount.toLocaleString("en-US", {

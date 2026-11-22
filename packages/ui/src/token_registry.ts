@@ -10,12 +10,12 @@
 
 import {
   CANONICAL_TOKENS,
-  ROOT_OPTION_DECLARATIONS,
-  TOKEN_ALIASES,
-  TOKENS_TOML_VERSION,
   type GeneratedAlias,
   type GeneratedToken,
   type GeneratedTokenGroup,
+  ROOT_OPTION_DECLARATIONS,
+  TOKEN_ALIASES,
+  TOKENS_TOML_VERSION,
 } from "./tokens.registry.generated.ts"
 
 export { TOKENS_TOML_VERSION }

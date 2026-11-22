@@ -13,9 +13,7 @@ import { describe, expect, test } from "bun:test"
 import assert from "node:assert/strict"
 import { createHmac } from "node:crypto"
 import { inspect } from "node:util"
-import { adminGuard, createDashboardApi, requireSession } from "../packages/api/src/router.ts"
-import { DashboardHealthTracker } from "../packages/backend/src/health.ts"
-import { isDashboardAuthRequired } from "../packages/backend/src/parsers.ts"
+
 import {
   buildSecurityHeaders,
   createEnforceAuthMiddleware,
@@ -25,15 +23,18 @@ import {
   isPublicApiRoute,
   redactIpToSubnetHash,
   redactRawIpsInText,
-  validateTerminalCommand,
   type SessionRecord,
+  validateTerminalCommand,
 } from "../lib/http_auth.ts"
-import { createWebLogStore, parseFantasy402Action, WebLogView } from "../server/weblog_inspect.ts"
+import { adminGuard, createDashboardApi, requireSession } from "../packages/api/src/router.ts"
+import { DashboardHealthTracker } from "../packages/backend/src/health.ts"
+import { isDashboardAuthRequired } from "../packages/backend/src/parsers.ts"
 import { stripAnsi } from "../server/desk_inspect.ts"
 import {
   formatProfileInspectPayload,
   normalizeRawCustomerToProfileRecord,
 } from "../server/profile_inspect.ts"
+import { createWebLogStore, parseFantasy402Action, WebLogView } from "../server/weblog_inspect.ts"
 
 const RAW_IPV4_RE =
   /\b(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\b(?!\/24)/

@@ -5,14 +5,14 @@
  */
 
 import type { ReverseDnsForensicsView } from "../../../lib/reverse_dns_forensics.ts"
-import { extractResponseHeaderTelemetry, type ApiHeaderTelemetry } from "./api_usage.ts"
+import { type ApiHeaderTelemetry, extractResponseHeaderTelemetry } from "./api_usage.ts"
 import {
   buildDashboardApiUrlObject,
+  type BunGlobalSnapshot,
   DASHBOARD_API,
+  type DashboardWindowLocationLike,
   readBunGlobals,
   resolveDashboardBaseUrl,
-  type BunGlobalSnapshot,
-  type DashboardWindowLocationLike,
 } from "./config/dashboard.ts"
 import type { DashboardData, DnsData } from "./types.ts"
 import { SURVEILLANCE_URL_DEFAULTS, type SurveillanceViewMode } from "./url_state.ts"

@@ -1,6 +1,6 @@
+import { Check, ChevronDown, Filter, Search, X } from "lucide-react"
 import type React from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Check, ChevronDown, Filter, Search, X } from "lucide-react"
 
 export interface AgentFilterOption {
   readonly agentId: string

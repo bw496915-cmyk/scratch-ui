@@ -1,25 +1,26 @@
+import { isIP } from "node:net"
+
 import {
+  type ParsedParlayLeg,
   WEBLOG_OPERATIONS,
   WEBLOG_SEVERITY_RULES,
-  type ParsedParlayLeg,
   type WebLogClientSummary,
   type WebLogEvent,
   type WebLogEventKind,
   type WebLogSeverity,
 } from "@sportsdesk-ops/contracts"
-import { isIP } from "node:net"
-import type { RetainedWeblogRow } from "./profile_weblog_evidence.ts"
+
+import { redactIpToSubnetHash } from "../lib/http_auth.ts"
 /**
  * @file server/weblog_inspect.ts
  * @description Bun.inspect.custom Weblogs parser, IP forensics classifier,
  * multi-field detail sorter, and 6-axis behavioral vectoring & cosine
  * similarity clustering engine for Fantasy402 / SportsDesk surveillance logs.
  */
-
-import { redactIpToSubnetHash } from "../lib/http_auth.ts"
 import { parseShortDesc } from "../lib/live_wagers.ts"
 import { parseParlayLegs, readParlayOperation } from "../lib/parlay_description.ts"
 import {
+  type BunInspectOptions,
   DeskView,
   formatInspectCliFlags,
   formatInspectNumber,
@@ -27,11 +28,11 @@ import {
   inspectDeskValue,
   inspectTable,
   renderInspectOptionsBanner,
+  type ResolvedBunInspectOptions,
   resolveInspectOptions,
   truncateVisible,
-  type BunInspectOptions,
-  type ResolvedBunInspectOptions,
 } from "./desk_inspect.ts"
+import type { RetainedWeblogRow } from "./profile_weblog_evidence.ts"
 
 export type WebLogSortField =
   | "time"

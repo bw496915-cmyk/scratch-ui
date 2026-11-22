@@ -1,5 +1,3 @@
-import type React from "react"
-import { useMemo, useState } from "react"
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -10,6 +8,9 @@ import {
   Sliders,
   X,
 } from "lucide-react"
+import type React from "react"
+import { useMemo, useState } from "react"
+
 import {
   buildRecentAlertFrequencyBuckets,
   buildRecentRiskAlerts,
@@ -18,9 +19,9 @@ import {
   type RecentRiskAlertKind,
   type RecentRiskAlertStatusFilter,
 } from "../risk_recent_alerts.ts"
-import { RiskAlertWagerModal } from "./RiskAlertWagerModal.tsx"
-import { RiskRecentAlertsChart } from "../viz/RiskRecentAlertsChart.tsx"
 import type { DashboardAlertRecord, LiveWager, ShowcaseCustomer } from "../types.ts"
+import { RiskRecentAlertsChart } from "../viz/RiskRecentAlertsChart.tsx"
+import { RiskAlertWagerModal } from "./RiskAlertWagerModal.tsx"
 
 export interface RiskRecentAlertsSidebarProps {
   readonly wagers: readonly LiveWager[]

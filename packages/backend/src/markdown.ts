@@ -6,7 +6,9 @@
  */
 
 import { readFile } from "node:fs/promises"
+
 import { marked } from "marked"
+
 import { countNonAsciiChars } from "../../contracts/src/index.ts"
 import { statStamp } from "./cache.ts"
 

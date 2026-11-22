@@ -1,9 +1,10 @@
 /** Private projected manager roster; no fixture or model-derived fallback. */
 import { readFile, stat } from "node:fs/promises"
+
 import {
-  parseCustomerRetainedHistory,
   type CustomerRetainedHistory,
   type DashboardSourceProvenance,
+  parseCustomerRetainedHistory,
 } from "@sportsdesk-ops/contracts"
 
 function isRecord(value: unknown): value is Record<string, unknown> {

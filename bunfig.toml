@@ -20,3 +20,8 @@ preload = ["./tests/preload/snapshot_serializers.ts"]
 printWidth = 100
 semi = false
 ignorePatterns = ["bun.lock", "bun.lockb", "vendor/", "**/*.gen.ts", ".aistudio/"]
+
+[fmt.sortImports]
+internalPattern = ["@sportsdesk-ops/", "@/"]
+newlinesBetween = true
+sortSideEffects = false

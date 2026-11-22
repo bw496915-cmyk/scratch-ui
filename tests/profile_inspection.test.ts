@@ -1,10 +1,11 @@
 import { expect, test } from "bun:test"
+
+import { projectRetainedCustomerHistory } from "../packages/backend/src/retained_customer_history.ts"
 import { executeNodeTerminalQuery } from "../server/adapters.ts"
 import {
   formatProfileInspectPayload,
   normalizeRawCustomerToProfileRecord,
 } from "../server/profile_inspect.ts"
-import { projectRetainedCustomerHistory } from "../packages/backend/src/retained_customer_history.ts"
 
 const identity = { customer_id: "ACCOUNT1", provenance: "projected-manager-roster" }
 const history = projectRetainedCustomerHistory([

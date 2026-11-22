@@ -1,4 +1,3 @@
-import type { CustomerRetainedHistory } from "@sportsdesk-ops/contracts"
 import type {
   AgentDetailApiResponse,
   AutomationScheduleSummary,
@@ -10,6 +9,7 @@ import type {
   BetTickerTypeBucket,
   BridgeJobStatusSummary,
   BunRuntimeSurfaceAuditSnapshot,
+  CustomerRetainedHistory,
   CustomersApiResponse,
   CustomersCohortsSummary,
   Daemon4020State,
@@ -29,8 +29,8 @@ import type {
   TicketVerificationMode,
   TicketVerificationSummary,
   WagerChannel,
-  WagerTier,
   WagersWireContractSummary,
+  WagerTier,
   WorkspaceYamlConfigSummary,
 } from "@sportsdesk-ops/contracts"
 

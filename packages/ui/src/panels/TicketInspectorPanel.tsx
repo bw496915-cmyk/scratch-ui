@@ -4,11 +4,11 @@
  */
 
 import type React from "react"
-import { styles } from "../dashboard_styles.ts"
-import { clvEdgeTone } from "../config/wagers.ts"
-import { DASHBOARD_THRESHOLDS } from "../config/dashboard.ts"
+
 import { sanitizeCaptureText } from "../capture_text.ts"
-import { formatWagerSelection } from "../wager_display.ts"
+import { DASHBOARD_THRESHOLDS } from "../config/dashboard.ts"
+import { clvEdgeTone } from "../config/wagers.ts"
+import { styles } from "../dashboard_styles.ts"
 import {
   buildAlertsTabTicketHref,
   buildBookdeskopsWeblogTraceHref,
@@ -31,6 +31,7 @@ import {
   wagerChannelLabel,
 } from "../ticket_inspector.ts"
 import type { DashboardAlertRecord, LiveWager, TierStyleConfig } from "../types.ts"
+import { formatWagerSelection } from "../wager_display.ts"
 
 export interface TicketInspectorPanelProps {
   readonly wager: LiveWager

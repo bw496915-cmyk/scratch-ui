@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+
 import type { ProfileTheme } from "../../../../src/profile/types.ts"
 import { parseProfileTheme } from "../../../../src/profile/validate.ts"
 import { apiPostHeaders } from "../session_headers.ts"

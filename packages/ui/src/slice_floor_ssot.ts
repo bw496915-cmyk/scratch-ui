@@ -1,5 +1,8 @@
-import type { SliceFlag, SliceMetrics } from "@sportsdesk-ops/contracts/slice-metrics"
-import type { HoldFloorFallbackSloSummary } from "@sportsdesk-ops/contracts/slice-metrics"
+import type {
+  HoldFloorFallbackSloSummary,
+  SliceFlag,
+  SliceMetrics,
+} from "@sportsdesk-ops/contracts/slice-metrics"
 
 export const SLICE_FLAG_ORDER: readonly SliceFlag[] = [
   "HOLD_BELOW_FLOOR",

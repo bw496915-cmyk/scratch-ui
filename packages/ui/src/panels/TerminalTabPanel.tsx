@@ -1,6 +1,8 @@
-import { ALLOWED_TERMINAL_COMMAND_HEADS } from "@sportsdesk-ops/contracts"
 import type React from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
+
+import { ALLOWED_TERMINAL_COMMAND_HEADS } from "@sportsdesk-ops/contracts"
+
 import { renderAnsiReact } from "../ansi.tsx"
 import { styles } from "../dashboard_styles.ts"
 import { suggestTerminalCommands } from "../terminal_catalog.ts"

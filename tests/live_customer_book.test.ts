@@ -1,16 +1,17 @@
-import { buildCustomerProfileFromRow, buildCustomerRatingFromRow } from "../server/adapters.ts"
 import { afterEach, expect, test } from "bun:test"
 import { mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+
+import { computeCustomersCohortPayload } from "../packages/backend/src/customers.ts"
 import { createLiveCustomerBook } from "../packages/backend/src/live_customer_book.ts"
-import { bookRowsToProfiles } from "../packages/ui/src/profile_rows.ts"
-import { classifyCustomerProfileType } from "../packages/ui/src/profile_taxonomy.ts"
 import {
   deriveCustomerCohortKpiCards,
   normalizeCustomersCohortResponse,
 } from "../packages/ui/src/hydration.ts"
-import { computeCustomersCohortPayload } from "../packages/backend/src/customers.ts"
+import { bookRowsToProfiles } from "../packages/ui/src/profile_rows.ts"
+import { classifyCustomerProfileType } from "../packages/ui/src/profile_taxonomy.ts"
+import { buildCustomerProfileFromRow, buildCustomerRatingFromRow } from "../server/adapters.ts"
 const directories: string[] = []
 afterEach(async () => {
   await Promise.all(directories.splice(0).map((d) => rm(d, { recursive: true, force: true })))

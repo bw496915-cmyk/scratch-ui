@@ -1,7 +1,7 @@
+import { AlertTriangle, RotateCcw, ShieldCheck, Sliders, Volume2, VolumeX, X } from "lucide-react"
 import type React from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { AlertTriangle, RotateCcw, ShieldCheck, Sliders, Volume2, VolumeX, X } from "lucide-react"
-import { formatRiskCompactUsd } from "../risk_exposure_series.ts"
+
 import {
   DEFAULT_RISK_BREACH_SOUND_PREFS,
   playRiskBreachTone,
@@ -9,6 +9,7 @@ import {
   RISK_BREACH_SOUND_TONE_OPTIONS,
   type RiskBreachSoundPrefs,
 } from "../risk_breach_audio.ts"
+import { formatRiskCompactUsd } from "../risk_exposure_series.ts"
 import "../web_mcp.ts"
 import {
   DEFAULT_RISK_EXPOSURE_LIMIT_USD,

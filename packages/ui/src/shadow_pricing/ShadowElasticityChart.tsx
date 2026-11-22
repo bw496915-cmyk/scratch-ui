@@ -6,16 +6,18 @@
  */
 
 import React from "react"
+
 import type { ElasticityFrontierPoint } from "@sportsdesk-ops/contracts/shadow-pricing"
-import { formatSignedUsd } from "./shared.tsx"
+
 import {
+  linearScale,
+  spreadLabels,
   VIZ_COLORS,
   VIZ_LABEL_FONT_PX,
   VIZ_LABEL_MIN_GAP_PX,
-  linearScale,
-  spreadLabels,
   zeroAnchoredDomain,
 } from "../viz/perceptual.ts"
+import { formatSignedUsd } from "./shared.tsx"
 
 export interface ShadowElasticityChartProps {
   readonly points: readonly ElasticityFrontierPoint[]

@@ -1,4 +1,5 @@
 import type React from "react"
+
 import type { WagersWireContractSummary } from "../types.ts"
 
 export interface WireContractChipProps {

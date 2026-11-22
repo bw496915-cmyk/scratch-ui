@@ -7,13 +7,14 @@
 
 import { existsSync, readFileSync } from "node:fs"
 import { resolve } from "node:path"
+
 import {
-  FANTASY402_RATE_FIELDS,
   type AgentHierarchyCollisionGroup,
   type AgentHierarchyDirectoryResponse,
   type AgentHierarchyDirectorySummary,
   type AgentHierarchyIngestResponse,
   type AgentHierarchyNodeRecord,
+  FANTASY402_RATE_FIELDS,
   type Fantasy402RateCard,
   type SanitizedFantasy402Player,
 } from "@sportsdesk-ops/contracts"

@@ -1,6 +1,7 @@
+import { ArrowUpRight, ChevronDown, ChevronRight, Keyboard } from "lucide-react"
 import type React from "react"
 import { useMemo, useState } from "react"
-import { ArrowUpRight, ChevronDown, ChevronRight, Keyboard } from "lucide-react"
+
 import type { DashboardTabId } from "../types.ts"
 
 const MONO_FONT =

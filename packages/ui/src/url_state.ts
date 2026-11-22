@@ -13,9 +13,9 @@ import { DASHBOARD_DEFAULT_TAB } from "./config/dashboard.ts"
 import { WAGERS_DEFAULTS } from "./config/wagers.ts"
 import { resolveInitialTab } from "./tab_routes.ts"
 import {
+  type DashboardTabId,
   isWagerSortField,
   resolveDashboardTabId,
-  type DashboardTabId,
   type WagerSortField,
 } from "./types.ts"
 

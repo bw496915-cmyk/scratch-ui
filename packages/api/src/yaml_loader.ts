@@ -15,6 +15,7 @@
 
 import { readFileSync } from "node:fs"
 import { resolve, sep } from "node:path"
+
 import {
   isNativeBunYamlAvailable,
   parseBunYamlWithMeta,

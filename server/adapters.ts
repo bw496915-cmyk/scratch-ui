@@ -10,22 +10,28 @@ import { lookup, reverse } from "node:dns/promises"
 import { existsSync } from "node:fs"
 import { readdir, readFile, stat } from "node:fs/promises"
 import { extname, join, relative, resolve } from "node:path"
+
+import { SUBSPORT_TAXONOMY_CATALOG } from "../lib/market_taxonomy_catalog.ts"
 import type {
   BuildMatrixProbe,
   BuildMatrixStaticDirProbe,
   ShadowPricingQueryParams,
 } from "../packages/api/src/index.ts"
+import type {
+  AgentHierarchyNodeDetail,
+  AgentHierarchyQueryOptions,
+} from "../packages/backend/src/agent_hierarchy.ts"
 import {
+  type AgentHierarchyDirectoryResponse,
+  type AutomationsSnapshot,
   BUILD_FEATURES,
   computeBlendedHoldSlo,
   deriveSliceMetrics,
   diffSlicePolicyPairs,
   getActiveRateEntries,
-  parseCustomerRetainedHistory,
-  type AgentHierarchyDirectoryResponse,
-  type AutomationsSnapshot,
   type KeyNumberBucketRow,
   type LadderPresetSummary,
+  parseCustomerRetainedHistory,
   type PolicyRecommendation,
   type ShadowPricingDashboardPayload,
   type SliceMetrics,
@@ -33,17 +39,15 @@ import {
   type TicketVerificationSummary,
   type WagerTier,
 } from "../packages/contracts/src/index.ts"
-import type {
-  AgentHierarchyNodeDetail,
-  AgentHierarchyQueryOptions,
-} from "../packages/backend/src/agent_hierarchy.ts"
-import { SUBSPORT_TAXONOMY_CATALOG } from "../lib/market_taxonomy_catalog.ts"
 import { assertCleanHostname } from "../src/lib/dns_boundary.ts"
 import { resolveProfileTerminalOptions } from "../src/lib/shell_boundary.ts"
 import type { ProfileTheme } from "../src/profile/types.ts"
 import {
+  type BlockLogRow,
   BlockLogView,
+  type F402EventRow,
   F402EventView,
+  type F402OverviewSection,
   F402OverviewView,
   formatInspectOptionsObject,
   inspectDeskValue,
@@ -52,17 +56,14 @@ import {
   renderInspectOptionsBanner,
   resolveInspectOptions,
   tokenizeCliCommand,
-  type BlockLogRow,
-  type F402EventRow,
-  type F402OverviewSection,
 } from "./desk_inspect.ts"
 import {
   formatProfileInspectPayload,
   normalizeRawCustomerToProfileRecord,
-  ProfileRadarView,
-  ProfileView,
   type ProfileInspectRecord,
   type ProfileInspectSortField,
+  ProfileRadarView,
+  ProfileView,
 } from "./profile_inspect.ts"
 import type { ProfileWeblogEvidence } from "./profile_weblog_evidence.ts"
 import type {

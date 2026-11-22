@@ -1,14 +1,24 @@
 import { describe, expect, test } from "bun:test"
-import { toLiveWager } from "../../lib/live_wagers.ts"
+
 import { redactIpToSubnetHash } from "../../lib/http_auth.ts"
+import { toLiveWager } from "../../lib/live_wagers.ts"
 import { normalizeRawCustomerToProfileRecord } from "../../server/profile_inspect.ts"
 import { buildEnrichedWebLogs } from "../../server/weblog_inspect.ts"
 import {
+  bloomMayOverlap64,
+  buildSurveillanceBitmaskIndex,
   CORR_BIT_BLOCK_TO_FILL_RACE,
   CORR_BIT_PROXY_SYNDICATE,
   CORR_BIT_SHARED_ENTITY,
   CORR_BIT_SHARED_GAME_ID,
   CORR_BIT_SHARED_SUBNET_HASH,
+  countSetBits,
+  encodeProfileSignalMask,
+  encodeWagerSignalMask,
+  encodeWebLogSignalMask,
+  intersectBitsets,
+  parseWagerLineAndOdds,
+  popcount32,
   PROF_BIT_ORIGINATOR,
   PROF_BIT_SHARP,
   PROF_BIT_SYNDICATE_HIGH,
@@ -18,15 +28,6 @@ import {
   WLOG_BIT_BOT_BLOCK,
   WLOG_BIT_DATACENTER,
   WLOG_BIT_VALID_IPV4,
-  bloomMayOverlap64,
-  buildSurveillanceBitmaskIndex,
-  countSetBits,
-  encodeProfileSignalMask,
-  encodeWagerSignalMask,
-  encodeWebLogSignalMask,
-  intersectBitsets,
-  parseWagerLineAndOdds,
-  popcount32,
 } from "../../src/lib/telemetry_bitmask.ts"
 
 describe("L1: Bitwise Telemetry Parsing & Cross-Feed Correlation Spine", () => {

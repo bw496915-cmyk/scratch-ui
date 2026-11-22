@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
-import { createDashboardApi } from "../../packages/api/src/index.ts"
+
 import { createHttpAuthController } from "../../lib/http_auth.ts"
+import { createDashboardApi } from "../../packages/api/src/index.ts"
 import { apiUsageKey, extractResponseHeaderTelemetry } from "../../packages/ui/src/api_usage.ts"
 import {
   buildDashboardApiUrlObject,

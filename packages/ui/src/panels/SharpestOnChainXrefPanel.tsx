@@ -1,4 +1,3 @@
-import React, { useMemo, useState } from "react"
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -9,6 +8,8 @@ import {
   ShieldAlert,
   Unlink,
 } from "lucide-react"
+import React, { useMemo, useState } from "react"
+
 import type {
   OnChainXrefStatus,
   SharpestOnChainXrefReport,

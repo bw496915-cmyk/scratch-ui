@@ -1,4 +1,5 @@
 import type React from "react"
+
 import summary from "../data/rankings-summary.json"
 
 /**

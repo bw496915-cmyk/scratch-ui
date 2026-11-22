@@ -10,20 +10,22 @@
  * The two states are labelled separately rather than merged into one "DCE" claim.
  */
 
-import { DESCRIPTIONS, FEATURES } from "@sportsdesk-ops/contracts"
 import type React from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
+
+import { DESCRIPTIONS, FEATURES } from "@sportsdesk-ops/contracts"
+
 import { formatMatrixEvidenceTable, formatMatrixRowEvidence } from "../build_matrix_evidence.ts"
-import { copyText, type CopyFailure } from "../clipboard.ts"
+import { type CopyFailure, copyText } from "../clipboard.ts"
+import { buildBookdeskopsDirectoryRouteHref } from "../desk_quick_jump.ts"
 import {
   buildRegistryRootCss,
   HOUDINI_TOKENS,
-  TOKEN_ALIAS_SPECS,
   type HoudiniTokenSpec,
+  TOKEN_ALIAS_SPECS,
   type TokenAliasSpec,
   type TokenAxis,
 } from "../token_registry.ts"
-import { buildBookdeskopsDirectoryRouteHref } from "../desk_quick_jump.ts"
 import type { BuildMatrixRow, StaticDirectoryProbeSummary } from "../types.ts"
 
 export { HOUDINI_TOKENS } from "../token_registry.ts"

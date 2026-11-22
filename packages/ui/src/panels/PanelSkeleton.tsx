@@ -1,4 +1,5 @@
 import type React from "react"
+
 import { styles } from "../dashboard_styles.ts"
 
 export interface SkeletonBlockProps {

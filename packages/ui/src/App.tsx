@@ -1,47 +1,15 @@
 import type React from "react"
-import { copyText } from "./clipboard.ts"
-import { stripAnsi } from "./terminal_transcript.ts"
 import { useEffect, useMemo, useRef, useState } from "react"
+
 import {
   parseDashboardWsSignal,
   resolveDaemon4020State,
   wagerChannelOf,
 } from "@sportsdesk-ops/contracts"
+
+import { copyText } from "./clipboard.ts"
+import { stripAnsi } from "./terminal_transcript.ts"
 import "./desk.css"
-import logo from "./logo.svg"
-import {
-  BRAND_ASSETS,
-  formatShiftSecondsClock,
-  resolveOperatorProfile,
-} from "./operator_profiles.ts"
-import { ShadowPricingPanel } from "./ShadowPricingPanel.tsx"
-import { styles } from "./dashboard_styles.ts"
-import {
-  CLOCK_DRIFT_WINDOW_MS,
-  ClockDriftSparkline,
-  type ClockDriftPoint,
-} from "./viz/ClockDriftSparkline.tsx"
-import { newTicketIds as diffNewTicketIds } from "./live_stream.ts"
-import { applyGraphForensicsToProfiles, indexGraphLiveFeedForensics } from "./customer_forensics.ts"
-import {
-  buildSharpestOnChainXrefReport,
-  parseCrossDomainBridgeSnapshot,
-  type CrossDomainBridgeSnapshot,
-} from "./sharpest_onchain_xref.ts"
-import {
-  backtestRowsToProfiles,
-  bookRowsToProfiles,
-  mergeMatrixProfileOverlay,
-  mergeProfileRows,
-} from "./profile_rows.ts"
-import {
-  fetchRankingsSlice,
-  type NormalizedRankingsResult,
-  normalizeCustomersCohortResponse,
-  normalizeLiveWagersResponse,
-  PENDING_WAGERS_PROVENANCE,
-  unavailableProvenance,
-} from "./hydration.ts"
 import {
   Activity,
   AlertTriangle,
@@ -51,61 +19,25 @@ import {
   ShieldCheck,
   SlidersHorizontal,
 } from "lucide-react"
-import { buildRolling60MinRiskSeries, formatRiskCompactUsd } from "./risk_exposure_series.ts"
+
+import type { ReverseDnsClassification } from "../../../lib/bun_dns.ts"
 import {
-  evaluateRiskExposureThreshold,
-  readStoredRiskExposureThresholds,
-  writeStoredRiskExposureThresholds,
-  type RiskExposureThresholds,
-} from "./risk_threshold_alert.ts"
-import { WsSyncStatusIndicator } from "./panels/WsSyncStatusIndicator.tsx"
-import { useSportsDeskWebMcp } from "./use_web_mcp.ts"
+  buildReverseDnsForensicsView,
+  type ReverseDnsForensicsView,
+} from "../../../lib/reverse_dns_forensics.ts"
 import {
-  AgentInspectorModal,
-  AlertsTabPanel,
-  BetTickerTabPanel,
-  BettorChurnSimulationPanel,
-  BuildMatrixDrawer,
-  BunAssetsTabPanel,
-  CustomersTabPanel,
-  DashboardAuthShellSkeleton,
-  DashboardBreadcrumbs,
-  GlobalHeaderSearch,
-  HeaderThemeToggle,
-  LiveWagersTabPanel,
-  OperatorProfileMenu,
-  PanelErrorBoundary,
-  R2PipelineTabPanel,
-  RankingsTabPanel,
-  RiskOverviewPanel,
-  ShiftDurationTimer,
-  ShiftHandoffModal,
-  ShiftHandoffReminderToast,
-  shouldTriggerShiftHandoffAlert,
-  SignInModalQrGenerator,
-  StatusDashboardPanel,
-  SurveillanceTabPanel,
-  SystemLogsPanel,
-  TerminalTabPanel,
-  RANKINGS_HEATMAP_STORAGE_KEY,
-  applyDashboardThemeToDocument,
-  parseStoredRankingsHeatMapValue,
-  readStoredDashboardTheme,
-  readStoredRankingsHeatMap,
-  writeStoredRankingsHeatMap,
-  type BreadcrumbAction,
-  type DashboardTheme,
-  type WebLogSeverityCounts,
-  type WebLogSeverityFilter,
-} from "./panels/index.tsx"
-import { debugDashboardTrace, getDashboardRuntimeFlags } from "./runtime_flags.ts"
-import {
-  CLIENT_AUTOCOMPLETE_COMMANDS,
-  TERMINAL_INITIAL_COMMANDS,
-  TERMINAL_WELCOME_HELP_STDOUT,
-} from "./terminal_catalog.ts"
+  getDevCsrfToken,
+  getDevSessionToken,
+  registerUnauthorizedListener,
+  setDevCsrfToken,
+  setDevSessionToken,
+  trackedFetch,
+} from "./api_usage.ts"
+import { getDashboardBuildInfo } from "./build_info.ts"
 import { DASHBOARD_API, DASHBOARD_META, dashboardApiUrl } from "./config/dashboard.ts"
-import { TOKENS_TOML_VERSION } from "./tokens.registry.generated.ts"
+import { applyGraphForensicsToProfiles, indexGraphLiveFeedForensics } from "./customer_forensics.ts"
+import { styles } from "./dashboard_styles.ts"
+import { DEMO_CUSTOMER_COUNT } from "./data/demo_customers.ts"
 import {
   applyShadowSliceToLocation,
   buildBookdeskopsDirectoryRouteHref,
@@ -118,42 +50,106 @@ import {
   summarizeSliceWagers,
   wagerSearchHintForSlice,
 } from "./desk_quick_jump.ts"
-import type { ReverseDnsClassification } from "../../../lib/bun_dns.ts"
-import {
-  buildReverseDnsForensicsView,
-  type ReverseDnsForensicsView,
-} from "../../../lib/reverse_dns_forensics.ts"
-import { useActiveShadowSlice } from "./use_active_shadow_slice.ts"
-import { getDashboardBuildInfo } from "./build_info.ts"
-import { feedFreshnessTitle, quickJumpFeedState } from "./quick_jump_feed.ts"
-import {
-  DEFAULT_DASHBOARD_URL_STATE,
-  readDashboardUrlState,
-  SURVEILLANCE_URL_DEFAULTS,
-  writeDashboardUrl,
-  type DashboardUrlState,
-  type SurveillanceViewMode,
-} from "./url_state.ts"
-import {
-  buildSurveillanceEndpointUrls,
-  buildSurveillanceHeaderSyncRecord,
-  type SurveillanceHeaderSyncRecord,
-} from "./surveillance_api.ts"
-import { findWagerByTicketParam, syncTicketInspectorToLocation } from "./ticket_inspector.ts"
-import { DEMO_CUSTOMER_COUNT } from "./data/demo_customers.ts"
-import {
-  getDevCsrfToken,
-  getDevSessionToken,
-  registerUnauthorizedListener,
-  setDevCsrfToken,
-  setDevSessionToken,
-  trackedFetch,
-} from "./api_usage.ts"
 import {
   buildFastSignInBookmarkUrl,
   extractAndScrubFastSignInToken,
   extractFastSignInTokenFromInput,
 } from "./fast_signin.ts"
+import {
+  fetchRankingsSlice,
+  normalizeCustomersCohortResponse,
+  type NormalizedRankingsResult,
+  normalizeLiveWagersResponse,
+  PENDING_WAGERS_PROVENANCE,
+  unavailableProvenance,
+} from "./hydration.ts"
+import { newTicketIds as diffNewTicketIds } from "./live_stream.ts"
+import logo from "./logo.svg"
+import {
+  BRAND_ASSETS,
+  formatShiftSecondsClock,
+  resolveOperatorProfile,
+} from "./operator_profiles.ts"
+import {
+  AgentInspectorModal,
+  AlertsTabPanel,
+  applyDashboardThemeToDocument,
+  BetTickerTabPanel,
+  BettorChurnSimulationPanel,
+  type BreadcrumbAction,
+  BuildMatrixDrawer,
+  BunAssetsTabPanel,
+  CustomersTabPanel,
+  DashboardAuthShellSkeleton,
+  DashboardBreadcrumbs,
+  type DashboardTheme,
+  GlobalHeaderSearch,
+  HeaderThemeToggle,
+  LiveWagersTabPanel,
+  OperatorProfileMenu,
+  PanelErrorBoundary,
+  parseStoredRankingsHeatMapValue,
+  R2PipelineTabPanel,
+  RANKINGS_HEATMAP_STORAGE_KEY,
+  RankingsTabPanel,
+  readStoredDashboardTheme,
+  readStoredRankingsHeatMap,
+  RiskOverviewPanel,
+  ShiftDurationTimer,
+  ShiftHandoffModal,
+  ShiftHandoffReminderToast,
+  shouldTriggerShiftHandoffAlert,
+  SignInModalQrGenerator,
+  StatusDashboardPanel,
+  SurveillanceTabPanel,
+  SystemLogsPanel,
+  TerminalTabPanel,
+  type WebLogSeverityCounts,
+  type WebLogSeverityFilter,
+  writeStoredRankingsHeatMap,
+} from "./panels/index.tsx"
+import { WsSyncStatusIndicator } from "./panels/WsSyncStatusIndicator.tsx"
+import {
+  backtestRowsToProfiles,
+  bookRowsToProfiles,
+  mergeMatrixProfileOverlay,
+  mergeProfileRows,
+} from "./profile_rows.ts"
+import {
+  classifyCustomerProfile,
+  customerMatchesSearch,
+  loadCustomProfileTagsMap,
+  matchesProfileTypeFilter,
+  normalizeCustomTagLabel,
+  saveCustomProfileTagsMap,
+} from "./profile_taxonomy.ts"
+import { feedFreshnessTitle, quickJumpFeedState } from "./quick_jump_feed.ts"
+import { buildRolling60MinRiskSeries, formatRiskCompactUsd } from "./risk_exposure_series.ts"
+import {
+  evaluateRiskExposureThreshold,
+  readStoredRiskExposureThresholds,
+  type RiskExposureThresholds,
+  writeStoredRiskExposureThresholds,
+} from "./risk_threshold_alert.ts"
+import { debugDashboardTrace, getDashboardRuntimeFlags } from "./runtime_flags.ts"
+import { ShadowPricingPanel } from "./ShadowPricingPanel.tsx"
+import {
+  buildSharpestOnChainXrefReport,
+  type CrossDomainBridgeSnapshot,
+  parseCrossDomainBridgeSnapshot,
+} from "./sharpest_onchain_xref.ts"
+import {
+  buildSurveillanceEndpointUrls,
+  buildSurveillanceHeaderSyncRecord,
+  type SurveillanceHeaderSyncRecord,
+} from "./surveillance_api.ts"
+import {
+  CLIENT_AUTOCOMPLETE_COMMANDS,
+  TERMINAL_INITIAL_COMMANDS,
+  TERMINAL_WELCOME_HELP_STDOUT,
+} from "./terminal_catalog.ts"
+import { findWagerByTicketParam, syncTicketInspectorToLocation } from "./ticket_inspector.ts"
+import { TOKENS_TOML_VERSION } from "./tokens.registry.generated.ts"
 import {
   type AlertFilter,
   type AlertToastState,
@@ -174,29 +170,36 @@ import {
   type R2PipelineApiResponse,
   type R2PipelineHistoryApiResponse,
   type RankingsFilter,
+  resolveDashboardTabId,
   type ShiftSessionAction,
   type ShiftSessionLogEntry,
   type ShiftSessionLogsResponse,
   type ShiftSummaryData,
   type ShowcaseCustomer,
+  type SlabPolicySummary,
   type StaticDirectoryProbeSummary,
   type TelemetryRefreshSnapshot,
   type TerminalCategory,
   type TerminalHistoryEntry,
   type TierStyleConfig,
-  resolveDashboardTabId,
-  type SlabPolicySummary,
   type WagerSortField,
   type WagersWireContractSummary,
 } from "./types.ts"
 import {
-  classifyCustomerProfile,
-  customerMatchesSearch,
-  loadCustomProfileTagsMap,
-  matchesProfileTypeFilter,
-  normalizeCustomTagLabel,
-  saveCustomProfileTagsMap,
-} from "./profile_taxonomy.ts"
+  type DashboardUrlState,
+  DEFAULT_DASHBOARD_URL_STATE,
+  readDashboardUrlState,
+  SURVEILLANCE_URL_DEFAULTS,
+  type SurveillanceViewMode,
+  writeDashboardUrl,
+} from "./url_state.ts"
+import { useActiveShadowSlice } from "./use_active_shadow_slice.ts"
+import { useSportsDeskWebMcp } from "./use_web_mcp.ts"
+import {
+  CLOCK_DRIFT_WINDOW_MS,
+  type ClockDriftPoint,
+  ClockDriftSparkline,
+} from "./viz/ClockDriftSparkline.tsx"
 
 export * from "./types.ts"
 

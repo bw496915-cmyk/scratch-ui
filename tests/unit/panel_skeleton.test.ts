@@ -1,8 +1,14 @@
 import { describe, expect, test } from "bun:test"
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
+
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
+
+import {
+  normalizeRankingsResponse,
+  PENDING_WAGERS_PROVENANCE,
+} from "../../packages/ui/src/hydration.ts"
 import {
   AlertsTabPanel,
   BetTickerTabPanel,
@@ -13,10 +19,6 @@ import {
   RankingsTabPanel,
   SurveillanceTabPanel,
 } from "../../packages/ui/src/panels/index.tsx"
-import {
-  normalizeRankingsResponse,
-  PENDING_WAGERS_PROVENANCE,
-} from "../../packages/ui/src/hydration.ts"
 
 describe("Dashboard Panel Skeletal Loading UI", () => {
   test("desk.css uses compositor-only transform shimmer and respects prefers-reduced-motion", () => {

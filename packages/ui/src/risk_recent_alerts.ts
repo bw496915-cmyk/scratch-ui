@@ -7,9 +7,10 @@
  */
 
 import { WAGER_CHANNEL_LABELS, wagerChannelOf } from "@sportsdesk-ops/contracts"
+
 import { sanitizeCaptureText } from "./capture_text.ts"
 import { isSentinelWager, parseWagerTimestampMs } from "./handle_volume_series.ts"
-import { RISK_WINDOW_MINUTES, formatRiskCompactUsd } from "./risk_exposure_series.ts"
+import { formatRiskCompactUsd, RISK_WINDOW_MINUTES } from "./risk_exposure_series.ts"
 import {
   clampRiskExposureLimitUsd,
   clampRiskExposureWarningLimitUsd,

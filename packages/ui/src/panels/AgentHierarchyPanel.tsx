@@ -7,8 +7,6 @@
  * AND server-side on ingest. Plaintext passwords are never transmitted or stored.
  */
 
-import type React from "react"
-import { useCallback, useEffect, useMemo, useState } from "react"
 import {
   ChevronDown,
   ChevronRight,
@@ -19,13 +17,17 @@ import {
   Upload,
   Users,
 } from "lucide-react"
+import type React from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+
 import {
-  getActiveRateEntries,
-  sanitizeFantasy402RawTextBeforeUpload,
   type AgentHierarchyDirectoryResponse,
   type AgentHierarchyIngestResponse,
   type AgentHierarchyNodeRecord,
+  getActiveRateEntries,
+  sanitizeFantasy402RawTextBeforeUpload,
 } from "@sportsdesk-ops/contracts"
+
 import { getDevCsrfToken, trackedFetch } from "../api_usage.ts"
 import { styles } from "../dashboard_styles.ts"
 import { SkeletonTableRows } from "./PanelSkeleton.tsx"

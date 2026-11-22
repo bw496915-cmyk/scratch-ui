@@ -1,4 +1,3 @@
-import React from "react"
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -8,6 +7,8 @@ import {
   ShieldCheck,
   Ticket,
 } from "lucide-react"
+import React from "react"
+
 import { formatFreshnessDuration } from "../customer_forensics.ts"
 import type {
   CustomerBacktestParlayMetrics,

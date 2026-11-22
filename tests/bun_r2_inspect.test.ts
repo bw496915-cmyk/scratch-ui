@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test"
+
 import { assertNoSecretLeak, isR2ObjectProbeKey } from "../src/s3/sealed_r2_handle.ts"
 
 describe("Bun R2 inspection", () => {

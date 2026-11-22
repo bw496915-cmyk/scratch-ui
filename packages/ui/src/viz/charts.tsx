@@ -5,12 +5,13 @@
  */
 
 import React from "react"
+
 import {
+  barScale,
+  linearScale,
   VIZ_COLORS,
   VIZ_LABEL_FONT_PX,
   VIZ_LABEL_MIN_GAP_PX,
-  barScale,
-  linearScale,
   zeroAnchoredDomain,
 } from "./perceptual.ts"
 

@@ -6,8 +6,11 @@
  */
 
 import { describe, expect, test } from "bun:test"
+
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
+
+import { SystemLogBitwiseSearchBar } from "../../packages/ui/src/panels/SystemLogBitwiseSearchBar.tsx"
 import {
   BitwiseLogFilterStore,
   buildBitwiseLogIndex,
@@ -24,7 +27,6 @@ import {
   selectBitwiseFilteredRows,
   type UnifiedSystemLogRow,
 } from "../../packages/ui/src/system_logs_json_export.ts"
-import { SystemLogBitwiseSearchBar } from "../../packages/ui/src/panels/SystemLogBitwiseSearchBar.tsx"
 
 const SAMPLE_UNIFIED_LOGS: readonly UnifiedSystemLogRow[] = [
   {

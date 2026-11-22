@@ -6,12 +6,12 @@
  */
 
 import {
+  type BitwiseLogIndex,
   evaluateBitwiseLogIndex,
+  formatBitmaskHex,
   LOG_SEVERITY_BIT_WATCH,
   LOG_SEVERITY_BITS,
   LOG_SEVERITY_MASK_ALL,
-  formatBitmaskHex,
-  type BitwiseLogIndex,
   type ParsedBitwiseLogQuery,
 } from "./system_log_bitwise_filter.ts"
 

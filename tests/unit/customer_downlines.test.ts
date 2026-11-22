@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test"
+
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
+
 import { runBatchedRanking } from "../../lib/customer_rankings.ts"
 import { normalizeRankingsResponse } from "../../packages/ui/src/hydration.ts"
 import {

@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto"
 import { closeSync, mkdirSync, openSync } from "node:fs"
 import { dirname, resolve } from "node:path"
+
 import { digestSessionId, type SessionRecord, type SessionStore } from "../lib/http_auth.ts"
 import type { ProfileStore } from "../src/profile/store.ts"
 import { parseProfileTheme } from "../src/profile/validate.ts"

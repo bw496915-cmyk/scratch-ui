@@ -1,7 +1,8 @@
-import type React from "react"
-import { useMemo, useState } from "react"
 import { curveMonotoneX, line, scaleBand, scaleLinear, stack } from "d3"
 import { Minus, TrendingDown, TrendingUp } from "lucide-react"
+import type React from "react"
+import { useMemo, useState } from "react"
+
 import { formatRiskCompactUsd } from "../risk_exposure_series.ts"
 import type {
   AlertFrequencyBucket,

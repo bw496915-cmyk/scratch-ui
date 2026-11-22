@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test"
+
 import { createNodeDnsService } from "../server/node_dns.ts"
 
 describe("measured Node DNS telemetry", () => {

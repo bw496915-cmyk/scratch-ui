@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, spyOn, test } from "bun:test"
 import { resolve } from "node:path"
+
 import { readBunDnsTelemetry } from "../../server/bun_dns.ts"
 import {
   CHANNEL_SLA_MS_TABLE,

@@ -1,13 +1,14 @@
 import { describe, expect, test } from "bun:test"
+
 import { createDashboardApi } from "../../packages/api/src/index.ts"
 import { benchmarkNodeDns, executeNodeTerminalQuery } from "../../server/adapters.ts"
 import { DnsBoundaryError } from "../../src/lib/dns_boundary.ts"
 import {
-  ShellBoundaryError,
   assertSafeSpawnArgv,
   buildBunTerminalSpawnOptions,
   resolveProfileTerminalOptions,
   scanSourceForUnsafeShellPatterns,
+  ShellBoundaryError,
   validateTerminalCommand,
 } from "../../src/lib/shell_boundary.ts"
 import type { ProfileTheme } from "../../src/profile/types.ts"

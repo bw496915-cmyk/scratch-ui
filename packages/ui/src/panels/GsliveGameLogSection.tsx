@@ -5,21 +5,22 @@
  * table; selecting an event opens that ticket in the wager inspector.
  */
 
-import { quickJumpFeedState } from "../quick_jump_feed.ts"
 import type React from "react"
-import { sanitizeCaptureText } from "../capture_text.ts"
 import { useEffect, useRef, useState } from "react"
+
+import { sanitizeCaptureText } from "../capture_text.ts"
 import { copyText } from "../clipboard.ts"
 import {
   filterGsliveEvents,
-  gsliveEventLogCsv,
-  gsliveGameLogCsv,
-  sortGsliveGames,
   type GsliveEventFilter,
+  gsliveEventLogCsv,
   type GsliveEventRow,
+  gsliveGameLogCsv,
   type GsliveGameRow,
   type GsliveGameSortKey,
+  sortGsliveGames,
 } from "../gslive_game_log.ts"
+import { quickJumpFeedState } from "../quick_jump_feed.ts"
 
 export interface GsliveGameLogSectionProps {
   readonly games: readonly GsliveGameRow[]

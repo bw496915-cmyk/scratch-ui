@@ -1,4 +1,3 @@
-import React, { useEffect, useMemo, useState } from "react"
 import {
   Activity,
   ArrowUpRight,
@@ -11,17 +10,15 @@ import {
   Tag,
   X,
 } from "lucide-react"
+import React, { useEffect, useMemo, useState } from "react"
+
+import type { ReverseDnsForensicsView } from "../../../../lib/reverse_dns_forensics.ts"
 import { DASHBOARD_FRESHNESS } from "../config/dashboard.ts"
-import { styles } from "../dashboard_styles.ts"
-import {
-  buildFantasy402PortalEntryUrl,
-  FANTASY402_PORTAL_WINDOW_TARGET,
-  getFantasy402PortalLinkProps,
-} from "../portal_link.ts"
 import {
   computeProfileRiskHeadroom,
   summarizeCustomerLiveActivity,
 } from "../customer_drilldown_summary.ts"
+import { styles } from "../dashboard_styles.ts"
 import {
   type CustomerCohortKpiTone,
   deriveCustomerCohortKpiCards,
@@ -29,20 +26,11 @@ import {
   PENDING_COHORTS_PROVENANCE,
 } from "../hydration.ts"
 import { getLocalAgentHref } from "../links.ts"
-import type { ReverseDnsForensicsView } from "../../../../lib/reverse_dns_forensics.ts"
 import {
-  ForensicBridgeSummaryCallout,
-  ForensicFlaggedTicketsPanel,
-  GraphForensicsDossierPanel,
-  ParlayProtectionImpactPanel,
-} from "./CustomerForensicDossierSection.tsx"
-import { ProfilesInspectSection } from "./ProfilesInspectSection.tsx"
-import { ReverseDnsForensicsCard } from "./ReverseDnsForensicsCard.tsx"
-import { ProfileOnChainXrefCard, SharpestOnChainXrefPanel } from "./SharpestOnChainXrefPanel.tsx"
-import { WsSyncStatusIndicator } from "./WsSyncStatusIndicator.tsx"
-import { SkeletonBlock, SkeletonSplitWorkspace } from "./PanelSkeleton.tsx"
-import { SharpnessDecomposition } from "../viz/SharpnessDecomposition.tsx"
-import type { SharpestOnChainXrefReport } from "../sharpest_onchain_xref.ts"
+  buildFantasy402PortalEntryUrl,
+  FANTASY402_PORTAL_WINDOW_TARGET,
+  getFantasy402PortalLinkProps,
+} from "../portal_link.ts"
 import {
   classifyCustomerProfile,
   PROFILE_TAG_CATEGORY_META,
@@ -51,18 +39,31 @@ import {
   PROFILE_TYPE_SPECS,
   SUGGESTED_OPERATOR_TAGS,
 } from "../profile_taxonomy.ts"
+import type { SharpestOnChainXrefReport } from "../sharpest_onchain_xref.ts"
 import {
-  PROFILE_TAG_CATEGORIES,
   type CustomerProfileClassification,
   type CustomersApiResponse,
   type CustomerSortKey,
   type LiveWager,
+  PROFILE_TAG_CATEGORIES,
   type ProfileTag,
   type ProfileTagCategory,
   type ProfileTypeId,
   type ShowcaseCustomer,
   type TelemetryRefreshSnapshot,
 } from "../types.ts"
+import { SharpnessDecomposition } from "../viz/SharpnessDecomposition.tsx"
+import {
+  ForensicBridgeSummaryCallout,
+  ForensicFlaggedTicketsPanel,
+  GraphForensicsDossierPanel,
+  ParlayProtectionImpactPanel,
+} from "./CustomerForensicDossierSection.tsx"
+import { SkeletonBlock, SkeletonSplitWorkspace } from "./PanelSkeleton.tsx"
+import { ProfilesInspectSection } from "./ProfilesInspectSection.tsx"
+import { ReverseDnsForensicsCard } from "./ReverseDnsForensicsCard.tsx"
+import { ProfileOnChainXrefCard, SharpestOnChainXrefPanel } from "./SharpestOnChainXrefPanel.tsx"
+import { WsSyncStatusIndicator } from "./WsSyncStatusIndicator.tsx"
 
 export interface CustomersTabPanelProps {
   readonly bannerDismissed: boolean

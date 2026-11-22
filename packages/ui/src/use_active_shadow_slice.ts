@@ -1,9 +1,10 @@
 import { useSyncExternalStore } from "react"
+
 import {
+  type ActiveShadowSlice,
   EMPTY_SHADOW_SLICE,
   getShadowSliceSnapshot,
   subscribeShadowSliceUrl,
-  type ActiveShadowSlice,
 } from "./desk_quick_jump.ts"
 
 export function useActiveShadowSlice(): ActiveShadowSlice {

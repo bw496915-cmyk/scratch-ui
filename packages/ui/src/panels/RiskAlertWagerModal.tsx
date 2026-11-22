@@ -1,6 +1,3 @@
-import type React from "react"
-import { useEffect, useMemo, useRef, useState } from "react"
-import { createPortal } from "react-dom"
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -12,11 +9,15 @@ import {
   User,
   X,
 } from "lucide-react"
+import type React from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
+
 import {
   formatAlertWagerBrief,
-  resolveAlertWagerContext,
   type RecentRiskAlertItem,
   type RecentRiskAlertKind,
+  resolveAlertWagerContext,
 } from "../risk_recent_alerts.ts"
 import type { ShowcaseCustomer } from "../types.ts"
 

@@ -10,6 +10,7 @@
  */
 
 import { useSyncExternalStore } from "react"
+
 import { type DashboardWindowLocationLike, resolveDashboardBaseUrl } from "./config/dashboard.ts"
 
 export type ApiBaseUrlSource =

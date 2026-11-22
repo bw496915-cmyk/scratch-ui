@@ -6,6 +6,7 @@
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { join, resolve } from "node:path"
+
 import { scanSourceForUnsafeShellPatterns } from "../src/lib/shell_boundary.ts"
 
 const cwd = process.cwd()

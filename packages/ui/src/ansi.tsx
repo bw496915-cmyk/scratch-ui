@@ -4,6 +4,7 @@
  */
 
 import React from "react"
+
 import { rewriteBrokenDeskUrl } from "./links.ts"
 
 export interface AnsiSegment {

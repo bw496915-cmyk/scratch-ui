@@ -1,17 +1,19 @@
+import { Check, Copy, ExternalLink, GitBranch, TrendingUp } from "lucide-react"
 import type React from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Check, Copy, ExternalLink, GitBranch, TrendingUp } from "lucide-react"
+
 import { getActiveRateEntries } from "@sportsdesk-ops/contracts"
+
+import { trackedFetch } from "../api_usage.ts"
 import { copyText } from "../clipboard.ts"
 import { styles } from "../dashboard_styles.ts"
 import type { NormalizedRankingsResult } from "../hydration.ts"
 import { getLocalAgentHref } from "../links.ts"
 import type { AgentDetailApiResponse } from "../types.ts"
-import { trackedFetch } from "../api_usage.ts"
 import {
-  HandleTrendIndicator,
   buildDownlineForests,
   type DownlineSubAgentNode,
+  HandleTrendIndicator,
 } from "./RankingsTabPanel.tsx"
 
 const TABULAR_NUMS: React.CSSProperties = {

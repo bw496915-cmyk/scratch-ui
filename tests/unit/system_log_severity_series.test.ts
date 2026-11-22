@@ -1,6 +1,17 @@
 import { describe, expect, test } from "bun:test"
+
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
+
+import { SystemLogsPanel } from "../../packages/ui/src/panels/HeaderSectionViews.tsx"
+import { SystemLogSeverityBarChart } from "../../packages/ui/src/panels/SystemLogSeverityBarChart.tsx"
+import {
+  BitwiseLogFilterStore,
+  buildBitwiseLogIndex,
+  LOG_SEVERITY_BIT_ERROR,
+  LOG_SEVERITY_BIT_WARN,
+  severityLabelToBit,
+} from "../../packages/ui/src/system_log_bitwise_filter.ts"
 import {
   buildUnifiedLog24HourSeveritySeries,
   buildWebLog24HourSeveritySeries,
@@ -10,16 +21,7 @@ import {
   SYSTEM_LOG_HOUR_MS,
   SYSTEM_LOG_WINDOW_HOURS,
 } from "../../packages/ui/src/system_log_severity_series.ts"
-import {
-  BitwiseLogFilterStore,
-  buildBitwiseLogIndex,
-  LOG_SEVERITY_BIT_ERROR,
-  LOG_SEVERITY_BIT_WARN,
-  severityLabelToBit,
-} from "../../packages/ui/src/system_log_bitwise_filter.ts"
 import type { UnifiedSystemLogRow } from "../../packages/ui/src/system_logs_json_export.ts"
-import { SystemLogSeverityBarChart } from "../../packages/ui/src/panels/SystemLogSeverityBarChart.tsx"
-import { SystemLogsPanel } from "../../packages/ui/src/panels/HeaderSectionViews.tsx"
 
 describe("system_log_severity_series: normalization & timestamp parsing", () => {
   test("maps all weblog and unified severity tokens onto canonical 4 tiers", () => {

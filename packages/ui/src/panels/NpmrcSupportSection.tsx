@@ -1,14 +1,16 @@
+import { AlertCircle, Check, Copy, Download, Lock, ShieldCheck } from "lucide-react"
 import type React from "react"
 import { useMemo, useState } from "react"
-import { AlertCircle, Check, Copy, Download, Lock, ShieldCheck } from "lucide-react"
+
 import {
   auditRegistryCredentialMatch,
   convertNpmrcToBunfigToml,
-  parseNpmrc,
-  resolveBunPackageConfig,
   type MatchRegistryCredentialsRequest,
+  parseNpmrc,
   type RedactedNpmrcStatusSummary,
+  resolveBunPackageConfig,
 } from "@sportsdesk-ops/contracts"
+
 import {
   CopyBunTerminalAnsiButton,
   SyntaxHighlightedPre,

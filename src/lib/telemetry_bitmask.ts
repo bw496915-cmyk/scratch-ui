@@ -11,6 +11,7 @@
  */
 
 import { isIP } from "node:net"
+
 import { redactIpToSubnetHash } from "../../lib/http_auth.ts"
 import type { LiveWager, LiveWagerLeg } from "../../lib/live_wagers.ts"
 import type { ProfileInspectRecord } from "../../server/profile_inspect.ts"

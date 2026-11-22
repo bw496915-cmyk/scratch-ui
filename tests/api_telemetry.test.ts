@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { createServer, request } from "node:http"
+
 import { createAgentDetailService } from "../packages/backend/src/agents.ts"
 import {
   API_TELEMETRY_INSPECT_PATH,

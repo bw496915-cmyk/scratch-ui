@@ -14,18 +14,19 @@
 
 import { execFileSync } from "node:child_process"
 import { createRequire } from "node:module"
+
 import {
+  buildAuditSnapshotFromBinaryProbe,
   BUN_BUILTIN_MODULE_TARGETS,
   BUN_DEEP_CLASS_TARGETS,
   BUN_DEEP_NAMESPACE_TARGETS,
   BUN_GLOBAL_TIERS,
-  buildAuditSnapshotFromBinaryProbe,
-  runBunSurfaceAudit,
   type BunDeepInspectionEntry,
   type BunExportKind,
   type BunNamespaceExportEntry,
   type BunRuntimeSurfaceAuditSnapshot,
   type LiveGlobalProbeEntry,
+  runBunSurfaceAudit,
 } from "../../contracts/src/bun_runtime_surface.ts"
 
 const CACHE_TTL_MS = 60_000

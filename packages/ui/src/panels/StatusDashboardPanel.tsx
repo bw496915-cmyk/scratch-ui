@@ -1,5 +1,3 @@
-import type React from "react"
-import { useEffect, useMemo, useState } from "react"
 import {
   AlertCircle,
   ArrowUpRight,
@@ -18,6 +16,11 @@ import {
   Search,
   SlidersHorizontal,
 } from "lucide-react"
+import type React from "react"
+import { useEffect, useMemo, useState } from "react"
+
+import { convertEnvTemplateToBunYaml } from "@sportsdesk-ops/contracts"
+
 import type {
   ConfigItemKind,
   ConfigStatusItem,
@@ -25,7 +28,7 @@ import type {
   DashboardTabId,
 } from "../types.ts"
 import { isDashboardTabId } from "../types.ts"
-import { convertEnvTemplateToBunYaml } from "@sportsdesk-ops/contracts"
+import { BunRuntimeSurfaceSection } from "./BunRuntimeSurfaceSection.tsx"
 import { KeyboardShortcutsPanel } from "./KeyboardShortcutsPanel.tsx"
 import { NpmrcSupportSection } from "./NpmrcSupportSection.tsx"
 import {
@@ -34,7 +37,6 @@ import {
   SyntaxTokenLegend,
 } from "./SyntaxHighlightedPre.tsx"
 import { YamlRuntimeSection } from "./YamlRuntimeSection.tsx"
-import { BunRuntimeSurfaceSection } from "./BunRuntimeSurfaceSection.tsx"
 
 const MONO_FONT =
   'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace'

@@ -5,6 +5,7 @@
 
 import { lookup as nodeDnsLookup } from "node:dns/promises"
 import { isIP, isIPv4, isIPv6 } from "node:net"
+
 import type { DnsResolverBackend } from "../../lib/bun_dns.ts"
 
 export type { DnsResolverBackend }

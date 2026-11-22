@@ -1,20 +1,21 @@
 import type React from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
+
 import {
   BET_TICKER_RENDER_LIMIT,
   betTickerRowsToTsv,
-  nextBetTickerSort,
-  sortBetTickerRows,
   type BetTickerSortField,
   type BetTickerSortSpec,
+  nextBetTickerSort,
+  sortBetTickerRows,
 } from "../bet_ticker_view.ts"
 import { sanitizeCaptureText } from "../capture_text.ts"
 import { copyText } from "../clipboard.ts"
-import { styles } from "../dashboard_styles.ts"
-import { getFantasy402PortalLinkProps } from "../portal_link.ts"
 import { DASHBOARD_FRESHNESS } from "../config/dashboard.ts"
+import { styles } from "../dashboard_styles.ts"
 import { formatProvenanceBadge } from "../hydration.ts"
 import { getLocalAgentHref, getLocalCustomerHref } from "../links.ts"
+import { getFantasy402PortalLinkProps } from "../portal_link.ts"
 import type { BetTickerApiResponse } from "../types.ts"
 import { SkeletonKpiStrip, SkeletonTableCard } from "./PanelSkeleton.tsx"
 

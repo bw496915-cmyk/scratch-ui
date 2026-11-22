@@ -1,23 +1,15 @@
+import { Check, ChevronDown, ChevronsUpDown, ChevronUp, Download } from "lucide-react"
 import type React from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Check, ChevronDown, ChevronUp, ChevronsUpDown, Download } from "lucide-react"
+
 import {
   PARTNER_118_CHANNELS,
   WAGER_CHANNEL_LABELS,
-  wagerChannelOf,
   type WagerChannel,
+  wagerChannelOf,
 } from "@sportsdesk-ops/contracts"
-import { styles } from "../dashboard_styles.ts"
-import { getFantasy402PortalLinkProps } from "../portal_link.ts"
-import { buildGsliveEventLog, buildGsliveGameLog, gameKeyOf } from "../gslive_game_log.ts"
-import { GsliveGameLogSection } from "./GsliveGameLogSection.tsx"
-import { findAlertForWager } from "../ticket_inspector.ts"
+
 import { sanitizeCaptureText } from "../capture_text.ts"
-import { formatWagerSelection } from "../wager_display.ts"
-import { TicketInspectorPanel } from "./TicketInspectorPanel.tsx"
-import { LiveWagersHandleChart } from "./LiveWagersHandleChart.tsx"
-import { SkeletonBlock, SkeletonChartCard, SkeletonTableRows } from "./PanelSkeleton.tsx"
-import { formatProvenanceBadge, PENDING_WAGERS_PROVENANCE } from "../hydration.ts"
 import { DASHBOARD_THRESHOLDS } from "../config/dashboard.ts"
 import {
   clvEdgeTone,
@@ -30,23 +22,33 @@ import {
   WAGERS_TABLE,
   WAGERS_THRESHOLDS,
 } from "../config/wagers.ts"
-import { quickJumpFeedState } from "../quick_jump_feed.ts"
+import { styles } from "../dashboard_styles.ts"
+import { buildGsliveEventLog, buildGsliveGameLog, gameKeyOf } from "../gslive_game_log.ts"
+import { formatProvenanceBadge, PENDING_WAGERS_PROVENANCE } from "../hydration.ts"
 import { getLocalAgentHref } from "../links.ts"
-import { WireContractChip } from "./WireContractChip.tsx"
+import { getFantasy402PortalLinkProps } from "../portal_link.ts"
+import { quickJumpFeedState } from "../quick_jump_feed.ts"
 import {
   buildLiveWagersCsvFilename,
   buildLiveWagersRiskCsv,
   downloadRiskCsvBlob,
 } from "../risk_csv_export.ts"
+import { findAlertForWager } from "../ticket_inspector.ts"
 import type {
   DashboardAlertRecord,
   DashboardSourceProvenance,
   LiveWager,
-  TierStyleConfig,
   SlabPolicySummary,
+  TierStyleConfig,
   WagerSortField,
   WagersWireContractSummary,
 } from "../types.ts"
+import { formatWagerSelection } from "../wager_display.ts"
+import { GsliveGameLogSection } from "./GsliveGameLogSection.tsx"
+import { LiveWagersHandleChart } from "./LiveWagersHandleChart.tsx"
+import { SkeletonBlock, SkeletonChartCard, SkeletonTableRows } from "./PanelSkeleton.tsx"
+import { TicketInspectorPanel } from "./TicketInspectorPanel.tsx"
+import { WireContractChip } from "./WireContractChip.tsx"
 
 export interface LiveWagersTabPanelProps {
   readonly wagers?: readonly LiveWager[] | undefined

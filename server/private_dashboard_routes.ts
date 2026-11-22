@@ -1,31 +1,35 @@
 import { randomBytes, timingSafeEqual } from "node:crypto"
+
 import type { BunRequest } from "bun"
-import { SESSION_COOKIE_NAME } from "../lib/http_auth.ts"
+
 import {
-  AGENT_DETAIL_ROUTE,
-  AGENT_DETAILS_ROUTE,
-  decodeAgentRouteId,
-  invalidAgentRouteIdResponse,
-  matchAgentDetailRoute,
-  type AgentDetailRoute,
-} from "../packages/api/src/router.ts"
-import {
+  type AgentDetailApiResponse,
   API_TELEMETRY_INSPECT_PATH,
   API_TELEMETRY_PATH,
+  type ApiTelemetryInspection,
+  type ApiTelemetryRow,
+  type ApiTelemetrySnapshot,
   formatApiTelemetryCookieAttributes,
   formatApiTelemetryLatencyBand,
   formatApiTelemetryParams,
   formatApiTelemetryProtocol,
-  type AgentDetailApiResponse,
-  type ApiTelemetryInspection,
-  type ApiTelemetryRow,
-  type ApiTelemetrySnapshot,
 } from "@sportsdesk-ops/contracts"
+
+import { SESSION_COOKIE_NAME } from "../lib/http_auth.ts"
+import {
+  AGENT_DETAIL_ROUTE,
+  AGENT_DETAILS_ROUTE,
+  type AgentDetailRoute,
+  decodeAgentRouteId,
+  invalidAgentRouteIdResponse,
+  matchAgentDetailRoute,
+} from "../packages/api/src/router.ts"
 import { PROFILE_ROUTE, PROFILE_THEME_ROUTE } from "../src/http/profile_routes.ts"
+import type { ApiTelemetry } from "./api_telemetry.ts"
 import {
   ANSI,
-  DeskView,
   type BunInspectOptions,
+  DeskView,
   formatInspectNumber,
   inspectDeskValue,
   inspectTable,
@@ -35,7 +39,6 @@ import {
   resolveInspectOptions,
   stripAnsi,
 } from "./desk_inspect.ts"
-import type { ApiTelemetry } from "./api_telemetry.ts"
 
 declare const Bun: Pick<typeof import("bun"), "inspect" | "serve">
 

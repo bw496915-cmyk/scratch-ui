@@ -1,16 +1,18 @@
 import { describe, expect, test } from "bun:test"
+
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
+
 import type { NormalizedRankingsResult } from "../../packages/ui/src/hydration.ts"
+import { buildHandleHeatLookup } from "../../packages/ui/src/panels/rankings_heatmap.ts"
 import {
-  RankingsTabPanel,
   buildConduitsCsv,
   buildDownlinesCsv,
   buildRankingsCsvFilename,
   buildSubAgentsCsv,
   downloadRankingsCsvBlob,
+  RankingsTabPanel,
 } from "../../packages/ui/src/panels/RankingsTabPanel.tsx"
-import { buildHandleHeatLookup } from "../../packages/ui/src/panels/rankings_heatmap.ts"
 
 describe("Rankings Tab Export to CSV", () => {
   const samplePlayers = [

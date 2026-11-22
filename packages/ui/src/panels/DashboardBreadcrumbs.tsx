@@ -1,5 +1,6 @@
-import type React from "react"
 import { ChevronRight, CornerLeftUp, Home } from "lucide-react"
+import type React from "react"
+
 import { DASHBOARD_TAB_SPECS, type DashboardTabId } from "../types.ts"
 
 export type DashboardSectionId =

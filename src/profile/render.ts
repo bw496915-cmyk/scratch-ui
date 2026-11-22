@@ -6,7 +6,8 @@
  */
 
 import { inspect as nodeInspect } from "node:util"
-import { stripControls, type AnsiTheme } from "../theme/ansi_tokens.ts"
+
+import { type AnsiTheme, stripControls } from "../theme/ansi_tokens.ts"
 import { osc8Link, safeHref } from "../theme/markdown_ansi.ts"
 import type { ProfileTheme } from "./types.ts"
 

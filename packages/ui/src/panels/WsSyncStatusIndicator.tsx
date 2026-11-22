@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react"
 import { Activity, AlertTriangle, Clock, WifiOff } from "lucide-react"
+import React, { useEffect, useState } from "react"
+
 import { evaluateWsSyncStatus } from "../ws_sync_status.ts"
 
 export interface WsSyncStatusIndicatorProps {

@@ -5,18 +5,20 @@
  */
 
 import React, { useEffect, useRef, useState } from "react"
+
+import type {
+  RouterAuditMode,
+  SliceMetricsDashboardBundle,
+} from "@sportsdesk-ops/contracts/shadow-pricing"
 import { SliceMetricsSoASpine } from "@sportsdesk-ops/contracts/slice-data-table"
 import type { SliceFlag, SliceMetrics, SlicePolicy } from "@sportsdesk-ops/contracts/slice-metrics"
+
 import { WAGER_TIERS_SSOT } from "./config/wager_tiers_ssot.ts"
 import {
   rowMatchesFlagFilter,
   SLICE_FLAG_ORDER,
   summarizeSliceFloorSsot,
 } from "./slice_floor_ssot.ts"
-import type {
-  RouterAuditMode,
-  SliceMetricsDashboardBundle,
-} from "@sportsdesk-ops/contracts/shadow-pricing"
 import { SliceSmallMultiples } from "./viz/SliceSmallMultiples.tsx"
 
 export interface SliceMetricsViewsProps {

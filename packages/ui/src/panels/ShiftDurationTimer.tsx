@@ -1,6 +1,7 @@
+import { ClipboardList, Clock, X } from "lucide-react"
 import type React from "react"
 import { useEffect, useRef, useState } from "react"
-import { ClipboardList, Clock, X } from "lucide-react"
+
 import { formatShiftSecondsClock } from "../operator_profiles.ts"
 
 const SHIFT_DURATION_MONO_FONT =

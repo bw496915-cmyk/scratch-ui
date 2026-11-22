@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test"
+
 import {
   buildEnrichedWebLogs,
   createWebLogStore,
@@ -7,9 +8,9 @@ import {
   parseRawWebLogText,
 } from "../../server/weblog_inspect.ts"
 import {
-  WLOG_BIT_API_BLOCK,
   buildSurveillanceBitmaskIndex,
   encodeWebLogSignalMask,
+  WLOG_BIT_API_BLOCK,
 } from "../../src/lib/telemetry_bitmask.ts"
 
 const FANTASY402_ACCESS_LOG_LIST_FIXTURE = {

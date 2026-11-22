@@ -1,4 +1,5 @@
 import type React from "react"
+
 import { wagerBadge } from "@sportsdesk-ops/contracts/wager-tokens"
 
 export const styles = {

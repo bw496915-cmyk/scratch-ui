@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test"
+
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
+
 import {
-  SYNTAX_TOKEN_PALETTE,
   bunColorAnsi16m,
   bunColorCss,
   bunEscapeHtml,
@@ -12,6 +13,7 @@ import {
   convertEnvTemplateToBunYaml,
   detectBunUtilitiesCapabilities,
   formatSyntaxAsBunTerminalAnsi,
+  SYNTAX_TOKEN_PALETTE,
   tokenizeEnv,
   tokenizeJson,
   tokenizeMarkdownBrief,

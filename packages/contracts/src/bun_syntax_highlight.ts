@@ -9,7 +9,7 @@
  * browser/Node bundles (via deterministic zero-dependency TypeScript fallbacks).
  */
 
-import { parseBunYamlWithMeta, stringifyBunYaml, type BunYamlEngine } from "./bun_yaml.ts"
+import { type BunYamlEngine, parseBunYamlWithMeta, stringifyBunYaml } from "./bun_yaml.ts"
 import { hexToSgr } from "./wager_tokens.ts"
 
 export type SyntaxFormat = "json" | "yaml" | "toml" | "env" | "markdown"

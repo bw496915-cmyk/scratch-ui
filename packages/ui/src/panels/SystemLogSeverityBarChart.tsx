@@ -12,20 +12,19 @@ import {
   Bar,
   CartesianGrid,
   ComposedChart,
+  type DotItemDotProps,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
-  type DotItemDotProps,
 } from "recharts"
-import { SkeletonBlock } from "./PanelSkeleton.tsx"
+
 import {
-  LOG_SEVERITY_MASK_ALL,
   type BitwiseLogFilterStore,
   type BitwiseLogIndex,
+  LOG_SEVERITY_MASK_ALL,
 } from "../system_log_bitwise_filter.ts"
-import { selectBitwiseFilteredRows, type UnifiedSystemLogRow } from "../system_logs_json_export.ts"
 import {
   buildUnifiedLog24HourSeveritySeries,
   buildWebLog24HourSeveritySeries,
@@ -34,6 +33,8 @@ import {
   type SystemLogSeverityLevel,
   type WebLogSeveritySourceEntry,
 } from "../system_log_severity_series.ts"
+import { selectBitwiseFilteredRows, type UnifiedSystemLogRow } from "../system_logs_json_export.ts"
+import { SkeletonBlock } from "./PanelSkeleton.tsx"
 
 const MONO_FONT = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
 

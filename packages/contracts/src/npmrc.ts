@@ -18,7 +18,7 @@
  *   snapshots to HTTP responses or UI state.
  */
 
-import { summarizeBunLockFile, type BunLockFile, type BunLockFileSummary } from "./bun_lockfile.ts"
+import { type BunLockFile, type BunLockFileSummary, summarizeBunLockFile } from "./bun_lockfile.ts"
 
 export const DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org/" as const
 

@@ -1,6 +1,7 @@
+import { Search, X } from "lucide-react"
 import type React from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Search, X } from "lucide-react"
+
 import type { BetTickerTicketRow, LiveWager, ShowcaseCustomer } from "../types.ts"
 
 export type GlobalSearchScope = "all" | "wagers" | "customers" | "tickers"

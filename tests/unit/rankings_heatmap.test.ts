@@ -1,21 +1,23 @@
 import { describe, expect, test } from "bun:test"
+
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
+
 import type { NormalizedRankingsResult } from "../../packages/ui/src/hydration.ts"
 import {
-  RankingsHeatMapLegend,
-  RankingsTabPanel,
-} from "../../packages/ui/src/panels/RankingsTabPanel.tsx"
-import {
-  RANKINGS_HEATMAP_STORAGE_KEY,
   buildHandleHeatLookup,
   createHandleHeatScale,
   evaluateHandleHeatCell,
   formatHeatCurrencyCompact,
   parseStoredRankingsHeatMapValue,
+  RANKINGS_HEATMAP_STORAGE_KEY,
   readStoredRankingsHeatMap,
   writeStoredRankingsHeatMap,
 } from "../../packages/ui/src/panels/rankings_heatmap.ts"
+import {
+  RankingsHeatMapLegend,
+  RankingsTabPanel,
+} from "../../packages/ui/src/panels/RankingsTabPanel.tsx"
 import { buildDashboardSearch, readDashboardUrlState } from "../../packages/ui/src/url_state.ts"
 
 describe("Rankings Handle Volume Heat-Map Overlay", () => {

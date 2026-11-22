@@ -9,24 +9,9 @@ import { existsSync } from "node:fs"
 import { readFile } from "node:fs/promises"
 import { createServer } from "node:http"
 import { extname, resolve } from "node:path"
-import express from "express"
-import { WebSocketServer, type WebSocket } from "ws"
 
-import { createDashboardApi, type WsLike } from "./packages/api/src/index.ts"
-import {
-  computeCustomersCohortPayload,
-  createAgentDetailService,
-  createBetTickerService,
-  createCachedJsonReader,
-  createCustomerRowFinder,
-  createDevLiveWagersLoader,
-  createR2PipelineService,
-  DashboardHealthTracker,
-  DashboardMarkdownCache,
-  DEFAULT_R2_PUBLIC_BASE,
-  isSentinelTickerWriter,
-} from "./packages/backend/src/index.ts"
-import { bunEscapeHtml, type AgentDetailApiResponse } from "./packages/contracts/src/index.ts"
+import express from "express"
+import { type WebSocket, WebSocketServer } from "ws"
 
 import { containedAssetPath } from "./lib/asset_path.ts"
 import { auditConfig } from "./lib/audit_log.ts"
@@ -46,6 +31,21 @@ import { SLAB_SERVER } from "./lib/slab_config.ts"
 import { loadTomlConfig } from "./lib/wager_config.ts"
 import { loadWagersTabPolicyStamp } from "./lib/wagers_tab_policy.ts"
 import { inspectWagersWireContract } from "./lib/wagers_wire_contract.ts"
+import { createDashboardApi, type WsLike } from "./packages/api/src/index.ts"
+import {
+  computeCustomersCohortPayload,
+  createAgentDetailService,
+  createBetTickerService,
+  createCachedJsonReader,
+  createCustomerRowFinder,
+  createDevLiveWagersLoader,
+  createR2PipelineService,
+  DashboardHealthTracker,
+  DashboardMarkdownCache,
+  DEFAULT_R2_PUBLIC_BASE,
+  isSentinelTickerWriter,
+} from "./packages/backend/src/index.ts"
+import { type AgentDetailApiResponse, bunEscapeHtml } from "./packages/contracts/src/index.ts"
 import {
   benchmarkNodeDns,
   buildCustomerProfileFromRow,
@@ -65,10 +65,13 @@ import {
   scanBunImageAssets,
   transformBunImageAsset,
 } from "./server/bun_image_engine.ts"
-import { createMemoryProfileStore, profileOrDefault } from "./src/profile/store.ts"
-import { profileRoutes } from "./src/http/profile_routes.ts"
-import { runRuntimePreflightAudit } from "./src/runtime-preflight.ts"
-import { parseInspectOptionsFromQuery, type BunInspectOptions } from "./server/desk_inspect.ts"
+import {
+  archiveWebLogsToR2,
+  getBunS3Capabilities,
+  loadR2ClientConfiguration,
+  R2_CLIENT_INSPECT_PATH,
+} from "./server/bun_r2_inspect.ts"
+import { type BunInspectOptions, parseInspectOptionsFromQuery } from "./server/desk_inspect.ts"
 import {
   formatProfileInspectPayload,
   normalizeRawCustomerToProfileRecord,
@@ -81,12 +84,9 @@ import {
   type WebLogSortDir,
   type WebLogSortField,
 } from "./server/weblog_inspect.ts"
-import {
-  archiveWebLogsToR2,
-  getBunS3Capabilities,
-  loadR2ClientConfiguration,
-  R2_CLIENT_INSPECT_PATH,
-} from "./server/bun_r2_inspect.ts"
+import { profileRoutes } from "./src/http/profile_routes.ts"
+import { createMemoryProfileStore, profileOrDefault } from "./src/profile/store.ts"
+import { runRuntimePreflightAudit } from "./src/runtime-preflight.ts"
 import {
   isAllowedS3StorageClass,
   isR2ObjectPrefix,

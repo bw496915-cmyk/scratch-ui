@@ -20,6 +20,7 @@
 import { createHash } from "node:crypto"
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { dirname, join, relative, resolve } from "node:path"
+
 import { parse as parseTomlFallback } from "smol-toml"
 
 export interface CanonicalTokenEntry {

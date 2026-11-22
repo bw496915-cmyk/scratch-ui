@@ -1,4 +1,5 @@
 import type React from "react"
+
 import type { ReverseDnsForensicsView } from "../../../../lib/reverse_dns_forensics.ts"
 import { formatReverseDnsForensicsPlain } from "../../../../lib/reverse_dns_forensics.ts"
 

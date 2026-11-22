@@ -1,6 +1,7 @@
+import { describe, expect, test } from "bun:test"
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
-import { describe, expect, test } from "bun:test"
+
 import {
   parseBunLockFile,
   summarizeBunLockFile,
@@ -19,14 +20,14 @@ import {
   resolveBunPackageConfig,
 } from "../../packages/contracts/src/npmrc.ts"
 import {
+  lintSnapshotTestSource,
+  validateSnapshotFileHeader,
+} from "../../scripts/check_snapshot_hygiene.ts"
+import {
   addFileSnapshotSerializer,
   createRedactedSnapshotCredential,
   prepareForSnapshot,
 } from "../preload/snapshot_serializers.ts"
-import {
-  lintSnapshotTestSource,
-  validateSnapshotFileHeader,
-} from "../../scripts/check_snapshot_hygiene.ts"
 
 interface DeskAgentRecord {
   readonly id: number

@@ -8,8 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from "react"
-import { copyText } from "./clipboard.ts"
-import { notifyShadowSliceUrlChanged } from "./desk_quick_jump.ts"
+
 import type {
   MarketCode,
   MarketFilter,
@@ -26,6 +25,10 @@ import type {
   SubSportFilter,
   TaxonomyRollupRow,
 } from "@sportsdesk-ops/contracts/shadow-pricing"
+
+import { trackedFetch } from "./api_usage.ts"
+import { copyText } from "./clipboard.ts"
+import { notifyShadowSliceUrlChanged } from "./desk_quick_jump.ts"
 import { debugDashboardTrace, resolveSliceMetricsFeatureDefault } from "./runtime_flags.ts"
 import {
   type CubeTab,
@@ -35,7 +38,6 @@ import {
   ShadowTaxonomyCubeSection,
 } from "./shadow_pricing/index.tsx"
 import { SliceMetricsViews } from "./SliceMetricsViews.tsx"
-import { trackedFetch } from "./api_usage.ts"
 
 export interface ShadowPricingPanelProps {
   readonly onInspectAccount?: ((accountId: string) => void) | undefined

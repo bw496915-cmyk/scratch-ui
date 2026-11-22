@@ -7,13 +7,13 @@
  * surface byte-level format vs extension mismatches, preview ThumbHash placeholders,
  * and execute live chained `Bun.Image` resize/modulate/transcode pipelines.
  */
-import { apiPostHeaders } from "../session_headers.ts"
 import type React from "react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { getDevCsrfToken, trackedFetch } from "../api_usage.ts"
 import { styles } from "../dashboard_styles.ts"
 import { formatBytes } from "../format_bytes.ts"
+import { apiPostHeaders } from "../session_headers.ts"
 import { SkeletonTableRows } from "./PanelSkeleton.tsx"
 
 export type BunImageOutputFormat = "webp" | "jpeg" | "png" | "avif" | "heic"

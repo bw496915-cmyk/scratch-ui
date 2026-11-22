@@ -5,18 +5,20 @@
  */
 
 import React from "react"
+
 import type { SliceMetrics } from "@sportsdesk-ops/contracts/slice-metrics"
-import { ChartFailClosed, DotPlot, HorizontalBarChart, type ChartDatum } from "./charts.tsx"
+
+import { type ChartDatum, ChartFailClosed, DotPlot, HorizontalBarChart } from "./charts.tsx"
 import {
-  ConservationError,
-  StagingValueError,
-  ZeroBaselineError,
   assertConservation,
+  ConservationError,
   formatUsdFromCents,
   isModifiedZOutlier,
   modifiedZScores,
   sortDescendingBy,
   stageCentsSeries,
+  StagingValueError,
+  ZeroBaselineError,
 } from "./perceptual.ts"
 
 export interface SliceSmallMultiplesModel {

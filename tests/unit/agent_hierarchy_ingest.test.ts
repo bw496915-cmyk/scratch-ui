@@ -1,16 +1,18 @@
 import { describe, expect, test } from "bun:test"
+
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
-import {
-  getActiveRateEntries,
-  sanitizeFantasy402RawTextBeforeUpload,
-  stripSensitiveFieldsFromFantasy402Object,
-} from "../../packages/contracts/src/agent_hierarchy.ts"
+
 import {
   createAgentDetailService,
   createAgentHierarchyStore,
   parseFantasy402HierarchyPayload,
 } from "../../packages/backend/src/index.ts"
+import {
+  getActiveRateEntries,
+  sanitizeFantasy402RawTextBeforeUpload,
+  stripSensitiveFieldsFromFantasy402Object,
+} from "../../packages/contracts/src/agent_hierarchy.ts"
 import { AgentHierarchyPanel } from "../../packages/ui/src/panels/AgentHierarchyPanel.tsx"
 import { AgentInspectorModal } from "../../packages/ui/src/panels/AgentInspectorModal.tsx"
 import { executeNodeTerminalQuery } from "../../server/adapters.ts"

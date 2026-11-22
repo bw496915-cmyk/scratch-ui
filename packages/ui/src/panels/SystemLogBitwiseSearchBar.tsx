@@ -1,3 +1,4 @@
+import { Check, Download, RotateCcw, Search, X } from "lucide-react"
 import type React from "react"
 import {
   memo,
@@ -8,8 +9,10 @@ import {
   useState,
   useSyncExternalStore,
 } from "react"
-import { Check, Download, RotateCcw, Search, X } from "lucide-react"
+
 import {
+  type BitwiseLogFilterStore,
+  type BitwiseLogIndex,
   evaluateBitwiseLogIndex,
   formatBitmaskBinary,
   formatBitmaskHex,
@@ -19,8 +22,6 @@ import {
   LOG_SEVERITY_BIT_WATCH,
   LOG_SEVERITY_BITS,
   LOG_SEVERITY_MASK_ALL,
-  type BitwiseLogFilterStore,
-  type BitwiseLogIndex,
 } from "../system_log_bitwise_filter.ts"
 
 const MONO_FONT = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"

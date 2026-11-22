@@ -1,13 +1,14 @@
 import { describe, expect, test } from "bun:test"
 import { stripVTControlCharacters } from "node:util"
+
 import {
   ANSI_SGR,
-  TRUECOLOR_PALETTE,
   hasControlChars,
   isColorEnabled,
   resolveAnsiPalette,
   resolveAnsiTheme,
   stripControls,
+  TRUECOLOR_PALETTE,
 } from "../src/theme/ansi_tokens.ts"
 import {
   formatKeyValueRows,

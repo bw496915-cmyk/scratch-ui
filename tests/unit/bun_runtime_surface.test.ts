@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test"
+
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
+
+import { loadBunRuntimeSurfaceAudit } from "../../packages/api/src/bun_runtime_surface_loader.ts"
+import { createConfigStatusStore } from "../../packages/api/src/config_status.ts"
 import {
   BUN_ANSI_THEME_PRESETS,
   BUN_CAPABILITY_PILLARS,
@@ -9,22 +13,20 @@ import {
   BUN_MARKDOWN_CALLBACK_SPECS,
   BUN_UTILITIES_CATALOG,
   BUN_UTILITY_CATEGORIES,
-  DEEP_SURFACE_AUDIT_SNIPPET,
-  DEFAULT_BUN_MARKDOWN_STUDIO_SAMPLE,
-  LIVE_SURFACE_AUDIT_SNIPPET,
   bunDeepEquals,
   classifyBunSymbolKind,
   decodeUuidV7TimestampIso,
+  DEEP_SURFACE_AUDIT_SNIPPET,
+  DEFAULT_BUN_MARKDOWN_STUDIO_SAMPLE,
   evaluateBunColorConversions,
   evaluateBunStringUtilities,
   formatInspectTable,
   generateBunUuidV7,
+  LIVE_SURFACE_AUDIT_SNIPPET,
   probeBunCapabilityMatrix,
   renderBunMarkdownStudio,
   runBunSurfaceAudit,
 } from "../../packages/contracts/src/bun_runtime_surface.ts"
-import { loadBunRuntimeSurfaceAudit } from "../../packages/api/src/bun_runtime_surface_loader.ts"
-import { createConfigStatusStore } from "../../packages/api/src/config_status.ts"
 import { BunRuntimeSurfaceSection } from "../../packages/ui/src/panels/BunRuntimeSurfaceSection.tsx"
 import { StatusDashboardPanel } from "../../packages/ui/src/panels/StatusDashboardPanel.tsx"
 

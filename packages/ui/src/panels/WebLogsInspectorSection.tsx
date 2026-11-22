@@ -1,13 +1,4 @@
 import {
-  WEBLOG_OPERATIONS,
-  WEBLOG_SEVERITY_RULES,
-  type ParsedParlayLeg,
-  type WebLogClientSummary,
-  type WebLogEvent,
-  type WebLogEventKind,
-} from "@sportsdesk-ops/contracts"
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import {
   ChevronDown,
   ChevronRight,
   ChevronsUpDown,
@@ -22,20 +13,28 @@ import {
   RotateCcw,
   Terminal,
 } from "lucide-react"
-import { renderAnsiReact } from "../ansi.tsx"
-import { getDevCsrfToken, trackedFetch } from "../api_usage.ts"
-import { styles } from "../dashboard_styles.ts"
-import { copyText } from "../clipboard.ts"
-import { WebLogActionDictionary } from "./WebLogActionDictionary.tsx"
-import { ParlayComparisonSection } from "./ParlayComparisonSection.tsx"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import {
+  type ParsedParlayLeg,
+  WEBLOG_OPERATIONS,
+  WEBLOG_SEVERITY_RULES,
+  type WebLogClientSummary,
+  type WebLogEvent,
+  type WebLogEventKind,
+} from "@sportsdesk-ops/contracts"
+
+import { renderAnsiReact } from "../ansi.tsx"
+import { getDevCsrfToken, trackedFetch } from "../api_usage.ts"
+import { copyText } from "../clipboard.ts"
+import { styles } from "../dashboard_styles.ts"
+import {
+  type BitwiseLogFilterStore,
+  type BitwiseLogIndex,
   buildBitwiseLogIndex,
   LOG_SEVERITY_MASK_ALL,
   parseBitwiseSeverityQuery,
   severityLabelToBit,
-  type BitwiseLogFilterStore,
-  type BitwiseLogIndex,
 } from "../system_log_bitwise_filter.ts"
 import {
   buildSystemLogsJsonExportPayload,
@@ -44,8 +43,10 @@ import {
   formatSystemLogsJson,
   selectBitwiseFilteredRows,
 } from "../system_logs_json_export.ts"
-import { useBitwiseTableDomFilter } from "./SystemLogBitwiseSearchBar.tsx"
 import { SkeletonBlock, SkeletonTableRows } from "./PanelSkeleton.tsx"
+import { ParlayComparisonSection } from "./ParlayComparisonSection.tsx"
+import { useBitwiseTableDomFilter } from "./SystemLogBitwiseSearchBar.tsx"
+import { WebLogActionDictionary } from "./WebLogActionDictionary.tsx"
 
 export type WebLogSortField =
   | "time"

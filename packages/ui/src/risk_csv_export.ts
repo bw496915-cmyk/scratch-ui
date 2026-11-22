@@ -1,7 +1,8 @@
 import { wagerChannelOf } from "@sportsdesk-ops/contracts"
+
 import { sanitizeCaptureText } from "./capture_text.ts"
-import { formatWagerSelection } from "./wager_display.ts"
 import type { LiveWager, ShowcaseCustomer } from "./types.ts"
+import { formatWagerSelection } from "./wager_display.ts"
 
 const SAFE_SIGNED_NUMBER_RE = /^[+-]\d+(?:\.\d+)?$/
 

@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test"
+
 import {
+  type AudioContextLike,
   DEFAULT_RISK_BREACH_SOUND_PREFS,
   getBreachToneNotes,
   normalizeRiskBreachSoundPrefs,
@@ -8,7 +10,6 @@ import {
   RISK_BREACH_SOUND_PREFS_STORAGE_KEY,
   shouldTriggerRiskBreachSound,
   writeStoredRiskBreachSoundPrefs,
-  type AudioContextLike,
 } from "../../packages/ui/src/risk_breach_audio.ts"
 
 function makeMemoryStorage(): Pick<Storage, "getItem" | "setItem"> & {

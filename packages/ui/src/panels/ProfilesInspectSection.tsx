@@ -1,4 +1,3 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Activity,
   Check,
@@ -9,6 +8,8 @@ import {
   RefreshCw,
   Terminal,
 } from "lucide-react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
+
 import { renderAnsiReact } from "../ansi.tsx"
 import { getDevCsrfToken, trackedFetch } from "../api_usage.ts"
 import { copyText } from "../clipboard.ts"

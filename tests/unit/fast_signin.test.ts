@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test"
+
 import {
   createHttpAuthController,
   FAST_SIGNIN_QUERY_PARAM,

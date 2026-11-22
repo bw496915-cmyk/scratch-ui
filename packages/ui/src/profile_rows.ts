@@ -1,4 +1,5 @@
 import { parseCustomerRetainedHistory } from "@sportsdesk-ops/contracts"
+
 /**
  * Map the customer book's rows (`/api/customers` `bookRows`, or explicit legacy fixtures) onto the shape the
  * Profiles tab renders.

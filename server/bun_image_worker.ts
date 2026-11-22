@@ -5,9 +5,10 @@
  *
  * Executed via `bun run server/bun_image_worker.ts <scan|transform>` with JSON on stdin.
  */
-import type { Image } from "bun"
 import { readdir, stat } from "node:fs/promises"
 import { extname, join, relative, resolve } from "node:path"
+
+import type { Image } from "bun"
 
 const RASTER_EXTS = new Set([".png", ".jpg", ".jpeg", ".webp", ".avif", ".heic", ".gif", ".ico"])
 

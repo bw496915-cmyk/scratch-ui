@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test"
+
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
+
+import { SystemLogBitwiseSearchBar } from "../../packages/ui/src/panels/SystemLogBitwiseSearchBar.tsx"
 import {
   BitwiseLogFilterStore,
   buildBitwiseLogIndex,
@@ -16,7 +19,6 @@ import {
   severityLabelToBit,
   toggleSeverityBit,
 } from "../../packages/ui/src/system_log_bitwise_filter.ts"
-import { SystemLogBitwiseSearchBar } from "../../packages/ui/src/panels/SystemLogBitwiseSearchBar.tsx"
 
 describe("system_log_bitwise_filter: flag bitmask helpers", () => {
   test("maps weblog and unified severity labels onto canonical 4-bit flags", () => {

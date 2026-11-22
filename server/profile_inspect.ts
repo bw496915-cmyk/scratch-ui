@@ -7,13 +7,14 @@
  */
 
 import {
-  parseCustomerRetainedHistory,
   type CustomerRetainedHistory,
+  parseCustomerRetainedHistory,
 } from "@sportsdesk-ops/contracts"
-import type { ProfileWeblogEvidence } from "./profile_weblog_evidence.ts"
+
 import { redactIpToSubnetHash } from "../lib/http_auth.ts"
 import {
   ANSI,
+  type BunInspectOptions,
   DeskView,
   formatInspectCliFlags,
   formatInspectCurrency,
@@ -25,11 +26,11 @@ import {
   paint,
   renderInspectOptionsBanner,
   renderProgressBar,
+  type ResolvedBunInspectOptions,
   resolveInspectOptions,
   truncateVisible,
-  type BunInspectOptions,
-  type ResolvedBunInspectOptions,
 } from "./desk_inspect.ts"
+import type { ProfileWeblogEvidence } from "./profile_weblog_evidence.ts"
 
 export interface ProfileInspectReconciliation {
   readonly creditLimitUsd: number

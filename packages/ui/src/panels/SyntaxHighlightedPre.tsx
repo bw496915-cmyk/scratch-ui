@@ -1,14 +1,16 @@
+import { Check, Terminal } from "lucide-react"
 import type React from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Check, Terminal } from "lucide-react"
+
 import {
-  SYNTAX_TOKEN_PALETTE,
   bunColorCss,
   formatSyntaxAsBunTerminalAnsi,
-  tokenizeSyntax,
+  SYNTAX_TOKEN_PALETTE,
   type SyntaxFormat,
   type SyntaxTokenType,
+  tokenizeSyntax,
 } from "@sportsdesk-ops/contracts"
+
 import { renderAnsiReact } from "../ansi.tsx"
 import { copyText } from "../clipboard.ts"
 

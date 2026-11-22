@@ -1,13 +1,15 @@
 import { describe, expect, test } from "bun:test"
+
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
+
 import {
+  computeShiftDurationSeconds,
+  resolveShiftDurationTone,
   SHIFT_HANDOFF_DUE_SECONDS,
   SHIFT_HANDOFF_WARN_SECONDS,
   ShiftDurationTimer,
   ShiftHandoffReminderToast,
-  computeShiftDurationSeconds,
-  resolveShiftDurationTone,
   shouldTriggerShiftHandoffAlert,
 } from "../../packages/ui/src/panels/ShiftDurationTimer.tsx"
 

@@ -1,10 +1,12 @@
 import { AsyncLocalStorage } from "node:async_hooks"
 import { stripVTControlCharacters } from "node:util"
+
 import type { S3Client } from "bun"
+
 import {
+  type BunInspectOptions,
   NODE_INSPECT_CUSTOM,
   resolveInspectOptions,
-  type BunInspectOptions,
 } from "../../server/desk_inspect.ts"
 import { hasControlChars, isColorEnabled, stripControls } from "../theme/ansi_tokens.ts"
 import { formatKeyValueRows, renderThemedMarkdown } from "../theme/markdown_ansi.ts"

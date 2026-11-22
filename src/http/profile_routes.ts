@@ -5,11 +5,11 @@
  */
 
 import { parseCookieHeader, SESSION_COOKIE_NAME } from "../../lib/http_auth.ts"
-import { verifyPostOriginAndCsrf, type CsrfOriginGuardConfig } from "./csrf_origin_guard.ts"
+import { renderMarkdownForTerminal } from "../profile/render.ts"
 import type { ProfileStore } from "../profile/store.ts"
 import { profileOrDefault } from "../profile/store.ts"
 import { parseProfileTheme } from "../profile/validate.ts"
-import { renderMarkdownForTerminal } from "../profile/render.ts"
+import { type CsrfOriginGuardConfig, verifyPostOriginAndCsrf } from "./csrf_origin_guard.ts"
 
 const NO_STORE = { "Cache-Control": "no-store", Vary: "Cookie" } as const
 export const PROFILE_ROUTE = "/api/profile"

@@ -8,6 +8,7 @@
  */
 
 import { wagerChannelOf } from "@sportsdesk-ops/contracts"
+
 import type { LiveWager } from "./types.ts"
 
 const GSLIVE = "gslive"

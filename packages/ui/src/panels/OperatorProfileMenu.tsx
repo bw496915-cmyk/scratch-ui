@@ -1,5 +1,3 @@
-import type React from "react"
-import { useEffect, useMemo, useRef, useState } from "react"
 import {
   Bookmark,
   Check,
@@ -11,14 +9,17 @@ import {
   LogOut,
   Trash2,
 } from "lucide-react"
+import type React from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+
 import { copyText } from "../clipboard.ts"
-import { downloadQrSvgFile, FastSignInQrCode } from "./FastSignInQrCode.tsx"
 import {
   formatShiftSecondsClock,
   getOperatorInitials,
   OPERATOR_PROFILES,
   resolveOperatorProfile,
 } from "../operator_profiles.ts"
+import { downloadQrSvgFile, FastSignInQrCode } from "./FastSignInQrCode.tsx"
 
 const TELEMETRY_MONO_FONT =
   'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'

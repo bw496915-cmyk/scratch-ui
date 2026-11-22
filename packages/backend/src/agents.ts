@@ -5,7 +5,9 @@
 
 import { readFile } from "node:fs/promises"
 import { resolve } from "node:path"
+
 import type { AgentDetailApiResponse, WagerTier } from "@sportsdesk-ops/contracts"
+
 import type { AgentHierarchyNodeDetail } from "./agent_hierarchy.ts"
 import { BoundedStampCache, statStamp } from "./cache.ts"
 

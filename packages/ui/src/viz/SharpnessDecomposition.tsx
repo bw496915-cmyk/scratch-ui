@@ -5,12 +5,13 @@
  */
 
 import React from "react"
-import { ChartFailClosed, HorizontalBarChart, type ChartDatum } from "./charts.tsx"
+
+import { type ChartDatum, ChartFailClosed, HorizontalBarChart } from "./charts.tsx"
 import {
-  ConservationError,
-  StagingValueError,
   assertScaledConservation,
+  ConservationError,
   sortDescendingBy,
+  StagingValueError,
 } from "./perceptual.ts"
 
 export const SCORE_UNITS_PER_POINT = 100

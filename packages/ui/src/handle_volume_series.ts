@@ -5,6 +5,7 @@
  */
 
 import { wagerChannelOf } from "@sportsdesk-ops/contracts"
+
 import { parseDeskClock } from "./gslive_game_log.ts"
 import type { LiveWager } from "./types.ts"
 

@@ -5,12 +5,13 @@
  */
 
 import {
-  wagerChannelOf,
   type SlabPolicySummary,
-  type WagerTier,
+  wagerChannelOf,
   type WagersWireContractSummary,
   type WagersWireViolation,
+  type WagerTier,
 } from "@sportsdesk-ops/contracts"
+
 import type {
   CustomersApiResponse,
   CustomersCohortsSummary,

@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, spyOn, test } from "bun:test"
+
 import {
+  assertCleanHostname,
   DnsBoundaryError,
   type DnsErrorCode,
-  assertCleanHostname,
   lookupStrictFamily,
 } from "../../src/lib/dns_boundary.ts"
 import { auditDnsDrift, isRetryableDnsError } from "../../src/lib/dns_drift_audit.ts"

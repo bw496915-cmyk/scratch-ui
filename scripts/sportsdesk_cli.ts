@@ -18,19 +18,20 @@
 import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync } from "node:fs"
 import { resolve } from "node:path"
+
+import { loadBunRuntimeSurfaceAudit } from "../packages/api/src/bun_runtime_surface_loader.ts"
 import {
-  formatInspectTable,
-  renderBunMarkdownStudio,
   type BunMarkdownRenderMode,
   type BunMarkdownRenderPresetId,
+  formatInspectTable,
+  renderBunMarkdownStudio,
 } from "../packages/contracts/src/bun_runtime_surface.ts"
-import { loadBunRuntimeSurfaceAudit } from "../packages/api/src/bun_runtime_surface_loader.ts"
 import { assertSafeExecArgv } from "../src/cli/preflight_guard.ts"
 import {
-  UNIFIED_CLI_COMMANDS,
   auditMarkdownDocs,
   auditPipelineArtifactsMetadata,
   runArtifactPipeline,
+  UNIFIED_CLI_COMMANDS,
 } from "./gen_artifacts.ts"
 
 const ROOT_DIR = process.cwd()

@@ -2,16 +2,18 @@ import { afterEach, describe, expect, test } from "bun:test"
 import { mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+
 import { renderToStaticMarkup } from "react-dom/server"
+
 import {
   createR2PipelineService,
   probeDaemon4020Status,
 } from "../packages/backend/src/r2_pipeline.ts"
+import { R2PipelineTabPanel } from "../packages/ui/src/panels/R2PipelineTabPanel.tsx"
 import {
   buildNodeAutomationsSnapshot,
   buildUnmeasuredTicketVerification,
 } from "../server/collector_status.ts"
-import { R2PipelineTabPanel } from "../packages/ui/src/panels/R2PipelineTabPanel.tsx"
 
 const now = () => new Date("2026-11-19T23:45:00.000Z")
 const directories: string[] = []

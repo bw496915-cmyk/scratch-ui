@@ -1,4 +1,9 @@
 import { describe, expect, test } from "bun:test"
+
+import {
+  computeProfileRiskHeadroom,
+  summarizeCustomerLiveActivity,
+} from "../../packages/ui/src/customer_drilldown_summary.ts"
 import {
   clampRiskExposureLimitUsd,
   DEFAULT_RISK_EXPOSURE_LIMIT_USD,
@@ -14,10 +19,6 @@ import {
   writeStoredRiskExposureLimitUsd,
   writeStoredRiskExposureThresholds,
 } from "../../packages/ui/src/risk_threshold_alert.ts"
-import {
-  computeProfileRiskHeadroom,
-  summarizeCustomerLiveActivity,
-} from "../../packages/ui/src/customer_drilldown_summary.ts"
 import type { LiveWager, ShowcaseCustomer } from "../../packages/ui/src/types.ts"
 
 function makeWager(overrides: Partial<LiveWager>): LiveWager {
