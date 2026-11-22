@@ -137,6 +137,257 @@ function describeSlaTrend(
   return "steady"
 }
 
+export interface StaleKeysTrendPoint {
+  readonly at: string
+  readonly atMs: number
+  readonly staleCount: number
+  readonly totalSinks: number
+}
+
+const STALE_SPARK_WIDTH = 136
+const STALE_SPARK_HEIGHT = 28
+const STALE_SPARK_PAD_Y = 3
+const STALE_TREND_WINDOW_MINUTES = 60
+
+/**
+ * Reconstruct the aggregate `staleKeys` count (`state !== "fresh"`) across all
+ * sinks over the last `windowMinutes` from process-local `r2PipelineHistory`.
+ * Carries forward each sink's last known state prior to the window so partial
+ * state-change samples still report an accurate fleet-wide count.
+ */
+export function buildStaleKeysTrendSeries(
+  history: R2PipelineHistoryApiResponse | null | undefined,
+  windowMinutes = STALE_TREND_WINDOW_MINUTES,
+): readonly StaleKeysTrendPoint[] {
+  if (!history || history.sinks.length === 0) return []
+
+  const parsedSinks = history.sinks.map((sink) =>
+    sink.samples
+      .map((sample) => ({
+        atMs: Date.parse(sample.at),
+        state: sample.state,
+      }))
+      .filter((entry) => Number.isFinite(entry.atMs))
+      .sort((a, b) => a.atMs - b.atMs),
+  )
+
+  let maxSampleMs = -Infinity
+  for (const samples of parsedSinks) {
+    const last = samples[samples.length - 1]
+    if (last && last.atMs > maxSampleMs) maxSampleMs = last.atMs
+  }
+  if (!Number.isFinite(maxSampleMs)) return []
+
+  const observedMs = Date.parse(history.observedAt)
+  const endMs = Number.isFinite(observedMs) ? Math.max(observedMs, maxSampleMs) : maxSampleMs
+  const windowStartMs = endMs - windowMinutes * 60_000
+
+  const windowTimestamps = new Set<number>()
+  for (const samples of parsedSinks) {
+    for (const sample of samples) {
+      if (sample.atMs >= windowStartMs && sample.atMs <= endMs) {
+        windowTimestamps.add(sample.atMs)
+      }
+    }
+  }
+  if (windowTimestamps.size === 0) return []
+
+  const sortedTimestamps = [...windowTimestamps].sort((a, b) => a - b)
+  const cursors = parsedSinks.map(() => 0)
+  const latestStates: Array<R2SinkHistorySample["state"] | null> = parsedSinks.map(() => null)
+
+  // Seed each sink's state from observations prior to the 60-minute window.
+  for (let s = 0; s < parsedSinks.length; s++) {
+    const samples = parsedSinks[s]!
+    while (cursors[s]! < samples.length && samples[cursors[s]!]!.atMs < windowStartMs) {
+      latestStates[s] = samples[cursors[s]!]!.state
+      cursors[s] = cursors[s]! + 1
+    }
+  }
+
+  const totalSinks = history.sinks.length
+  const points: StaleKeysTrendPoint[] = []
+
+  for (const atMs of sortedTimestamps) {
+    for (let s = 0; s < parsedSinks.length; s++) {
+      const samples = parsedSinks[s]!
+      while (cursors[s]! < samples.length && samples[cursors[s]!]!.atMs <= atMs) {
+        latestStates[s] = samples[cursors[s]!]!.state
+        cursors[s] = cursors[s]! + 1
+      }
+    }
+    let staleCount = 0
+    for (const state of latestStates) {
+      if (state !== null && state !== "fresh") staleCount++
+    }
+    points.push({
+      at: new Date(atMs).toISOString(),
+      atMs,
+      staleCount,
+      totalSinks,
+    })
+  }
+
+  return points
+}
+
+function StaleKeysSparkline({
+  points,
+  fallbackStaleCount,
+  totalSinks,
+}: {
+  readonly points: readonly StaleKeysTrendPoint[]
+  readonly fallbackStaleCount: number | null
+  readonly totalSinks: number
+}): React.ReactElement {
+  const effectiveTotal = Math.max(1, totalSinks)
+  const latestCount =
+    points.length > 0 ? points[points.length - 1]!.staleCount : (fallbackStaleCount ?? 0)
+  const firstCount = points.length > 0 ? points[0]!.staleCount : latestCount
+  const minCount = points.length > 0 ? Math.min(...points.map((p) => p.staleCount)) : latestCount
+  const maxCount = points.length > 0 ? Math.max(...points.map((p) => p.staleCount)) : latestCount
+
+  const tone =
+    latestCount === 0 ? "#4ade80" : latestCount >= effectiveTotal ? "#f87171" : "#fbbf24"
+  const delta = latestCount - firstCount
+  const trendLabel =
+    points.length < 2
+      ? points.length === 1
+        ? "1 sample"
+        : "no samples"
+      : delta > 0
+        ? `↑ +${delta}`
+        : delta < 0
+          ? `↓ ${delta}`
+          : "→ steady"
+
+  const innerHeight = STALE_SPARK_HEIGHT - STALE_SPARK_PAD_Y * 2
+  const yForCount = (count: number): number =>
+    STALE_SPARK_PAD_Y + innerHeight - Math.min(1, count / effectiveTotal) * innerHeight
+  const baselineY = yForCount(0)
+
+  let coords: Array<{ readonly x: number; readonly y: number }> = []
+  if (points.length >= 2) {
+    const startMs = points[0]!.atMs
+    const spanMs = points[points.length - 1]!.atMs - startMs
+    coords = points.map((p, idx) => {
+      const ratio = spanMs > 0 ? (p.atMs - startMs) / spanMs : idx / (points.length - 1)
+      return {
+        x: ratio * STALE_SPARK_WIDTH,
+        y: yForCount(p.staleCount),
+      }
+    })
+  }
+
+  const polylinePoints = coords.map((c) => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(" ")
+  const areaPoints =
+    coords.length >= 2
+      ? `${coords[0]!.x.toFixed(1)},${baselineY.toFixed(1)} ${polylinePoints} ${coords[coords.length - 1]!.x.toFixed(1)},${baselineY.toFixed(1)}`
+      : ""
+  const lastCoord = coords[coords.length - 1]
+
+  const ariaLabel =
+    points.length >= 2
+      ? `staleKeys trend over last 60 minutes: latest ${latestCount} of ${effectiveTotal} stale across ${points.length} samples (min ${minCount}, max ${maxCount})`
+      : `staleKeys count over last 60 minutes: ${latestCount} of ${effectiveTotal} stale (${points.length} sample${points.length === 1 ? "" : "s"})`
+
+  return (
+    <div
+      data-stale-keys-sparkline="true"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "4px",
+        padding: "6px 10px",
+        borderRadius: "6px",
+        backgroundColor: "rgba(15, 23, 42, 0.72)",
+        border: "1px solid rgba(51, 65, 85, 0.75)",
+        minWidth: "160px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "8px",
+          fontSize: "10px",
+          lineHeight: 1.2,
+        }}
+      >
+        <span style={{ color: "#94a3b8", fontWeight: 600 }}>staleKeys · 60m</span>
+        <span style={{ fontWeight: 700, color: tone, fontVariantNumeric: "tabular-nums" }}>
+          {latestCount}/{effectiveTotal}
+        </span>
+      </div>
+      <svg
+        width={STALE_SPARK_WIDTH}
+        height={STALE_SPARK_HEIGHT}
+        role="img"
+        aria-label={ariaLabel}
+        style={{ display: "block", overflow: "visible" }}
+      >
+        <title>{ariaLabel}</title>
+        <line
+          x1={0}
+          y1={baselineY.toFixed(1)}
+          x2={STALE_SPARK_WIDTH}
+          y2={baselineY.toFixed(1)}
+          stroke="#475569"
+          strokeDasharray="2 3"
+          strokeWidth={1}
+          strokeOpacity={0.75}
+        />
+        {coords.length >= 2 && (
+          <>
+            <polygon points={areaPoints} fill={tone} fillOpacity={0.14} />
+            <polyline
+              points={polylinePoints}
+              fill="none"
+              stroke={tone}
+              strokeWidth={1.75}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            {lastCoord && (
+              <circle
+                cx={lastCoord.x.toFixed(1)}
+                cy={lastCoord.y.toFixed(1)}
+                r={2.4}
+                fill={tone}
+              />
+            )}
+          </>
+        )}
+        {coords.length < 2 && points.length === 1 && (
+          <circle
+            cx={(STALE_SPARK_WIDTH / 2).toFixed(1)}
+            cy={yForCount(latestCount).toFixed(1)}
+            r={2.5}
+            fill={tone}
+          />
+        )}
+      </svg>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "8px",
+          fontSize: "10px",
+          color: "#64748b",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        <span>
+          peak {maxCount} · {points.length} {points.length === 1 ? "pt" : "pts"}
+        </span>
+        <span style={{ color: tone, fontWeight: 600 }}>{trendLabel}</span>
+      </div>
+    </div>
+  )
+}
+
 interface BlockerGroup {
   readonly key: string
   readonly headline: string
@@ -252,6 +503,8 @@ export function R2PipelineTabPanel({
   for (const series of history?.sinks ?? []) {
     historySeriesById.set(series.id, series)
   }
+  const staleKeysTrend = buildStaleKeysTrendSeries(history)
+  const staleKeysTotalSinks = history?.sinks.length ?? data?.totalCount ?? 0
   // Worst breach first; the backend keeps target order for machine consumers.
   const orderedSinks = [...(data?.sinks ?? [])].sort(
     (a, b) => (b.sla?.breachSeconds ?? 0) - (a.sla?.breachSeconds ?? 0),
@@ -380,14 +633,30 @@ export function R2PipelineTabPanel({
             </code>
           </div>
         </div>
-        <button
-          type="button"
-          style={styles.actionBtn}
-          onClick={() => onRefresh(true)}
-          disabled={loading}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            flexWrap: "wrap",
+          }}
         >
-          {loading ? "Probing R2..." : "🔄 Force R2 Probe"}
-        </button>
+          {history && (
+            <StaleKeysSparkline
+              points={staleKeysTrend}
+              fallbackStaleCount={data?.staleKeys.length ?? null}
+              totalSinks={staleKeysTotalSinks}
+            />
+          )}
+          <button
+            type="button"
+            style={styles.actionBtn}
+            onClick={() => onRefresh(true)}
+            disabled={loading}
+          >
+            {loading ? "Probing R2..." : "🔄 Force R2 Probe"}
+          </button>
+        </div>
       </div>
 
       {error && (

@@ -9,7 +9,10 @@ import {
   createR2PipelineService,
   probeDaemon4020Status,
 } from "../packages/backend/src/r2_pipeline.ts"
-import { R2PipelineTabPanel } from "../packages/ui/src/panels/R2PipelineTabPanel.tsx"
+import {
+  buildStaleKeysTrendSeries,
+  R2PipelineTabPanel,
+} from "../packages/ui/src/panels/R2PipelineTabPanel.tsx"
 import {
   buildNodeAutomationsSnapshot,
   buildUnmeasuredTicketVerification,
@@ -246,5 +249,92 @@ describe("pipeline publication versus data freshness", () => {
     expect(html).toContain("fresh publication &amp; data")
     expect(html).not.toContain("fallback active")
     expect(html).not.toContain("CANARY PASS")
+  })
+
+  test("staleKeys 60m sparkline filters to the last 60 minutes, carries forward prior sink states, and renders SVG trend", async () => {
+    const result = await createPipeline({ capturedAt: now().toISOString() }).probeAll()
+    const baseMs = now().getTime()
+    const isoMinus = (mins: number) => new Date(baseMs - mins * 60_000).toISOString()
+
+    const history = {
+      schemaVersion: 1 as const,
+      observedAt: now().toISOString(),
+      source: "process-memory" as const,
+      sampledSince: isoMinus(90),
+      minSampleIntervalSeconds: 60,
+      sinks: [
+        {
+          id: "f402-bet-ticker",
+          label: "Bet Ticker",
+          slaSeconds: 900,
+          sampleCount: 4,
+          samples: [
+            // Strictly older than 60m — should carry forward as stale at t-45m until updated at t-30m
+            { at: isoMinus(90), ageSeconds: 1200, state: "stale" as const, dataAgeSeconds: 1200 },
+            { at: isoMinus(30), ageSeconds: 120, state: "fresh" as const, dataAgeSeconds: 120 },
+            { at: isoMinus(10), ageSeconds: 1100, state: "stale" as const, dataAgeSeconds: 1100 },
+          ],
+        },
+        {
+          id: "f402-agent-tree",
+          label: "Agent Tree",
+          slaSeconds: 3600,
+          sampleCount: 3,
+          samples: [
+            { at: isoMinus(45), ageSeconds: 4000, state: "stale" as const, dataAgeSeconds: 4000 },
+            { at: isoMinus(30), ageSeconds: 4100, state: "stale" as const, dataAgeSeconds: 4100 },
+            { at: isoMinus(10), ageSeconds: 300, state: "fresh" as const, dataAgeSeconds: 300 },
+          ],
+        },
+        {
+          id: "gslive-tally",
+          label: "GSLive Tally",
+          slaSeconds: 1800,
+          sampleCount: 2,
+          samples: [
+            { at: isoMinus(45), ageSeconds: null, state: "missing" as const, dataAgeSeconds: null },
+            { at: isoMinus(10), ageSeconds: 200, state: "fresh" as const, dataAgeSeconds: 200 },
+          ],
+        },
+        {
+          id: "f402-weekly-rollup",
+          label: "Weekly Rollup",
+          slaSeconds: 3600,
+          sampleCount: 1,
+          samples: [
+            // Sampled prior to 60m window and remained fresh throughout
+            { at: isoMinus(75), ageSeconds: 100, state: "fresh" as const, dataAgeSeconds: 100 },
+          ],
+        },
+      ],
+    }
+
+    const series = buildStaleKeysTrendSeries(history, 60)
+    // Only timestamps within [t-60m, t] should appear: t-45m, t-30m, t-10m
+    expect(series.map((p) => p.at)).toEqual([isoMinus(45), isoMinus(30), isoMinus(10)])
+    // t-45m: ticker(stale carried) + agent(stale) + gslive(missing) + weekly(fresh carried) = 3
+    // t-30m: ticker(fresh) + agent(stale) + gslive(missing carried) + weekly(fresh carried) = 2
+    // t-10m: ticker(stale) + agent(fresh) + gslive(fresh) + weekly(fresh carried) = 1
+    expect(series.map((p) => p.staleCount)).toEqual([3, 2, 1])
+
+    const html = renderToStaticMarkup(
+      <R2PipelineTabPanel
+        data={result}
+        history={history}
+        loading={false}
+        error={null}
+        onRefresh={() => {}}
+      />,
+    )
+    expect(html).toContain('data-stale-keys-sparkline="true"')
+    expect(html).toContain("staleKeys · 60m")
+    expect(html).toContain("1/4")
+    expect(html).toContain("peak 3 · 3 pts")
+    expect(html).toContain("↓ -2")
+    expect(html).toContain("<polyline")
+    expect(html).toContain("<polygon")
+    expect(html).toContain(
+      "staleKeys trend over last 60 minutes: latest 1 of 4 stale across 3 samples (min 1, max 3)",
+    )
   })
 })
