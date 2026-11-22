@@ -204,6 +204,7 @@
     "start": "node server.mjs",
     "start:local": "bun --no-env-file server.mjs",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=esm --packages=external --external:bun:sqlite --outfile=server.mjs",
+    "build:metafile": "NODE_ENV=production bun build ./src/dashboard/index.tsx --outdir ./dist/metafile --production --target=browser --env=PUBLIC_* --metafile=./dist/meta.json --metafile-md=./dist/meta.md",
     "preview": "vite preview --host 0.0.0.0 --port 3000",
     "clean": "rm -rf dist server.js server.mjs",
     "lint": "tsc --noEmit && tsc --noEmit --project scripts/tsconfig.runtime.json && tsc --noEmit --project packages/ui/tsconfig.json",
