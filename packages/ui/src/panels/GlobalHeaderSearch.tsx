@@ -240,26 +240,31 @@ export function GlobalHeaderSearch({
     <div
       ref={rootRef}
       data-global-header-search="true"
+      className="sd-global-search"
       style={{
         position: "relative",
-        flex: "1 1 280px",
+        flex: "1 1 260px",
         minWidth: 0,
         maxWidth: "420px",
       }}
     >
       <div
+        className="sd-global-search-box"
+        data-focused={focused ? "true" : undefined}
         style={{
           display: "flex",
           alignItems: "center",
           gap: "8px",
           padding: "6px 10px",
           borderRadius: "6px",
-          backgroundColor: "#070b14",
-          border: focused
-            ? "1px solid #38bdf8"
+          backgroundColor: "var(--surface-page, #070b14)",
+          borderWidth: "1px",
+          borderStyle: "solid",
+          borderColor: focused
+            ? "var(--accent-primary, #38bdf8)"
             : normalizedQuery
-              ? "1px solid rgba(56, 189, 248, 0.5)"
-              : "1px solid #1e293b",
+              ? "rgba(56, 189, 248, 0.5)"
+              : "var(--border-default, #1e293b)",
           boxShadow: focused ? "0 0 0 2px rgba(56, 189, 248, 0.16)" : "none",
           transition: "border-color 0.15s ease, box-shadow 0.15s ease",
         }}
@@ -291,6 +296,7 @@ export function GlobalHeaderSearch({
           }}
           onBlur={() => setFocused(false)}
           onKeyDown={handleKeyDown}
+          className="sd-global-search-input"
           placeholder="Search wagers, customers, tickers..."
           style={{
             flex: 1,
@@ -298,7 +304,7 @@ export function GlobalHeaderSearch({
             backgroundColor: "transparent",
             border: "none",
             outline: "none",
-            color: "#f1f5f9",
+            color: "var(--text-primary, #f1f5f9)",
             fontSize: "12px",
             fontFamily: "inherit",
             padding: 0,
@@ -307,12 +313,13 @@ export function GlobalHeaderSearch({
         {normalizedQuery ? (
           <>
             <span
+              className="sd-global-search-count"
               style={{
                 fontSize: "10px",
                 fontWeight: 700,
                 fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                color: totalMatches > 0 ? "#38bdf8" : "#94a3b8",
-                backgroundColor: "rgba(30, 41, 59, 0.9)",
+                color: totalMatches > 0 ? "var(--accent-primary, #38bdf8)" : "var(--text-muted, #94a3b8)",
+                backgroundColor: "var(--surface-elevated, rgba(30, 41, 59, 0.9))",
                 padding: "1px 6px",
                 borderRadius: "4px",
                 whiteSpace: "nowrap",
@@ -336,7 +343,7 @@ export function GlobalHeaderSearch({
                 background: "none",
                 border: "none",
                 padding: "2px",
-                color: "#94a3b8",
+                color: "var(--text-muted, #94a3b8)",
                 cursor: "pointer",
               }}
             >
@@ -345,15 +352,18 @@ export function GlobalHeaderSearch({
           </>
         ) : (
           <kbd
+            className="sd-global-search-kbd sd-kbd-shortcut"
             style={{
               padding: "1px 5px",
               borderRadius: "4px",
               fontSize: "10px",
               fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
               fontWeight: 600,
-              color: "#94a3b8",
-              backgroundColor: "#1e293b",
-              border: "1px solid #334155",
+              color: "var(--text-muted, #94a3b8)",
+              backgroundColor: "var(--surface-elevated, #1e293b)",
+              borderWidth: "1px",
+              borderStyle: "solid",
+              borderColor: "var(--border-strong, #334155)",
               lineHeight: 1.4,
             }}
             title="Press / to focus global search"
@@ -367,6 +377,7 @@ export function GlobalHeaderSearch({
         <div
           role="listbox"
           aria-label="Global lookup results"
+          className="sd-global-search-dropdown"
           style={{
             position: "absolute",
             top: "calc(100% + 6px)",
@@ -375,15 +386,18 @@ export function GlobalHeaderSearch({
             minWidth: 0,
             maxHeight: "460px",
             overflowY: "auto",
-            backgroundColor: "#0b1120",
-            border: "1px solid #334155",
+            backgroundColor: "var(--surface-panel, #0b1120)",
+            borderWidth: "1px",
+            borderStyle: "solid",
+            borderColor: "var(--border-strong, #334155)",
             borderRadius: "8px",
-            boxShadow: "0 16px 40px rgba(2, 6, 23, 0.78)",
+            boxShadow: "0 16px 40px rgba(2, 6, 23, 0.38)",
             zIndex: 1000,
           }}
         >
           {/* Scope filter header */}
           <div
+            className="sd-global-search-dropdown-header"
             style={{
               display: "flex",
               alignItems: "center",
@@ -391,8 +405,10 @@ export function GlobalHeaderSearch({
               flexWrap: "wrap",
               gap: "6px",
               padding: "8px 10px",
-              borderBottom: "1px solid #1e293b",
-              backgroundColor: "#0d1527",
+              borderBottomWidth: "1px",
+              borderBottomStyle: "solid",
+              borderBottomColor: "var(--border-default, #1e293b)",
+              backgroundColor: "var(--surface-elevated, #0d1527)",
               position: "sticky",
               top: 0,
               zIndex: 1,

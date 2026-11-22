@@ -13,11 +13,13 @@ import "./desk.css"
 import {
   Activity,
   AlertTriangle,
+  Menu,
   RefreshCw,
   ScrollText,
   ShieldAlert,
   ShieldCheck,
   SlidersHorizontal,
+  X,
 } from "lucide-react"
 
 import type { ReverseDnsClassification } from "../../../lib/bun_dns.ts"
@@ -928,6 +930,17 @@ export function App(): React.ReactElement {
   const [dashboardTheme, setDashboardTheme] = useState<DashboardTheme>(() =>
     readStoredDashboardTheme(),
   )
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  useEffect(() => {
+    if (!mobileNavOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileNavOpen(false)
+      }
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [mobileNavOpen])
   const [handoffInitiatedShiftAt, setHandoffInitiatedShiftAt] = useState<number | null>(null)
   const [handoffAlertDismissedShiftAt, setHandoffAlertDismissedShiftAt] = useState<number | null>(
     null,
@@ -3182,383 +3195,480 @@ export function App(): React.ReactElement {
           statusText: "HEALTHY",
         }
 
+  const renderWorkspaceNavItems = (closeDrawerOnSelect: boolean) => (
+    <>
+      <button
+        type="button"
+        className="sd-workspace-nav-btn"
+        style={styles.tabBtn(activeTab === "customers")}
+        onClick={() => {
+          setActiveTab("customers")
+          if (closeDrawerOnSelect) setMobileNavOpen(false)
+        }}
+        title="Inspect individual sharp originators, sizing models, and risk (Ctrl+1)"
+      >
+        <span>👥 Profiles ({profileCustomers.length > 0 ? profileCustomers.length : "—"})</span>
+        <kbd className="sd-kbd-shortcut" style={styles.keyShortcutBadge}>
+          Ctrl+1
+        </kbd>
+      </button>
+      <button
+        type="button"
+        className="sd-workspace-nav-btn"
+        style={styles.tabBtn(activeTab === "surveillance")}
+        onClick={() => {
+          setActiveTab("surveillance")
+          if (closeDrawerOnSelect) setMobileNavOpen(false)
+        }}
+        title="Bun.dns latency benchmarks and surveillance markdown (Ctrl+2)"
+      >
+        <span>📊 Telemetry</span>
+        <kbd className="sd-kbd-shortcut" style={styles.keyShortcutBadge}>
+          Ctrl+2
+        </kbd>
+      </button>
+      <button
+        type="button"
+        className="sd-workspace-nav-btn"
+        style={styles.tabBtn(activeTab === "terminal")}
+        onClick={() => {
+          setActiveTab("terminal")
+          if (closeDrawerOnSelect) setMobileNavOpen(false)
+        }}
+        title="Native Bun.Terminal PTY query engine (Ctrl+3 or Cmd+K)"
+      >
+        <span>💻 Terminal (PTY)</span>
+        <kbd className="sd-kbd-shortcut" style={styles.keyShortcutBadge}>
+          Ctrl+3
+        </kbd>
+      </button>
+      <button
+        type="button"
+        className="sd-workspace-nav-btn"
+        style={styles.tabBtn(activeTab === "rankings")}
+        onClick={() => {
+          setActiveTab("rankings")
+          if (closeDrawerOnSelect) setMobileNavOpen(false)
+        }}
+        title="Rolling 30-day handle rankings & proxy conduits (Ctrl+4)"
+      >
+        <span>🏆 Downlines ({rankings ? rankings.conduits.length : "—"})</span>
+        <kbd className="sd-kbd-shortcut" style={styles.keyShortcutBadge}>
+          Ctrl+4
+        </kbd>
+      </button>
+      <button
+        type="button"
+        className="sd-workspace-nav-btn"
+        style={{
+          ...styles.tabBtn(activeTab === "wagers"),
+          position: "relative",
+        }}
+        onClick={() => {
+          setActiveTab("wagers")
+          if (closeDrawerOnSelect) setMobileNavOpen(false)
+        }}
+        title="Real-time incoming wager tape with CLV alerts (Ctrl+5)"
+      >
+        <span>⚡ Live Wagers ({liveWagers.length})</span>
+        <span
+          className="live-alert-pulse"
+          style={{
+            fontSize: "10px",
+            padding: "1px 5px",
+            borderRadius: "8px",
+            backgroundColor: "#ef4444",
+            color: "#ffffff",
+            fontWeight: 700,
+            marginLeft: "4px",
+          }}
+        >
+          🚨{" "}
+          {
+            liveWagers.filter((w) => w.alertTier === "CRITICAL" || w.alertTier === "STEAM")
+              .length
+          }
+        </span>
+        <kbd className="sd-kbd-shortcut" style={styles.keyShortcutBadge}>
+          Ctrl+5
+        </kbd>
+      </button>
+      <button
+        type="button"
+        className="sd-workspace-nav-btn"
+        style={{
+          ...styles.tabBtn(activeTab === "alerts"),
+          position: "relative",
+        }}
+        onClick={() => {
+          setActiveTab("alerts")
+          fetchAlerts()
+          if (closeDrawerOnSelect) setMobileNavOpen(false)
+        }}
+        title="Surveillance Alert Queue, Dead-Letter Queue (DLQ), and Replay Controls (Ctrl+6)"
+      >
+        <span>🚨 DLQ &amp; Alerts ({alertRecords.length})</span>
+        {healthData?.alerts?.dead && healthData.alerts.dead > 0 ? (
+          <span
+            style={{
+              fontSize: "10px",
+              padding: "1px 5px",
+              borderRadius: "8px",
+              backgroundColor: "#ef4444",
+              color: "#ffffff",
+              fontWeight: 700,
+              marginLeft: "4px",
+            }}
+          >
+            {healthData.alerts.dead} DEAD
+          </span>
+        ) : null}
+        <kbd className="sd-kbd-shortcut" style={styles.keyShortcutBadge}>
+          Ctrl+6
+        </kbd>
+      </button>
+      <button
+        type="button"
+        className="sd-workspace-nav-btn"
+        style={styles.tabBtn(activeTab === "shadow")}
+        onClick={() => {
+          setActiveTab("shadow")
+          if (closeDrawerOnSelect) setMobileNavOpen(false)
+        }}
+        title="Counterfactual Shadow Pricing & Slice Hold-Floor Cube (Ctrl+7)"
+      >
+        <span>⚖️ Shadow Pricing (#135)</span>
+        <kbd className="sd-kbd-shortcut" style={styles.keyShortcutBadge}>
+          Ctrl+7
+        </kbd>
+      </button>
+      <button
+        type="button"
+        className="sd-workspace-nav-btn"
+        style={styles.tabBtn(activeTab === "bet-ticker")}
+        onClick={() => {
+          setActiveTab("bet-ticker")
+          if (closeDrawerOnSelect) setMobileNavOpen(false)
+        }}
+        title="Actionable Bet Ticker feed (Ctrl+8)"
+      >
+        <span>📡 Bet Ticker ({betTickerData?.localFeed.actionableTicketCount ?? "…"})</span>
+        <kbd className="sd-kbd-shortcut" style={styles.keyShortcutBadge}>
+          Ctrl+8
+        </kbd>
+      </button>
+      <button
+        type="button"
+        className="sd-workspace-nav-btn"
+        style={styles.tabBtn(activeTab === "r2")}
+        onClick={() => {
+          setActiveTab("r2")
+          if (closeDrawerOnSelect) setMobileNavOpen(false)
+        }}
+        title="R2 Pipeline Freshness Monitor (Ctrl+9)"
+      >
+        <span>☁️ R2 Pipeline</span>
+        {r2PipelineData?.staleKeys && r2PipelineData.staleKeys.length > 0 ? (
+          <span
+            style={{
+              fontSize: "10px",
+              padding: "1px 5px",
+              borderRadius: "8px",
+              backgroundColor: "#f59e0b",
+              color: "#090d16",
+              fontWeight: 700,
+              marginLeft: "4px",
+            }}
+          >
+            {r2PipelineData.staleKeys.length} STALE
+          </span>
+        ) : null}
+        <kbd className="sd-kbd-shortcut" style={styles.keyShortcutBadge}>
+          Ctrl+9
+        </kbd>
+      </button>
+      <button
+        type="button"
+        className="sd-workspace-nav-btn"
+        style={styles.tabBtn(activeTab === "assets")}
+        onClick={() => {
+          setActiveTab("assets")
+          if (closeDrawerOnSelect) setMobileNavOpen(false)
+        }}
+        title="Bun.Image width, height, format and backend for the served dashboard assets (Ctrl+0)"
+      >
+        <span>🖼️ Assets</span>
+        <kbd className="sd-kbd-shortcut" style={styles.keyShortcutBadge}>
+          Ctrl+0
+        </kbd>
+      </button>
+    </>
+  )
+
+  const renderOperatorMenu = () => (
+    <OperatorProfileMenu
+      username={shiftOperator}
+      signedInAt={operatorSignedInAt}
+      activeShiftSeconds={activeShiftSeconds}
+      onSwitchOperator={(nextOp) => {
+        handleOperatorChange(nextOp)
+        void fetchShiftSummary(nextOp)
+      }}
+      onOpenShiftHandoff={() => {
+        setMobileNavOpen(false)
+        openShiftHandoffModal()
+      }}
+      onMintFastSignInBookmark={
+        serverAuthState.authenticated ? handleMintFastSignInBookmark : undefined
+      }
+      onRevokeFastSignInBookmarks={
+        serverAuthState.authenticated ? handleRevokeFastSignInBookmarks : undefined
+      }
+      onLogout={() => {
+        setMobileNavOpen(false)
+        handleOperatorLogout()
+      }}
+    />
+  )
+
   return (
     <div data-dashboard-theme={dashboardTheme} style={styles.container}>
       {/* Global Header */}
-      <header style={styles.header}>
-        <div style={styles.headerLeft}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <a
-              href="#risk-overview"
-              className="sd-logo-home-link"
-              onClick={(e) => {
-                e.preventDefault()
-                navigatePrimaryRoute("risk-overview")
+      <header className="sd-app-header" style={styles.header}>
+        {/* Row 1: Compact 1-row App Title Bar (logo, title, theme toggle, mobile menu button) */}
+        <div className="sd-header-title-row" data-header-title-row="true">
+          <a
+            href="#risk-overview"
+            className="sd-logo-home-link"
+            onClick={(e) => {
+              e.preventDefault()
+              navigatePrimaryRoute("risk-overview")
+            }}
+            title="SportsDesk & Fantasy402 Operations — Risk Overview"
+          >
+            <img
+              src={BRAND_ASSETS.emblemWebp}
+              alt={BRAND_ASSETS.emblemAlt}
+              width={32}
+              height={32}
+              decoding="async"
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                const target = e.currentTarget
+                if (target.dataset.fallbackApplied !== "1") {
+                  target.dataset.fallbackApplied = "1"
+                  target.src = logo
+                }
               }}
-              title="SportsDesk & Fantasy402 Operations — Risk Overview"
-            >
-              <img
-                src={BRAND_ASSETS.emblemWebp}
-                alt={BRAND_ASSETS.emblemAlt}
-                width={36}
-                height={36}
-                decoding="async"
-                referrerPolicy="no-referrer"
-                onError={(e) => {
-                  const target = e.currentTarget
-                  if (target.dataset.fallbackApplied !== "1") {
-                    target.dataset.fallbackApplied = "1"
-                    target.src = logo
-                  }
-                }}
-                style={{
-                  width: "36px",
-                  height: "36px",
-                  borderRadius: "6px",
-                  objectFit: "cover",
-                  borderWidth: "1px",
-                  borderStyle: "solid",
-                  borderColor: "rgba(56, 189, 248, 0.28)",
-                  boxShadow: "0 0 12px rgba(56, 189, 248, 0.22)",
-                  flexShrink: 0,
-                  display: "block",
-                }}
-              />
-              <h1 style={styles.title} data-brand-version={BRAND_ASSETS.version}>
-                {BRAND_ASSETS.shortName}
-              </h1>
-            </a>
-            <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                fontSize: "11px",
-                color: "#94a3b8",
+                width: "32px",
+                height: "32px",
+                borderRadius: "6px",
+                objectFit: "cover",
+                borderWidth: "1px",
+                borderStyle: "solid",
+                borderColor: "rgba(56, 189, 248, 0.28)",
+                boxShadow: "0 0 12px rgba(56, 189, 248, 0.22)",
+                flexShrink: 0,
+                display: "block",
               }}
+            />
+            <h1 className="sd-app-title" style={styles.title} data-brand-version={BRAND_ASSETS.version}>
+              {BRAND_ASSETS.shortName}
+            </h1>
+          </a>
+
+          <div className="sd-header-title-actions">
+            <HeaderThemeToggle
+              theme={dashboardTheme}
+              onToggle={(next) => setDashboardTheme(next)}
+            />
+            <button
+              type="button"
+              className="sd-mobile-menu-btn"
+              data-mobile-nav-trigger="true"
+              aria-expanded={mobileNavOpen}
+              aria-controls="sd-mobile-nav-drawer"
+              aria-label={mobileNavOpen ? "Close workspace navigation menu" : "Open workspace navigation menu"}
+              onClick={() => setMobileNavOpen((prev) => !prev)}
             >
-              <span style={{ color: "#38bdf8", fontWeight: 600 }}>● Local :4022 SPA</span>
-              <span>·</span>
-              <span className="sd-status-tip-wrap">
-                <span
-                  tabIndex={0}
-                  style={{
-                    color: daemonPill.color,
-                    fontWeight: 600,
-                    cursor: "help",
-                  }}
-                  title={daemonPill.title}
-                >
-                  {daemonPill.label}
-                </span>
-                <span role="tooltip" className="sd-status-tip-popover">
-                  <span className="sd-status-tip-title">
-                    <span>Daemon :4020</span>
-                    <span style={{ color: daemonPill.color }}>{daemonPill.statusText}</span>
-                  </span>
-                  <span className="sd-status-tip-row">
-                    <span className="sd-status-tip-label">Last success</span>
-                    <span className="sd-status-tip-value">{daemonUpdateInfo.clock}</span>
-                  </span>
-                  <span className="sd-status-tip-meta">
-                    {daemon4020LastUpdatedAt
-                      ? `Updated ${daemonUpdateInfo.relative}${daemonState === "online" || daemonState === "degraded" ? ` · Latency ${daemonLatency}ms` : ""}`
-                      : daemon4020LastProbedAt
-                        ? `No successful response yet · Last probe ${daemonProbeInfo.clock} (${daemonProbeInfo.relative})`
-                        : "Awaiting first :4020 probe"}
-                  </span>
-                  {daemonState === "offline" && daemon4020?.reason && (
-                    <span
-                      className="sd-status-tip-meta"
-                      style={{ display: "block", color: "#fbbf24" }}
-                    >
-                      {daemon4020.reason}
-                    </span>
-                  )}
-                </span>
+              {mobileNavOpen ? (
+                <X size={18} aria-hidden="true" />
+              ) : (
+                <Menu size={18} aria-hidden="true" />
+              )}
+              <span className="sd-mobile-menu-btn-label">Menu</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Row 2: Single-line horizontally scrollable Telemetry Strip */}
+        <div
+          className="sd-telemetry-strip"
+          data-telemetry-strip="true"
+          role="region"
+          aria-label="Live telemetry status strip"
+        >
+          <span className="sd-telemetry-item" style={{ color: "#38bdf8", fontWeight: 600 }}>
+            ● Local :4022 SPA
+          </span>
+          <span className="sd-telemetry-sep" aria-hidden="true">
+            ·
+          </span>
+          <span className="sd-status-tip-wrap sd-telemetry-item">
+            <span
+              tabIndex={0}
+              style={{
+                color: daemonPill.color,
+                fontWeight: 600,
+                cursor: "help",
+              }}
+              title={daemonPill.title}
+            >
+              {daemonPill.label}
+            </span>
+            <span role="tooltip" className="sd-status-tip-popover">
+              <span className="sd-status-tip-title">
+                <span>Daemon :4020</span>
+                <span style={{ color: daemonPill.color }}>{daemonPill.statusText}</span>
               </span>
-              <span>·</span>
-              <span className="sd-status-tip-wrap">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("r2")}
+              <span className="sd-status-tip-row">
+                <span className="sd-status-tip-label">Last success</span>
+                <span className="sd-status-tip-value">{daemonUpdateInfo.clock}</span>
+              </span>
+              <span className="sd-status-tip-meta">
+                {daemon4020LastUpdatedAt
+                  ? `Updated ${daemonUpdateInfo.relative}${daemonState === "online" || daemonState === "degraded" ? ` · Latency ${daemonLatency}ms` : ""}`
+                  : daemon4020LastProbedAt
+                    ? `No successful response yet · Last probe ${daemonProbeInfo.clock} (${daemonProbeInfo.relative})`
+                    : "Awaiting first :4020 probe"}
+              </span>
+              {daemonState === "offline" && daemon4020?.reason && (
+                <span
+                  className="sd-status-tip-meta"
+                  style={{ display: "block", color: "#fbbf24" }}
+                >
+                  {daemon4020.reason}
+                </span>
+              )}
+            </span>
+          </span>
+          <span className="sd-telemetry-sep" aria-hidden="true">
+            ·
+          </span>
+          <span className="sd-status-tip-wrap sd-telemetry-item">
+            <button
+              type="button"
+              onClick={() => setActiveTab("r2")}
+              style={{
+                background: "none",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+                fontSize: "11px",
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+                color:
+                  r2PipelineData?.overallStatus === "fresh"
+                    ? "#4ade80"
+                    : r2PipelineData?.overallStatus === "stale"
+                      ? "#fbbf24"
+                      : r2PipelineData
+                        ? "#f87171"
+                        : "#94a3b8",
+              }}
+              title={`Open R2 Pipeline Monitor · Last successful update: ${r2UpdateInfo.summary}`}
+            >
+              {r2PipelineData
+                ? `☁️ R2 ${r2PipelineData.freshCount}/${r2PipelineData.totalCount} Fresh`
+                : "☁️ R2 Probing..."}
+            </button>
+            <span role="tooltip" className="sd-status-tip-popover">
+              <span className="sd-status-tip-title">
+                <span>R2 Pipeline</span>
+                <span
                   style={{
-                    background: "none",
-                    border: "none",
-                    padding: 0,
-                    cursor: "pointer",
-                    fontSize: "11px",
-                    fontWeight: 600,
                     color:
                       r2PipelineData?.overallStatus === "fresh"
                         ? "#4ade80"
                         : r2PipelineData?.overallStatus === "stale"
                           ? "#fbbf24"
-                          : r2PipelineData
-                            ? "#f87171"
-                            : "#94a3b8",
+                          : "#f87171",
                   }}
-                  title={`Open R2 Pipeline Monitor · Last successful update: ${r2UpdateInfo.summary}`}
                 >
-                  {r2PipelineData
-                    ? `☁️ R2 ${r2PipelineData.freshCount}/${r2PipelineData.totalCount} Fresh`
-                    : "☁️ R2 Probing..."}
-                </button>
-                <span role="tooltip" className="sd-status-tip-popover">
-                  <span className="sd-status-tip-title">
-                    <span>R2 Pipeline</span>
-                    <span
-                      style={{
-                        color:
-                          r2PipelineData?.overallStatus === "fresh"
-                            ? "#4ade80"
-                            : r2PipelineData?.overallStatus === "stale"
-                              ? "#fbbf24"
-                              : "#f87171",
-                      }}
-                    >
-                      {(r2PipelineData?.overallStatus ?? "probing").toUpperCase()}
-                    </span>
-                  </span>
-                  <span className="sd-status-tip-row">
-                    <span className="sd-status-tip-label">Last success</span>
-                    <span className="sd-status-tip-value">{r2UpdateInfo.clock}</span>
-                  </span>
-                  <span className="sd-status-tip-meta">
-                    {r2PipelineData
-                      ? `Updated ${r2UpdateInfo.relative} · ${r2PipelineData.freshCount}/${r2PipelineData.totalCount} sinks fresh · Click to inspect`
-                      : "Awaiting first R2 pipeline snapshot"}
-                  </span>
+                  {(r2PipelineData?.overallStatus ?? "probing").toUpperCase()}
                 </span>
               </span>
-              <button
-                type="button"
-                className="sd-refresh-telemetry-btn"
-                onClick={() => {
-                  void handleRefreshTelemetry()
-                }}
-                disabled={telemetryRefreshing}
-                aria-label="Refresh Telemetry"
-                title={
-                  telemetryRefreshSnapshot.lastProbedAt
-                    ? `Force immediate probe of :4020 daemon status, R2 pipeline freshness, health & profiles · Last probe: ${new Date(telemetryRefreshSnapshot.lastProbedAt).toLocaleTimeString()}${telemetryRefreshSnapshot.lastProbeMs ? ` (${telemetryRefreshSnapshot.lastProbeMs}ms)` : ""}`
-                    : "Force immediate probe of :4020 daemon status, R2 pipeline freshness, health & profiles"
-                }
+              <span className="sd-status-tip-row">
+                <span className="sd-status-tip-label">Last success</span>
+                <span className="sd-status-tip-value">{r2UpdateInfo.clock}</span>
+              </span>
+              <span className="sd-status-tip-meta">
+                {r2PipelineData
+                  ? `Updated ${r2UpdateInfo.relative} · ${r2PipelineData.freshCount}/${r2PipelineData.totalCount} sinks fresh · Click to inspect`
+                  : "Awaiting first R2 pipeline snapshot"}
+              </span>
+            </span>
+          </span>
+          <button
+            type="button"
+            className="sd-refresh-telemetry-btn sd-telemetry-item"
+            onClick={() => {
+              void handleRefreshTelemetry()
+            }}
+            disabled={telemetryRefreshing}
+            aria-label="Refresh Telemetry"
+            title={
+              telemetryRefreshSnapshot.lastProbedAt
+                ? `Force immediate probe of :4020 daemon status, R2 pipeline freshness, health & profiles · Last probe: ${new Date(telemetryRefreshSnapshot.lastProbedAt).toLocaleTimeString()}${telemetryRefreshSnapshot.lastProbeMs ? ` (${telemetryRefreshSnapshot.lastProbeMs}ms)` : ""}`
+                : "Force immediate probe of :4020 daemon status, R2 pipeline freshness, health & profiles"
+            }
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "5px",
+              padding: "2px 8px",
+              borderRadius: "5px",
+              fontSize: "10.5px",
+              fontWeight: 600,
+              letterSpacing: "0.01em",
+              backgroundColor: telemetryRefreshing
+                ? "rgba(56, 189, 248, 0.16)"
+                : "rgba(15, 23, 42, 0.86)",
+              borderWidth: "1px",
+              borderStyle: "solid",
+              borderColor: telemetryRefreshing
+                ? "rgba(56, 189, 248, 0.55)"
+                : "rgba(56, 189, 248, 0.28)",
+              color: telemetryRefreshing ? "#e0f2fe" : "#7dd3fc",
+              cursor: telemetryRefreshing ? "wait" : "pointer",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+            }}
+          >
+            <RefreshCw size={11} className={telemetryRefreshing ? "sd-spin" : undefined} />
+            <span>{telemetryRefreshing ? "Probing..." : "Refresh Telemetry"}</span>
+            {telemetryRefreshSnapshot.lastProbeMs !== null && !telemetryRefreshing && (
+              <span
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  padding: "2px 8px",
-                  borderRadius: "5px",
-                  fontSize: "10.5px",
-                  fontWeight: 600,
-                  letterSpacing: "0.01em",
-                  backgroundColor: telemetryRefreshing
-                    ? "rgba(56, 189, 248, 0.16)"
-                    : "rgba(15, 23, 42, 0.86)",
-                  borderWidth: "1px",
-                  borderStyle: "solid",
-                  borderColor: telemetryRefreshing
-                    ? "rgba(56, 189, 248, 0.55)"
-                    : "rgba(56, 189, 248, 0.28)",
-                  color: telemetryRefreshing ? "#e0f2fe" : "#7dd3fc",
-                  cursor: telemetryRefreshing ? "wait" : "pointer",
-                  whiteSpace: "nowrap",
+                  fontSize: "9.5px",
+                  color: "#64748b",
+                  fontFamily:
+                    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
                 }}
               >
-                <RefreshCw size={11} className={telemetryRefreshing ? "sd-spin" : undefined} />
-                <span>{telemetryRefreshing ? "Probing..." : "Refresh Telemetry"}</span>
-                {telemetryRefreshSnapshot.lastProbeMs !== null && !telemetryRefreshing && (
-                  <span
-                    style={{
-                      fontSize: "9.5px",
-                      color: "#64748b",
-                      fontFamily:
-                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                    }}
-                  >
-                    {telemetryRefreshSnapshot.lastProbeMs}ms
-                  </span>
-                )}
-              </button>
-              <WsSyncStatusIndicator
-                wsConnected={connected}
-                lastHeartbeatAt={wsLastPongAt}
-                latencyMs={wsLatencyMs}
-              />
-              <span>·</span>
-              <a
-                href="/live-bets"
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  color: "#38bdf8",
-                  textDecoration: "none",
-                  fontWeight: 600,
-                }}
-              >
-                📈 Live Bets ↗
-              </a>
-              <a
-                href="/graph"
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  color: "#38bdf8",
-                  textDecoration: "none",
-                  fontWeight: 600,
-                }}
-              >
-                🕸️ Graph ↗
-              </a>
-              <a
-                href="/status"
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  color: "#38bdf8",
-                  textDecoration: "none",
-                  fontWeight: 600,
-                }}
-              >
-                🩺 Status ↗
-              </a>
-              <span>·</span>
-              <span style={{ color: "#f59e0b", fontWeight: 600 }}>🛡️ autoExecute: false</span>
-              {clockTime && (
-                <>
-                  <span>·</span>
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      fontFamily:
-                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                      fontVariantNumeric: "tabular-nums",
-                      color: "#f1f5f9",
-                    }}
-                  >
-                    <span>🕒 {clockTime}</span>
-                    {(() => {
-                      const absDrift = clockDrift ? Math.abs(clockDrift.offsetMs) : null
-                      const driftUi =
-                        absDrift === null
-                          ? {
-                              color: "#94a3b8",
-                              borderColor: "rgba(148, 163, 184, 0.28)",
-                              bg: "rgba(15, 23, 42, 0.72)",
-                              status: "PROBING",
-                              label: "Δ …",
-                            }
-                          : absDrift > 2000
-                            ? {
-                                color: "#f87171",
-                                borderColor: "rgba(248, 113, 113, 0.38)",
-                                bg: "rgba(127, 29, 29, 0.28)",
-                                status: "DRIFT",
-                                label: `Δ ${formatClockDrift(clockDrift!.offsetMs)}`,
-                              }
-                            : absDrift > 250
-                              ? {
-                                  color: "#fbbf24",
-                                  borderColor: "rgba(251, 191, 36, 0.38)",
-                                  bg: "rgba(120, 53, 15, 0.25)",
-                                  status: "SKEW",
-                                  label: `Δ ${formatClockDrift(clockDrift!.offsetMs)}`,
-                                }
-                              : {
-                                  color: "#4ade80",
-                                  borderColor: "rgba(74, 222, 128, 0.3)",
-                                  bg: "rgba(20, 83, 45, 0.24)",
-                                  status: "SYNCED",
-                                  label: `Δ ${formatClockDrift(clockDrift!.offsetMs)}`,
-                                }
-                      const driftDirection =
-                        clockDrift === null
-                          ? "Awaiting /health server timestamp"
-                          : Math.abs(clockDrift.offsetMs) < 1
-                            ? "Local browser clock matches server time"
-                            : clockDrift.offsetMs > 0
-                              ? "Local browser clock is ahead of server"
-                              : "Local browser clock is behind server"
-                      return (
-                        <span className="sd-status-tip-wrap">
-                          <span
-                            tabIndex={0}
-                            data-clock-drift-indicator="true"
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              padding: "1px 5px",
-                              borderRadius: "4px",
-                              fontSize: "10px",
-                              fontWeight: 600,
-                              lineHeight: 1.3,
-                              fontVariantNumeric: "tabular-nums",
-                              color: driftUi.color,
-                              backgroundColor: driftUi.bg,
-                              borderWidth: "1px",
-                              borderStyle: "solid",
-                              borderColor: driftUi.borderColor,
-                              cursor: "help",
-                              whiteSpace: "nowrap",
-                            }}
-                            title={
-                              clockDrift
-                                ? `Clock drift (Local − Server): ${formatClockDrift(clockDrift.offsetMs)} · RTT ${clockDrift.rttMs}ms · Server UTC ${clockDrift.serverIso}`
-                                : "Measuring local browser vs /health server clock drift…"
-                            }
-                          >
-                            {driftUi.label}
-                          </span>
-                          <span
-                            role="tooltip"
-                            className="sd-status-tip-popover sd-status-tip-popover--right"
-                            style={{ minWidth: "264px", maxWidth: "300px" }}
-                          >
-                            <span className="sd-status-tip-title">
-                              <span>Clock Drift</span>
-                              <span style={{ color: driftUi.color }}>{driftUi.status}</span>
-                            </span>
-                            <span className="sd-status-tip-row">
-                              <span className="sd-status-tip-label">Local − Server</span>
-                              <span className="sd-status-tip-value">
-                                {clockDrift ? formatClockDrift(clockDrift.offsetMs) : "—"}
-                              </span>
-                            </span>
-                            <span className="sd-status-tip-row">
-                              <span className="sd-status-tip-label">Probe RTT</span>
-                              <span className="sd-status-tip-value">
-                                {clockDrift ? `${clockDrift.rttMs} ms` : "—"}
-                              </span>
-                            </span>
-                            <span className="sd-status-tip-row">
-                              <span className="sd-status-tip-label">Server UTC</span>
-                              <span className="sd-status-tip-value">
-                                {clockDrift ? `${clockDrift.serverIso.slice(11, 23)}Z` : "—"}
-                              </span>
-                            </span>
-                            <ClockDriftSparkline
-                              samples={clockDriftHistory}
-                              accentColor={driftUi.color}
-                            />
-                            <span className="sd-status-tip-meta">
-                              {driftDirection}
-                              {clockDrift
-                                ? ` · Sampled via /health (${healthUpdateInfo.relative})`
-                                : ""}
-                            </span>
-                          </span>
-                        </span>
-                      )
-                    })()}
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-          <span className="sd-status-tip-wrap">
+                {telemetryRefreshSnapshot.lastProbeMs}ms
+              </span>
+            )}
+          </button>
+          <span className="sd-telemetry-item">
+            <WsSyncStatusIndicator
+              wsConnected={connected}
+              lastHeartbeatAt={wsLastPongAt}
+              latencyMs={wsLatencyMs}
+            />
+          </span>
+          <span className="sd-status-tip-wrap sd-telemetry-item">
             <span
               tabIndex={0}
               data-ws-status-pill="true"
@@ -3652,7 +3762,7 @@ export function App(): React.ReactElement {
             </span>
           </span>
           {/* Live Alert Health Pill */}
-          <span className="sd-status-tip-wrap">
+          <span className="sd-status-tip-wrap sd-telemetry-item">
             <button
               type="button"
               onClick={() => {
@@ -3667,6 +3777,7 @@ export function App(): React.ReactElement {
                 fontSize: "11px",
                 fontWeight: 600,
                 cursor: "pointer",
+                whiteSpace: "nowrap",
                 border: `1px solid ${systemHealthUi.border}`,
                 background: systemHealthUi.bg,
                 color: systemHealthUi.color,
@@ -3706,7 +3817,7 @@ export function App(): React.ReactElement {
             </span>
           </span>
           {/* Persistent 60-Minute Aggregate Risk Exposure Threshold Indicator */}
-          <span className="sd-status-tip-wrap">
+          <span className="sd-status-tip-wrap sd-telemetry-item">
             <button
               type="button"
               data-risk-threshold-indicator="true"
@@ -3809,6 +3920,7 @@ export function App(): React.ReactElement {
           </span>
           <button
             type="button"
+            className="sd-telemetry-item"
             onClick={() => {
               openShiftHandoffModal()
             }}
@@ -3821,21 +3933,26 @@ export function App(): React.ReactElement {
               color: "#94a3b8",
               border: "1px solid #334155",
               cursor: "pointer",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
             }}
             title="Operator Shift Summary Handoff"
           >
             📋 Shift Handoff
           </button>
-          <ShiftDurationTimer
-            operatorSignedInAt={operatorSignedInAt}
-            signedOut={operatorSignedOut}
-            handoffInitiated={shiftHandoffInitiated}
-            onClick={() => {
-              openShiftHandoffModal()
-            }}
-          />
+          <span className="sd-telemetry-item">
+            <ShiftDurationTimer
+              operatorSignedInAt={operatorSignedInAt}
+              signedOut={operatorSignedOut}
+              handoffInitiated={shiftHandoffInitiated}
+              onClick={() => {
+                openShiftHandoffModal()
+              }}
+            />
+          </span>
           <button
             type="button"
+            className="sd-telemetry-item"
             data-copy-view-link="true"
             onClick={handleCopyQuickLink}
             style={{
@@ -3847,6 +3964,8 @@ export function App(): React.ReactElement {
               color: quickLinkCopyState === "failed" ? "#fca5a5" : "#4ade80",
               border: "1px solid #334155",
               cursor: "pointer",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
             }}
             title="Copy this exact view — tab, filters, sort and overlay — as a shareable link"
           >
@@ -3859,6 +3978,7 @@ export function App(): React.ReactElement {
           {!viewIsDefault && (
             <button
               type="button"
+              className="sd-telemetry-item"
               data-reset-view="true"
               onClick={handleResetView}
               style={{
@@ -3870,6 +3990,8 @@ export function App(): React.ReactElement {
                 color: "#94a3b8",
                 border: "1px solid #334155",
                 cursor: "pointer",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
               }}
               title="Reset tab, filters, sort and overlays to defaults"
             >
@@ -3878,8 +4000,8 @@ export function App(): React.ReactElement {
           )}
           <button
             type="button"
-            className="sd-pill sd-mono"
-            style={{ cursor: "pointer" }}
+            className="sd-pill sd-mono sd-telemetry-item"
+            style={{ cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
             onClick={() => {
               const next = !showBuildMatrix
               setShowBuildMatrix(next)
@@ -3895,18 +4017,192 @@ export function App(): React.ReactElement {
               : "HMR"}
             )
           </button>
+          <span className="sd-telemetry-sep" aria-hidden="true">
+            ·
+          </span>
+          <a
+            href="/live-bets"
+            target="_blank"
+            rel="noreferrer"
+            className="sd-telemetry-item"
+            style={{
+              color: "#38bdf8",
+              textDecoration: "none",
+              fontWeight: 600,
+            }}
+          >
+            📈 Live Bets ↗
+          </a>
+          <a
+            href="/graph"
+            target="_blank"
+            rel="noreferrer"
+            className="sd-telemetry-item"
+            style={{
+              color: "#38bdf8",
+              textDecoration: "none",
+              fontWeight: 600,
+            }}
+          >
+            🕸️ Graph ↗
+          </a>
+          <a
+            href="/status"
+            target="_blank"
+            rel="noreferrer"
+            className="sd-telemetry-item"
+            style={{
+              color: "#38bdf8",
+              textDecoration: "none",
+              fontWeight: 600,
+            }}
+          >
+            🩺 Status ↗
+          </a>
+          <span className="sd-telemetry-sep" aria-hidden="true">
+            ·
+          </span>
+          <span className="sd-telemetry-item" style={{ color: "#f59e0b", fontWeight: 600 }}>
+            🛡️ autoExecute: false
+          </span>
+          {clockTime && (
+            <>
+              <span className="sd-telemetry-sep" aria-hidden="true">
+                ·
+              </span>
+              <span
+                className="sd-telemetry-item"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontFamily:
+                    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                  fontVariantNumeric: "tabular-nums",
+                  color: "#f1f5f9",
+                }}
+              >
+                <span>🕒 {clockTime}</span>
+                {(() => {
+                  const absDrift = clockDrift ? Math.abs(clockDrift.offsetMs) : null
+                  const driftUi =
+                    absDrift === null
+                      ? {
+                          color: "#94a3b8",
+                          borderColor: "rgba(148, 163, 184, 0.28)",
+                          bg: "rgba(15, 23, 42, 0.72)",
+                          status: "PROBING",
+                          label: "Δ …",
+                        }
+                      : absDrift > 2000
+                        ? {
+                            color: "#f87171",
+                            borderColor: "rgba(248, 113, 113, 0.38)",
+                            bg: "rgba(127, 29, 29, 0.28)",
+                            status: "DRIFT",
+                            label: `Δ ${formatClockDrift(clockDrift!.offsetMs)}`,
+                          }
+                        : absDrift > 250
+                          ? {
+                              color: "#fbbf24",
+                              borderColor: "rgba(251, 191, 36, 0.38)",
+                              bg: "rgba(120, 53, 15, 0.25)",
+                              status: "SKEW",
+                              label: `Δ ${formatClockDrift(clockDrift!.offsetMs)}`,
+                            }
+                          : {
+                              color: "#4ade80",
+                              borderColor: "rgba(74, 222, 128, 0.3)",
+                              bg: "rgba(20, 83, 45, 0.24)",
+                              status: "SYNCED",
+                              label: `Δ ${formatClockDrift(clockDrift!.offsetMs)}`,
+                            }
+                  const driftDirection =
+                    clockDrift === null
+                      ? "Awaiting /health server timestamp"
+                      : Math.abs(clockDrift.offsetMs) < 1
+                        ? "Local browser clock matches server time"
+                        : clockDrift.offsetMs > 0
+                          ? "Local browser clock is ahead of server"
+                          : "Local browser clock is behind server"
+                  return (
+                    <span className="sd-status-tip-wrap">
+                      <span
+                        tabIndex={0}
+                        data-clock-drift-indicator="true"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          padding: "1px 5px",
+                          borderRadius: "4px",
+                          fontSize: "10px",
+                          fontWeight: 600,
+                          lineHeight: 1.3,
+                          fontVariantNumeric: "tabular-nums",
+                          color: driftUi.color,
+                          backgroundColor: driftUi.bg,
+                          borderWidth: "1px",
+                          borderStyle: "solid",
+                          borderColor: driftUi.borderColor,
+                          cursor: "help",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={
+                          clockDrift
+                            ? `Clock drift (Local − Server): ${formatClockDrift(clockDrift.offsetMs)} · RTT ${clockDrift.rttMs}ms · Server UTC ${clockDrift.serverIso}`
+                            : "Measuring local browser vs /health server clock drift…"
+                        }
+                      >
+                        {driftUi.label}
+                      </span>
+                      <span
+                        role="tooltip"
+                        className="sd-status-tip-popover sd-status-tip-popover--right"
+                        style={{ minWidth: "264px", maxWidth: "300px" }}
+                      >
+                        <span className="sd-status-tip-title">
+                          <span>Clock Drift</span>
+                          <span style={{ color: driftUi.color }}>{driftUi.status}</span>
+                        </span>
+                        <span className="sd-status-tip-row">
+                          <span className="sd-status-tip-label">Local − Server</span>
+                          <span className="sd-status-tip-value">
+                            {clockDrift ? formatClockDrift(clockDrift.offsetMs) : "—"}
+                          </span>
+                        </span>
+                        <span className="sd-status-tip-row">
+                          <span className="sd-status-tip-label">Probe RTT</span>
+                          <span className="sd-status-tip-value">
+                            {clockDrift ? `${clockDrift.rttMs} ms` : "—"}
+                          </span>
+                        </span>
+                        <span className="sd-status-tip-row">
+                          <span className="sd-status-tip-label">Server UTC</span>
+                          <span className="sd-status-tip-value">
+                            {clockDrift ? `${clockDrift.serverIso.slice(11, 23)}Z` : "—"}
+                          </span>
+                        </span>
+                        <ClockDriftSparkline
+                          samples={clockDriftHistory}
+                          accentColor={driftUi.color}
+                        />
+                        <span className="sd-status-tip-meta">
+                          {driftDirection}
+                          {clockDrift
+                            ? ` · Sampled via /health (${healthUpdateInfo.relative})`
+                            : ""}
+                        </span>
+                      </span>
+                    </span>
+                  )
+                })()}
+              </span>
+            </>
+          )}
         </div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "10px",
-            flex: "1 1 520px",
-            justifyContent: "flex-end",
-            maxWidth: "100%",
-          }}
-        >
+
+        {/* Row 3: Primary Scrollable Tab Bar & Global Search */}
+        <div className="sd-header-primary-row">
           <nav
             aria-label="Primary Surveillance Navigation"
             data-header-primary-nav="true"
@@ -3974,7 +4270,7 @@ export function App(): React.ReactElement {
               )
             })}
           </nav>
-          <HeaderThemeToggle theme={dashboardTheme} onToggle={(next) => setDashboardTheme(next)} />
+
           <GlobalHeaderSearch
             query={globalSearch}
             onQueryChange={setGlobalSearch}
@@ -4022,173 +4318,61 @@ export function App(): React.ReactElement {
             }}
           />
         </div>
-        <div style={styles.tabNav}>
-          <button
-            type="button"
-            style={styles.tabBtn(activeTab === "customers")}
-            onClick={() => setActiveTab("customers")}
-            title="Inspect individual sharp originators, sizing models, and risk (Ctrl+1)"
-          >
-            👥 Profiles ({profileCustomers.length > 0 ? profileCustomers.length : "—"})
-            <span style={styles.keyShortcutBadge}>Ctrl+1</span>
-          </button>
-          <button
-            type="button"
-            style={styles.tabBtn(activeTab === "shadow")}
-            onClick={() => setActiveTab("shadow")}
-            title="Counterfactual Shadow Pricing & Slice Hold-Floor Cube (Ctrl+7)"
-          >
-            ⚖️ Shadow Pricing (#135)
-            <span style={styles.keyShortcutBadge}>Ctrl+7</span>
-          </button>
-          <button
-            type="button"
-            style={styles.tabBtn(activeTab === "surveillance")}
-            onClick={() => setActiveTab("surveillance")}
-            title="Bun.dns latency benchmarks and surveillance markdown (Ctrl+2)"
-          >
-            📊 Telemetry
-            <span style={styles.keyShortcutBadge}>Ctrl+2</span>
-          </button>
-          <button
-            type="button"
-            style={styles.tabBtn(activeTab === "terminal")}
-            onClick={() => setActiveTab("terminal")}
-            title="Native Bun.Terminal PTY query engine (Ctrl+3 or Cmd+K)"
-          >
-            💻 Terminal (PTY)
-            <span style={styles.keyShortcutBadge}>Ctrl+3</span>
-          </button>
-          <button
-            type="button"
-            style={styles.tabBtn(activeTab === "rankings")}
-            onClick={() => setActiveTab("rankings")}
-            title="Rolling 30-day handle rankings & proxy conduits (Ctrl+4)"
-          >
-            🏆 Downlines ({rankings ? rankings.conduits.length : "—"})
-            <span style={styles.keyShortcutBadge}>Ctrl+4</span>
-          </button>
-          <button
-            type="button"
-            style={{
-              ...styles.tabBtn(activeTab === "wagers"),
-              position: "relative",
-            }}
-            onClick={() => setActiveTab("wagers")}
-            title="Real-time incoming wager tape with CLV alerts (Ctrl+5)"
-          >
-            ⚡ Live Wagers ({liveWagers.length})
-            <span
-              className="live-alert-pulse"
-              style={{
-                fontSize: "10px",
-                padding: "1px 5px",
-                borderRadius: "8px",
-                backgroundColor: "#ef4444",
-                color: "#ffffff",
-                fontWeight: 700,
-                marginLeft: "4px",
-              }}
-            >
-              🚨{" "}
-              {
-                liveWagers.filter((w) => w.alertTier === "CRITICAL" || w.alertTier === "STEAM")
-                  .length
-              }
-            </span>
-            <span style={styles.keyShortcutBadge}>Ctrl+5</span>
-          </button>
-          <button
-            type="button"
-            style={{
-              ...styles.tabBtn(activeTab === "alerts"),
-              position: "relative",
-            }}
-            onClick={() => {
-              setActiveTab("alerts")
-              fetchAlerts()
-            }}
-            title="Surveillance Alert Queue, Dead-Letter Queue (DLQ), and Replay Controls (Ctrl+6)"
-          >
-            🚨 DLQ & Alerts ({alertRecords.length})
-            {healthData?.alerts?.dead && healthData.alerts.dead > 0 ? (
-              <span
-                style={{
-                  fontSize: "10px",
-                  padding: "1px 5px",
-                  borderRadius: "8px",
-                  backgroundColor: "#ef4444",
-                  color: "#ffffff",
-                  fontWeight: 700,
-                  marginLeft: "4px",
-                }}
-              >
-                {healthData.alerts.dead} DEAD
-              </span>
-            ) : null}
-            <span style={styles.keyShortcutBadge}>Ctrl+6</span>
-          </button>
-          <button
-            type="button"
-            style={styles.tabBtn(activeTab === "bet-ticker")}
-            onClick={() => setActiveTab("bet-ticker")}
-          >
-            📡 Bet Ticker ({betTickerData?.localFeed.actionableTicketCount ?? "…"})
-            <span style={styles.keyShortcutBadge}>Ctrl+8</span>
-          </button>
-          <button
-            type="button"
-            style={styles.tabBtn(activeTab === "r2")}
-            onClick={() => setActiveTab("r2")}
-          >
-            ☁️ R2 Pipeline
-            {r2PipelineData?.staleKeys && r2PipelineData.staleKeys.length > 0 ? (
-              <span
-                style={{
-                  fontSize: "10px",
-                  padding: "1px 5px",
-                  borderRadius: "8px",
-                  backgroundColor: "#f59e0b",
-                  color: "#090d16",
-                  fontWeight: 700,
-                  marginLeft: "4px",
-                }}
-              >
-                {r2PipelineData.staleKeys.length} STALE
-              </span>
-            ) : null}
-            <span style={styles.keyShortcutBadge}>Ctrl+9</span>
-          </button>
-          <button
-            type="button"
-            style={styles.tabBtn(activeTab === "assets")}
-            onClick={() => setActiveTab("assets")}
-            title="Bun.Image width, height, format and backend for the served dashboard assets (Ctrl+0)"
-          >
-            🖼️ Assets
-            <span style={styles.keyShortcutBadge}>Ctrl+0</span>
-          </button>
-          <OperatorProfileMenu
-            username={shiftOperator}
-            signedInAt={operatorSignedInAt}
-            activeShiftSeconds={activeShiftSeconds}
-            onSwitchOperator={(nextOp) => {
-              handleOperatorChange(nextOp)
-              void fetchShiftSummary(nextOp)
-            }}
-            onOpenShiftHandoff={() => {
-              openShiftHandoffModal()
-            }}
-            onMintFastSignInBookmark={
-              serverAuthState.authenticated ? handleMintFastSignInBookmark : undefined
-            }
-            onRevokeFastSignInBookmarks={
-              serverAuthState.authenticated ? handleRevokeFastSignInBookmarks : undefined
-            }
-            onLogout={handleOperatorLogout}
-          />
+
+        {/* Row 4: Desktop (>= 1024px) 10-Item Workspace Navigation + Operator Session Pill */}
+        <div
+          className="sd-desktop-tab-bar"
+          data-desktop-workspace-nav="true"
+          style={styles.tabNav}
+        >
+          {renderWorkspaceNavItems(false)}
+          {renderOperatorMenu()}
         </div>
       </header>
+
+      {/* Mobile (< 1024px) Slide-Over Workspace Navigation Drawer */}
+      {mobileNavOpen && (
+        <div
+          className="sd-mobile-drawer-backdrop"
+          data-mobile-nav-backdrop="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setMobileNavOpen(false)
+            }
+          }}
+        >
+          <aside
+            id="sd-mobile-nav-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Workspace navigation"
+            className="sd-mobile-drawer"
+            data-mobile-nav-drawer="true"
+          >
+            <div className="sd-mobile-drawer-header">
+              <div className="sd-mobile-drawer-title">Workspace Navigation</div>
+              <button
+                type="button"
+                className="sd-mobile-drawer-close"
+                aria-label="Close navigation menu"
+                onClick={() => setMobileNavOpen(false)}
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
+            <div className="sd-mobile-drawer-session" data-mobile-drawer-session="true">
+              {renderOperatorMenu()}
+            </div>
+            <nav
+              className="sd-mobile-drawer-list"
+              aria-label="Workspace modules"
+              data-mobile-drawer-list="true"
+            >
+              {renderWorkspaceNavItems(true)}
+            </nav>
+          </aside>
+        </div>
+      )}
 
       {showBuildMatrix ? (
         <BuildMatrixDrawer
@@ -4209,6 +4393,7 @@ export function App(): React.ReactElement {
       {/* Cross-Desk Operations Command Ribbon */}
       <section
         aria-label="Operations Command Ribbon"
+        className="sd-quickjump-ribbon"
         style={{
           display: "flex",
           flexWrap: "wrap",
@@ -4222,26 +4407,23 @@ export function App(): React.ReactElement {
           color: "#cbd5e1",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: "8px 12px",
-          }}
-        >
+        <div className="sd-quickjump-strip">
           <span
+            className="sd-quickjump-label"
             style={{
               fontWeight: 700,
               color: "#38bdf8",
               textTransform: "uppercase",
               letterSpacing: "0.04em",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
             }}
           >
             🧭 Desk Quick-Jump:
           </span>
           <button
             type="button"
+            className={`sd-quickjump-pill ${shadowSliceHasTapeFocus(activeShadowSlice) ? "sd-quickjump-pill--amber" : "sd-quickjump-pill--sky"}`}
             data-desk-quickjump="active-risk"
             onClick={openWagersForShadowSlice}
             style={{
@@ -4275,6 +4457,7 @@ export function App(): React.ReactElement {
             )
             <span
               data-quickjump-feed-age="true"
+              className="sd-quickjump-feed-age"
               style={{
                 marginLeft: "4px",
                 color: quickJumpFeed.stale ? "#fbbf24" : "#64748b",
@@ -4289,6 +4472,7 @@ export function App(): React.ReactElement {
           </button>
           <button
             type="button"
+            className="sd-quickjump-pill sd-quickjump-pill--amber"
             data-desk-quickjump="nfl-1h-pregame"
             onClick={() => {
               applyShadowSliceToLocation(NFL_1H_PREGAME_SLICE, {
@@ -4316,6 +4500,7 @@ export function App(): React.ReactElement {
             )}
             target="_blank"
             rel="noreferrer"
+            className="sd-quickjump-pill sd-quickjump-pill--neutral"
             data-desk-quickjump="bookdeskops-tokens"
             style={{
               padding: "3px 9px",
@@ -4335,6 +4520,7 @@ export function App(): React.ReactElement {
             href={buildBookdeskopsDirectoryRouteHref()}
             target="_blank"
             rel="noreferrer"
+            className="sd-quickjump-pill sd-quickjump-pill--sky"
             data-desk-quickjump="bookdeskops-directory"
             style={{
               padding: "3px 9px",
@@ -4352,6 +4538,7 @@ export function App(): React.ReactElement {
           </a>
           <button
             type="button"
+            className="sd-quickjump-pill sd-quickjump-pill--amber"
             data-desk-quickjump="ncaab"
             data-quickjump-active={quickJumpNcaabActive ? "true" : undefined}
             aria-current={quickJumpNcaabActive ? "page" : undefined}
@@ -4402,6 +4589,7 @@ export function App(): React.ReactElement {
               <button
                 key={channel.id}
                 type="button"
+                className="sd-quickjump-pill sd-quickjump-pill--violet"
                 data-desk-quickjump={channel.id.toLowerCase()}
                 data-quickjump-active={channelActive ? "true" : undefined}
                 aria-current={channelActive ? "page" : undefined}
@@ -4434,6 +4622,7 @@ export function App(): React.ReactElement {
           })}
           <button
             type="button"
+            className="sd-quickjump-pill sd-quickjump-pill--green"
             data-desk-quickjump="audit"
             data-quickjump-active={quickJumpAuditActive ? "true" : undefined}
             aria-current={quickJumpAuditActive ? "page" : undefined}
@@ -4462,6 +4651,7 @@ export function App(): React.ReactElement {
           <div
             role="group"
             aria-label="System Logs Quick-Jump Status Filters"
+            className="sd-quickjump-group-logs"
             data-desk-quickjump="system-logs"
             data-quickjump-active={activeTab === "system-logs" ? "true" : undefined}
             style={{
@@ -4514,6 +4704,7 @@ export function App(): React.ReactElement {
                 {
                   id: "CRITICAL",
                   short: "CRIT",
+                  toneClass: "sd-quickjump-pill--red",
                   fg: "#fca5a5",
                   bg: "rgba(239, 68, 68, 0.18)",
                   activeBg: "rgba(239, 68, 68, 0.36)",
@@ -4522,6 +4713,7 @@ export function App(): React.ReactElement {
                 {
                   id: "HIGH",
                   short: "HIGH",
+                  toneClass: "sd-quickjump-pill--amber",
                   fg: "#fcd34d",
                   bg: "rgba(245, 158, 11, 0.16)",
                   activeBg: "rgba(245, 158, 11, 0.34)",
@@ -4530,6 +4722,7 @@ export function App(): React.ReactElement {
                 {
                   id: "WATCH",
                   short: "WATCH",
+                  toneClass: "sd-quickjump-pill--sky",
                   fg: "#7dd3fc",
                   bg: "rgba(56, 189, 248, 0.14)",
                   activeBg: "rgba(56, 189, 248, 0.32)",
@@ -4538,6 +4731,7 @@ export function App(): React.ReactElement {
                 {
                   id: "NORMAL",
                   short: "NORM",
+                  toneClass: "sd-quickjump-pill--green",
                   fg: "#86efac",
                   bg: "rgba(34, 197, 94, 0.14)",
                   activeBg: "rgba(34, 197, 94, 0.3)",
@@ -4551,6 +4745,7 @@ export function App(): React.ReactElement {
                 <button
                   key={sev.id}
                   type="button"
+                  className={`sd-quickjump-pill ${sev.toneClass}`}
                   data-desk-quickjump={`system-logs-${sev.short.toLowerCase()}`}
                   aria-pressed={isSelected}
                   onClick={() => {
@@ -4583,6 +4778,7 @@ export function App(): React.ReactElement {
           </div>
         </div>
         <div
+          className="sd-quickjump-meta"
           style={{
             display: "flex",
             flexWrap: "wrap",
@@ -4637,6 +4833,7 @@ export function App(): React.ReactElement {
           </span>
           <button
             type="button"
+            className="sd-quickjump-pill sd-quickjump-pill--neutral"
             data-desk-quickjump="copy-link"
             onClick={handleCopyQuickLink}
             style={{
