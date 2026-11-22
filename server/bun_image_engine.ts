@@ -86,6 +86,7 @@ export interface BunImageTransformRequest {
   readonly palette?: boolean | undefined
   readonly colors?: number | undefined
   readonly dither?: boolean | undefined
+  readonly xmpXml?: string | undefined
   readonly rotate?: 0 | 90 | 180 | 270 | undefined
   readonly flip?: boolean | undefined
   readonly flop?: boolean | undefined
@@ -117,6 +118,8 @@ export interface BunImageTransformResult {
   readonly pngPalette?: boolean | undefined
   readonly pngColors?: number | undefined
   readonly pngDither?: boolean | undefined
+  readonly xmpInjected?: boolean | undefined
+  readonly xmpBytes?: number | undefined
 }
 
 let cachedScan: {
@@ -343,6 +346,10 @@ export async function transformBunImageAsset(
         ? Math.min(256, Math.max(2, Math.round(req.colors)))
         : 256,
     dither: req.dither ?? true,
+    xmpXml:
+      typeof req.xmpXml === "string" && req.xmpXml.trim().length > 0
+        ? req.xmpXml.slice(0, 65_536)
+        : undefined,
     rotate,
     flip: Boolean(req.flip),
     flop: Boolean(req.flop),

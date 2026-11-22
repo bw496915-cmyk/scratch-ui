@@ -10,6 +10,8 @@ import { extname, join, relative, resolve } from "node:path"
 
 import type { Image } from "bun"
 
+import { injectXmp } from "./xmp_injector.ts"
+
 const RASTER_EXTS = new Set([".png", ".jpg", ".jpeg", ".webp", ".avif", ".heic", ".gif", ".ico"])
 
 const VECTOR_EXTS = new Set([".svg"])
@@ -37,6 +39,7 @@ interface TransformRequest {
   readonly palette?: boolean | undefined
   readonly colors?: number | undefined
   readonly dither?: boolean | undefined
+  readonly xmpXml?: string | undefined
   readonly rotate?: 0 | 90 | 180 | 270 | undefined
   readonly flip?: boolean | undefined
   readonly flop?: boolean | undefined
@@ -380,7 +383,19 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
             ? pipeline.avif({ quality })
             : pipeline.heic({ quality })
 
-  const outBytes = await encoded.bytes()
+  let outBytes = await encoded.bytes()
+  let xmpInjected = false
+  let xmpBytes: number | undefined
+  if (
+    typeof req.xmpXml === "string" &&
+    req.xmpXml.trim().length > 0 &&
+    (req.format === "png" || req.format === "webp")
+  ) {
+    outBytes = injectXmp(outBytes, req.xmpXml)
+    xmpInjected = true
+    xmpBytes = new TextEncoder().encode(req.xmpXml).byteLength
+  }
+
   const outMeta = await new Bun.Image(outBytes).metadata()
   const durationMs = Math.max(1, Math.round(performance.now() - startedAt))
   const mimeType =
@@ -412,7 +427,9 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
             ? "Grayscale (type 0)"
             : pngColorType === 4
               ? "Grayscale+Alpha (type 4)"
-              : undefined
+              : pngColorType !== undefined
+                ? `PNG (type ${pngColorType})`
+                : undefined
 
   const base64 = Buffer.from(outBytes).toString("base64")
   const dataUrl = `data:${mimeType};base64,${base64}`
@@ -439,6 +456,7 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
     sha256: hashBytesSha256(outBytes).slice(0, 12),
     mimeType,
     dataUrl,
+    ...(xmpInjected ? { xmpInjected: true, xmpBytes } : {}),
     ...(req.format === "png"
       ? {
           pngColorType,
