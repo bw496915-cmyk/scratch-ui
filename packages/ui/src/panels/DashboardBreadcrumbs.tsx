@@ -312,9 +312,9 @@ export function DashboardBreadcrumbs({
 
       <div className="sd-breadcrumb-actions">
         {tabSpec.shortcut ? (
-          <span className="sd-breadcrumb-meta" title={tabSpec.description}>
+          <kbd className="sd-breadcrumb-meta sd-kbd-shortcut" title={tabSpec.description}>
             {tabSpec.shortcut}
-          </span>
+          </kbd>
         ) : null}
         {parentItem && parentItem.action ? (
           <button

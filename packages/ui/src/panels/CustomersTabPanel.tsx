@@ -383,6 +383,8 @@ export function CustomersTabPanel({
       {/* Session Notice Banner (Dismissible) */}
       {!bannerDismissed && (
         <div
+          className="sd-portal-session-notice"
+          data-portal-session-notice="true"
           style={{
             marginBottom: "16px",
             padding: "10px 14px",
@@ -395,6 +397,7 @@ export function CustomersTabPanel({
             alignItems: "flex-start",
             justifyContent: "space-between",
             gap: "10px",
+            minWidth: 0,
           }}
         >
           <div
@@ -402,16 +405,18 @@ export function CustomersTabPanel({
               display: "flex",
               alignItems: "flex-start",
               gap: "10px",
+              minWidth: 0,
             }}
           >
-            <span style={{ fontSize: "16px", lineHeight: "1" }}>⚠️</span>
-            <div>
+            <span style={{ fontSize: "16px", lineHeight: "1", flexShrink: 0 }}>⚠️</span>
+            <div style={{ minWidth: 0 }}>
               <b>Fantasy402 Portal Session Notice:</b> Direct portal links reuse a single named
               Fantasy402 manager tab so your active portal session stays intact across customer
               jumps. If you see <i>"Your session has expired"</i>,{" "}
               <a
                 href={buildFantasy402PortalEntryUrl()}
                 target={FANTASY402_PORTAL_WINDOW_TARGET}
+                className="sd-portal-session-notice-link"
                 style={{ color: "#fde68a", fontWeight: 700, textDecoration: "underline" }}
               >
                 sign in to the Fantasy402 session tab ↗
@@ -422,6 +427,7 @@ export function CustomersTabPanel({
           </div>
           <button
             type="button"
+            className="sd-portal-session-notice-dismiss"
             style={{
               background: "none",
               border: "none",
@@ -430,6 +436,7 @@ export function CustomersTabPanel({
               cursor: "pointer",
               padding: "0 4px",
               lineHeight: "1",
+              flexShrink: 0,
             }}
             onClick={onDismissBanner}
             title="Dismiss notice"

@@ -137,4 +137,46 @@ describe("Mobile-First Responsive Dashboard Shell (375px–430px)", () => {
     expect(appSource).toContain("Active Risk:")
     expect(appSource).toContain("GSLIVE")
   })
+
+  test("6. Root layout container eliminates horizontal page overflow with overflow-x: clip, max-width: 100%, and min-width: 0 guards", () => {
+    expect(appSource).toContain('className="sd-app-shell"')
+    expect(stylesSource).toContain('overflowX: "clip" as const')
+    expect(stylesSource).toContain('maxWidth: "100%"')
+    expect(stylesSource).toContain("minWidth: 0")
+
+    expect(deskCss).toMatch(/html,\s*body\s*\{[^}]*max-width:\s*100%;[^}]*overflow-x:\s*clip;/s)
+    expect(deskCss).toMatch(/\.sd-app-shell,\s*\[data-dashboard-theme\]\s*\{[^}]*overflow-x:\s*clip;[^}]*max-width:\s*100%;/s)
+    expect(deskCss).toMatch(/\.sd-quickjump-meta\s*\{[^}]*max-width:\s*100%;[^}]*min-width:\s*0;/s)
+  })
+
+  test("7. Light mode clears dark main canvas gradient and binds Fantasy402 Portal Session Notice to >= 4.5:1 tokens", () => {
+    const customersPanelSource = readFileSync(
+      resolve(UI_ROOT, "panels/CustomersTabPanel.tsx"),
+      "utf8",
+    )
+
+    expect(deskCss).toMatch(
+      /\[data-dashboard-theme="light"\]\s*>\s*main\.sd-main-canvas\s*\{[^}]*background-color:\s*var\(--surface-page,\s*#f1f5f9\)\s*!important;[^}]*background-image:\s*none\s*!important;/s,
+    )
+    expect(customersPanelSource).toContain('className="sd-portal-session-notice"')
+    expect(customersPanelSource).toContain('className="sd-portal-session-notice-link"')
+    expect(customersPanelSource).toContain('className="sd-portal-session-notice-dismiss"')
+
+    expect(deskCss).toContain('[data-dashboard-theme="light"] .sd-portal-session-notice')
+    expect(deskCss).toContain('[data-dashboard-theme="light"] .sd-portal-session-notice-link')
+    expect(deskCss).toContain('[data-dashboard-theme="light"] .sd-portal-session-notice-dismiss')
+
+    expect(contrastRatio("#78350f", "#fffbeb")).toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio("#92400e", "#fffbeb")).toBeGreaterThanOrEqual(4.5)
+  })
+
+  test("8. Breadcrumb Ctrl+1 shortcut hint next to Up to Profiles is hidden below 1024px (sd-kbd-shortcut)", () => {
+    const breadcrumbsSource = readFileSync(
+      resolve(UI_ROOT, "panels/DashboardBreadcrumbs.tsx"),
+      "utf8",
+    )
+
+    expect(breadcrumbsSource).toContain('<kbd className="sd-breadcrumb-meta sd-kbd-shortcut"')
+    expect(breadcrumbsSource).not.toContain('<span className="sd-breadcrumb-meta"')
+  })
 })

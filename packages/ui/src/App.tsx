@@ -3432,7 +3432,7 @@ export function App(): React.ReactElement {
   )
 
   return (
-    <div data-dashboard-theme={dashboardTheme} style={styles.container}>
+    <div data-dashboard-theme={dashboardTheme} className="sd-app-shell" style={styles.container}>
       {/* Global Header */}
       <header className="sd-app-header" style={styles.header}>
         {/* Row 1: Compact 1-row App Title Bar (logo, title, theme toggle, mobile menu button) */}

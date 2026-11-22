@@ -689,9 +689,15 @@
 }
 
 [data-dashboard-theme="light"] {
-  background-color: #f1f5f9 !important;
-  color: #0f172a !important;
+  background-color: var(--surface-page, #f1f5f9) !important;
+  color: var(--text-primary, #0f172a) !important;
   color-scheme: light;
+}
+
+html[data-dashboard-theme="light"],
+html[data-dashboard-theme="light"] body {
+  background-color: var(--surface-page, #f1f5f9) !important;
+  color: var(--text-primary, #0f172a) !important;
 }
 
 [data-dashboard-theme="light"] > header {
@@ -791,8 +797,10 @@
 }
 
 [data-dashboard-theme="light"] > main.sd-main-canvas {
-  background-color: #f1f5f9 !important;
-  color: #0f172a !important;
+  background-color: var(--surface-page, #f1f5f9) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: var(--text-primary, #0f172a) !important;
 }
 
 [data-dashboard-theme="light"] > main.sd-main-canvas > div {
@@ -846,9 +854,11 @@
 [data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(7, 11, 20)"],
 [data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(17, 28, 51)"],
 [data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(19, 29, 53)"] {
-  background-color: #ffffff !important;
-  border-color: #cbd5e1 !important;
-  color: #0f172a !important;
+  background-color: var(--surface-panel, #ffffff) !important;
+  background-image: none !important;
+  border-color: var(--border-default, #cbd5e1) !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+  color: var(--text-primary, #0f172a) !important;
 }
 
 [data-dashboard-theme="light"] > header [style*="background-color: rgb(15, 23, 42)"],
@@ -5872,6 +5882,54 @@
   flex-shrink: 0;
 }
 
+/* Root page overflow containment (sticky-safe overflow-x: clip + min-width: 0 on flex/grid children) */
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.sd-app-shell,
+[data-dashboard-theme] {
+  overflow-x: clip;
+  max-width: 100%;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.sd-app-shell > *,
+.sd-app-header > *,
+.sd-quickjump-ribbon,
+.sd-quickjump-ribbon > *,
+.sd-main-canvas,
+.sd-main-canvas > *,
+.sd-breadcrumbs,
+.sd-breadcrumbs > *,
+.sd-breadcrumb-list,
+.sd-breadcrumb-actions,
+.sd-portal-session-notice,
+.sd-portal-session-notice > * {
+  min-width: 0;
+}
+
+.sd-quickjump-ribbon {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.sd-quickjump-meta {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .sd-main-canvas .kpi-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 1023px) {
   .sd-quickjump-ribbon {
     padding: 8px 12px !important;
@@ -5881,6 +5939,8 @@
     flex-wrap: nowrap;
     overflow-x: auto;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     padding-bottom: 2px;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
@@ -5892,8 +5952,11 @@
 
   .sd-quickjump-meta {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     flex-wrap: nowrap !important;
     overflow-x: auto;
+    padding-bottom: 2px;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
   }
@@ -6044,6 +6107,22 @@
 
 [data-dashboard-theme="light"] > section[aria-label="Operations Command Ribbon"] .sd-quickjump-feed-age {
   color: #334155 !important;
+}
+
+/* Light-mode Fantasy402 Portal Session Notice banner (>= 4.5:1 WCAG AA contrast) */
+[data-dashboard-theme="light"] .sd-portal-session-notice {
+  background: #fffbeb !important;
+  background-color: #fffbeb !important;
+  border-color: #d97706 !important;
+  color: #78350f !important;
+}
+
+[data-dashboard-theme="light"] .sd-portal-session-notice-link {
+  color: #92400e !important;
+}
+
+[data-dashboard-theme="light"] .sd-portal-session-notice-dismiss {
+  color: #78350f !important;
 }
 
 /* Light-mode footer readability */
