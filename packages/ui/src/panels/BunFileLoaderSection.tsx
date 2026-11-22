@@ -6,6 +6,7 @@ import {
   buildBunAssetPipelineSnippets,
   BUN_ASSET_LOADER_COMPARISON,
   BUN_ASSET_LOADER_SPECS,
+  BUN_ASSET_RUNTIME_EDGES,
   BUN_FILE_BLOB_CONSUMERS,
   BUN_FILE_PROPERTIES,
   type BunAssetBuildTarget,
@@ -503,7 +504,9 @@ export function BunFileLoaderSection({
                           ? "#38bdf8"
                           : row.loader === "napi"
                             ? "#f59e0b"
-                            : "#c084fc",
+                            : row.loader === "sqlite"
+                              ? "#4ade80"
+                              : "#c084fc",
                       fontWeight: 600,
                     }}
                   >
@@ -874,7 +877,131 @@ export function BunFileLoaderSection({
         </div>
       </div>
 
-      {/* 4. Sibling Loader Matrix: file vs napi (TSFN) vs yaml */}
+      {/* 4. Verified Runtime Edge Cases (WASM, SQLite Embed, N-API TSFN, Metafile) */}
+      <div
+        data-file-loader-runtime-edges="true"
+        style={{
+          borderRadius: "8px",
+          borderWidth: "1px",
+          borderStyle: "solid",
+          borderColor: "var(--border-default, #1e293b)",
+          backgroundColor: "var(--surface-panel, #0f172a)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            padding: "10px 14px",
+            borderBottomWidth: "1px",
+            borderBottomStyle: "solid",
+            borderBottomColor: "var(--border-default, #1e293b)",
+          }}
+        >
+          <div style={{ fontSize: "12.5px", fontWeight: 700, color: "#f8fafc" }}>
+            Verified Runtime Edge Cases (Bun 1.4.4 Empirical Matrix)
+          </div>
+          <div style={{ marginTop: "2px", fontSize: "11px", color: "#94a3b8" }}>
+            Documented pitfalls verified against live dev, dist/, and standalone --compile binaries
+            executed from an isolated empty working directory.
+          </div>
+        </div>
+
+        <div style={{ overflowX: "auto" }}>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              fontSize: "11.5px",
+            }}
+          >
+            <thead>
+              <tr
+                style={{
+                  textAlign: "left",
+                  fontSize: "10.5px",
+                  color: "#94a3b8",
+                  borderBottomWidth: "1px",
+                  borderBottomStyle: "solid",
+                  borderBottomColor: "var(--border-default, #1e293b)",
+                }}
+              >
+                <th style={{ padding: "8px 14px", width: "170px", fontWeight: 600 }}>Surface</th>
+                <th style={{ padding: "8px 12px", width: "155px", fontWeight: 600 }}>Modes</th>
+                <th style={{ padding: "8px 14px", fontWeight: 600 }}>Verified Behavior</th>
+                <th style={{ padding: "8px 14px", fontWeight: 600 }}>Pitfall / Edge Case</th>
+              </tr>
+            </thead>
+            <tbody>
+              {BUN_ASSET_RUNTIME_EDGES.map((edge) => (
+                <tr
+                  key={edge.id}
+                  data-runtime-edge-id={edge.id}
+                  style={{
+                    borderBottomWidth: "1px",
+                    borderBottomStyle: "solid",
+                    borderBottomColor: "rgba(30, 41, 59, 0.55)",
+                  }}
+                >
+                  <td
+                    style={{
+                      padding: "9px 14px",
+                      fontWeight: 700,
+                      color: "#38bdf8",
+                      verticalAlign: "top",
+                    }}
+                  >
+                    {edge.topic}
+                  </td>
+                  <td
+                    style={{
+                      padding: "9px 12px",
+                      fontFamily: MONO_FONT,
+                      fontSize: "11px",
+                      color: "#94a3b8",
+                      whiteSpace: "nowrap",
+                      verticalAlign: "top",
+                    }}
+                  >
+                    {edge.modes}
+                  </td>
+                  <td
+                    style={{
+                      padding: "9px 14px",
+                      color: "#cbd5e1",
+                      lineHeight: 1.45,
+                      verticalAlign: "top",
+                    }}
+                  >
+                    <div>{edge.expectedBehavior}</div>
+                    <div
+                      style={{
+                        marginTop: "3px",
+                        fontFamily: MONO_FONT,
+                        fontSize: "10.5px",
+                        color: "#86efac",
+                      }}
+                    >
+                      {edge.verifiedPattern}
+                    </div>
+                  </td>
+                  <td
+                    style={{
+                      padding: "9px 14px",
+                      color: "#fbbf24",
+                      lineHeight: 1.45,
+                      verticalAlign: "top",
+                    }}
+                  >
+                    {edge.pitfallOrEdge}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 5. Sibling Loader Matrix: file vs napi (TSFN) vs yaml vs sqlite */}
       <div
         style={{
           borderRadius: "8px",
@@ -894,11 +1021,12 @@ export function BunFileLoaderSection({
           }}
         >
           <div style={{ fontSize: "12.5px", fontWeight: 700, color: "#f8fafc" }}>
-            Sibling Loaders: file vs napi (TSFN Native Addons) vs yaml
+            Sibling Loaders: file vs napi (TSFN Native Addons) vs yaml vs sqlite
           </div>
           <div style={{ marginTop: "2px", fontSize: "11px", color: "#94a3b8" }}>
-            Both file and napi assets survive --compile via embedding: .node addons retain TSFN
-            cross-thread calls while companion assets flow through file -&gt; Bun.file().
+            All four survive --compile via embedding: .node addons retain TSFN cross-thread calls,
+            WASM &amp; static assets flow through file -&gt; Bun.file(), and sqlite embeds into
+            :memory: (lock with PRAGMA query_only or Database.deserialize readonly).
           </div>
         </div>
 
@@ -954,7 +1082,9 @@ export function BunFileLoaderSection({
                           ? "#38bdf8"
                           : row.loader === "napi"
                             ? "#f59e0b"
-                            : "#c084fc",
+                            : row.loader === "sqlite"
+                              ? "#4ade80"
+                              : "#c084fc",
                       verticalAlign: "top",
                     }}
                   >
