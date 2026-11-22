@@ -349,8 +349,15 @@ export class SealedR2Handle {
     Object.freeze(this)
   }
 
-  file(key: string) {
+  file(key: string, options?: { readonly type?: string | undefined }) {
     requireR2AdminScope()
+    const contentType = options?.type?.trim()
+    if (contentType) {
+      if (hasControlChars(contentType) || /[\r\n]/.test(contentType)) {
+        throw new Error("ERR_S3_INVALID_CONTENT_TYPE: Invalid Content-Type header value")
+      }
+      return this.#client.file(key, { type: contentType })
+    }
     return this.#client.file(key)
   }
 
@@ -532,7 +539,7 @@ export class SealedR2Handle {
    */
   async writeObject(
     key: string,
-    body: string | Uint8Array,
+    body: string | Uint8Array | Blob,
     options: S3WriteObjectOptions = {},
   ): Promise<S3WriteObjectResult> {
     requireR2AdminScope()
@@ -543,11 +550,17 @@ export class SealedR2Handle {
     if (!isAllowedS3StorageClass(storageClass)) {
       throw new Error("ERR_S3_INVALID_STORAGE_CLASS: Unsupported S3 storage class")
     }
-    const byteLength = typeof body === "string" ? Buffer.byteLength(body, "utf8") : body.byteLength
+    const byteLength =
+      typeof body === "string"
+        ? Buffer.byteLength(body, "utf8")
+        : body instanceof Blob
+          ? body.size
+          : body.byteLength
     if (byteLength > MAX_S3_WRITE_BYTES) {
       throw new Error("ERR_S3_PAYLOAD_TOO_LARGE: Object payload exceeds 5 MiB limit")
     }
-    const contentType = options.contentType?.trim() || "application/octet-stream"
+    const blobType = body instanceof Blob && body.type ? body.type : undefined
+    const contentType = options.contentType?.trim() || blobType || "application/octet-stream"
     if (hasControlChars(contentType) || /[\r\n]/.test(contentType)) {
       throw new Error("ERR_S3_INVALID_CONTENT_TYPE: Invalid Content-Type header value")
     }

@@ -333,7 +333,7 @@ async function withWagersTabPolicy(deps: DashboardApiDeps, payload: object): Pro
   }
 }
 
-/** A public R2 key that may carry image provenance: relative, no traversal, PNG/WebP. */
+/** A public R2 key that may carry image provenance: relative, no traversal, PNG/WebP/AVIF. */
 function isSafeImageProvenanceKey(key: string): boolean {
   return (
     key.length > 0 &&
@@ -342,7 +342,7 @@ function isSafeImageProvenanceKey(key: string): boolean {
     !key.includes("\\") &&
     !key.includes("..") &&
     !key.includes("://") &&
-    /\.(png|webp)$/i.test(key)
+    /\.(png|webp|avif)$/i.test(key)
   )
 }
 

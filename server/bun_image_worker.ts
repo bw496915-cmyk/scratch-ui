@@ -10,7 +10,12 @@ import { extname, join, relative, resolve } from "node:path"
 
 import type { Image } from "bun"
 
-import { injectXmp } from "./xmp_injector.ts"
+import { sha256HexBytes } from "../lib/binary.ts"
+import {
+  encodeImageWithAvifFallback,
+  toImageRpcPayload,
+} from "../lib/image_avif_fallback.ts"
+import { extractPngMetadata, extractWebpXmp } from "../lib/xmp_container.ts"
 
 const RASTER_EXTS = new Set([".png", ".jpg", ".jpeg", ".webp", ".avif", ".heic", ".gif", ".ico"])
 
@@ -95,9 +100,7 @@ async function walkFiles(dir: string, out: string[]): Promise<void> {
 }
 
 function hashBytesSha256(bytes: Uint8Array): string {
-  const hasher = new Bun.CryptoHasher("sha256")
-  hasher.update(bytes)
-  return hasher.digest("hex")
+  return sha256HexBytes(bytes)
 }
 
 function parseSvgAttributes(text: string): {
@@ -320,48 +323,51 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
   const originalStat = await stat(req.fullPath)
   const originalMeta = await bunFile.image().metadata()
 
-  let pipeline = Bun.file(req.fullPath).image()
+  const buildPipeline = (): Image => {
+    let pipeline = Bun.file(req.fullPath).image()
 
-  const width = req.width && req.width > 0 ? req.width : undefined
-  const height = req.height && req.height > 0 ? req.height : undefined
-  const resizeOpts: Image.ResizeOptions = {
-    fit: req.fit ?? "inside",
-    withoutEnlargement: req.withoutEnlargement ?? true,
-  }
-  if (req.filter) resizeOpts.filter = req.filter
+    const width = req.width && req.width > 0 ? req.width : undefined
+    const height = req.height && req.height > 0 ? req.height : undefined
+    const resizeOpts: Image.ResizeOptions = {
+      fit: req.fit ?? "inside",
+      withoutEnlargement: req.withoutEnlargement ?? true,
+    }
+    if (req.filter) resizeOpts.filter = req.filter
 
-  if (width !== undefined) {
-    pipeline = pipeline.resize(width, height, resizeOpts)
-  } else if (height !== undefined) {
-    // Bun requires width. Metadata includes EXIF orientation, matching the resize pipeline.
-    const targetHeight = resizeOpts.withoutEnlargement
-      ? Math.min(height, originalMeta.height)
-      : height
-    const targetWidth = Math.max(
-      1,
-      Math.round((originalMeta.width * targetHeight) / originalMeta.height),
-    )
-    // Both dimensions encode the one-axis request; an "inside" pass can round the height again.
-    pipeline = pipeline.resize(targetWidth, targetHeight, { ...resizeOpts, fit: "fill" })
-  }
+    if (width !== undefined) {
+      pipeline = pipeline.resize(width, height, resizeOpts)
+    } else if (height !== undefined) {
+      // Bun requires width. Metadata includes EXIF orientation, matching the resize pipeline.
+      const targetHeight = resizeOpts.withoutEnlargement
+        ? Math.min(height, originalMeta.height)
+        : height
+      const targetWidth = Math.max(
+        1,
+        Math.round((originalMeta.width * targetHeight) / originalMeta.height),
+      )
+      // Both dimensions encode the one-axis request; an "inside" pass can round the height again.
+      pipeline = pipeline.resize(targetWidth, targetHeight, { ...resizeOpts, fit: "fill" })
+    }
 
-  if (req.rotate === 90 || req.rotate === 180 || req.rotate === 270) {
-    pipeline = pipeline.rotate(req.rotate)
-  }
-  if (req.flip) {
-    pipeline = pipeline.flip()
-  }
-  if (req.flop) {
-    pipeline = pipeline.flop()
-  }
-  if (
-    (req.brightness !== undefined && req.brightness !== 1) ||
-    (req.saturation !== undefined && req.saturation !== 1)
-  ) {
-    pipeline = pipeline.modulate({
-      brightness: req.brightness ?? 1,
-      saturation: req.saturation ?? 1,
-    })
+    if (req.rotate === 90 || req.rotate === 180 || req.rotate === 270) {
+      pipeline = pipeline.rotate(req.rotate)
+    }
+    if (req.flip) {
+      pipeline = pipeline.flip()
+    }
+    if (req.flop) {
+      pipeline = pipeline.flop()
+    }
+    if (
+      (req.brightness !== undefined && req.brightness !== 1) ||
+      (req.saturation !== undefined && req.saturation !== 1)
+    ) {
+      pipeline = pipeline.modulate({
+        brightness: req.brightness ?? 1,
+        saturation: req.saturation ?? 1,
+      })
+    }
+    return pipeline
   }
 
   const quality = Math.min(100, Math.max(1, Math.round(req.quality ?? 80)))
@@ -370,79 +376,44 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
   const pngPalette = Boolean(req.palette)
   const pngColors = Math.min(256, Math.max(2, Math.round(req.colors ?? 256)))
   const pngDither = req.dither ?? true
-  const pngOptions = pngPalette
-    ? { compressionLevel, palette: true, colors: pngColors, dither: pngDither }
-    : { compressionLevel }
 
-  const encoded =
-    req.format === "webp"
-      ? pipeline.webp({ lossless: webpLossless, quality })
-      : req.format === "jpeg"
-        ? pipeline.jpeg({ quality })
-        : req.format === "png"
-          ? pipeline.png(pngOptions)
-          : req.format === "avif"
-            ? pipeline.avif({ quality })
-            : pipeline.heic({ quality })
+  const encodedResult = await encodeImageWithAvifFallback(buildPipeline, {
+    format: req.format,
+    quality,
+    lossless: webpLossless,
+    compressionLevel,
+    palette: pngPalette,
+    colors: pngColors,
+    dither: pngDither,
+    xmpXml: req.xmpXml,
+  })
 
-  let outBytes = await encoded.bytes()
-  let xmpInjected = false
-  let xmpBytes: number | undefined
-  if (
-    typeof req.xmpXml === "string" &&
-    req.xmpXml.trim().length > 0 &&
-    (req.format === "png" || req.format === "webp")
-  ) {
-    outBytes = injectXmp(outBytes, req.xmpXml)
-    xmpInjected = true
-    xmpBytes = new TextEncoder().encode(req.xmpXml).byteLength
-  }
+  const outBytes = encodedResult.bytes
+  const outBlob = encodedResult.blob
+  const resolvedFormat = encodedResult.outputFormat
+  const mimeType = outBlob.type
+  const xmpInjected = encodedResult.xmpInjected
+  const xmpBytes = encodedResult.xmpBytes
 
   const outMeta = await new Bun.Image(outBytes).metadata()
   const durationMs = Math.max(1, Math.round(performance.now() - startedAt))
-  const mimeType =
-    req.format === "jpeg"
-      ? "image/jpeg"
-      : req.format === "png"
-        ? "image/png"
-        : req.format === "webp"
-          ? "image/webp"
-          : req.format === "avif"
-            ? "image/avif"
-            : "image/heic"
 
-  const isWebpBytes =
-    outBytes.byteLength >= 16 &&
-    outBytes[0] === 0x52 &&
-    outBytes[1] === 0x49 &&
-    outBytes[2] === 0x46 &&
-    outBytes[3] === 0x46 &&
-    outBytes[8] === 0x57 &&
-    outBytes[9] === 0x45 &&
-    outBytes[10] === 0x42 &&
-    outBytes[11] === 0x50
-  const webpFourCC =
-    req.format === "webp" && isWebpBytes
-      ? String.fromCharCode(outBytes[12]!, outBytes[13]!, outBytes[14]!, outBytes[15]!)
-      : undefined
+  const webpInfo = resolvedFormat === "webp" ? extractWebpXmp(outBytes) : null
+  const webpFourCC = webpInfo?.chunkTypes[0]
+  const effectiveWebpLossless = encodedResult.fallbackApplied ? false : webpLossless
   const webpBitstream =
     webpFourCC === "VP8L"
       ? "Lossless (VP8L)"
       : webpFourCC === "VP8 "
         ? "Lossy (VP8)"
         : webpFourCC === "VP8X"
-          ? webpLossless
+          ? effectiveWebpLossless
             ? "Extended Lossless (VP8X/VP8L)"
             : "Extended Lossy (VP8X)"
           : undefined
 
-  const isPngBytes =
-    outBytes.byteLength >= 26 &&
-    outBytes[0] === 0x89 &&
-    outBytes[1] === 0x50 &&
-    outBytes[2] === 0x4e &&
-    outBytes[3] === 0x47
-  const pngColorType = req.format === "png" && isPngBytes ? outBytes[25] : undefined
+  const pngInfo = resolvedFormat === "png" ? extractPngMetadata(outBytes) : null
+  const pngColorType = pngInfo?.colorType ?? undefined
   const pngColorTypeLabel =
     pngColorType === 3
       ? "Indexed Palette (type 3)"
@@ -458,8 +429,7 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
                 ? `PNG (type ${pngColorType})`
                 : undefined
 
-  const base64 = Buffer.from(outBytes).toString("base64")
-  const dataUrl = `data:${mimeType};base64,${base64}`
+  const dataUrl = (await toImageRpcPayload(outBlob, "data-url")) as string
   const savedBytes = originalStat.size - outBytes.byteLength
   const savedPct =
     originalStat.size > 0 ? Number(((savedBytes / originalStat.size) * 100).toFixed(1)) : 0
@@ -473,7 +443,8 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
     originalWidth: originalMeta.width,
     originalHeight: originalMeta.height,
     originalBytes: originalStat.size,
-    outputFormat: outMeta.format ?? req.format,
+    requestedFormat: req.format,
+    outputFormat: outMeta.format ?? resolvedFormat,
     outputWidth: outMeta.width,
     outputHeight: outMeta.height,
     outputBytes: outBytes.byteLength,
@@ -483,14 +454,20 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
     sha256: hashBytesSha256(outBytes).slice(0, 12),
     mimeType,
     dataUrl,
-    ...(xmpInjected ? { xmpInjected: true, xmpBytes } : {}),
-    ...(req.format === "webp"
+    ...(encodedResult.fallbackApplied
       ? {
-          webpLossless,
+          fallbackApplied: true,
+          fallbackReason: encodedResult.fallbackReason,
+        }
+      : {}),
+    ...(xmpInjected ? { xmpInjected: true, xmpBytes } : {}),
+    ...(resolvedFormat === "webp"
+      ? {
+          webpLossless: effectiveWebpLossless,
           webpBitstream,
         }
       : {}),
-    ...(req.format === "png"
+    ...(resolvedFormat === "png"
       ? {
           pngColorType,
           pngColorTypeLabel,

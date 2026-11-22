@@ -8,6 +8,7 @@ import { realpathSync, statSync } from "node:fs"
 import { readFile } from "node:fs/promises"
 import { extname, isAbsolute, relative, resolve } from "node:path"
 
+import { sniffImageInfo } from "../lib/xmp_container.ts"
 import { getImageAssetsDiagnostics } from "./adapters.ts"
 
 export const ALLOWED_ASSET_ROOTS = [
@@ -104,6 +105,7 @@ export interface BunImageTransformResult {
   readonly originalWidth?: number | undefined
   readonly originalHeight?: number | undefined
   readonly originalBytes: number
+  readonly requestedFormat?: BunImageOutputFormat | undefined
   readonly outputFormat: string
   readonly outputWidth?: number | undefined
   readonly outputHeight?: number | undefined
@@ -114,6 +116,8 @@ export interface BunImageTransformResult {
   readonly sha256: string
   readonly mimeType: string
   readonly dataUrl: string
+  readonly fallbackApplied?: boolean | undefined
+  readonly fallbackReason?: "ERR_IMAGE_FORMAT_UNSUPPORTED" | undefined
   readonly pngColorType?: number | undefined
   readonly pngColorTypeLabel?: string | undefined
   readonly pngPalette?: boolean | undefined
@@ -203,24 +207,9 @@ export function resolveSafeAssetPath(
 }
 
 function sniffMimeFromBytes(buf: Buffer, ext: string): string {
-  if (
-    buf.length >= 8 &&
-    buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
-  ) {
-    return "image/png"
-  }
-  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) {
-    return "image/jpeg"
-  }
-  if (
-    buf.length >= 12 &&
-    buf.toString("ascii", 0, 4) === "RIFF" &&
-    buf.toString("ascii", 8, 12) === "WEBP"
-  ) {
-    return "image/webp"
-  }
-  if (buf.length >= 6 && buf.toString("ascii", 0, 6).startsWith("GIF8")) {
-    return "image/gif"
+  const sniffed = sniffImageInfo(buf)
+  if (sniffed.format !== "unknown") {
+    return sniffed.mimeType
   }
   if (ext.toLowerCase() === ".svg") {
     return "image/svg+xml"

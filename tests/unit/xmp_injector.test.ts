@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test"
 import { resolve } from "node:path"
 import { deflateSync } from "node:zlib"
 
+import { crc32Bytes } from "../../lib/binary.ts"
 import { transformBunImageAsset } from "../../server/bun_image_engine.ts"
 import { injectPngXmp, injectWebpXmp, injectXmp } from "../../server/xmp_injector.ts"
 
@@ -11,33 +12,13 @@ const PNG_SIG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 const XMP_PNG_PREFIX = new TextEncoder().encode("XML:com.adobe.xmp\0\0\0\0\0")
 const WORKSPACE_ROOT = resolve(import.meta.dir, "../..")
 
-const CRC32_TABLE = (() => {
-  const table = new Uint32Array(256)
-  for (let i = 0; i < 256; i++) {
-    let c = i
-    for (let k = 0; k < 8; k++) {
-      c = (c & 1) !== 0 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
-    }
-    table[i] = c >>> 0
-  }
-  return table
-})()
-
-function crc32(bytes: Uint8Array): number {
-  let c = 0xffffffff
-  for (let i = 0; i < bytes.length; i++) {
-    c = CRC32_TABLE[(c ^ bytes[i]!) & 0xff]! ^ (c >>> 8)
-  }
-  return (c ^ 0xffffffff) >>> 0
-}
-
 function makePngChunk(type: string, data: Uint8Array): Uint8Array {
   const out = new Uint8Array(12 + data.byteLength)
   const view = new DataView(out.buffer)
   view.setUint32(0, data.byteLength, false)
   for (let i = 0; i < 4; i++) out[4 + i] = type.charCodeAt(i)
   out.set(data, 8)
-  view.setUint32(8 + data.byteLength, crc32(out.subarray(4, 8 + data.byteLength)), false)
+  view.setUint32(8 + data.byteLength, crc32Bytes(out.subarray(4, 8 + data.byteLength)), false)
   return out
 }
 

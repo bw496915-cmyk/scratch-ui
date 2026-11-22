@@ -25,6 +25,7 @@ import {
   isPublicApiRoute,
   validateTerminalCommand,
 } from "./lib/http_auth.ts"
+import { probeR2ImageProvenance } from "./lib/image_provenance.ts"
 import { parseShortDesc } from "./lib/live_wagers.ts"
 import { SUBSPORT_TAXONOMY_CATALOG } from "./lib/market_taxonomy_catalog.ts"
 import { SLAB_SERVER } from "./lib/slab_config.ts"
@@ -547,23 +548,11 @@ async function startServer() {
       getBetTickerPayload: (filters) => betTickerService.getPayload(filters),
       getR2PipelinePayload: (opts) => r2PipelineService.probeAll(opts),
       getR2PipelineHistoryPayload: (opts) => r2PipelineService.getHistory(opts),
-      getR2ImageProvenancePayload: async ({ key }) => ({
-        schemaVersion: 1 as const,
-        key,
-        publicUrl: `${DEFAULT_R2_PUBLIC_BASE}/${key}`,
-        fetchedBytes: 0,
-        report: {
-          available: false,
-          format: null,
-          width: null,
-          height: null,
-          byteLength: 0,
-          channels: [],
-          fields: { streamId: null, genU32: null, merkleRoot: null },
-          raw: {},
-          issues: ["Node.js preview mode — remote R2 image provenance probe disabled"],
-        },
-      }),
+      getR2ImageProvenancePayload: async ({ key }) =>
+        await probeR2ImageProvenance({
+          key,
+          bucketPublicBase: DEFAULT_R2_PUBLIC_BASE,
+        }),
       getDaemonStatusPayload: () => r2PipelineService.probeDaemon(),
       getAutomationsPayload: () => buildNodeAutomationsSnapshot(),
       runGsliveTicketVerify: (opts) => runNodeTicketVerification(opts?.dryRun ?? true),
