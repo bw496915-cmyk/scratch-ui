@@ -1,0 +1,428 @@
+/**
+ * @file src/dashboard/dashboard.css
+ * @description Operational chrome and interactive component styles for the SportsDesk Enhanced Dashboard.
+ * Consumes specification-grade CSS Houdini custom properties emitted in `./tokens.generated.css`.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--sd-surface-bg);
+  color: var(--sd-text-primary);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 13px;
+}
+
+th,
+td {
+  padding: 10px 14px;
+  border: 1px solid var(--sd-surface-border);
+  text-align: left;
+}
+
+th {
+  background-color: var(--sd-surface-card);
+  color: var(--sd-text-muted);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+tr:nth-child(even) td {
+  background-color: rgba(30, 41, 59, 0.35);
+}
+
+tr:hover td {
+  background-color: var(--sd-surface-hover);
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  color: var(--sd-tier-steam);
+  background: rgba(30, 41, 59, 0.65);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+a {
+  color: var(--sd-tier-rec-bias);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+blockquote {
+  margin: 12px 0;
+  padding: 8px 16px;
+  border-left: 4px solid var(--sd-tier-rec-bias);
+  background: var(--sd-surface-card);
+  color: var(--sd-text-muted);
+}
+
+/* Enhanced Dashboard Token Utility Classes */
+.sd-card {
+  background-color: var(--sd-surface-card);
+  border: 1px solid var(--sd-surface-border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.sd-card-cli {
+  background-color: var(--sd-surface-cli);
+  border: 1px solid var(--sd-surface-border);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.sd-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.sd-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 16px;
+}
+
+.sd-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--sd-surface-border);
+  background-color: var(--sd-surface-cli);
+  color: var(--sd-text-muted);
+}
+
+.sd-pill-live {
+  border-color: rgba(16, 185, 129, 0.45);
+  background-color: rgba(16, 185, 129, 0.12);
+  color: var(--sd-theme-emerald);
+}
+
+.sd-pill-fixture {
+  border-color: rgba(245, 158, 11, 0.45);
+  background-color: rgba(245, 158, 11, 0.12);
+  color: var(--sd-tier-steam);
+}
+
+.sd-pill-alert {
+  border-color: rgba(239, 68, 68, 0.45);
+  background-color: rgba(239, 68, 68, 0.12);
+  color: var(--sd-tier-alert);
+}
+
+.sd-pill-sharp {
+  border-color: rgba(168, 85, 247, 0.45);
+  background-color: rgba(168, 85, 247, 0.12);
+  color: var(--sd-route-sharp);
+}
+
+.sd-preset-btn {
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--sd-surface-border);
+  background-color: var(--sd-surface-cli);
+  color: var(--sd-text-muted);
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.sd-preset-btn:hover {
+  background-color: var(--sd-surface-hover);
+  color: var(--sd-text-primary);
+}
+
+.sd-preset-btn[data-active="true"] {
+  background-color: rgba(56, 189, 248, 0.16);
+  border-color: var(--sd-tier-rec-bias);
+  color: var(--sd-tier-rec-bias);
+}
+
+.sd-slider {
+  width: 100%;
+  accent-color: var(--sd-tier-rec-bias);
+  cursor: pointer;
+}
+
+.sd-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+.sd-token-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.sd-dim-row {
+  display: grid;
+  grid-template-columns: 148px 1fr;
+  align-items: start;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.65);
+}
+
+.sd-dim-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.sd-dim-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sd-text-muted);
+  padding-top: 5px;
+}
+
+.sd-chip-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sd-dim-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--sd-surface-border);
+  background-color: var(--sd-surface-cli);
+  color: var(--sd-text-muted);
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.sd-dim-chip:hover {
+  background-color: var(--sd-surface-hover);
+  color: var(--sd-text-primary);
+}
+
+.sd-dim-chip[data-active="true"] {
+  background-color: rgba(56, 189, 248, 0.16);
+  border-color: var(--sd-tier-rec-bias);
+  color: var(--sd-tier-rec-bias);
+}
+
+.sd-dim-count {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background-color: rgba(15, 23, 42, 0.8);
+  color: var(--sd-text-muted);
+}
+
+.sd-pill-blocked {
+  border-color: rgba(100, 116, 139, 0.5);
+  background-color: rgba(100, 116, 139, 0.14);
+  color: var(--sd-tier-blocked);
+}
+
+.sd-row-active td {
+  background-color: rgba(56, 189, 248, 0.1) !important;
+}
+
+.sd-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.sd-kpi-box {
+  background-color: var(--sd-surface-cli);
+  border: 1px solid var(--sd-surface-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sd-kpi-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--sd-text-muted);
+}
+
+.sd-kpi-value {
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--sd-text-primary);
+}
+
+.sd-kpi-sub {
+  font-size: 11px;
+  color: var(--sd-text-muted);
+}
+
+.sd-soa-table {
+  font-size: 11.5px;
+}
+
+.sd-soa-table th,
+.sd-soa-table td {
+  padding: 7px 8px;
+}
+
+/* ── Rendered Markdown Telemetry Brief (.sd-markdown-doc) ── */
+.sd-markdown-doc {
+  color: var(--sd-text-primary);
+  font-size: 13.5px;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+.sd-markdown-doc > *:first-child {
+  margin-top: 0;
+}
+
+.sd-markdown-doc > *:last-child {
+  margin-bottom: 0;
+}
+
+.sd-markdown-doc h1 {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+  margin: 0 0 10px 0;
+  color: var(--sd-text-primary);
+}
+
+.sd-markdown-doc h2 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 22px 0 10px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--sd-surface-border);
+  color: var(--sd-text-primary);
+  scroll-margin-top: 16px;
+}
+
+.sd-markdown-doc h3 {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 14px 0 8px 0;
+  color: var(--sd-tier-rec-bias);
+}
+
+.sd-markdown-doc h1 a,
+.sd-markdown-doc h2 a,
+.sd-markdown-doc h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.sd-markdown-doc h1 a:hover,
+.sd-markdown-doc h2 a:hover,
+.sd-markdown-doc h3 a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--sd-tier-rec-bias);
+}
+
+.sd-markdown-doc blockquote {
+  margin: 0 0 16px 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--sd-tier-rec-bias);
+  border-radius: 0 6px 6px 0;
+  background: rgba(4, 7, 14, 0.65);
+  color: #cbd5e1;
+  font-size: 12.5px;
+}
+
+.sd-markdown-doc blockquote p {
+  margin: 0;
+}
+
+.sd-markdown-doc blockquote a {
+  font-weight: 600;
+}
+
+.sd-markdown-doc hr {
+  border: none;
+  border-top: 1px solid var(--sd-surface-border);
+  margin: 18px 0;
+}
+
+.sd-markdown-doc ul,
+.sd-markdown-doc ol {
+  margin: 8px 0 14px 0;
+  padding-left: 20px;
+}
+
+.sd-markdown-doc li {
+  margin: 4px 0;
+  color: #cbd5e1;
+}
+
+.sd-markdown-doc pre {
+  margin: 12px 0 0 0;
+  padding: 12px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--sd-surface-border);
+  background: var(--sd-surface-cli);
+  overflow-x: auto;
+}
+
+.sd-markdown-doc pre code {
+  background: transparent;
+  padding: 0;
+  color: var(--sd-theme-emerald);
+  font-size: 12px;
+}
+
+.sd-markdown-doc table {
+  margin: 10px 0 16px 0;
+}
+
+.sd-markdown-doc th {
+  white-space: nowrap;
+}

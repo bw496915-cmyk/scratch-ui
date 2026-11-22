@@ -1,0 +1,198 @@
+/**
+ * Types for `docs/assets/live-ops.js` (the /graph Live Wagers & Our Positions helpers).
+ *
+ * The module is plain browser JS shipped as-is, so this declaration file is the contract
+ * the TS tests and the typechecker see. Keep it structural: unknown feed fields stay
+ * `unknown` and every accessor is defensive on the runtime side.
+ */
+
+export interface WalletProfileRow {
+  rank?: number | null
+  proxyWallet?: string | null
+  shortWallet?: string | null
+  f402CustomerId?: string | null
+  agentOwner?: string | null
+  openLegsCount?: number | string | null
+  openVolumeUsd?: number | string | null
+  positionsValueUsd?: number | string | null
+  openPnlUsd?: number | string | null
+  openBetsSummary?: string | null
+  dataSource?: string | null
+  lastSyncedIso?: string | null
+  fetchedAtIso?: string | null
+  walletAddressValid?: boolean | null
+  lastError?: string | null
+  [key: string]: unknown
+}
+
+export interface PositionRow {
+  rank: number
+  proxyWallet: string
+  shortWallet: string
+  customerId: string
+  agentOwner: string
+  legs: number
+  costUsd: number
+  valueUsd: number
+  pnlUsd: number
+  source: string
+  syncedIso: string
+  summary: string
+  error: string
+}
+
+export interface PositionsSummary {
+  walletCount: number
+  trackedCount: number
+  liveCount: number
+  staleCount: number
+  fixtureCount: number
+  invalidCount: number
+  openLegs: number
+  openCostUsd: number
+  openValueUsd: number
+  openPnlUsd: number
+  latestSyncIso: string | null
+  rows: PositionRow[]
+}
+
+export interface PendingBetRow {
+  ticketId?: string | null
+  sourceVenue?: string | null
+  f402CustomerId?: string | null
+  agentOwner?: string | null
+  canonicalMarket?: string | null
+  sportAndPeriod?: string | null
+  riskUsd?: number | string | null
+  toWinUsd?: number | string | null
+  deskVerdict?: string | null
+  placedAtUtc?: string | null
+  lastSyncedUtc?: string | null
+  [key: string]: unknown
+}
+
+export interface PendingBetRowSummary {
+  ticketId: string
+  venue: string
+  customerId: string
+  agentOwner: string
+  market: string
+  sportAndPeriod: string
+  riskUsd: number
+  toWinUsd: number
+  verdict: string
+  placedAtUtc: string
+  syncedIso: string
+}
+
+export interface PendingBetsSummary {
+  clusterCount: number
+  riskUsd: number
+  toWinUsd: number
+  exposureUsd: number
+  venues: Array<{ venue: string; count: number; riskUsd: number }>
+  rows: PendingBetRowSummary[]
+}
+
+export interface LiveTapeRow {
+  id: string
+  atIso: string
+  source: string
+  label: string
+  login: string
+  agent: string
+  ticket: string
+  summary: string
+  kind: "tick" | "frame"
+}
+
+export interface LiveMode {
+  label: string
+  tone: string
+  detail: string
+}
+
+export const LIVE_WS_TOPICS: readonly string[]
+export const BRIDGE_LABELS: Record<string, string>
+
+export function summarizePositions(
+  walletProfiles?: readonly WalletProfileRow[] | null,
+): PositionsSummary
+
+export function summarizePendingBets(
+  pendingBets?: readonly PendingBetRow[] | null,
+): PendingBetsSummary
+
+export function normalizeTickerRow(tick: unknown, fallbackSeq?: number): LiveTapeRow | null
+
+export function summarizeBridgeFrame(frame: unknown, receivedAtIso?: string): LiveTapeRow | null
+
+export function mergeTape(
+  rows?: readonly LiveTapeRow[] | null,
+  incoming?: readonly (LiveTapeRow | null)[] | null,
+  limit?: number,
+): LiveTapeRow[]
+
+export function formatAgeMs(ms?: number | null): string
+
+export function resolveLiveMode(input?: {
+  wsState?: string
+  feedAgeMs?: number | null
+  feedDataMode?: string | null
+}): LiveMode
+
+/**
+ * Top-banner state: like `resolveLiveMode`, but a failed fetch is a failure, an undated feed is
+ * never fresh, and "nothing loaded yet" is its own state.
+ */
+export function resolvePollerState(input?: {
+  wsState?: string
+  feedAgeMs?: number | null
+  feedDataMode?: string | null
+  /** Short reason while the latest poll is failing, otherwise null. */
+  fetchError?: string | null
+  /** True until the first feed has loaded or failed. */
+  awaiting?: boolean
+}): LiveMode
+
+/** Stale cutoff aligned with `resolveLiveMode` SNAPSHOT (5 minutes). */
+export declare const GRAPH_FEED_POLL_STALE_MS: number
+
+export type GraphHostEdge = { kind: "daemon" } | { kind: "static_pages" }
+
+export function resolveGraphHostEdge(input?: {
+  hasAdminToken?: boolean
+  loopback?: boolean
+  feedHeadOk?: boolean
+  fetchAvailable?: boolean
+}): GraphHostEdge
+
+export function graphHostEdgeIsDaemon(edge: GraphHostEdge | null | undefined): boolean
+
+export function resolveGraphFeedPollUrl(input?: {
+  daemonFeedReachable?: boolean
+  hostEdge?: GraphHostEdge
+}): string
+
+export function graphStreamPollingFallbackTitle(hostEdge: GraphHostEdge | null | undefined): string
+
+export function pollerRefreshHint(input?: {
+  feedDataMode?: string | null
+  feedAgeMs?: number | null
+}): string
+
+/** WAI-ARIA tablist keys. Returns the new index, or null for a non-navigation key. */
+export function nextTabIndex(current: number, key: string, count: number): number | null
+
+export function isObservedSource(source: string): boolean
+
+/** Map a live-wagers API row to the feed tick preview shape (identity only). */
+export function liveWagerToTickPreview(
+  wager: Record<string, unknown>,
+): Record<string, string> | null
+
+export function describeLiveWagersTickerSource(input?: {
+  servedFrom?: string | null
+  live?: { status?: string } | null
+  freshness?: { stale?: boolean } | null
+}): string

@@ -1,0 +1,330 @@
+{
+  "schemaVersion": "2026.10.31",
+  "generatedAtIso": "2026-11-04T11:55:04.361Z",
+  "portalPublicUrl": "https://pub-d061f943df0e4477ba7ff200721eddb1.r2.dev/graph.html",
+  "metadataCatalogPublicUrl": "https://pub-d061f943df0e4477ba7ff200721eddb1.r2.dev/assets/pipeline-artifacts-metadata.json",
+  "totalArtifacts": 4,
+  "formats": {
+    "svg": {
+      "mimeType": "image/svg+xml",
+      "metadataBearing": true,
+      "role": "source of truth (RDF/XMP/JSON-LD in <metadata>)"
+    },
+    "png": {
+      "mimeType": "image/png",
+      "metadataBearing": true,
+      "role": "download + metadata-bearing raster (tEXt/iTXt/XMP/JSON-LD)"
+    },
+    "webp": {
+      "mimeType": "image/webp",
+      "metadataBearing": false,
+      "role": "lightweight raster sibling; Bun.Image re-encode drops XMP/tEXt"
+    }
+  },
+  "artifacts": [
+    {
+      "id": "SD-ARTIFACT-01-10MODE-PIPELINE",
+      "slug": "pipeline-10-mode-architecture",
+      "title": "SPORTSDESK & FANTASY402 — DATA CLEANING, 10-MODE ENGINE & OPERATOR ACTION PIPELINE",
+      "subtitle": "End-to-End Flow: 4 Upstream Feeds -> 6-Layer Canonical Cleaner -> 10-Mode Diagnostic Matrix -> Automated Desk Actions",
+      "description": "End-to-end architectural diagram showing how report.js, help-report.js, bet-ticker.js, ip-tracker.js, GSLive Partner 118 (player_[login]), and Polymarket CLOB/Data APIs are cleaned into canonical primitives, evaluated across Modes 1..10 (Risk & Exposure, Identity & Network, Cross-Market, Data Integrity), and converted into sub-320ms Ban-Hammer clamps, Stepped Line dispatches, +15c/+20c vig shading, and $0-gap ledger reconciliations.",
+      "domainsCovered": [
+        "Risk & Exposure",
+        "Identity & Network",
+        "Cross-Market",
+        "Data Integrity"
+      ],
+      "modesCovered": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "upstreamModules": [
+        "customer/report/report.js",
+        "app/manager/report/help-report.js",
+        "app/manager/module/bet-ticker.js",
+        "app/manager/module/ip-tracker.js",
+        "Polymarket Gamma/CLOB/Data API",
+        "GSLive Manager Partner 118 (player_[login])"
+      ],
+      "cleaningLayers": [
+        "TicketNumber-WagerNumber Parent Grouping",
+        "BLOCKED Drop & ALERT Mirror Zeroing",
+        "FreePlayFlag='Y' Zero-Principal Loss & Stake/Payout/Liability Split",
+        "Teaser Effective Line & DGS ROT+5000 Normalization",
+        "Mode B Per-Office customerID=<Office> vs Global 0 & Mode C YYYY-MM-DD",
+        "4-Surface Identity Join & 11-Char PaddedCustomerId Write Guard"
+      ],
+      "operatorCliCommands": [
+        "./bin/dx status",
+        "./bin/dx modes [1..10]",
+        "./bin/dx iptracker",
+        "./bin/dx deploy"
+      ],
+      "files": {
+        "svgRepoPath": "docs/assets/pipeline-10-mode-architecture.svg",
+        "pngRepoPath": "docs/assets/pipeline-10-mode-architecture.png",
+        "webpRepoPath": "docs/assets/pipeline-10-mode-architecture.webp",
+        "svgPublicR2Url": "https://pub-d061f943df0e4477ba7ff200721eddb1.r2.dev/assets/pipeline-10-mode-architecture.svg",
+        "pngPublicR2Url": "https://pub-d061f943df0e4477ba7ff200721eddb1.r2.dev/assets/pipeline-10-mode-architecture.png",
+        "webpPublicR2Url": "https://pub-d061f943df0e4477ba7ff200721eddb1.r2.dev/assets/pipeline-10-mode-architecture.webp",
+        "svgBytes": 22414,
+        "pngBytes": 512457,
+        "webpBytes": 186050,
+        "svgSha256": "9f0a5297e5061df67572214349f0ed65940e5be80c037c63cc05c06bcfb6eb5c",
+        "pngSha256": "7bdbe1422caf41c80f54da68482076534feaa0d976f13c19d777215d092197f0",
+        "webpSha256": "8b0332f59a6757c122c25bdd9241a495727b39a3c7f284059db61eba723ee135",
+        "pngMetadataBearing": true,
+        "webpMetadataBearing": false,
+        "pngMimeType": "image/png",
+        "webpMimeType": "image/webp"
+      },
+      "render": {
+        "rasterizer": "rsvg-convert",
+        "width": 1600,
+        "height": 920,
+        "uniqueColors": 4288,
+        "inkCoverage": 0.3022,
+        "brightCoverage": 0.0239
+      },
+      "embeddedMetadataStandards": [
+        "W3C RDF / Dublin Core (dc:title, dc:description, dc:creator, dc:subject, dc:identifier)",
+        "Adobe XMP Packet (XML:com.adobe.xmp)",
+        "Schema.org ImageObject JSON-LD (SportsDesk:PipelineSpecJson)",
+        "PNG RFC-2083 tEXt & iTXt Chunks with CRC-32 Verification",
+        "Cloudflare R2 x-amz-meta-* Custom Object Metadata Headers",
+        "WebP sibling carries NO XMP/tEXt chunks (metadataBearing: false) — use the PNG for metadata"
+      ]
+    },
+    {
+      "id": "SD-ARTIFACT-02-6LAYER-CLEANING",
+      "slug": "pipeline-6-layer-data-cleaning",
+      "title": "ROSETTA STONE 6-LAYER DATA CLEANING & CANONICAL FIELD MAPPING REFERENCE",
+      "subtitle": "De-obfuscated report.js • help-report.js • bet-ticker.js • ip-tracker.js -> Canonical TypeScript Primitives",
+      "description": "Detailed engineering reference diagram illustrating the 6 canonical data-cleaning transformations applied to Fantasy402, GSLive Partner 118, and Polymarket feeds: (1) TicketNumber-WagerNumber composite parent grouping, (2) BLOCKED drop & ALERT mirror zeroing, (3) FreePlayFlag='Y' zero-principal loss & Stake/Payout/Liability separation, (4) Teaser effective line & DGS GameNum+5000 parent rotation normalization, (5) IP-Tracker Mode B Per-Office vs Global & Mode C YYYY-MM-DD date rewrite, and (6) 4-Surface Identity Join with 11-char space-padded PaddedCustomerId write enforcement.",
+      "domainsCovered": [
+        "Risk & Exposure",
+        "Identity & Network",
+        "Cross-Market",
+        "Data Integrity"
+      ],
+      "modesCovered": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "upstreamModules": [
+        "customer/report/report.js",
+        "app/manager/report/help-report.js",
+        "app/manager/module/bet-ticker.js",
+        "app/manager/module/ip-tracker.js"
+      ],
+      "cleaningLayers": [
+        "Layer 1: Composite TicketNumber-WagerNumber Grouping",
+        "Layer 2: TicketWriter BLOCKED Drop & ALERT Twin Zeroing",
+        "Layer 3: Effective Line Math (LineHundredths & DGS ROT+5000)",
+        "Layer 4: FreePlayFlag='Y' Zero-Principal Loss & Liability Split",
+        "Layer 5: IP-Tracker Mode B Scope & Mode C YYYY-MM-DD Rewrite",
+        "Layer 6: 4-Surface Identity & 11-Char PaddedCustomerId"
+      ],
+      "operatorCliCommands": [
+        "./bin/dx modes 7",
+        "./bin/dx modes 9",
+        "./bin/dx modes 10",
+        "bun test tests/forensic_diagnostic_modes.test.ts"
+      ],
+      "files": {
+        "svgRepoPath": "docs/assets/pipeline-6-layer-data-cleaning.svg",
+        "pngRepoPath": "docs/assets/pipeline-6-layer-data-cleaning.png",
+        "webpRepoPath": "docs/assets/pipeline-6-layer-data-cleaning.webp",
+        "svgPublicR2Url": "https://pub-d061f943df0e4477ba7ff200721eddb1.r2.dev/assets/pipeline-6-layer-data-cleaning.svg",
+        "pngPublicR2Url": "https://pub-d061f943df0e4477ba7ff200721eddb1.r2.dev/assets/pipeline-6-layer-data-cleaning.png",
+        "webpPublicR2Url": "https://pub-d061f943df0e4477ba7ff200721eddb1.r2.dev/assets/pipeline-6-layer-data-cleaning.webp",
+        "svgBytes": 17368,
+        "pngBytes": 398783,
+        "webpBytes": 161124,
+        "svgSha256": "0eb4f0d173262aa41aa253c4921377964cf7834779b446cc77d3b8c8808d5bb1",
+        "pngSha256": "bf8529ec45de92c3801d8a43fbc6164d4c5666a32d315b3bf77fadbcec93d40a",
+        "webpSha256": "e093a1eb874eccacedb4ac7f28e3e3ee40f65fafaf39360446bed7254838eb21",
+        "pngMetadataBearing": true,
+        "webpMetadataBearing": false,
+        "pngMimeType": "image/png",
+        "webpMimeType": "image/webp"
+      },
+      "render": {
+        "rasterizer": "rsvg-convert",
+        "width": 1600,
+        "height": 920,
+        "uniqueColors": 3723,
+        "inkCoverage": 0.1008,
+        "brightCoverage": 0.0153
+      },
+      "embeddedMetadataStandards": [
+        "W3C RDF / Dublin Core (dc:title, dc:description, dc:creator, dc:subject, dc:identifier)",
+        "Adobe XMP Packet (XML:com.adobe.xmp)",
+        "Schema.org ImageObject JSON-LD (SportsDesk:PipelineSpecJson)",
+        "PNG RFC-2083 tEXt & iTXt Chunks with CRC-32 Verification",
+        "Cloudflare R2 x-amz-meta-* Custom Object Metadata Headers",
+        "WebP sibling carries NO XMP/tEXt chunks (metadataBearing: false) — use the PNG for metadata"
+      ]
+    },
+    {
+      "id": "SD-ARTIFACT-03-IP-AND-RECONCILIATION",
+      "slug": "pipeline-per-office-ip-and-reconciliation",
+      "title": "PER-OFFICE IP-TRACKER (MODES 2–6) & SCOPE-LOCKED RECONCILIATION (MODES 1, 8, 9, 10)",
+      "subtitle": "13 Office & Cross-Office IP Clusters (MJ2026, BIGDAD, CUB22HR, ATEAM...) + Zero-Gap Financial Reconciliation",
+      "description": "Reference diagram combining the 13 Per-Office & Cross-Office IP-Tracker clusters (getWebLog Mode B customerID=<OfficeAgentID> vs customerID=0, Mode C YYYY-MM-DD history, Mode I reverse IP, and Mode 6 concurrent session overlap) with the Risk & Data Integrity reconciliation pipeline (Mode 1 Overview, Mode 8 Settled Net, Mode 9 Pending Exposure, and Mode 10 Scope-Locked Reconciliation proving Unresolved Gap = $0.00).",
+      "domainsCovered": [
+        "Identity & Network",
+        "Risk & Exposure",
+        "Data Integrity"
+      ],
+      "modesCovered": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        8,
+        9,
+        10
+      ],
+      "upstreamModules": [
+        "app/manager/module/ip-tracker.js",
+        "app/manager/module/bet-ticker.js",
+        "app/manager/report/help-report.js"
+      ],
+      "cleaningLayers": [
+        "Per-Office Mode B (customerID=<OfficeAgentID>) vs Global Master (customerID='0')",
+        "Mode 6 Concurrent Session Overlap (270s) vs Nearby Point Events (24s)",
+        "Mode 10 Identical-Scope Verification (Report DailyFigures vs Settled Tickets vs Ledger)"
+      ],
+      "operatorCliCommands": [
+        "./bin/dx iptracker",
+        "./bin/dx modes 3",
+        "./bin/dx modes 6",
+        "./bin/dx modes 10"
+      ],
+      "files": {
+        "svgRepoPath": "docs/assets/pipeline-per-office-ip-and-reconciliation.svg",
+        "pngRepoPath": "docs/assets/pipeline-per-office-ip-and-reconciliation.png",
+        "webpRepoPath": "docs/assets/pipeline-per-office-ip-and-reconciliation.webp",
+        "svgPublicR2Url": "https://pub-d061f943df0e4477ba7ff200721eddb1.r2.dev/assets/pipeline-per-office-ip-and-reconciliation.svg",
+        "pngPublicR2Url": "https://pub-d061f943df0e4477ba7ff200721eddb1.r2.dev/assets/pipeline-per-office-ip-and-reconciliation.png",
+        "webpPublicR2Url": "https://pub-d061f943df0e4477ba7ff200721eddb1.r2.dev/assets/pipeline-per-office-ip-and-reconciliation.webp",
+        "svgBytes": 16940,
+        "pngBytes": 516600,
+        "webpBytes": 193588,
+        "svgSha256": "b49d2f7340a9dabec6f17e29d78f49f4c15c8e545427e5ca2b06e866e433ad98",
+        "pngSha256": "2b6a0868154df02b65c3a1477fc3e0e92983babf5b02cdfe41671400cbb892b9",
+        "webpSha256": "1fa2411ca6d05b79277d474139ed8c18f32a391f24989ac60a731ea1ef6c33b0",
+        "pngMetadataBearing": true,
+        "webpMetadataBearing": false,
+        "pngMimeType": "image/png",
+        "webpMimeType": "image/webp"
+      },
+      "render": {
+        "rasterizer": "rsvg-convert",
+        "width": 1600,
+        "height": 920,
+        "uniqueColors": 3218,
+        "inkCoverage": 0.2732,
+        "brightCoverage": 0.0218
+      },
+      "embeddedMetadataStandards": [
+        "W3C RDF / Dublin Core (dc:title, dc:description, dc:creator, dc:subject, dc:identifier)",
+        "Adobe XMP Packet (XML:com.adobe.xmp)",
+        "Schema.org ImageObject JSON-LD (SportsDesk:PipelineSpecJson)",
+        "PNG RFC-2083 tEXt & iTXt Chunks with CRC-32 Verification",
+        "Cloudflare R2 x-amz-meta-* Custom Object Metadata Headers",
+        "WebP sibling carries NO XMP/tEXt chunks (metadataBearing: false) — use the PNG for metadata"
+      ]
+    },
+    {
+      "id": "SD-ARTIFACT-04-DUAL-SURFACE-GSLIVE",
+      "slug": "pipeline-dual-surface-gslive-model",
+      "title": "DUAL-SURFACE GSLIVE MODEL — BATCH ACCOUNT REPORT vs LIVE BET-HISTORY STREAM",
+      "subtitle": "GSLive Manager Partner 118: #/reports/users (batch) • #/events/bet-history (live) • desk-day window • betTime vs calcTime • `t` cache-buster tick",
+      "description": "Reference model for the two GSLive Partner 118 surfaces and the rule that keeps them from double-counting. The batch surface #/reports/users returns one settled account row per player_[login] per desk day (handle, win/loss, wager count) and is authoritative for booked volume. The live surface #/events/bet-history pushes one event per wager state change, where betTime is the placement wall clock and calcTime is the grade/settle clock, and is authoritative for in-flight exposure and placement velocity. Both are bucketed into the America/Chicago desk day (00:00:00.000-23:59:59.999 CT), joined on (partnerId, login, ticketNumber, betTime), and refreshed with a `t` cache-buster tick (Math.floor(Date.now()/60000)) so a batch re-fetch never serves a stale edge copy and never disturbs the stream.",
+      "domainsCovered": [
+        "Risk & Exposure",
+        "Cross-Market",
+        "Data Integrity"
+      ],
+      "modesCovered": [
+        1,
+        7,
+        8,
+        9,
+        10
+      ],
+      "upstreamModules": [
+        "GSLive Manager Partner 118 (#/reports/users)",
+        "GSLive Manager Partner 118 (#/events/bet-history)",
+        "app/manager/module/bet-ticker.js"
+      ],
+      "cleaningLayers": [
+        "Desk-Day Bucketing in America/Chicago (00:00:00.000-23:59:59.999 CT)",
+        "betTime (placement) vs calcTime (settle) field split",
+        "`t` Cache-Buster Tick (Math.floor(Date.now()/60000))",
+        "Batch-Over-Stream Precedence for Settled Totals",
+        "(partnerId, login, ticketNumber, betTime) Ticket Dedupe"
+      ],
+      "operatorCliCommands": [
+        "./bin/dx gslive",
+        "./bin/dx modes 7",
+        "./bin/dx modes 9",
+        "./bin/dx modes 10"
+      ],
+      "files": {
+        "svgRepoPath": "docs/assets/pipeline-dual-surface-gslive-model.svg",
+        "pngRepoPath": "docs/assets/pipeline-dual-surface-gslive-model.png",
+        "webpRepoPath": "docs/assets/pipeline-dual-surface-gslive-model.webp",
+        "svgPublicR2Url": "https://pub-d061f943df0e4477ba7ff200721eddb1.r2.dev/assets/pipeline-dual-surface-gslive-model.svg",
+        "pngPublicR2Url": "https://pub-d061f943df0e4477ba7ff200721eddb1.r2.dev/assets/pipeline-dual-surface-gslive-model.png",
+        "webpPublicR2Url": "https://pub-d061f943df0e4477ba7ff200721eddb1.r2.dev/assets/pipeline-dual-surface-gslive-model.webp",
+        "svgBytes": 18640,
+        "pngBytes": 472546,
+        "webpBytes": 172134,
+        "svgSha256": "b26b3298b115081fc733ce0a8d5d60222923b973be19d904b0c4c556b84e0546",
+        "pngSha256": "c42d873dd4a667974a8ad9c2a8b2efa2f6bc76b21ccc847d252f4e68dd5c2207",
+        "webpSha256": "c8624edd41e35ca44cc741906d04ade79fe26169b74ebfef23a6167e33f29a85",
+        "pngMetadataBearing": true,
+        "webpMetadataBearing": false,
+        "pngMimeType": "image/png",
+        "webpMimeType": "image/webp"
+      },
+      "render": {
+        "rasterizer": "rsvg-convert",
+        "width": 1600,
+        "height": 920,
+        "uniqueColors": 4208,
+        "inkCoverage": 0.2719,
+        "brightCoverage": 0.0184
+      },
+      "embeddedMetadataStandards": [
+        "W3C RDF / Dublin Core (dc:title, dc:description, dc:creator, dc:subject, dc:identifier)",
+        "Adobe XMP Packet (XML:com.adobe.xmp)",
+        "Schema.org ImageObject JSON-LD (SportsDesk:PipelineSpecJson)",
+        "PNG RFC-2083 tEXt & iTXt Chunks with CRC-32 Verification",
+        "Cloudflare R2 x-amz-meta-* Custom Object Metadata Headers",
+        "WebP sibling carries NO XMP/tEXt chunks (metadataBearing: false) — use the PNG for metadata"
+      ]
+    }
+  ]
+}

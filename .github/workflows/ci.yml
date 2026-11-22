@@ -1,0 +1,120 @@
+name: CI Security & Integrity Gates
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+jobs:
+  webkit:
+    name: WebKit sign-in and customer profiles
+    runs-on: macos-26
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - name: Verify WebKit session and profile access across reloads and reopened views
+        run: bun run check:runtime --webkit
+
+  edge:
+    name: Edge sign-in and customer profiles
+    runs-on: windows-2025
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - name: Verify Edge session and profile access across reloads and browser restarts
+        shell: pwsh
+        run: |
+          $edge = Get-Item "${env:ProgramFiles(x86)}/Microsoft/Edge/Application/msedge.exe"
+          $env:BUN_CHROME_PATH = $edge.FullName
+          Write-Host "Microsoft Edge $($edge.VersionInfo.ProductVersion)"
+          bun run check:runtime --edge
+
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Setup pinned Bun runtime
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - name: Check repository formatting and semantic preservation
+        run: |
+          bun run format:check
+          bun run format:debug
+
+      - name: Restore packed Bun dependency cache
+        id: bun-cache
+        uses: actions/cache@v4
+        with:
+          path: .ci/bun-cache.pack
+          key: bun-pack-${{ runner.os }}-${{ hashFiles('.bun-version', 'bun.lock') }}
+
+      - name: Unpack cached dependencies or fetch into cache
+        run: |
+          if [ -f .ci/bun-cache.pack ]; then
+            bun pm cache unpack .ci/bun-cache.pack
+          else
+            bun pm fetch
+            mkdir -p .ci
+            bun pm cache prune --max-age 14
+            bun pm cache pack .ci/bun-cache.pack
+          fi
+
+      - name: Offline frozen lockfile install (surfaces drifted workspace deps, matches Linux glibc)
+        run: bun install --offline --frozen-lockfile
+
+      - name: Verify no silent bun.lock schema drops (hasInstallScript & libc)
+        run: git diff --exit-code bun.lock
+
+      - name: Lockfile, pinned Bun, bunfig.toml & publishConfig gate
+        run: bun run check:lockfile
+
+      - name: Check for orphaned dependencies
+        run: bun prune --check
+
+      - name: Dependency audit (includes workspace/file/link/git deps)
+        run: bun audit
+
+      - name: TypeScript typecheck
+        run: bun run lint
+
+      - name: Production bundle build
+        run: bun run build
+
+      - name: Verify production runtime and Chrome sign-in and sign-out across profile reopening
+        timeout-minutes: 5
+        run: |
+          export BUN_CHROME_PATH="$(command -v google-chrome)"
+          "$BUN_CHROME_PATH" --version
+          bun run check:runtime --chrome
+
+      - name: Security & profile theme test suite
+        run: bun test
+
+      - name: Static route surface & bundle hygiene guardrails
+        run: |
+          bun run check:route-surface
+          bun run check:bundle-hygiene

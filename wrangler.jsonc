@@ -1,0 +1,60 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sports-ops-desk",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-10-07",
+  "compatibility_flags": ["nodejs_compat"],
+  "r2_buckets": [
+    {
+      "binding": "DESK_ARCHIVE",
+      "bucket_name": "desk-archive",
+    },
+    {
+      "binding": "OPS_REPORTS",
+      "bucket_name": "sportsdesk-ops-reports",
+    },
+    {
+      "binding": "BETS_BUCKET",
+      "bucket_name": "f402-bets",
+    },
+    {
+      "binding": "LEDGER_RECEIPTS",
+      "bucket_name": "ledger-receipts",
+    },
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "MCP_LIMITER",
+        "class_name": "McpLimiterDO",
+      },
+    ],
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["McpLimiterDO"],
+    },
+  ],
+  "secrets": {
+    "required": [
+      "DATABASE_URL",
+      "DESK_ADMIN_TOKEN",
+      "TELEGRAM_BOT_TOKEN",
+      "TELEGRAM_ALLOWED_CHATS",
+      "WORKSPACE_VAULT_KEY",
+    ],
+  },
+  "observability": {
+    "enabled": true,
+    "redact_query_string": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.1,
+    },
+  },
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "fantasy402-bet-ingest",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-07",
+  "compatibility_flags": ["nodejs_compat"],
+  "analytics_engine_datasets": [
+    {
+      "binding": "ANALYTICS",
+      "dataset": "fantasy402_bet_ingest",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "BETS_BUCKET",
+      "bucket_name": "f402-bets",
+    },
+  ],
+}

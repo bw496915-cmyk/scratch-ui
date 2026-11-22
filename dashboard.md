@@ -1,0 +1,172 @@
+# 📊 SportsDesk & Fantasy402 Real-Time Surveillance Dashboard
+
+> Live Risk Telemetry · Real-time Bettor Profiling & Sharp Rating · Desk Hotline: [Demodev Desk](https://t.me/demodevdeskbot)
+
+---
+
+## 🎯 Top Rated Sharp Bettors (Live Surveillance)
+
+| Customer ID                                                       | Sharpness Score |      Tier      | Risk Level | Primary Archetype          | Bayesian Skill (95% CI)  | CLV t-stat (p-val) | Kelly Sizing  | Recommended Action  |
+| :---------------------------------------------------------------- | :-------------: | :------------: | :--------: | :------------------------- | :----------------------: | :----------------: | :-----------: | :-----------------: |
+| [GP301](https://fantasy402.com/manager.html?customer=GP301)       | **9.6 / 10.0**  | `ELITE_SHARP`  | `CRITICAL` | `key_number_buyer`         | **58.2%** [54.1%, 62.3%] | `+4.12` (p=0.0001) |  Half-Kelly   | 🚨 `ALERT_OPERATOR` |
+| [CCC88412](https://fantasy402.com/manager.html?customer=CCC88412) | **9.5 / 10.0**  | `ELITE_SHARP`  | `CRITICAL` | `key_number_buyer`         | **57.9%** [53.5%, 62.1%] | `+3.98` (p=0.0001) |  Half-Kelly   | 🚨 `ALERT_OPERATOR` |
+| [MJ107](https://fantasy402.com/manager.html?customer=MJ107)       | **9.3 / 10.0**  | `ELITE_SHARP`  | `CRITICAL` | `halftime_derivative`      | **57.3%** [52.9%, 61.7%] | `+3.76` (p=0.0002) |  Half-Kelly   | 🚨 `ALERT_OPERATOR` |
+| [BRT5235](https://fantasy402.com/manager.html?customer=BRT5235)   | **9.2 / 10.0**  | `ELITE_SHARP`  | `CRITICAL` | `hook_syndicate_cluster`   | **57.1%** [52.7%, 61.5%] | `+3.62` (p=0.0003) |  Half-Kelly   | 🚨 `ALERT_OPERATOR` |
+| [BRT106](https://fantasy402.com/manager.html?customer=BRT106)     | **9.1 / 10.0**  | `ELITE_SHARP`  | `CRITICAL` | `ncaab_1h_line_mover`      | **57.0%** [52.6%, 61.4%] | `+3.54` (p=0.0004) |  Half-Kelly   | 🚨 `ALERT_OPERATOR` |
+| [BRT5229](https://fantasy402.com/manager.html?customer=BRT5229)   | **8.9 / 10.0**  | `ELITE_SHARP`  | `CRITICAL` | `key_number_buyer`         | **56.8%** [52.4%, 61.2%] | `+3.45` (p=0.0006) |  Half-Kelly   | 🚨 `ALERT_OPERATOR` |
+| [BGD101](https://fantasy402.com/manager.html?customer=BGD101)     | **8.8 / 10.0**  |    `SHARP`     |   `HIGH`   | `steam_chaser`             | **56.4%** [52.0%, 60.8%] | `+3.31` (p=0.0010) |   Qtr-Kelly   | ⚠️ `ALERT_OPERATOR` |
+| [BAR301](https://fantasy402.com/manager.html?customer=BAR301)     | **8.5 / 10.0**  |    `SHARP`     |   `HIGH`   | `proxy_conduit_whale`      | **55.9%** [51.5%, 60.3%] | `+3.10` (p=0.0020) |   Qtr-Kelly   | ⚠️ `ALERT_OPERATOR` |
+| [ST100](https://fantasy402.com/manager.html?customer=ST100)       | **8.2 / 10.0**  |    `SHARP`     |   `HIGH`   | `early_line_mover`         | **55.4%** [51.0%, 59.8%] | `+2.89` (p=0.0038) |   Qtr-Kelly   | ⚠️ `ALERT_OPERATOR` |
+| [KENT99](https://fantasy402.com/manager.html?customer=KENT99)     | **7.9 / 10.0**  |    `SHARP`     |   `HIGH`   | `in_play_specialist`       | **55.1%** [50.4%, 59.8%] | `+2.72` (p=0.0068) |   Qtr-Kelly   | ⚠️ `ALERT_OPERATOR` |
+| [LIVE99](https://fantasy402.com/manager.html?customer=LIVE99)     | **7.8 / 10.0**  |    `SHARP`     |   `HIGH`   | `in_play_specialist`       | **54.9%** [50.2%, 59.6%] | `+2.61` (p=0.0091) |   Qtr-Kelly   | ⚠️ `ALERT_OPERATOR` |
+| [BK119](https://fantasy402.com/manager.html?customer=BK119)       | **6.4 / 10.0**  |  `SEMI_SHARP`  | `ELEVATED` | `post_halftime_specialist` | **53.1%** [48.5%, 57.7%] | `+1.84` (p=0.0658) | Undisciplined |    👁️ `MONITOR`     |
+| [RF2003](https://fantasy402.com/manager.html?customer=RF2003)     | **3.8 / 10.0**  | `RECREATIONAL` | `STANDARD` | `recreational`             | **49.2%** [44.8%, 53.6%] | `-0.42` (p=0.6744) |   Flat Unit   |     ✅ `ACCEPT`     |
+| [SQUARE1](https://fantasy402.com/manager.html?customer=SQUARE1)   | **1.2 / 10.0**  |    `SQUARE`    |   `LOW`    | `square`                   | **43.5%** [38.1%, 48.9%] | `-3.15` (p=0.0016) |  Martingale   |     ✅ `ACCEPT`     |
+
+---
+
+## 🏢 Top Sub-Agents & Downline Trees (30-Day Rollup)
+
+| Sub-Agent                     | Master Trunk | 30d Handle (USD) | Total Wagers | Customers | Top Customer                                                     | Top Cust Conc (%) |   Conduit Status    |
+| :---------------------------- | :----------: | :--------------: | :----------: | :-------: | :--------------------------------------------------------------- | :---------------: | :-----------------: |
+| [FAKEMONEY](/agent/FAKEMONEY) | `TRACKTHIS`  |  `$13,245,600`   |   `2,207`    |    `1`    | [BAR301](https://fantasy402.com/manager.html?customer=BAR301)    |      `89.2%`      | 🚨 `PROXY_CONDUIT`  |
+| [AG_SHARP](/agent/AG_SHARP)   | `TRACKTHIS`  |  `$11,850,200`   |   `2,840`    |    `8`    | [BRT5229](https://fantasy402.com/manager.html?customer=BRT5229)  |      `85.2%`      | 🚨 `PROXY_CONDUIT`  |
+| [AG99](/agent/AG99)           | `TRACKTHIS`  |   `$8,420,100`   |   `1,420`    |    `4`    | [GP301](https://fantasy402.com/manager.html?customer=GP301)      |      `78.6%`      | ⚠️ `MONITORED_RING` |
+| [VIPMIAMI](/agent/VIPMIAMI)   | `TRACKTHIS`  |   `$6,140,800`   |    `952`     |    `5`    | [KENT99](https://fantasy402.com/manager.html?customer=KENT99)    |      `71.4%`      | ⚠️ `MONITORED_RING` |
+| [BIGDAD](/agent/BIGDAD)       | `TRACKTHIS`  |   `$4,920,400`   |    `840`     |    `6`    | [BGD101](https://fantasy402.com/manager.html?customer=BGD101)    |      `64.8%`      | ⚠️ `MONITORED_RING` |
+| [FATSSIDE](/agent/FATSSIDE)   |  `NOLAPPH`   |   `$3,850,000`   |   `2,604`    |   `42`    | [RETAIL_1](https://fantasy402.com/manager.html?customer=RETAIL1) |      `12.1%`      |  🟢 `DISTRIBUTED`   |
+| [FATSNOBOT](/agent/FATSNOBOT) |  `NOLAPPH`   |   `$2,910,200`   |   `1,818`    |   `38`    | [RETAIL_2](https://fantasy402.com/manager.html?customer=RETAIL2) |      `10.4%`      |  🟢 `DISTRIBUTED`   |
+| [LAND225](/agent/LAND225)     |  `NOLAPPH`   |   `$2,140,500`   |   `1,240`    |   `29`    | [RETAIL_3](https://fantasy402.com/manager.html?customer=RETAIL3) |      `9.8%`       |  🟢 `DISTRIBUTED`   |
+
+---
+
+## ⚡ Live Incoming Wager Stream (Real-Time Tape)
+
+| Ticket ID   | Customer                                                          | Sub-Agent                   | Sport / League | Market & Selection         | CLV Delta  |   Risk USD    | To Win USD | Alert Tag         | Action Directive    |
+| :---------- | :---------------------------------------------------------------- | :-------------------------- | :------------: | :------------------------- | :--------: | :-----------: | :--------: | :---------------- | :------------------ |
+| `#W-109281` | [GP301](https://fantasy402.com/manager.html?customer=GP301)       | [AG99](/agent/AG99)         |    **NFL**     | KC Chiefs `-3½` (-110)     | `+215 bps` | **`$5,500`**  |  `$5,000`  | 🚨 CRITICAL_KEY   | 🚨 `ALERT_OPERATOR` |
+| `#W-109282` | [BRT5229](https://fantasy402.com/manager.html?customer=BRT5229)   | [AG_SHARP](/agent/AG_SHARP) |    **NFL**     | BAL Ravens `-7½` (-105)    | `+185 bps` | **`$10,000`** |  `$9,524`  | 🚨 CRITICAL_KEY   | 🚨 `ALERT_OPERATOR` |
+| `#W-109283` | [CCC88412](https://fantasy402.com/manager.html?customer=CCC88412) | [AG_SHARP](/agent/AG_SHARP) |    **CFB**     | UGA Bulldogs `-10½` (-110) | `+240 bps` | **`$7,500`**  |  `$6,818`  | 🚨 CRITICAL_BURST | 🚨 `ALERT_OPERATOR` |
+| `#W-109284` | [ST100](https://fantasy402.com/manager.html?customer=ST100)       | [AG_SHARP](/agent/AG_SHARP) |    **NFL**     | Over `44½` (-110)          | `+140 bps` |   `$2,500`    |  `$2,272`  | ⚠️ STEAM_CHASE    | ⚠️ `ALERT_OPERATOR` |
+| `#W-109285` | [KENT99](https://fantasy402.com/manager.html?customer=KENT99)     | [VIPMIAMI](/agent/VIPMIAMI) |    **NBA**     | BOS Celtics Live `-4½`     | `+160 bps` |   `$3,200`    |  `$2,909`  | ⚠️ LIVE_LATENCY   | ⚠️ `ALERT_OPERATOR` |
+| `#W-109286` | [BGD101](https://fantasy402.com/manager.html?customer=BGD101)     | [BIGDAD](/agent/BIGDAD)     |    **CFB**     | Under `52½` (-110)         | `+125 bps` |   `$2,000`    |  `$1,818`  | 👁️ MONITOR_ORIG   | 👁️ `MONITOR`        |
+| `#W-109287` | [RF2003](https://fantasy402.com/manager.html?customer=RF2003)     | [FATSSIDE](/agent/FATSSIDE) |    **NFL**     | SF 49ers ML (-165)         | `-15 bps`  |    `$350`     |   `$212`   | 🟢 RECREATIONAL   | ✅ `ACCEPT`         |
+| `#W-109288` | [SQUARE1](https://fantasy402.com/manager.html?customer=SQUARE1)   | [LAND225](/agent/LAND225)   |    **NBA**     | 4-Leg Parlay (+1250)       | `-320 bps` |    `$100`     |  `$1,250`  | 🟢 SQUARE_PARLAY  | ✅ `ACCEPT`         |
+| `#W-109293` | [BRT106](https://fantasy402.com/manager.html?customer=BRT106)     | [BGMASTER](/agent/BGMASTER) |   **NCAAB**    | Duke 1H `-3½` (-110)       | `+180 bps` | **`$5,500`**  |  `$5,000`  | 🚨 CRITICAL_KEY   | 🚨 `ALERT_OPERATOR` |
+| `#W-109294` | [BRT106](https://fantasy402.com/manager.html?customer=BRT106)     | [BGMASTER](/agent/BGMASTER) |   **NCAAB**    | Duke Live `-5½` (-110)     | `+210 bps` | **`$11,000`** | `$10,000`  | ⚠️ LIVE_LATENCY   | ⚠️ `ALERT_OPERATOR` |
+
+> **Security & Signal Honesty Invariant**: `autoExecute: false`. Every action directive produces a recommendation for human desk operator review and does not automatically mutate production wagering rules.
+
+---
+
+## 🧾 Cross-Endpoint Portal & Figure-Date Reconciliation (`getInfoPlayer` ↔ `getPerformancePlayer` ↔ `getWagersByFigureDate`)
+
+| Account                                                       | Agent / Master              | Credit Limit | Current Bal | Pending Risk | Available Bal | CarryOver (`Nov 1–9`) | Post-CarryOver (`Nov 10–12`) |  31d Net P&L   | Posture & Wire Flags                                                |
+| :------------------------------------------------------------ | :-------------------------- | :----------: | :---------: | :----------: | :-----------: | :-------------------: | :--------------------------: | :------------: | :------------------------------------------------------------------ |
+| [BRT106](https://fantasy402.com/manager.html?customer=BRT106) | [BGMASTER](/agent/BGMASTER) |  `$75,000`   |  `-$2,050`  |  `$25,600`   |   `$47,350`   |  `+$79,325` (`8d ✓`)  |      `-$2,375` (`2d ✓`)      | **`+$76,950`** | `LINE_MOVER_WEIGHT_ACTIVE` · `BETTING_ALERTS_DISABLED` · `0¢ Delta` |
+
+---
+
+## 📈 Sport & Exposure Breakdown
+
+| Sport                | Active Handles (USD) | Open Bets | Sharp Exposure (%) |     Dominant Timing      |
+| :------------------- | :------------------: | :-------: | :----------------: | :----------------------: |
+| **NFL Football**     |     `$1,248,500`     |   `412`   |      `44.2%`       | Pregame (Closing Window) |
+| **CFB Football**     |      `$782,000`      |   `285`   |      `36.8%`       |      Halftime / 2H       |
+| **NBA Basketball**   |      `$624,300`      |   `330`   |      `28.5%`       | In-Play (Live Quarters)  |
+| **NCAAB Basketball** |      `$145,200`      |   `98`    |      `18.1%`       |     Under Derivative     |
+| **Other / Soccer**   |      `$89,400`       |   `64`    |       `6.5%`       |         Pregame          |
+
+---
+
+## 🌐 Bun Native DNS Cache & Networking Telemetry
+
+> Resolver Backend: `system` (macOS non-blocking system API) · Cache: `256 entries` (30s TTL) · Auto-warmed via `dns.prefetch`
+
+| Endpoint Host                                 | Port  | Service Component                  | Pre-warm Status |
+| :-------------------------------------------- | :---: | :--------------------------------- | :-------------: |
+| `fantasy402.com`                              | `443` | Fantasy402 Manager Portal          | 🟢 `PREFETCHED` |
+| `pub-d061f943df0e4477ba7ff200721eddb1.r2.dev` | `443` | Cloudflare R2 Public Gateway       | 🟢 `PREFETCHED` |
+| `api.telegram.org`                            | `443` | Telegram Bot API (@demodevdeskbot) | 🟢 `PREFETCHED` |
+| `clob.polymarket.com`                         | `443` | Polymarket CLOB Trading API        | 🟢 `PREFETCHED` |
+
+---
+
+## 👥 Customer Profiling & Behavioral Sharp Showcase
+
+### Profiled Customer Cohorts & Corpora
+
+**Two layers (do not conflate counts):**
+
+1. **Live strip** — `GET /api/customers` → `computeCustomersCohortPayload` (`packages/backend/src/customers.ts`). The Customers tab **Corpora & Surveillance Cohorts** header hydrates six KPI cards via `deriveCustomerCohortKpiCards` (`packages/ui/src/hydration.ts`). Counts are computed at request time; `pending` / `unavailable` never masquerade as zero.
+2. **Reference registry** — long-horizon corpus sizes and desk evidence below. Refresh with measured artifacts (`bun run audit:customer-book`, `./bin/dx bridge coverage`, `bun run customers:profiles`), not hand edits.
+
+#### Live KPI strip (`http://127.0.0.1:4022/?tab=customers` · matrix overlay `?matrix=1&tab=customers`)
+
+| KPI card (UI)         | `CustomersCohortsSummary` field | Tier filter (chip) | Aggregation rule                                                          |
+| :-------------------- | :------------------------------ | :----------------- | :------------------------------------------------------------------------ |
+| 4-Wk Backtest Cohort  | `backtestCount`                 | —                  | Rows in backtest leaderboard ingest                                       |
+| Key Number Sharps     | `keyNumberSharpsCount`          | `ELITE`            | `KEY_NUMBER_BUYER_PROFILES` IDs ∪ leaderboard/fixtures                    |
+| Hook Syndicates       | `hookSyndicateCount`            | `SYNDICATE`        | `HALF_POINT_HOOK_SYNDICATE_PROFILES` IDs ∪ leaderboard/fixtures           |
+| CI Synthetic Fixtures | `fixtureCount`                  | —                  | Synthetic fixture corpus rows                                             |
+| Enriched Book Spec    | `fullBookSpecCount`             | —                  | Local `enriched_customers_full.json` when present, else fixture row count |
+| Unique Surveillance   | `uniqueSurveillanceCount`       | `ALL` (default)    | Deduped uppercase customer IDs across all sources above                   |
+
+Provenance badge: `capture` (live enriched book), `fixture` (backtest/fixture only), or `unavailable` — surfaced next to the cohort title with `sourcePath` when known. Matrix mode merges cohort rankings, 30d batch tiers, and live-open wagers (`mergeMatrixProfileOverlay` in `packages/ui/src/App.tsx`).
+
+```sh
+# Live cohort JSON (same contract as the dashboard strip)
+curl -sS http://127.0.0.1:4022/api/customers | jq '{cohorts, provenance}'
+```
+
+#### Reference registry (measured snapshots — not the live KPI denominators)
+
+| Cohort / Registry                     |   Count    | Description & Evidence Source                                                                                       |
+| :------------------------------------ | :--------: | :------------------------------------------------------------------------------------------------------------------ |
+| **DOD6 v5.4 Binary Columnar Spine**   | **14,534** | 88-section SoA binary spine (`data/sportsdesk_unified_baseline_v54.dodbin`, 84.1 MB, 64-bit base-40 + radix lookup) |
+| **Provisioned Portal Accounts**       | **9,435**  | Total provisioned customer accounts (`totalProvisionedCustomers` in `docs/backtest-4wk-cfb-nba.json`)               |
+| **Broad Surveillance Surface**        | **4,914**  | Unique customer identifiers across all historical captures and weblogs                                              |
+| **Active 4-Week Sports Bettors**      | **2,236**  | Active sports bettors in 4-week window (`totalActiveSportsBettors` in `docs/backtest-4wk-cfb-nba.json`)             |
+| **Local Customer Book Specification** |  **220**   | Full operator book (`enriched_customers_full.json`, 1,100 sampled tickets across 29 agents)                         |
+| **Committed Backtest Cohort**         |   **49**   | 4-week CFB/NBA historical backtest with CLV, volume, hold, and parlay data (`docs/backtest-4wk-cfb-nba.json`)       |
+| **Bridged Polymarket Wallets**        |   **22**   | Cross-domain customer-to-wallet attributions (`totalBridgedPolymarketWallets`, `./bin/dx bridge`)                   |
+| **CI Synthetic Fixture Book**         |   **6**    | Edge case test cohort (`tests/fixtures/backtest/enriched_customers_full.json`)                                      |
+| **Key Number Buyer Watchlist**        |   **5**    | Elite sharps targeting football key numbers 3, 7, 10, 14, 21 (`KEY_NUMBER_BUYER_PROFILES`)                          |
+| **Hook Syndicate Watchlist**          |   **5**    | Downline accounts exploiting half-point hooks (`HALF_POINT_HOOK_SYNDICATE_PROFILES`)                                |
+
+### Multidimensional Profiling Architecture
+
+- **DOD6 v5.4 Binary Key Packer & Columnar Reader**: Zero-allocation 64-bit base-40 (`<=12` chars) / FNV-1a (`>12` chars) login key packing (`lib/dod6_v54_login_key.ts`) + 4-slot 16-bit radix probing (`lib/dod6_v54_lifetime_reader.ts`).
+- **Unified Sharpness Composite Index (0.0 - 10.0)**: Decomposed into CLV (3.0), Bayesian Skill (2.5), Sizing Discipline (1.5), Signature Specialization (2.0), and Timing Exploitation (1.0).
+- **Stake Sizing Inequality**: Exact Gini coefficient (0.0 = Flat Unit, 1.0 = Martingale Chaser).
+- **Correlated Parlay Forensics**: Automated detection of Favorite Spread + Over, Underdog + Under, and 1H/Game crosses.
+- **Timing Fingerprints**: Classification into Early Originators (>24h), Steam Chasers, Closing Line Snipers (<15m), and Halftime Specialists.
+- **Operator Desk Directives**: Automated stake limit caps ($250 - $25,000), in-play delays (3s), line shading (10-20¢), and shadow copy multipliers.
+
+### 🧪 Bun 1.4.4 test harness — runtime beats stale `@types/bun`
+
+Pinned binary: `Bun 1.4.4` (`38afee6c84…`). When TypeScript and `bun test` disagree, trust the runner and `./bin/dx bun --types`:
+
+| Surface                                 | Declarations said                    | Runtime / tests use                                                     |
+| :-------------------------------------- | :----------------------------------- | :---------------------------------------------------------------------- |
+| `expect(…).toHaveBeenCalledOnce()`      | Missing from early bun-types typings | **Available** in `bun:test` — matcher works at runtime; do not polyfill |
+| `Bun.hash(input)`                       | `number \| bigint`                   | Always **`bigint`** (use `expectTypeOf` / bigint compares)              |
+| `Bun.mmap(path)`                        | `string \| Buffer \| URL` accepted   | **`string` path only** — `Buffer` / `URL` throw                         |
+| `Bun.MD5` / `Bun.SHA256` / hash classes | No `byteLength` on instances         | Instances expose **`byteLength`** after update/digest                   |
+| `subprocess.resourceUsage().cpuTime`    | `number`                             | **`bigint`** microsecond fields                                         |
+| `FileSystemRouter.origin`               | `string`                             | **`string \| null`** when unresolved                                    |
+
+Contract probes: `bun test tests/bun_capabilities.test.ts`, `bun x bun-surface --filter which --json`, `bun run check:spec-citations` (pinned `packages/bun-types/*` blob URLs).
+
+---
+
+## ⚙️ Automated Shell Directives
+
+> Executed by `./bin/dx dashboard --exec` (`handleDashboardCli` in `cli/sportsdesk_cli.ts`).
+> `Bun.markdown.ansi` `AnsiTheme` flags: `--theme dark|light|mono|accessible`, `--columns <n>` (`0` disables wrapping), `--light` / `--dark`, `--colors` / `--no-color`, `--hyperlinks` / `--no-hyperlinks`, `--kitty-graphics`, `--linkify-symbols`.
+> Customer CLI helpers: `bun run customers index|list|find|search`, `bun run customers:profiles`, `bun run audit:customer-book`, `bun run normalize:customer-book`, `./bin/dx bridge coverage|value|match`.
+
+```sh
+# Health probe trigger (executed when running `./bin/dx dashboard --exec`)
+echo "Desk health check: OK"
+```

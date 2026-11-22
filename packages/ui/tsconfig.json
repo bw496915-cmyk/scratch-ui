@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"]
+  },
+  "include": [
+    "./src/**/*.ts",
+    "./src/**/*.tsx",
+    "../../src/types/shims.d.ts",
+    "../../tests/ui_browser.types.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

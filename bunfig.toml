@@ -1,0 +1,22 @@
+# Disable implicit .env auto-loading across Bun runtime & package manager commands (token-bleed defense)
+env = false
+
+[install]
+ignoreScripts = true # opt in per-package via `bun pm trust`
+globalStore = true # no-op installs no longer churn node_modules/.bun links
+minimumReleaseAge = "3d" # quarantine newly published packages for 72h (Bun 1.4.4 unit syntax)
+minimumReleaseAgeExcludes = [] # add exact `pkg@version` entries only for urgent security hotfixes
+
+[install.lockfile]
+save = true
+
+[run]
+noOrphans = true # terminate child processes cleanly when parent exits
+
+[test]
+preload = ["./tests/preload/snapshot_serializers.ts"]
+
+[fmt]
+printWidth = 100
+semi = false
+ignorePatterns = ["bun.lock", "bun.lockb", "vendor/", "**/*.gen.ts"]

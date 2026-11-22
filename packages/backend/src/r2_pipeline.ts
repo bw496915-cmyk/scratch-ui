@@ -1,0 +1,1068 @@
+/**
+ * @file packages/backend/src/r2_pipeline.ts
+ * @description Live Cloudflare R2 public pipeline monitor, pointer-rollup dereferencer, and `:4020` daemon probe.
+ */
+
+import type {
+  AutomationsSnapshot,
+  BetTickerBridge3aSnapshot,
+  BridgeJobStatusSummary,
+  Daemon4020AuthState,
+  Daemon4020Status,
+  R2PipelineApiResponse,
+  R2PipelineHistoryApiResponse,
+  R2SinkDetail,
+  R2SinkDiagnostic,
+  R2SinkHistory,
+  R2SinkHistorySample,
+  R2SinkRollupMetric,
+  R2SinkSlaStatus,
+  R2SinkState,
+} from "@sportsdesk-ops/contracts"
+
+export const DEFAULT_R2_PUBLIC_BASE = "https://pub-d061f943df0e4477ba7ff200721eddb1.r2.dev"
+export const R2_DATA_STALE_SECONDS = 86_400
+
+/** Default per-sink sample ring served by `/api/r2/pipeline/history`. */
+export const R2_HISTORY_DEFAULT_LIMIT = 60
+/** Default minimum gap between two history samples of the same sink. */
+export const R2_HISTORY_DEFAULT_MIN_INTERVAL_SECONDS = 60
+
+/**
+ * Publish-SLA arithmetic. `ageSeconds === null` means the probe could not read a
+ * `Last-Modified` header, so every field is null rather than a fabricated zero.
+ * `breachStartedAt` anchors on the publish timestamp, not on the rounded age.
+ */
+export function computeR2SinkSlaStatus(
+  ageSeconds: number | null,
+  slaSeconds: number,
+  lastModifiedMs: number | null = null,
+): R2SinkSlaStatus {
+  if (ageSeconds === null || !Number.isFinite(ageSeconds)) {
+    return {
+      breachSeconds: null,
+      utilizationPct: null,
+      breachStartedAt: null,
+      remainingSeconds: null,
+    }
+  }
+  const sla = slaSeconds > 0 ? slaSeconds : 1
+  const breachSeconds = Math.max(0, Math.round(ageSeconds - sla))
+  const breached = breachSeconds > 0
+  return {
+    breachSeconds,
+    utilizationPct: Math.round((ageSeconds / sla) * 100),
+    breachStartedAt:
+      breached && lastModifiedMs !== null && Number.isFinite(lastModifiedMs)
+        ? new Date(lastModifiedMs + sla * 1000).toISOString()
+        : null,
+    remainingSeconds: breached ? null : Math.max(0, Math.round(sla - ageSeconds)),
+  }
+}
+
+export interface R2TargetSpec {
+  readonly id: string
+  readonly key: string
+  readonly label: string
+  readonly description: string
+  readonly slaSeconds: number
+  readonly remediationCommand: string
+  readonly bridgeJobIds: readonly string[]
+}
+
+export const R2_PIPELINE_TARGETS: readonly R2TargetSpec[] = [
+  {
+    id: "f402-bet-ticker",
+    key: "f402-bet-ticker/latest.json",
+    label: "f402 bet ticker",
+    description: "Bridge 3a channel/wager-type ticker rollup & watermark",
+    slaSeconds: 3600,
+    remediationCommand: "bun run positions:cron --once",
+    bridgeJobIds: ["bridge3a"],
+  },
+  {
+    id: "gslive-tally",
+    key: "gslive-tally/latest.json",
+    label: "gslive tally",
+    description: "Bridge 3c open-bets & CLV settlement pointer rollup",
+    slaSeconds: 3600,
+    remediationCommand: "bun run tally:bridge3c",
+    bridgeJobIds: ["bridge3c"],
+  },
+  {
+    id: "f402-weblog",
+    key: "f402-weblog/latest.json",
+    label: "f402 weblog",
+    description: "Weblog access & device template corpus pointer rollup",
+    slaSeconds: 5400,
+    remediationCommand: "bun run weblog:cron",
+    bridgeJobIds: ["weblog"],
+  },
+  {
+    id: "wagers-by-state",
+    key: "wagers-by-state/latest.json",
+    label: "wagers-by-state",
+    description: "88-hour win/lose/push & grade-lag histogram",
+    slaSeconds: 3600,
+    remediationCommand: "bun run wagers:publish-snapshot",
+    bridgeJobIds: ["wagers-by-state", "wagers-publish"],
+  },
+] as const
+
+export type R2Fetcher = (url: string, init?: RequestInit) => Promise<Response>
+
+function defaultFetchWithTimeout(
+  url: string,
+  init: RequestInit | undefined,
+  timeoutMs: number,
+): Promise<Response> {
+  return fetch(url, {
+    ...init,
+    method: init?.method ?? "GET",
+    signal: init?.signal ?? AbortSignal.timeout(timeoutMs),
+  })
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function formatUsdFromCents(cents: number): string {
+  const usd = cents / 100
+  return usd.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: Math.abs(usd) >= 100 ? 0 : 2,
+  })
+}
+
+function parseDataWindowEndMs(value: unknown): number | null {
+  if (!isRecord(value)) return null
+  const win = value.window
+  if (isRecord(win)) {
+    if (typeof win.toMs === "number" && Number.isFinite(win.toMs)) {
+      return win.toMs
+    }
+    if (typeof win.observedEnd === "string" && win.observedEnd.trim() !== "") {
+      const ms = Date.parse(win.observedEnd)
+      if (Number.isFinite(ms)) return ms
+    }
+    if (typeof win.toEpochSec === "number" && Number.isFinite(win.toEpochSec)) {
+      return win.toEpochSec * 1000
+    }
+    if (typeof win.to === "number" && Number.isFinite(win.to)) {
+      return win.to < 1e12 ? win.to * 1000 : win.to
+    }
+  }
+  if (
+    typeof value.data_window_max_epoch_ms === "number" &&
+    Number.isFinite(value.data_window_max_epoch_ms)
+  )
+    return value.data_window_max_epoch_ms
+  // A generation timestamp can describe a republication of old inputs.
+  const ts = value.capturedAt
+  if (typeof ts === "string" && ts.trim() !== "") {
+    const ms = Date.parse(ts)
+    if (Number.isFinite(ms)) return ms
+  }
+  return null
+}
+
+function extractPointerRollupKey(body: unknown): {
+  readonly key: string | null
+  readonly sha256: string | null
+} {
+  if (!isRecord(body)) return { key: null, sha256: null }
+  const rawKey =
+    typeof body.rollupKey === "string"
+      ? body.rollupKey
+      : typeof body.key === "string"
+        ? body.key
+        : null
+  const sha =
+    typeof body.sha256 === "string"
+      ? body.sha256
+      : typeof body.sourceSha256 === "string"
+        ? body.sourceSha256
+        : null
+  const trimmedKey = rawKey && rawKey.trim() !== "" ? rawKey.trim().replace(/^\/+/, "") : null
+  return { key: trimmedKey, sha256: sha }
+}
+
+function extractMetricsForSink(
+  id: string,
+  latestBody: unknown,
+  rollupBody: unknown,
+): readonly R2SinkRollupMetric[] {
+  const source = isRecord(rollupBody) ? rollupBody : latestBody
+  if (!isRecord(source)) return []
+
+  const metrics: R2SinkRollupMetric[] = []
+  if (id === "f402-bet-ticker") {
+    const tickets = Number(source.ticketCount ?? source.rowCount ?? 0)
+    const legs = Number(source.legCount ?? 0)
+    const twins = Number(source.alertTwinCount ?? 0)
+    const orphans = Number(source.orphanCount ?? 0)
+    const watermark = typeof source.watermark === "string" ? source.watermark : "—"
+    const deskSlice =
+      typeof source.deskDate === "string"
+        ? `${source.deskDate}${source.deskHour !== undefined ? ` h${String(source.deskHour).padStart(2, "0")}` : ""}`
+        : "—"
+    metrics.push(
+      {
+        label: "Tickets / Legs",
+        value: `${tickets.toLocaleString()} / ${legs.toLocaleString()}`,
+      },
+      {
+        label: "ALERT Twins",
+        value: `${twins.toLocaleString()} (Orphans: ${orphans.toLocaleString()})`,
+      },
+      { label: "Watermark", value: watermark },
+      { label: "Desk Slice", value: deskSlice },
+    )
+    if (Array.isArray(source.byChannel)) {
+      const channelSummary = source.byChannel
+        .filter((row): row is Record<string, unknown> => isRecord(row))
+        .map(
+          (row) =>
+            `${String(row.channel ?? "other")}:${Number(row.ticketCount ?? 0)} (${formatUsdFromCents(Number(row.canonicalVolumeCents ?? 0))})`,
+        )
+        .join(" · ")
+      if (channelSummary) {
+        metrics.push({ label: "Channels", value: channelSummary })
+      }
+    }
+    return metrics
+  }
+
+  if (id === "gslive-tally") {
+    const totals = isRecord(source.totals) ? source.totals : {}
+    const tickets = Number(totals.ticketCount ?? source.distinctTicketCount ?? source.rowCount ?? 0)
+    const legs = Number(totals.legCount ?? 0)
+    const riskCents = Number(totals.riskCents ?? 0)
+    const netCents = Number(totals.settledNetCents ?? 0)
+    const win = isRecord(source.window) ? source.window : {}
+    const fromIso =
+      typeof win.fromEpochSec === "number"
+        ? new Date(win.fromEpochSec * 1000).toISOString().slice(0, 16) + "Z"
+        : "—"
+    const toIso =
+      typeof win.toEpochSec === "number"
+        ? new Date(win.toEpochSec * 1000).toISOString().slice(0, 16) + "Z"
+        : "—"
+    const gates = isRecord(source.gates) ? source.gates : {}
+    const gateEntries = Object.entries(gates)
+      .filter(([, v]) => typeof v === "boolean")
+      .map(([k, v]) => `${k}:${v ? "OK" : "FAIL"}`)
+      .join(" ")
+    metrics.push(
+      { label: "Desk Date", value: String(source.deskDate ?? "—") },
+      {
+        label: "Tickets / Legs",
+        value: `${tickets.toLocaleString()} / ${legs.toLocaleString()}`,
+      },
+      {
+        label: "Risk / Settled Net",
+        value: `${formatUsdFromCents(riskCents)} / ${formatUsdFromCents(netCents)}`,
+      },
+      { label: "Window", value: `${fromIso} → ${toIso}` },
+    )
+    if (gateEntries) {
+      metrics.push({ label: "Gates", value: gateEntries })
+    }
+    return metrics
+  }
+
+  if (id === "f402-weblog") {
+    const rows = isRecord(source.rows) ? source.rows : {}
+    const ops = isRecord(source.operations) ? source.operations : {}
+    const total = Number(rows.total ?? 0)
+    const templates = Number(rows.distinctTemplates ?? 0)
+    const devClasses = isRecord(ops.deviceClasses)
+      ? Object.entries(ops.deviceClasses)
+          .slice(0, 3)
+          .map(([k, v]) => `${k}:${Number(v).toLocaleString()}`)
+          .join(", ")
+      : "—"
+    const ipClasses = isRecord(source.ipClasses)
+      ? Object.entries(source.ipClasses)
+          .slice(0, 3)
+          .map(([k, v]) => `${k}:${Number(v).toLocaleString()}`)
+          .join(", ")
+      : "—"
+    metrics.push(
+      { label: "Total Log Rows", value: total.toLocaleString() },
+      { label: "Distinct Templates", value: templates.toLocaleString() },
+      { label: "Device Classes", value: devClasses },
+      { label: "IP Classes", value: ipClasses },
+    )
+    return metrics
+  }
+
+  if (id === "wagers-by-state") {
+    const totals = isRecord(source.totals) ? source.totals : {}
+    const win = isRecord(source.window) ? source.window : {}
+    const wagers = Number(totals.wagers ?? 0)
+    const legs = Number(totals.legs ?? 0)
+    const span = typeof win.spanHours === "number" ? `${win.spanHours.toFixed(1)}h` : "—"
+    const statesSummary = Array.isArray(source.states)
+      ? source.states
+          .filter((s): s is Record<string, unknown> => isRecord(s))
+          .map((s) => `${String(s.state ?? "?")}:${Number(s.wagers ?? 0).toLocaleString()}`)
+          .join(" · ")
+      : "—"
+    metrics.push(
+      {
+        label: "Wagers / Legs",
+        value: `${wagers.toLocaleString()} / ${legs.toLocaleString()}`,
+      },
+      { label: "Span Window", value: span },
+      { label: "States", value: statesSummary },
+      { label: "Desk Date", value: String(source.deskDate ?? "—") },
+    )
+    return metrics
+  }
+
+  return metrics
+}
+
+export function buildBridge3aSnapshotFromBody(
+  publicUrl: string,
+  state: R2SinkState,
+  lastModified: string | null,
+  ageSeconds: number | null,
+  body: unknown,
+  error?: string,
+): BetTickerBridge3aSnapshot {
+  if (!isRecord(body)) {
+    return {
+      available: false,
+      publicUrl,
+      state,
+      lastModified,
+      ageSeconds,
+      generatedAt: null,
+      deskDate: null,
+      deskHour: null,
+      watermark: null,
+      rowCount: 0,
+      ticketCount: 0,
+      legCount: 0,
+      alertTwinCount: 0,
+      orphanCount: 0,
+      byChannel: {},
+      byWagerType: {},
+      error,
+    }
+  }
+
+  const byChannel: Record<string, { tickets: number; legs: number; volumeCents: number }> = {}
+  if (Array.isArray(body.byChannel)) {
+    for (const item of body.byChannel) {
+      if (!isRecord(item)) continue
+      const key = String(item.channel ?? "other")
+      byChannel[key] = {
+        tickets: Number(item.ticketCount ?? 0),
+        legs: Number(item.legCount ?? 0),
+        volumeCents: Number(item.canonicalVolumeCents ?? 0),
+      }
+    }
+  } else if (isRecord(body.byChannel)) {
+    for (const [key, item] of Object.entries(body.byChannel)) {
+      if (!isRecord(item)) continue
+      byChannel[key] = {
+        tickets: Number(item.tickets ?? item.ticketCount ?? 0),
+        legs: Number(item.legs ?? item.legCount ?? 0),
+        volumeCents: Number(item.volumeCents ?? item.canonicalVolumeCents ?? 0),
+      }
+    }
+  }
+
+  const byWagerType: Record<string, { tickets: number; legs: number; wageredCents: number }> = {}
+  if (Array.isArray(body.byWagerType)) {
+    for (const item of body.byWagerType) {
+      if (!isRecord(item)) continue
+      const key = String(item.wagerType ?? "unknown")
+      byWagerType[key] = {
+        tickets: Number(item.ticketCount ?? 0),
+        legs: Number(item.legCount ?? 0),
+        wageredCents: Number(item.wageredCents ?? 0),
+      }
+    }
+  } else if (isRecord(body.byWagerType)) {
+    for (const [key, item] of Object.entries(body.byWagerType)) {
+      if (!isRecord(item)) continue
+      byWagerType[key] = {
+        tickets: Number(item.tickets ?? item.ticketCount ?? 0),
+        legs: Number(item.legs ?? item.legCount ?? 0),
+        wageredCents: Number(item.wageredCents ?? 0),
+      }
+    }
+  }
+
+  return {
+    available: true,
+    publicUrl,
+    state,
+    lastModified,
+    ageSeconds,
+    generatedAt: typeof body.generatedAt === "string" ? body.generatedAt : null,
+    deskDate: typeof body.deskDate === "string" ? body.deskDate : null,
+    deskHour:
+      typeof body.deskHour === "number" && Number.isFinite(body.deskHour) ? body.deskHour : null,
+    watermark:
+      typeof body.watermark === "string" || typeof body.watermark === "number"
+        ? String(body.watermark)
+        : null,
+    rowCount: Number(body.rowCount ?? 0),
+    ticketCount: Number(body.ticketCount ?? body.rowCount ?? 0),
+    legCount: Number(body.legCount ?? 0),
+    alertTwinCount: Number(body.alertTwinCount ?? 0),
+    orphanCount: Number(body.orphanCount ?? 0),
+    byChannel,
+    byWagerType,
+    error,
+  }
+}
+
+interface Daemon4020HealthSummary {
+  readonly operationalStatus?: "ok" | "degraded" | "down"
+  readonly reasonSummary?: string
+  readonly auth?: {
+    readonly f402: Daemon4020AuthState | null
+    readonly gslive: Daemon4020AuthState | null
+  }
+}
+
+/** Parse one `/health` auth source; unknown shapes degrade to null, never a fake "ok". */
+function parseDaemonAuthState(value: unknown): Daemon4020AuthState | null {
+  if (!isRecord(value)) return null
+  return {
+    status: typeof value.status === "string" ? value.status : "unknown",
+    source: typeof value.source === "string" ? value.source : null,
+    remediation: typeof value.remediation === "string" ? value.remediation : null,
+  }
+}
+
+async function readDaemon4020HealthSummary(res: Response): Promise<Daemon4020HealthSummary> {
+  const contentType = res.headers.get("content-type") ?? ""
+  if (contentType !== "" && !contentType.toLowerCase().includes("json")) {
+    return {}
+  }
+  try {
+    const body = (await res.json()) as {
+      operationalStatus?: unknown
+      degradedReasons?: unknown
+      checks?: unknown
+      sources?: unknown
+    } | null
+    if (!body || typeof body !== "object") return {}
+    const op =
+      body.operationalStatus === "ok" ||
+      body.operationalStatus === "degraded" ||
+      body.operationalStatus === "down"
+        ? body.operationalStatus
+        : undefined
+    const reasons = Array.isArray(body.degradedReasons)
+      ? body.degradedReasons
+          .map((item) =>
+            item && typeof item === "object" && "message" in item
+              ? String((item as { message: unknown }).message)
+              : "",
+          )
+          .filter((msg) => msg.length > 0)
+      : []
+    const reasonSummary = reasons.length > 0 ? reasons.slice(0, 2).join("; ") : undefined
+    const checks = isRecord(body.checks) ? body.checks : null
+    const sources = isRecord(body.sources) ? body.sources : null
+    const authRaw =
+      checks !== null && isRecord(checks.auth)
+        ? checks.auth
+        : sources !== null && isRecord(sources.auth)
+          ? sources.auth
+          : null
+    const auth =
+      authRaw === null
+        ? undefined
+        : {
+            f402: parseDaemonAuthState(authRaw.f402),
+            gslive: parseDaemonAuthState(authRaw.gslive),
+          }
+    return {
+      ...(op !== undefined ? { operationalStatus: op } : {}),
+      ...(reasonSummary !== undefined ? { reasonSummary } : {}),
+      ...(auth !== undefined ? { auth } : {}),
+    }
+  } catch {
+    return {}
+  }
+}
+
+export async function probeDaemon4020Status(
+  options: {
+    readonly origin?: string | undefined
+    readonly fetchImpl?: R2Fetcher | undefined
+    readonly now?: (() => Date) | undefined
+  } = {},
+): Promise<Daemon4020Status> {
+  const nowDate = (options.now ?? (() => new Date()))()
+  const checkedAt = nowDate.toISOString()
+  const origin = options.origin?.trim().replace(/\/+$/, "")
+  if (!origin) {
+    return {
+      online: false,
+      state: "unconfigured",
+      url: "",
+      status: null,
+      latencyMs: null,
+      checkedAt,
+      reason:
+        "Set SPORTSDESK_API_ORIGIN to a daemon URL reachable from this server. Hosted loopback does not reach the operator computer.",
+    }
+  }
+  let url: string
+  try {
+    const parsed = new URL(origin)
+    if (
+      !["http:", "https:"].includes(parsed.protocol) ||
+      parsed.username ||
+      parsed.password ||
+      parsed.search ||
+      parsed.hash
+    ) {
+      throw new Error("Invalid daemon origin")
+    }
+    url = `${origin}/health`
+  } catch {
+    return {
+      online: false,
+      state: "unconfigured",
+      url: "",
+      status: null,
+      latencyMs: null,
+      checkedAt,
+      reason:
+        "SPORTSDESK_API_ORIGIN must be an HTTP(S) URL without credentials, query, or fragment.",
+    }
+  }
+  const startedAt = performance.now()
+  const fetcher: R2Fetcher =
+    options.fetchImpl ?? ((u, init) => defaultFetchWithTimeout(u, init, 1500))
+
+  try {
+    const res = await fetcher(url, { method: "GET" })
+    const latencyMs = Math.max(1, Math.round(performance.now() - startedAt))
+    const health = await readDaemon4020HealthSummary(res)
+
+    if (res.ok) {
+      const degraded =
+        health.operationalStatus === "degraded" || health.operationalStatus === "down"
+      return {
+        online: true,
+        state: degraded ? "degraded" : "online",
+        ...(health.operationalStatus !== undefined
+          ? { operationalStatus: health.operationalStatus }
+          : {}),
+        ...(health.auth !== undefined ? { auth: health.auth } : {}),
+        url,
+        status: res.status,
+        latencyMs,
+        checkedAt,
+        reason: degraded ? health.reasonSummary : undefined,
+      }
+    }
+
+    // SportsDesk /health returns HTTP 503 when the daemon process is up & answering
+    // routes locally, but both upstream auth sessions (f402 + gslive) are down.
+    if (res.status === 503) {
+      const reason = health.reasonSummary ? `HTTP 503 — ${health.reasonSummary}` : "HTTP 503"
+      return {
+        online: true,
+        state: "degraded",
+        operationalStatus: health.operationalStatus ?? "down",
+        ...(health.auth !== undefined ? { auth: health.auth } : {}),
+        url,
+        status: res.status,
+        latencyMs,
+        checkedAt,
+        reason,
+      }
+    }
+
+    return {
+      online: false,
+      state: "offline",
+      url,
+      status: res.status,
+      latencyMs,
+      checkedAt,
+      reason: `HTTP ${res.status}`,
+    }
+  } catch (err) {
+    // signal-honesty: intentional-daemon-offline-probe-report
+    return {
+      online: false,
+      state: "offline",
+      url,
+      status: null,
+      latencyMs: null,
+      checkedAt,
+      reason:
+        err instanceof Error
+          ? `${err.message}${typeof err.cause === "object" && err.cause !== null && "code" in err.cause ? ` (${String(err.cause.code)})` : ""}`
+          : String(err),
+    }
+  }
+}
+
+export interface R2PipelineServiceOptions {
+  readonly publicBase?: string | undefined
+  readonly daemon4020Origin?: string | undefined
+  readonly cacheTtlMs?: number | undefined
+  readonly fetchImpl?: R2Fetcher | undefined
+  readonly now?: (() => Date) | undefined
+  /** Samples retained per sink for the history endpoint. */
+  readonly historyLimit?: number | undefined
+  /** Minimum seconds between two samples of the same sink (state changes bypass it). */
+  readonly historyMinIntervalSeconds?: number | undefined
+  readonly getAutomationsSnapshot?:
+    (() => Promise<AutomationsSnapshot> | AutomationsSnapshot) | undefined
+}
+
+const GSLIVE_AUTH_RE = /gslive expired|secrets:gslive|manual dual-auth/i
+const F402_AUTH_RE = /f402 live login disabled|http 401|no f402 session|f402 auth failed/i
+const SANITIZATION_GUARD_RE = /sanitization failed|forbidden key|exceeds \d+ bytes/i
+
+function classifyBridgeJobFailure(
+  errorText: string,
+  fallbackCommand: string,
+): {
+  readonly blockerClass: R2SinkDiagnostic["blockerClass"]
+  readonly headline: string
+  readonly suggestedCommand: string
+} {
+  if (GSLIVE_AUTH_RE.test(errorText)) {
+    return {
+      blockerClass: "gslive_auth_expired",
+      headline: "GSLive Dual-Auth Expired",
+      suggestedCommand:
+        "printf '%s' '<GSID>' | bun run secrets:gslive set && printf '%s' '<ganchrowSessionId>' | bun run secrets:gslive set-gate",
+    }
+  }
+  if (F402_AUTH_RE.test(errorText)) {
+    return {
+      blockerClass: "f402_auth_expired",
+      headline: "F402 Bearer / WebView Session Expired",
+      suggestedCommand: "bun run session:login --from-keychain",
+    }
+  }
+  if (SANITIZATION_GUARD_RE.test(errorText)) {
+    return {
+      blockerClass: "sanitization_guard",
+      headline: "Pre-Publish Sanitization Guard Blocked",
+      suggestedCommand: fallbackCommand,
+    }
+  }
+  return {
+    blockerClass: "sla_lag",
+    headline: "Bridge Rollup Job Failing",
+    suggestedCommand: fallbackCommand,
+  }
+}
+
+function diagnoseR2Sink(
+  sink: R2SinkDetail,
+  bridgeJobIds: readonly string[],
+  bridgeJobs: readonly BridgeJobStatusSummary[] | undefined,
+): R2SinkDiagnostic | undefined {
+  const correlatedFailed = (bridgeJobs ?? []).filter(
+    (job) => !job.ok && bridgeJobIds.includes(job.id),
+  )
+  if (correlatedFailed.length > 0) {
+    const primaryError = correlatedFailed.map((j) => `${j.id}: ${j.error ?? "failed"}`).join(" | ")
+    const base = classifyBridgeJobFailure(primaryError, sink.remediationCommand)
+    const isCachedRepublish = !sink.stale && sink.dataStale
+    return {
+      blockerClass: isCachedRepublish ? "upstream_capture_stale" : base.blockerClass,
+      headline: isCachedRepublish
+        ? `Cached Snapshot Republished · ${base.headline}`
+        : base.headline,
+      detail: primaryError,
+      failedJobIds: correlatedFailed.map((j) => j.id),
+      suggestedCommand: base.suggestedCommand,
+    }
+  }
+
+  if (sink.state === "missing") {
+    return {
+      blockerClass: "missing_artifact",
+      headline: "R2 Object Missing (HTTP 404)",
+      detail: sink.reason ?? "Key does not exist in public bucket",
+      failedJobIds: [],
+      suggestedCommand: sink.remediationCommand,
+    }
+  }
+  if (sink.state === "error") {
+    return {
+      blockerClass: "network_or_http",
+      headline: "R2 Probe / Header Error",
+      detail: sink.reason ?? "Upstream probe returned error status",
+      failedJobIds: [],
+      suggestedCommand: sink.remediationCommand,
+    }
+  }
+  if (sink.state === "fresh" && sink.dataAgeSeconds === null) {
+    return {
+      blockerClass: "missing_artifact",
+      headline: "Data Window Unmeasured",
+      detail:
+        "The object was recently published, but no capture or covered-event timestamp was measured. Publication alone does not prove fresh data.",
+      failedJobIds: [],
+      suggestedCommand: sink.remediationCommand,
+    }
+  }
+  if (!sink.stale && sink.dataStale) {
+    return {
+      blockerClass: "upstream_capture_stale",
+      headline: "Data Window Stale (>24h) Despite Fresh Publish",
+      detail: "latest.json republished within SLA, but covered event timestamps exceed 24h.",
+      failedJobIds: [],
+      suggestedCommand: sink.remediationCommand,
+    }
+  }
+  if (sink.stale && sink.dataStale) {
+    // Republishing the cached rollup would move the publish timestamp without
+    // changing the data, so name the input as the blocker instead of "SLA lag".
+    return {
+      blockerClass: "upstream_capture_stale",
+      headline: "Upstream Capture Stale · Republish Would Replay Old Data",
+      detail:
+        "latest.json is past its publish SLA and the covered data window is >24h old. Refresh the capture corpus first; republishing the cached rollup would only move the publish timestamp.",
+      failedJobIds: [],
+      suggestedCommand: sink.remediationCommand,
+    }
+  }
+  if (sink.stale) {
+    return {
+      blockerClass: "sla_lag",
+      headline: "Publish Age Exceeds SLA",
+      detail: sink.reason ?? "Publish timestamp older than SLA",
+      failedJobIds: [],
+      suggestedCommand: sink.remediationCommand,
+    }
+  }
+  return undefined
+}
+
+export function createR2PipelineService(options: R2PipelineServiceOptions = {}) {
+  const bucketPublicBase = (options.publicBase ?? DEFAULT_R2_PUBLIC_BASE).replace(/\/+$/, "")
+  const cacheTtlMs = options.cacheTtlMs ?? 15_000
+  const getNow = options.now ?? (() => new Date())
+  const fetcher: R2Fetcher =
+    options.fetchImpl ?? ((u, init) => defaultFetchWithTimeout(u, init, 5000))
+  const historyLimit = Math.max(2, Math.floor(options.historyLimit ?? R2_HISTORY_DEFAULT_LIMIT))
+  const historyMinIntervalMs = Math.max(
+    0,
+    Math.floor(
+      (options.historyMinIntervalSeconds ?? R2_HISTORY_DEFAULT_MIN_INTERVAL_SECONDS) * 1000,
+    ),
+  )
+  const historyBySink = new Map<string, { samples: R2SinkHistorySample[]; lastSampleMs: number }>()
+
+  let cachedResponse: R2PipelineApiResponse | null = null
+  let cachedBridge3a: BetTickerBridge3aSnapshot | null = null
+  let cachedAtMs = 0
+
+  /**
+   * Append one sample per probe, throttled to `historyMinIntervalMs` except when
+   * the sink changes state (a fresh→stale transition is the sample that matters).
+   */
+  function recordHistorySample(sink: R2SinkDetail, nowDate: Date, nowMs: number): void {
+    const entry = historyBySink.get(sink.id)
+    const last = entry?.samples.at(-1)
+    const stateChanged = last !== undefined && last.state !== sink.state
+    const due = entry === undefined || nowMs - entry.lastSampleMs >= historyMinIntervalMs
+    if (!stateChanged && !due) return
+    const samples = entry?.samples ?? []
+    samples.push({
+      at: nowDate.toISOString(),
+      ageSeconds: sink.ageSeconds,
+      state: sink.state,
+      dataAgeSeconds: sink.dataAgeSeconds,
+    })
+    while (samples.length > historyLimit) samples.shift()
+    historyBySink.set(sink.id, { samples, lastSampleMs: nowMs })
+  }
+
+  async function probeSingleSink(
+    target: R2TargetSpec,
+    nowMs: number,
+  ): Promise<{
+    readonly sink: R2SinkDetail
+    readonly rawLatestBody: unknown
+  }> {
+    const publicUrl = `${bucketPublicBase}/${target.key}`
+    let status = 0
+    let lastModified: string | null = null
+    let contentLength: number | null = null
+    let latestBody: unknown = null
+    let networkError: string | null = null
+
+    try {
+      const res = await fetcher(publicUrl, { method: "GET" })
+      status = res.status
+      lastModified = res.headers.get("last-modified")
+      const clHeader = res.headers.get("content-length")
+      if (clHeader !== null && clHeader.trim() !== "") {
+        const parsedLen = Number(clHeader)
+        if (Number.isFinite(parsedLen)) contentLength = parsedLen
+      }
+      if (res.ok) {
+        try {
+          latestBody = (await res.json()) as unknown
+        } catch (err) {
+          // signal-honesty: intentional-r2-invalid-json-classified-as-error
+          networkError = `Invalid JSON: ${err instanceof Error ? err.message : String(err)}`
+        }
+      }
+    } catch (err) {
+      // signal-honesty: intentional-r2-network-failure-classified-as-error
+      networkError = err instanceof Error ? err.message : String(err)
+    }
+
+    const lastModifiedMs = lastModified ? Date.parse(lastModified) : Number.NaN
+    const validLm = Number.isFinite(lastModifiedMs)
+    const ageSeconds = validLm ? Math.max(0, Math.round((nowMs - lastModifiedMs) / 1000)) : null
+
+    let state: R2SinkState = "error"
+    let reason: string | null = networkError
+    if (networkError !== null) {
+      state = "error"
+    } else if (status === 404) {
+      state = "missing"
+      reason = "HTTP 404 Not Found"
+    } else if (status < 200 || status >= 300) {
+      state = "error"
+      reason = `HTTP ${status}`
+    } else if (ageSeconds === null) {
+      state = "error"
+      reason = "Missing Last-Modified header"
+    } else if (ageSeconds > target.slaSeconds) {
+      state = "stale"
+      reason = `Published ${Math.round(ageSeconds / 3600)}h ago (SLA ${Math.round(target.slaSeconds / 60)}m)`
+    } else {
+      state = "fresh"
+      reason = "Within publish SLA"
+    }
+
+    const pointer = extractPointerRollupKey(latestBody)
+    const resolvedRollupKey = pointer.key && pointer.key !== target.key ? pointer.key : null
+    const resolvedRollupUrl = resolvedRollupKey ? `${bucketPublicBase}/${resolvedRollupKey}` : null
+
+    let rollupBody: unknown = null
+    if (resolvedRollupUrl) {
+      try {
+        const r2 = await fetcher(resolvedRollupUrl, { method: "GET" })
+        if (r2.ok) {
+          rollupBody = (await r2.json()) as unknown
+        }
+      } catch {
+        // signal-honesty: intentional-r2-rollup-deref-optional-fallback
+      }
+    }
+
+    const dataWindowToMs = parseDataWindowEndMs(rollupBody) ?? parseDataWindowEndMs(latestBody)
+    const dataAgeSeconds =
+      dataWindowToMs !== null && Number.isFinite(dataWindowToMs) && dataWindowToMs <= nowMs
+        ? Math.max(0, Math.round((nowMs - dataWindowToMs) / 1000))
+        : null
+    const dataStale = dataAgeSeconds !== null && dataAgeSeconds > R2_DATA_STALE_SECONDS
+
+    const metrics = extractMetricsForSink(target.id, latestBody, rollupBody)
+
+    return {
+      sink: {
+        id: target.id,
+        key: target.key,
+        label: target.label,
+        description: target.description,
+        publicUrl,
+        resolvedRollupKey,
+        resolvedRollupUrl,
+        slaSeconds: target.slaSeconds,
+        state,
+        stale: state !== "fresh",
+        lastModified,
+        ageSeconds,
+        dataAgeSeconds,
+        dataStale,
+        contentLength,
+        sha256: pointer.sha256,
+        reason,
+        remediationCommand: target.remediationCommand,
+        bridgeJobIds: target.bridgeJobIds,
+        sla: computeR2SinkSlaStatus(ageSeconds, target.slaSeconds, validLm ? lastModifiedMs : null),
+        metrics,
+      },
+      rawLatestBody: latestBody,
+    }
+  }
+
+  async function probeAll(
+    opts: { readonly refresh?: boolean | undefined } = {},
+  ): Promise<R2PipelineApiResponse> {
+    const nowDate = getNow()
+    const nowMs = nowDate.getTime()
+    if (!opts.refresh && cachedResponse !== null && nowMs - cachedAtMs < cacheTtlMs) {
+      return cachedResponse
+    }
+
+    const [sinkResults, daemon4020, automations] = await Promise.all([
+      Promise.all(R2_PIPELINE_TARGETS.map((t) => probeSingleSink(t, nowMs))),
+      probeDaemon4020Status({
+        origin: options.daemon4020Origin,
+        fetchImpl: options.fetchImpl,
+        now: getNow,
+      }),
+      options.getAutomationsSnapshot
+        ? Promise.resolve(options.getAutomationsSnapshot()).catch(() => undefined)
+        : Promise.resolve(undefined),
+    ])
+
+    const sinks: readonly R2SinkDetail[] = sinkResults.map((r, idx) => {
+      const target = R2_PIPELINE_TARGETS[idx]!
+      const diagnostic = diagnoseR2Sink(r.sink, target.bridgeJobIds, automations?.bridgeJobs)
+      return diagnostic === undefined ? r.sink : { ...r.sink, diagnostic }
+    })
+    for (const sink of sinks) recordHistorySample(sink, nowDate, nowMs)
+    const publishFreshCount = sinks.filter((s) => s.state === "fresh").length
+    const freshCount = sinks.filter(
+      (s) => s.state === "fresh" && s.dataAgeSeconds !== null && !s.dataStale,
+    ).length
+    const staleKeys = sinks.filter((s) => s.stale).map((s) => s.key)
+    const dataStaleKeys = sinks.filter((s) => s.dataStale).map((s) => s.key)
+    const hasErrorOrMissing = sinks.some((s) => s.state === "error" || s.state === "missing")
+    const hasFailedCollector = automations?.bridgeJobs.some((job) => !job.ok) ?? false
+    const hasUnknownData = sinks.some((sink) => sink.dataAgeSeconds === null)
+    const overallStatus: R2PipelineApiResponse["overallStatus"] =
+      hasErrorOrMissing || hasFailedCollector || hasUnknownData
+        ? "degraded"
+        : freshCount === sinks.length
+          ? "fresh"
+          : "stale"
+
+    const betTickerResult = sinkResults.find((r) => r.sink.id === "f402-bet-ticker")
+    if (betTickerResult) {
+      cachedBridge3a = buildBridge3aSnapshotFromBody(
+        betTickerResult.sink.publicUrl,
+        betTickerResult.sink.state,
+        betTickerResult.sink.lastModified,
+        betTickerResult.sink.ageSeconds,
+        betTickerResult.rawLatestBody,
+        betTickerResult.sink.state === "error" || betTickerResult.sink.state === "missing"
+          ? (betTickerResult.sink.reason ?? undefined)
+          : undefined,
+      )
+    }
+
+    const response: R2PipelineApiResponse = {
+      schemaVersion: 1,
+      bucketPublicBase,
+      observedAt: nowDate.toISOString(),
+      overallStatus,
+      freshCount,
+      publishFreshCount,
+      totalCount: sinks.length,
+      staleKeys,
+      dataStaleKeys,
+      sinks,
+      daemon4020,
+      ...(automations === undefined ? {} : { automations }),
+    }
+
+    cachedResponse = response
+    cachedAtMs = nowMs
+    return response
+  }
+
+  async function getHistory(
+    opts: {
+      readonly refresh?: boolean | undefined
+      readonly limit?: number | undefined
+    } = {},
+  ): Promise<R2PipelineHistoryApiResponse> {
+    if (opts.refresh) await probeAll({ refresh: true })
+    const requested = Math.floor(opts.limit ?? historyLimit)
+    const limit = Number.isFinite(requested)
+      ? Math.min(Math.max(requested, 1), historyLimit)
+      : historyLimit
+    const sinks: R2SinkHistory[] = R2_PIPELINE_TARGETS.map((target) => {
+      const samples = historyBySink.get(target.id)?.samples ?? []
+      return {
+        id: target.id,
+        label: target.label,
+        slaSeconds: target.slaSeconds,
+        sampleCount: samples.length,
+        samples: samples.slice(-limit),
+      }
+    })
+    const firstAt = sinks
+      .map((sink) => sink.samples[0]?.at)
+      .filter((at): at is string => at !== undefined)
+      .sort()[0]
+    return {
+      schemaVersion: 1,
+      observedAt: getNow().toISOString(),
+      source: "process-memory",
+      sampledSince: firstAt ?? null,
+      minSampleIntervalSeconds: Math.round(historyMinIntervalMs / 1000),
+      sinks,
+    }
+  }
+
+  async function getLatestBetTickerBridge3a(
+    opts: { readonly refresh?: boolean | undefined } = {},
+  ): Promise<BetTickerBridge3aSnapshot> {
+    if (opts.refresh || cachedBridge3a === null) {
+      await probeAll(opts)
+    }
+    return (
+      cachedBridge3a ?? {
+        available: false,
+        publicUrl: `${bucketPublicBase}/f402-bet-ticker/latest.json`,
+        state: "error",
+        lastModified: null,
+        ageSeconds: null,
+        generatedAt: null,
+        deskDate: null,
+        deskHour: null,
+        watermark: null,
+        rowCount: 0,
+        ticketCount: 0,
+        legCount: 0,
+        alertTwinCount: 0,
+        orphanCount: 0,
+        byChannel: {},
+        byWagerType: {},
+        error: "Bridge 3a R2 snapshot not yet probed",
+      }
+    )
+  }
+
+  return {
+    probeAll,
+    getHistory,
+    getLatestBetTickerBridge3a,
+    probeDaemon: () =>
+      probeDaemon4020Status({
+        origin: options.daemon4020Origin,
+        fetchImpl: options.fetchImpl,
+        now: getNow,
+      }),
+    clearCache: () => {
+      cachedResponse = null
+      cachedBridge3a = null
+      cachedAtMs = 0
+    },
+  }
+}

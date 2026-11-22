@@ -1,0 +1,32 @@
+{
+  "name": "@sportsdesk-ops/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./App": "./src/App.tsx",
+    "./ShadowPricingPanel": "./src/ShadowPricingPanel.tsx",
+    "./SliceMetricsViews": "./src/SliceMetricsViews.tsx",
+    "./ansi": "./src/ansi.tsx",
+    "./config": "./src/config/dashboard.ts",
+    "./config/dashboard": "./src/config/dashboard.ts",
+    "./config/wagers": "./src/config/wagers.ts",
+    "./hydration": "./src/hydration.ts",
+    "./links": "./src/links.ts",
+    "./panels": "./src/panels/index.tsx",
+    "./shadow-pricing": "./src/shadow_pricing/index.tsx",
+    "./runtime-flags": "./src/runtime_flags.ts",
+    "./terminal-catalog": "./src/terminal_catalog.ts",
+    "./styles": "./src/dashboard_styles.ts",
+    "./types": "./src/types.ts",
+    "./desk.css": "./src/desk.css",
+    "./styles/tokens.css": "./src/styles/tokens.css",
+    "./styles/reset.css": "./src/styles/reset.css"
+  },
+  "dependencies": {
+    "@sportsdesk-ops/contracts": "*"
+  }
+}

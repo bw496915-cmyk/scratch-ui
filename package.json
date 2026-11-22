@@ -1,0 +1,75 @@
+{
+  "name": "react-example",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "bun@1.4.4",
+  "engines": {
+    "bun": "1.4.4"
+  },
+  "publishConfig": {
+    "tag": "next",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "format": "bun fmt",
+    "format:check": "bun fmt --check",
+    "format:debug": "bun fmt --debug-check",
+    "hooks:install": "git config --local core.hooksPath .githooks",
+    "registry:install": "bun install --cwd tools/registry --frozen-lockfile",
+    "registry:start": "bun run --cwd tools/registry start",
+    "registry:check": "bun scripts/check_local_registry.ts",
+    "dev": "NODE_ENV=development SPORTSDESK_DEV_SERVER=1 tsx server.ts",
+    "start": "node server.mjs",
+    "start:local": "bun --no-env-file server.mjs",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=esm --packages=external --external:bun:sqlite --outfile=server.mjs",
+    "preview": "vite preview --host 0.0.0.0 --port 3000",
+    "clean": "rm -rf dist server.js server.mjs",
+    "lint": "tsc --noEmit && tsc --noEmit --project scripts/tsconfig.runtime.json && tsc --noEmit --project packages/ui/tsconfig.json",
+    "test": "bun test",
+    "test:update-snapshots": "TZ=UTC bun test --update-snapshots",
+    "check:lockfile": "tsx scripts/check_lockfile_integrity.ts",
+    "check:route-surface": "tsx scripts/check_route_surface.ts",
+    "check:bundle-hygiene": "tsx scripts/check_bundle_hygiene.ts",
+    "check:runtime": "bun scripts/verify_runtime_connections.ts",
+    "check:shell-boundary": "tsx scripts/check_shell_boundary.ts",
+    "check:snapshots": "tsx scripts/check_snapshot_hygiene.ts",
+    "check:ci": "bun run format:check && bun run format:debug && npm run check:lockfile && bun test && npm run check:snapshots && npm run check:route-surface && npm run check:bundle-hygiene && npm run check:shell-boundary"
+  },
+  "dependencies": {
+    "@cloudflare/workers-types": "^5.20261119.1",
+    "@modelcontextprotocol/server": "^2.4.0",
+    "@types/d3": "^7.4.3",
+    "@types/ws": "^8.18.2",
+    "@vitejs/plugin-react": "^6.1.1",
+    "agents": "^0.33.0",
+    "d3": "^7.9.2",
+    "dotenv": "^17.2.3",
+    "esbuild": "^0.28.0",
+    "express": "^4.21.2",
+    "lucide-react": "^0.546.0",
+    "marked": "^18.2.1",
+    "qrcode": "^1.5.4",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "recharts": "^3.10.1",
+    "smol-toml": "^1.9.1",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.3.0",
+    "wrangler": "^4.165.0",
+    "ws": "^8.23.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.4",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.14.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "tsx": "^4.21.0",
+    "typescript": "^7.0.2"
+  }
+}

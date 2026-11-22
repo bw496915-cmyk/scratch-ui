@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+
+required_bun_version=$(cat .bun-version)
+if [ "$(bun --version)" != "$required_bun_version" ]; then
+  printf 'Commit requires Bun %s from .bun-version.\n' "$required_bun_version" >&2
+  exit 1
+fi
+
+exec bun fmt --staged

@@ -1,0 +1,7 @@
+dist/
+node_modules/
+metadata.json
+data/*.json
+docs/*.json
+docs/assets/*.json
+tests/fixtures/**/*.golden.json

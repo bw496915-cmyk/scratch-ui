@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SportsDesk Status</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        background: #070b14;
+        color: #f1f5f9;
+        margin: 0;
+        padding: 2rem;
+      }
+      h1 {
+        margin: 0 0 1rem;
+      }
+      pre {
+        background: #0d1527;
+        border: 1px solid #1e293b;
+        border-radius: 8px;
+        padding: 1rem;
+        overflow: auto;
+        font-size: 12px;
+      }
+      .ok {
+        color: #10b981;
+      }
+      .bad {
+        color: #ef4444;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SportsDesk Status</h1>
+    <p id="summary">Loading…</p>
+    <pre id="payload"></pre>
+    <script src="/static/status.js" defer></script>
+  </body>
+</html>

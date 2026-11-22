@@ -1,0 +1,5 @@
+# This independent tool install must not change the application's lockfile.
+env = false
+[install]
+ignoreScripts = true
+minimumReleaseAge = "3d"

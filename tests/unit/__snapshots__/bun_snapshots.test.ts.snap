@@ -1,0 +1,316 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`Bun test snapshots — Complex Objects snapshots a deeply nested operator profile object 1`] = `
+{
+  "email": "john@example.com",
+  "id": 1,
+  "name": "John Doe",
+  "profile": {
+    "age": 30,
+    "preferences": {
+      "heatmapEnabled": true,
+      "notifications": true,
+      "theme": "dark",
+    },
+    "role": "desk-operator",
+  },
+  "tags": [
+    "developer",
+    "typescript",
+    "bun",
+  ],
+}
+`;
+
+exports[`Bun test snapshots — Complex Objects snapshots a complex multi-layer redacted Bun package & lockfile config 1`] = `
+{
+  "bunfigMigrationPreview": 
+"# Migrated from .npmrc to bunfig.toml (secrets replaced with $ENV_VAR placeholders)
+[install]
+exact = true
+ignoreScripts = true
+linker = "isolated"
+globalStore = true
+minimumReleaseAge = "3d"
+
+[install.scopes]
+sportsdesk-ops = { url = "https://npm.example.com/team/a/", token = "$NPM_TOKEN" }
+
+[run]
+noOrphans = true
+"
+,
+  "credentialPrefixes": [
+    {
+      "authKind": "bearer-token",
+      "hasEmailIgnored": false,
+      "prefix": "//npm.example.com/team/",
+      "source": "project-npmrc",
+    },
+  ],
+  "defaultRegistryAuthScheme": null,
+  "defaultRegistryHasAuth": false,
+  "defaultRegistrySource": "project-npmrc",
+  "defaultRegistryUrl": "https://registry.npmjs.org/",
+  "layers": [
+    {
+      "activeKeys": [
+        "lockfileVersion=2",
+        "configVersion=1",
+        "3 workspaces",
+      ],
+      "detected": true,
+      "label": "0. Project ./bun.lock (BunLockFile)",
+      "layer": "bun-lockfile",
+      "path": "./bun.lock",
+    },
+    {
+      "activeKeys": [
+        "registry",
+        "@sportsdesk-ops:registry",
+        "save-exact",
+      ],
+      "detected": true,
+      "label": "2. Project ./.npmrc",
+      "layer": "project-npmrc",
+      "path": "./.npmrc",
+    },
+    {
+      "activeKeys": [
+        "install.minimumReleaseAge",
+        "install.globalStore",
+        "run.noOrphans",
+      ],
+      "detected": true,
+      "label": "3b. Project ./bunfig.toml",
+      "layer": "project-bunfig",
+      "path": "./bunfig.toml",
+    },
+  ],
+  "lockfileSummary": {
+    "catalogCount": 0,
+    "configVersion": 1,
+    "defaultLinkerReason": "configVersion 1 with 3 workspaces defaults to isolated linker",
+    "defaultLinkerStrategy": "isolated",
+    "hasInstallScriptCount": 1,
+    "hasInstallScriptPackages": [
+      "esbuild",
+    ],
+    "isWorkspaceProject": true,
+    "libcNativePackageCount": 1,
+    "lockfileVersion": 2,
+    "overrideCount": 1,
+    "packageCount": 2,
+    "patchedDependencyCount": 0,
+    "trustedDependencyCount": 1,
+    "workspaceCount": 3,
+    "workspaces": [
+      {
+        "dependencyCount": 1,
+        "devDependencyCount": 0,
+        "name": "sportsdesk-ops",
+        "path": ".",
+        "version": null,
+      },
+      {
+        "dependencyCount": 0,
+        "devDependencyCount": 0,
+        "name": "@sportsdesk-ops/api",
+        "path": "packages/api",
+        "version": "1.0.0",
+      },
+      {
+        "dependencyCount": 0,
+        "devDependencyCount": 0,
+        "name": "@sportsdesk-ops/ui",
+        "path": "packages/ui",
+        "version": "1.0.0",
+      },
+    ],
+  },
+  "options": {
+    "autoInstall": "auto",
+    "caCertCount": 0,
+    "cacheDir": null,
+    "cacheDisableManifest": false,
+    "cacheDisabled": false,
+    "cafile": null,
+    "dev": true,
+    "dryRun": false,
+    "frozenLockfile": false,
+    "globalBinDir": null,
+    "globalDir": null,
+    "globalStore": true,
+    "hoist": true,
+    "hoistPattern": [],
+    "ignoreScripts": true,
+    "linkWorkspacePackages": false,
+    "linker": "isolated",
+    "linkerSource": "bun-lockfile",
+    "lockfilePrint": null,
+    "lockfileSave": true,
+    "minimumReleaseAge": "3d",
+    "minimumReleaseAgeExcludes": [],
+    "omittedDependencies": [],
+    "optional": true,
+    "peer": true,
+    "production": false,
+    "publicHoistPattern": [],
+    "runBun": false,
+    "runNoOrphans": true,
+    "runShell": "system",
+    "runSilent": false,
+    "saveExact": true,
+    "saveTextLockfile": true,
+    "securityScanner": null,
+  },
+  "scopes": [
+    {
+      "authScheme": "Bearer",
+      "hasAuth": true,
+      "matchedPrefix": "//npm.example.com/team/",
+      "registryUrl": "https://npm.example.com/team/a/",
+      "scope": "@sportsdesk-ops",
+      "source": "project-npmrc",
+    },
+  ],
+  "warnings": [],
+}
+`;
+
+exports[`Bun test snapshots — Array Snapshots snapshots a deterministic transformed numeric array 1`] = `
+[
+  2,
+  4,
+  6,
+  8,
+  10,
+]
+`;
+
+exports[`Bun test snapshots — Array Snapshots snapshots registry credential path-segment fallback lookup keys 1`] = `
+[
+  "//npm.example.com/org/team/a/",
+  "//npm.example.com:443/org/team/a/",
+  "//npm.example.com/org/team/",
+  "//npm.example.com:443/org/team/",
+  "//npm.example.com/org/",
+  "//npm.example.com:443/org/",
+  "//npm.example.com/",
+  "//npm.example.com:443/",
+]
+`;
+
+exports[`Bun test snapshots — Array Snapshots snapshots parsed YAML bet-flag rules array 1`] = `
+[
+  {
+    "aggregateGroupBy": null,
+    "aggregateWindowSeconds": null,
+    "description": null,
+    "enabled": true,
+    "hasAggregate": false,
+    "id": "stake_over_10k",
+    "severity": "high",
+    "tags": [
+      "stake",
+    ],
+    "title": "Single bet stake of $10,000 or more",
+  },
+  {
+    "aggregateGroupBy": "customerId",
+    "aggregateWindowSeconds": 60,
+    "description": null,
+    "enabled": false,
+    "hasAggregate": true,
+    "id": "rapid_fire_5_in_60s",
+    "severity": "critical",
+    "tags": [
+      "velocity",
+      "live",
+    ],
+    "title": "5+ live bets in 60s by one customer",
+  },
+]
+`;
+
+exports[`Bun test snapshots — Function Output Snapshots snapshots deterministic desk report generator output 1`] = `
+{
+  "activeCount": 2,
+  "summary": [
+    {
+      "id": 1,
+      "name": "Alice",
+      "sharePct": 60,
+    },
+    {
+      "id": 2,
+      "name": "Bob",
+      "sharePct": 40,
+    },
+    {
+      "id": 3,
+      "name": "Carlos",
+      "sharePct": 0,
+    },
+  ],
+  "timestamp": "2024-01-01T00:00:00.000Z",
+  "total": 3,
+  "totalHandleUsd": 100000,
+}
+`;
+
+exports[`Bun test snapshots — Function Output Snapshots snapshots summarizeBunLockFile() output for monorepo isolated linker 1`] = `
+{
+  "catalogCount": 0,
+  "configVersion": 1,
+  "defaultLinkerReason": "configVersion 1 with 2 workspaces defaults to isolated linker",
+  "defaultLinkerStrategy": "isolated",
+  "hasInstallScriptCount": 0,
+  "hasInstallScriptPackages": [],
+  "isWorkspaceProject": true,
+  "libcNativePackageCount": 0,
+  "lockfileVersion": 2,
+  "overrideCount": 0,
+  "packageCount": 1,
+  "patchedDependencyCount": 0,
+  "trustedDependencyCount": 0,
+  "workspaceCount": 2,
+  "workspaces": [
+    {
+      "dependencyCount": 1,
+      "devDependencyCount": 0,
+      "name": "root-app",
+      "path": ".",
+      "version": null,
+    },
+    {
+      "dependencyCount": 0,
+      "devDependencyCount": 0,
+      "name": "@app/contracts",
+      "path": "packages/contracts",
+      "version": "0.1.0",
+    },
+  ],
+}
+`;
+
+exports[`Bun test snapshots — Function Output Snapshots snapshots convertNpmrcToBunfigToml() and stringifyBunYaml() with explicit hints: bunfig-toml-migration 1`] = `
+"# Migrated from .npmrc to bunfig.toml (secrets replaced with $ENV_VAR placeholders)
+[install]
+exact = true
+ignoreScripts = true
+linker = "isolated"
+
+[install.scopes]
+myorg = { url = "https://npm.example.com/team/", token = "$NPM_TOKEN" }
+"
+`;
+
+exports[`Bun test snapshots — Function Output Snapshots snapshots convertNpmrcToBunfigToml() and stringifyBunYaml() with explicit hints: yaml-block-stringify 1`] = `
+"service: sportsdesk-ops
+port: 3000
+features:
+  - yaml-1.2
+  - bun-lockfile
+  - snapshots"
+`;

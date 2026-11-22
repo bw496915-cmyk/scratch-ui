@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <defs>
+    <radialGradient id="sd-bg-glow" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.22" />
+      <stop offset="60%" stop-color="#0B0F19" stop-opacity="0.96" />
+      <stop offset="100%" stop-color="#070B14" stop-opacity="1" />
+    </radialGradient>
+    <linearGradient id="sd-shield" x1="12" y1="8" x2="52" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00F0FF" />
+      <stop offset="100%" stop-color="#38BDF8" />
+    </linearGradient>
+    <linearGradient id="sd-pulse" x1="10" y1="42" x2="56" y2="20" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="55%" stop-color="#00F0FF" />
+      <stop offset="100%" stop-color="#4ADE80" />
+    </linearGradient>
+    <linearGradient id="sd-sweep" x1="32" y1="16" x2="48" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.38" />
+      <stop offset="100%" stop-color="#00F0FF" stop-opacity="0.02" />
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="10" fill="url(#sd-bg-glow)" />
+
+  <!-- Radar sweep wedge -->
+  <path d="M32 32 L32 16 A16 16 0 0 1 46.5 25.2 Z" fill="url(#sd-sweep)" />
+
+  <!-- Tactical surveillance shield -->
+  <path
+    d="M32 7 L51 14 V30.5 C51 43.2 43.1 52.3 32 57 C20.9 52.3 13 43.2 13 30.5 V14 L32 7 Z"
+    stroke="url(#sd-shield)"
+    stroke-width="2.4"
+    stroke-linejoin="round"
+    fill="rgba(11, 15, 25, 0.65)"
+  />
+
+  <!-- Concentric telemetry radar rings -->
+  <circle cx="32" cy="31" r="13.5" stroke="#38BDF8" stroke-opacity="0.45" stroke-width="1.5" />
+  <circle cx="32" cy="31" r="8.5" stroke="#00F0FF" stroke-opacity="0.55" stroke-width="1.4" />
+  <circle cx="32" cy="31" r="3.5" stroke="#38BDF8" stroke-opacity="0.7" stroke-width="1.2" />
+
+  <!-- Ascending telemetry pulse waveform -->
+  <path
+    d="M11 41 L21.5 34.5 L25 38 L28.5 27.5 L33 38.5 L39.5 26.5 L43 31.5 L53 19.5"
+    stroke="url(#sd-pulse)"
+    stroke-width="2.6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <circle cx="53" cy="19.5" r="2.2" fill="#4ADE80" />
+</svg>
