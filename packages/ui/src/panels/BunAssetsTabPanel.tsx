@@ -89,6 +89,11 @@ export interface BunImageTransformResult {
   readonly sha256: string
   readonly mimeType: string
   readonly dataUrl: string
+  readonly pngColorType?: number | undefined
+  readonly pngColorTypeLabel?: string | undefined
+  readonly pngPalette?: boolean | undefined
+  readonly pngColors?: number | undefined
+  readonly pngDither?: boolean | undefined
 }
 
 export interface BunAssetsTabPanelProps {
@@ -238,6 +243,9 @@ export function BunAssetsTabPanel({
   const [resampleFilter, setResampleFilter] = useState<BunImageResampleFilter>("lanczos3")
   const [quality, setQuality] = useState<number>(80)
   const [compressionLevel, setCompressionLevel] = useState<number>(6)
+  const [pngPalette, setPngPalette] = useState<boolean>(false)
+  const [pngColors, setPngColors] = useState<number>(64)
+  const [pngDither, setPngDither] = useState<boolean>(true)
   const [rotate, setRotate] = useState<0 | 90 | 180 | 270>(0)
   const [flip, setFlip] = useState<boolean>(false)
   const [flop, setFlop] = useState<boolean>(false)
@@ -457,6 +465,9 @@ export function BunAssetsTabPanel({
           filter: resampleFilter,
           quality,
           compressionLevel,
+          palette: targetFormat === "png" ? pngPalette : undefined,
+          colors: targetFormat === "png" && pngPalette ? pngColors : undefined,
+          dither: targetFormat === "png" && pngPalette ? pngDither : undefined,
           rotate,
           flip,
           flop,
@@ -486,6 +497,9 @@ export function BunAssetsTabPanel({
     resampleFilter,
     quality,
     compressionLevel,
+    pngPalette,
+    pngColors,
+    pngDither,
     rotate,
     flip,
     flop,
@@ -1779,27 +1793,163 @@ export function BunAssetsTabPanel({
                     </label>
 
                     {targetFormat === "png" ? (
-                      <label style={{ display: "block", color: "#94a3b8" }}>
-                        PNG Compression:{" "}
-                        <strong
+                      <div
+                        data-png-options-panel="true"
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
+                        }}
+                      >
+                        <label style={{ display: "block", color: "#94a3b8" }}>
+                          PNG Compression (zlib 0–9):{" "}
+                          <strong
+                            style={{
+                              color: "#f1f5f9",
+                              fontFamily: MONO_FONT,
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            {compressionLevel}
+                          </strong>
+                          <input
+                            type="range"
+                            min={0}
+                            max={9}
+                            step={1}
+                            value={compressionLevel}
+                            onChange={(e) => setCompressionLevel(Number(e.target.value))}
+                            style={{ width: "100%", marginTop: "6px" }}
+                          />
+                        </label>
+                        <div
                           style={{
-                            color: "#f1f5f9",
-                            fontFamily: MONO_FONT,
-                            fontVariantNumeric: "tabular-nums",
+                            display: "flex",
+                            flexWrap: "wrap",
+                            alignItems: "center",
+                            gap: "10px",
+                            color: "#cbd5e1",
                           }}
                         >
-                          {compressionLevel}
-                        </strong>
-                        <input
-                          type="range"
-                          min={0}
-                          max={9}
-                          step={1}
-                          value={compressionLevel}
-                          onChange={(e) => setCompressionLevel(Number(e.target.value))}
-                          style={{ width: "100%", marginTop: "6px" }}
-                        />
-                      </label>
+                          <label
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "5px",
+                              cursor: "pointer",
+                            }}
+                            title="Quantize to <= 256 colors and emit an indexed PNG (color-type 3, typically 3-5x smaller)"
+                          >
+                            <input
+                              type="checkbox"
+                              data-png-palette-toggle="true"
+                              checked={pngPalette}
+                              onChange={(e) => setPngPalette(e.target.checked)}
+                            />
+                            <span>Indexed Palette (type 3)</span>
+                          </label>
+                          {pngPalette ? (
+                            <label
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "5px",
+                                cursor: "pointer",
+                              }}
+                              title="Apply Floyd-Steinberg dithering during palette quantization"
+                            >
+                              <input
+                                type="checkbox"
+                                data-png-dither-toggle="true"
+                                checked={pngDither}
+                                onChange={(e) => setPngDither(e.target.checked)}
+                              />
+                              <span>Dither</span>
+                            </label>
+                          ) : null}
+                        </div>
+                        {pngPalette ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: "6px",
+                              }}
+                            >
+                              <span style={{ color: "#94a3b8" }}>
+                                Palette Colors:{" "}
+                                <strong
+                                  style={{
+                                    color: "#f1f5f9",
+                                    fontFamily: MONO_FONT,
+                                    fontVariantNumeric: "tabular-nums",
+                                  }}
+                                >
+                                  {pngColors}
+                                </strong>
+                              </span>
+                              <div style={{ display: "inline-flex", gap: "4px" }}>
+                                {[16, 64, 128, 256].map((preset) => (
+                                  <button
+                                    key={preset}
+                                    type="button"
+                                    onClick={() => setPngColors(preset)}
+                                    style={{
+                                      padding: "1px 5px",
+                                      borderRadius: "4px",
+                                      borderWidth: "1px",
+                                      borderStyle: "solid",
+                                      borderColor:
+                                        pngColors === preset ? "#38bdf8" : "#334155",
+                                      backgroundColor:
+                                        pngColors === preset
+                                          ? "rgba(56, 189, 248, 0.16)"
+                                          : "#0f172a",
+                                      color: pngColors === preset ? "#38bdf8" : "#94a3b8",
+                                      fontFamily: MONO_FONT,
+                                      fontSize: "10px",
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    {preset}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <input
+                              type="range"
+                              data-png-colors-slider="true"
+                              min={2}
+                              max={256}
+                              step={1}
+                              value={pngColors}
+                              onChange={(e) => setPngColors(Number(e.target.value))}
+                              style={{ width: "100%" }}
+                            />
+                          </div>
+                        ) : null}
+                        <code
+                          data-png-call-preview="true"
+                          style={{
+                            display: "block",
+                            padding: "4px 6px",
+                            borderRadius: "4px",
+                            backgroundColor: "#0f172a",
+                            border: "1px solid #1e293b",
+                            color: "#7dd3fc",
+                            fontFamily: MONO_FONT,
+                            fontSize: "10.5px",
+                            overflowX: "auto",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {pngPalette
+                            ? `img.png({ compressionLevel: ${compressionLevel}, palette: true, colors: ${pngColors}, dither: ${pngDither} })`
+                            : `img.png({ compressionLevel: ${compressionLevel} })`}
+                        </code>
+                      </div>
                     ) : (
                       <label style={{ display: "block", color: "#94a3b8" }}>
                         Quality:{" "}
@@ -2055,8 +2205,11 @@ export function BunAssetsTabPanel({
                             color: "#94a3b8",
                           }}
                         >
-                          {transformResult.outputWidth}×{transformResult.outputHeight} ·{" "}
-                          {transformResult.durationMs}ms · {transformResult.backend} · #
+                          {transformResult.outputWidth}×{transformResult.outputHeight}
+                          {transformResult.pngColorTypeLabel
+                            ? ` · ${transformResult.pngColorTypeLabel}`
+                            : ""}{" "}
+                          · {transformResult.durationMs}ms · {transformResult.backend} · #
                           {transformResult.sha256}
                         </span>
                         <div style={{ display: "flex", gap: "6px" }}>

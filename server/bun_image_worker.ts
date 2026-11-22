@@ -34,6 +34,9 @@ interface TransformRequest {
   readonly filter?: ResampleFilter | undefined
   readonly quality?: number | undefined
   readonly compressionLevel?: number | undefined
+  readonly palette?: boolean | undefined
+  readonly colors?: number | undefined
+  readonly dither?: boolean | undefined
   readonly rotate?: 0 | 90 | 180 | 270 | undefined
   readonly flip?: boolean | undefined
   readonly flop?: boolean | undefined
@@ -359,6 +362,12 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
 
   const quality = Math.min(100, Math.max(1, Math.round(req.quality ?? 80)))
   const compressionLevel = Math.min(9, Math.max(0, Math.round(req.compressionLevel ?? 6)))
+  const pngPalette = Boolean(req.palette)
+  const pngColors = Math.min(256, Math.max(2, Math.round(req.colors ?? 256)))
+  const pngDither = req.dither ?? true
+  const pngOptions = pngPalette
+    ? { compressionLevel, palette: true, colors: pngColors, dither: pngDither }
+    : { compressionLevel }
 
   const encoded =
     req.format === "webp"
@@ -366,7 +375,7 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
       : req.format === "jpeg"
         ? pipeline.jpeg({ quality })
         : req.format === "png"
-          ? pipeline.png({ compressionLevel })
+          ? pipeline.png(pngOptions)
           : req.format === "avif"
             ? pipeline.avif({ quality })
             : pipeline.heic({ quality })
@@ -384,6 +393,26 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
           : req.format === "avif"
             ? "image/avif"
             : "image/heic"
+
+  const isPngBytes =
+    outBytes.byteLength >= 26 &&
+    outBytes[0] === 0x89 &&
+    outBytes[1] === 0x50 &&
+    outBytes[2] === 0x4e &&
+    outBytes[3] === 0x47
+  const pngColorType = req.format === "png" && isPngBytes ? outBytes[25] : undefined
+  const pngColorTypeLabel =
+    pngColorType === 3
+      ? "Indexed Palette (type 3)"
+      : pngColorType === 6
+        ? "Truecolor RGBA (type 6)"
+        : pngColorType === 2
+          ? "Truecolor RGB (type 2)"
+          : pngColorType === 0
+            ? "Grayscale (type 0)"
+            : pngColorType === 4
+              ? "Grayscale+Alpha (type 4)"
+              : undefined
 
   const base64 = Buffer.from(outBytes).toString("base64")
   const dataUrl = `data:${mimeType};base64,${base64}`
@@ -410,6 +439,15 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
     sha256: hashBytesSha256(outBytes).slice(0, 12),
     mimeType,
     dataUrl,
+    ...(req.format === "png"
+      ? {
+          pngColorType,
+          pngColorTypeLabel,
+          pngPalette,
+          pngColors: pngPalette ? pngColors : undefined,
+          pngDither: pngPalette ? pngDither : undefined,
+        }
+      : {}),
   }
 }
 

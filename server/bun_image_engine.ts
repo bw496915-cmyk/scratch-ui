@@ -83,6 +83,9 @@ export interface BunImageTransformRequest {
   readonly filter?: BunImageResampleFilter | undefined
   readonly quality?: number | undefined
   readonly compressionLevel?: number | undefined
+  readonly palette?: boolean | undefined
+  readonly colors?: number | undefined
+  readonly dither?: boolean | undefined
   readonly rotate?: 0 | 90 | 180 | 270 | undefined
   readonly flip?: boolean | undefined
   readonly flop?: boolean | undefined
@@ -109,6 +112,11 @@ export interface BunImageTransformResult {
   readonly sha256: string
   readonly mimeType: string
   readonly dataUrl: string
+  readonly pngColorType?: number | undefined
+  readonly pngColorTypeLabel?: string | undefined
+  readonly pngPalette?: boolean | undefined
+  readonly pngColors?: number | undefined
+  readonly pngDither?: boolean | undefined
 }
 
 let cachedScan: {
@@ -329,6 +337,12 @@ export async function transformBunImageAsset(
       typeof req.compressionLevel === "number" && Number.isFinite(req.compressionLevel)
         ? Math.min(9, Math.max(0, Math.round(req.compressionLevel)))
         : 6,
+    palette: Boolean(req.palette),
+    colors:
+      typeof req.colors === "number" && Number.isFinite(req.colors)
+        ? Math.min(256, Math.max(2, Math.round(req.colors)))
+        : 256,
+    dither: req.dither ?? true,
     rotate,
     flip: Boolean(req.flip),
     flop: Boolean(req.flop),
