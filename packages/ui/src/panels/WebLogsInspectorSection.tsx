@@ -31,9 +31,18 @@ import { ParlayComparisonSection } from "./ParlayComparisonSection.tsx"
 
 import {
   buildBitwiseLogIndex,
+  LOG_SEVERITY_MASK_ALL,
+  parseBitwiseSeverityQuery,
   severityLabelToBit,
   type BitwiseLogFilterStore,
 } from "../system_log_bitwise_filter.ts"
+import {
+  buildSystemLogsJsonExportPayload,
+  buildSystemLogsJsonFilename,
+  downloadSystemLogsJsonBlob,
+  formatSystemLogsJson,
+  selectBitwiseFilteredRows,
+} from "../system_logs_json_export.ts"
 import { useBitwiseTableDomFilter } from "./SystemLogBitwiseSearchBar.tsx"
 import { SkeletonBlock, SkeletonTableRows } from "./PanelSkeleton.tsx"
 
@@ -211,6 +220,7 @@ export interface WebLogsInspectorSectionProps {
   readonly onSeverityFilterChange?: ((severity: WebLogSeverityFilter) => void) | undefined
   readonly onSeverityCountsChange?: ((counts: WebLogSeverityCounts) => void) | undefined
   readonly bitwiseFilterStore?: BitwiseLogFilterStore | undefined
+  readonly exportFilteredRef?: React.MutableRefObject<(() => number) | null> | undefined
 }
 
 const WEBLOG_PAGE_SIZE = 100
@@ -374,6 +384,7 @@ export function WebLogsInspectorSection({
   onSeverityFilterChange,
   onSeverityCountsChange,
   bitwiseFilterStore,
+  exportFilteredRef,
 }: WebLogsInspectorSectionProps): React.ReactElement {
   const [data, setData] = useState<WebLogApiResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -620,6 +631,67 @@ export function WebLogsInspectorSection({
     store: bitwiseFilterStore,
     revision: expandedRowId,
   })
+
+  const exportFilteredWeblogsJson = useCallback((): number => {
+    const entries = data?.entries ?? []
+    const parsedQuery =
+      bitwiseFilterStore?.getSnapshot().parsed ??
+      parseBitwiseSeverityQuery("", LOG_SEVERITY_MASK_ALL)
+    const filtered = selectBitwiseFilteredRows(entries, weblogBitwiseIndex, parsedQuery)
+    if (filtered.length === 0) return 0
+
+    const payload = buildSystemLogsJsonExportPayload({
+      mode: "weblogs",
+      entries: filtered,
+      totalRows: entries.length,
+      parsedQuery,
+      weblogFilters: {
+        severityFilter,
+        ipFilter,
+        ipFamily,
+        kindFilter,
+        marketFilter,
+        searchQuery,
+        clientFilter,
+        sortField,
+        sortDir,
+      },
+    })
+    const filename = buildSystemLogsJsonFilename({
+      mode: "weblogs",
+      effectiveMask: parsedQuery.effectiveMask,
+      severityFilter,
+      ipFilter,
+      kindFilter,
+      marketFilter,
+      query: parsedQuery.rawQuery || searchQuery,
+    })
+    const ok = downloadSystemLogsJsonBlob(formatSystemLogsJson(payload), filename)
+    return ok ? filtered.length : 0
+  }, [
+    data?.entries,
+    bitwiseFilterStore,
+    weblogBitwiseIndex,
+    severityFilter,
+    ipFilter,
+    ipFamily,
+    kindFilter,
+    marketFilter,
+    searchQuery,
+    clientFilter,
+    sortField,
+    sortDir,
+  ])
+
+  useEffect(() => {
+    if (!exportFilteredRef) return
+    exportFilteredRef.current = exportFilteredWeblogsJson
+    return () => {
+      if (exportFilteredRef.current === exportFilteredWeblogsJson) {
+        exportFilteredRef.current = null
+      }
+    }
+  }, [exportFilteredRef, exportFilteredWeblogsJson])
 
   const activeAnsi =
     inspectMode === "weblog"

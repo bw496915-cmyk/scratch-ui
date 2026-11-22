@@ -1,5 +1,5 @@
 import type React from "react"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Activity,
   AlertTriangle,
@@ -41,6 +41,14 @@ import {
   buildBitwiseLogIndex,
   severityLabelToBit,
 } from "../system_log_bitwise_filter.ts"
+import {
+  buildSystemLogsJsonExportPayload,
+  buildSystemLogsJsonFilename,
+  downloadSystemLogsJsonBlob,
+  formatSystemLogsJson,
+  selectBitwiseFilteredRows,
+  type UnifiedSystemLogRow,
+} from "../system_logs_json_export.ts"
 import {
   SystemLogBitwiseSearchBar,
   useBitwiseTableDomFilter,
@@ -3245,15 +3253,7 @@ export interface SystemLogsPanelProps {
   readonly onWeblogSeverityCountsChange?: ((counts: WebLogSeverityCounts) => void) | undefined
 }
 
-interface UnifiedLogRow {
-  readonly id: string
-  readonly timestamp: string
-  readonly level: "INFO" | "WARN" | "ERROR"
-  readonly customerId: string
-  readonly ipCategory: string
-  readonly source: "ALERTS" | "R2" | "PTY" | "DESK"
-  readonly message: string
-}
+type UnifiedLogRow = UnifiedSystemLogRow
 
 type UnifiedLogSortField = "timestamp" | "severity" | "customerId" | "ipCategory" | "source"
 
@@ -3296,6 +3296,7 @@ export function SystemLogsPanel({
   }
   const bitwiseStore = bitwiseStoreRef.current
   const unifiedTbodyRef = useRef<HTMLTableSectionElement | null>(null)
+  const weblogExportRef = useRef<(() => number) | null>(null)
 
   useEffect(() => {
     if (weblogSeverityFilter && weblogSeverityFilter !== "ALL") {
@@ -3449,6 +3450,29 @@ export function SystemLogsPanel({
     index: unifiedBitwiseIndex,
     store: logMode === "unified" ? bitwiseStore : null,
   })
+
+  const handleExportFilteredLogsJson = useCallback((): number => {
+    if (logMode === "weblogs") {
+      return weblogExportRef.current?.() ?? 0
+    }
+    const snap = bitwiseStore.getSnapshot()
+    const filtered = selectBitwiseFilteredRows(sortedUnifiedLogs, unifiedBitwiseIndex, snap.parsed)
+    if (filtered.length === 0) return 0
+
+    const payload = buildSystemLogsJsonExportPayload({
+      mode: "unified",
+      entries: filtered,
+      totalRows: sortedUnifiedLogs.length,
+      parsedQuery: snap.parsed,
+    })
+    const filename = buildSystemLogsJsonFilename({
+      mode: "unified",
+      effectiveMask: snap.parsed.effectiveMask,
+      query: snap.rawQuery,
+    })
+    const ok = downloadSystemLogsJsonBlob(formatSystemLogsJson(payload), filename)
+    return ok ? filtered.length : 0
+  }, [logMode, bitwiseStore, sortedUnifiedLogs, unifiedBitwiseIndex])
 
   const unifiedSortIcon = (field: UnifiedLogSortField) => {
     if (sortField !== field) {
@@ -3630,7 +3654,11 @@ export function SystemLogsPanel({
       </div>
 
       {/* Client-side Bitwise Severity Flag Search Bar (zero full panel re-renders) */}
-      <SystemLogBitwiseSearchBar store={bitwiseStore} mode={logMode} />
+      <SystemLogBitwiseSearchBar
+        store={bitwiseStore}
+        mode={logMode}
+        onExportJson={handleExportFilteredLogsJson}
+      />
 
       {logMode === "weblogs" ? (
         <WebLogsInspectorSection
@@ -3640,6 +3668,7 @@ export function SystemLogsPanel({
           onSeverityFilterChange={onWeblogSeverityFilterChange}
           onSeverityCountsChange={onWeblogSeverityCountsChange}
           bitwiseFilterStore={bitwiseStore}
+          exportFilteredRef={weblogExportRef}
         />
       ) : (
         <>

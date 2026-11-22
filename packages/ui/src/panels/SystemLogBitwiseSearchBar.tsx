@@ -1,6 +1,14 @@
 import type React from "react"
-import { memo, useCallback, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react"
-import { RotateCcw, Search, X } from "lucide-react"
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react"
+import { Check, Download, RotateCcw, Search, X } from "lucide-react"
 import {
   evaluateBitwiseLogIndex,
   formatBitmaskBinary,
@@ -102,6 +110,7 @@ export function useBitwiseTableDomFilter(params: {
 export interface SystemLogBitwiseSearchBarProps {
   readonly store: BitwiseLogFilterStore
   readonly mode: "weblogs" | "unified"
+  readonly onExportJson?: (() => number | Promise<number>) | undefined
 }
 
 function countForBit(
@@ -123,9 +132,33 @@ function countForBit(
 export const SystemLogBitwiseSearchBar = memo(function SystemLogBitwiseSearchBar({
   store,
   mode,
+  onExportJson,
 }: SystemLogBitwiseSearchBarProps): React.ReactElement {
-  const snap = useSyncExternalStore(store.subscribeFilter, store.getSnapshot)
-  const stats = useSyncExternalStore(store.subscribeStats, store.getStats)
+  const snap = useSyncExternalStore(store.subscribeFilter, store.getSnapshot, store.getSnapshot)
+  const stats = useSyncExternalStore(store.subscribeStats, store.getStats, store.getStats)
+  const [exportedCount, setExportedCount] = useState<number | null>(null)
+  const exportTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (exportTimerRef.current !== null) {
+        clearTimeout(exportTimerRef.current)
+      }
+    }
+  }, [])
+
+  const handleExportClick = async () => {
+    if (!onExportJson || stats.matchedCount === 0) return
+    const count = await onExportJson()
+    if (count <= 0) return
+    setExportedCount(count)
+    if (exportTimerRef.current !== null) {
+      clearTimeout(exportTimerRef.current)
+    }
+    exportTimerRef.current = setTimeout(() => {
+      setExportedCount(null)
+    }, 2000)
+  }
 
   const effectiveMask = snap.parsed.effectiveMask
   const isNarrowed = snap.rawQuery.trim() !== "" || snap.toggledMask !== LOG_SEVERITY_MASK_ALL
@@ -316,6 +349,60 @@ export const SystemLogBitwiseSearchBar = memo(function SystemLogBitwiseSearchBar
             >
               <RotateCcw size={11} aria-hidden="true" />
               Reset
+            </button>
+          ) : null}
+
+          {onExportJson ? (
+            <button
+              type="button"
+              data-system-logs-export-json="true"
+              data-export-confirmed={exportedCount !== null ? "true" : undefined}
+              disabled={stats.matchedCount === 0}
+              onClick={() => void handleExportClick()}
+              aria-label={
+                stats.matchedCount === 0
+                  ? "Export filtered logs to JSON (no matching logs)"
+                  : `Export ${stats.matchedCount} currently filtered log rows to formatted JSON`
+              }
+              title={
+                stats.matchedCount === 0
+                  ? "No matching log entries in the current filtered view"
+                  : `Download ${stats.matchedCount} currently filtered ${mode === "weblogs" ? "weblog" : "system log"} row${stats.matchedCount === 1 ? "" : "s"} as formatted JSON`
+              }
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                padding: "5px 10px",
+                borderRadius: "5px",
+                fontSize: "11px",
+                fontWeight: 700,
+                fontFamily: MONO_FONT,
+                fontVariantNumeric: "tabular-nums",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+                cursor: stats.matchedCount === 0 ? "not-allowed" : "pointer",
+                opacity: stats.matchedCount === 0 ? 0.5 : 1,
+                borderWidth: "1px",
+                borderStyle: "solid",
+                borderColor:
+                  exportedCount !== null ? "rgba(34, 197, 94, 0.55)" : "rgba(56, 189, 248, 0.45)",
+                backgroundColor:
+                  exportedCount !== null ? "rgba(34, 197, 94, 0.16)" : "rgba(56, 189, 248, 0.14)",
+                color: exportedCount !== null ? "#86efac" : "#7dd3fc",
+              }}
+            >
+              {exportedCount !== null ? (
+                <>
+                  <Check size={12} aria-hidden="true" />
+                  <span>Exported {exportedCount}</span>
+                </>
+              ) : (
+                <>
+                  <Download size={12} aria-hidden="true" />
+                  <span>Export JSON ({stats.matchedCount})</span>
+                </>
+              )}
             </button>
           ) : null}
         </div>
