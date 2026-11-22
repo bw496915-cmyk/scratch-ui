@@ -19,6 +19,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { homedir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { parseBunLockFile } from "../packages/contracts/src/bun_lockfile.ts"
+import { eq, isValidSemver, safeSatisfies } from "../packages/contracts/src/bun_semver.ts"
 import {
   DEFAULT_NPM_REGISTRY,
   parseBunfigInstallToml,
@@ -251,7 +252,7 @@ export function auditWorkspaceRegistryParity(
     : null
   if (!dotBunVersion) {
     violations.push("Missing `.bun-version` file in repository root")
-  } else if (!/^\d+\.\d+\.\d+/.test(dotBunVersion)) {
+  } else if (!isValidSemver(dotBunVersion)) {
     violations.push(`Invalid semver in .bun-version: '${dotBunVersion}'`)
   }
 
@@ -264,18 +265,18 @@ export function auditWorkspaceRegistryParity(
   const rootEnginesBun = rootPkg?.engines?.bun?.trim() ?? null
   const typesBun = rootPkg?.devDependencies?.["@types/bun"]?.trim() ?? null
 
-  if (dotBunVersion) {
-    if (rootPackageManager && rootPackageManager !== dotBunVersion) {
+  if (dotBunVersion && isValidSemver(dotBunVersion)) {
+    if (rootPackageManager && !eq(rootPackageManager, dotBunVersion)) {
       violations.push(
         `package.json packageManager 'bun@${rootPackageManager}' diverges from .bun-version '${dotBunVersion}'`,
       )
     }
-    if (rootEnginesBun && rootEnginesBun !== dotBunVersion) {
+    if (rootEnginesBun && !safeSatisfies(dotBunVersion, rootEnginesBun)) {
       violations.push(
         `package.json engines.bun '${rootEnginesBun}' diverges from .bun-version '${dotBunVersion}'`,
       )
     }
-    if (typesBun && typesBun.replace(/^[~^]/, "") !== dotBunVersion) {
+    if (typesBun && !safeSatisfies(dotBunVersion, typesBun)) {
       violations.push(
         `package.json devDependencies.@types/bun '${typesBun}' diverges from .bun-version '${dotBunVersion}'`,
       )
@@ -289,13 +290,13 @@ export function auditWorkspaceRegistryParity(
     toolsRegistryPkg?.packageManager,
   )
   const toolsRegistryEnginesBun = toolsRegistryPkg?.engines?.bun?.trim() ?? null
-  if (dotBunVersion && toolsRegistryPkg) {
-    if (toolsRegistryPackageManager && toolsRegistryPackageManager !== dotBunVersion) {
+  if (dotBunVersion && isValidSemver(dotBunVersion) && toolsRegistryPkg) {
+    if (toolsRegistryPackageManager && !eq(toolsRegistryPackageManager, dotBunVersion)) {
       violations.push(
         `tools/registry/package.json packageManager 'bun@${toolsRegistryPackageManager}' diverges from .bun-version '${dotBunVersion}'`,
       )
     }
-    if (toolsRegistryEnginesBun && toolsRegistryEnginesBun !== dotBunVersion) {
+    if (toolsRegistryEnginesBun && !safeSatisfies(dotBunVersion, toolsRegistryEnginesBun)) {
       violations.push(
         `tools/registry/package.json engines.bun '${toolsRegistryEnginesBun}' diverges from .bun-version '${dotBunVersion}'`,
       )
@@ -313,7 +314,7 @@ export function auditWorkspaceRegistryParity(
       )
     }
     for (const m of ciText.matchAll(/bun-version:\s*["']?([^\s"']+)["']?/g)) {
-      if (dotBunVersion && m[1] !== dotBunVersion) {
+      if (dotBunVersion && (!isValidSemver(dotBunVersion) || !eq(m[1]!, dotBunVersion))) {
         violations.push(
           `.github/workflows/ci.yml pins bun-version '${m[1]}' instead of .bun-version '${dotBunVersion}'`,
         )

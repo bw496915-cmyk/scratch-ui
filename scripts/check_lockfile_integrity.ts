@@ -11,6 +11,7 @@
 import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync } from "node:fs"
 import { resolve } from "node:path"
+import { eq, isValidSemver } from "../packages/contracts/src/bun_semver.ts"
 
 const cwd = process.cwd()
 const violations: string[] = []
@@ -21,7 +22,7 @@ if (!existsSync(bunVersionFile)) {
   violations.push("Missing `.bun-version` pin file in repository root")
 } else {
   const pinnedVersion = readFileSync(bunVersionFile, "utf8").trim()
-  if (!/^\d+\.\d+\.\d+/.test(pinnedVersion)) {
+  if (!isValidSemver(pinnedVersion)) {
     violations.push(`Invalid semver in .bun-version: '${pinnedVersion}'`)
   } else {
     try {
@@ -29,7 +30,7 @@ if (!existsSync(bunVersionFile)) {
         cwd,
         encoding: "utf8",
       }).trim()
-      if (actualBun !== pinnedVersion) {
+      if (!eq(actualBun, pinnedVersion)) {
         violations.push(
           `Bun version mismatch: runtime is ${actualBun}, but .bun-version pins ${pinnedVersion} (risk of silent bun.lock hasInstallScript drop)`,
         )
