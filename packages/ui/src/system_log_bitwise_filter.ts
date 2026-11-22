@@ -115,6 +115,7 @@ export interface ParsedBitwiseLogQuery {
   readonly excludeMask: number
   readonly effectiveMask: number
   readonly textTerms: readonly string[]
+  readonly excludeTextTerms: readonly string[]
   readonly hasExplicitBitFilter: boolean
 }
 
@@ -154,12 +155,63 @@ function parseSeverityCompoundExpr(expr: string): number | null {
   return acc & LOG_SEVERITY_MASK_ALL
 }
 
+interface TokenizedSearchTerm {
+  readonly value: string
+  readonly quoted: boolean
+  readonly negated: boolean
+}
+
+function tokenizeBitwiseSearchInput(trimmed: string): TokenizedSearchTerm[] {
+  const out: TokenizedSearchTerm[] = []
+  let i = 0
+  const len = trimmed.length
+
+  while (i < len) {
+    while (i < len && /\s/.test(trimmed[i]!)) i += 1
+    if (i >= len) break
+
+    let negated = false
+    if (trimmed[i] === "-" || trimmed[i] === "!" || trimmed[i] === "~") {
+      const next = trimmed[i + 1]
+      if (next && !/\s/.test(next)) {
+        negated = true
+        i += 1
+      }
+    }
+
+    let raw = ""
+    let quoted = false
+    while (i < len && !/\s/.test(trimmed[i]!)) {
+      const ch = trimmed[i]!
+      if (ch === '"' || ch === "'") {
+        const quoteChar = ch
+        const closeIdx = trimmed.indexOf(quoteChar, i + 1)
+        if (closeIdx !== -1) {
+          raw += trimmed.slice(i + 1, closeIdx)
+          quoted = true
+          i = closeIdx + 1
+          continue
+        }
+      }
+      raw += ch
+      i += 1
+    }
+
+    if (raw) {
+      out.push({ value: raw, quoted, negated })
+    }
+  }
+
+  return out
+}
+
 /**
  * Parses a client-side search string combining bitwise severity expressions
- * and free-text terms:
+ * and free-text message terms:
  * - Prefixed bitmask expressions: `sev:crit|warn`, `flag:0x0c`, `mask:0b1100`
  * - Bare compound/single severity flags: `crit|high`, `error`, `warn,watch`
  * - Negation (bitwise AND-NOT): `-info`, `!normal`, `~watch`, `-sev:info|watch`
+ * - Quoted phrases & literal text prefixes: `"webhook 502"`, `msg:error`, `text:ok`, `-"exit 0"`
  * - Free-text terms: any non-flag tokens (e.g. `BB55103`, `104.28`, `bot_619`)
  */
 export function parseBitwiseSeverityQuery(
@@ -176,33 +228,55 @@ export function parseBitwiseSeverityQuery(
       excludeMask: 0,
       effectiveMask: clampedBase,
       textTerms: [],
+      excludeTextTerms: [],
       hasExplicitBitFilter: false,
     }
   }
 
-  const tokens = trimmed.split(/\s+/).filter(Boolean)
+  const tokens = tokenizeBitwiseSearchInput(trimmed)
   let explicitInclude = 0
   let hasExplicitInclude = false
   let excludeMask = 0
   let hasExplicitExclude = false
   const textTerms: string[] = []
+  const excludeTextTerms: string[] = []
 
   for (const token of tokens) {
-    const lower = token.toLowerCase()
+    const lower = token.value.toLowerCase()
+    if (!lower) continue
+
+    // Literal text prefix (`msg:...`, `message:...`, `text:...`) or quoted phrase
+    const textPrefixMatch = /^(?:text|msg|message):(.+)$/.exec(lower)
+    if (textPrefixMatch?.[1]) {
+      if (token.negated) {
+        excludeTextTerms.push(textPrefixMatch[1])
+      } else {
+        textTerms.push(textPrefixMatch[1])
+      }
+      continue
+    }
+
+    if (token.quoted) {
+      if (token.negated) {
+        excludeTextTerms.push(lower)
+      } else {
+        textTerms.push(lower)
+      }
+      continue
+    }
 
     // 1. Negated severity flag (`-info`, `!normal`, `~watch`, `-sev:info|watch`)
-    if (
-      lower.length > 1 &&
-      (lower.startsWith("-") || lower.startsWith("!") || lower.startsWith("~"))
-    ) {
-      const body = lower.slice(1)
-      const stripped = body.replace(/^(?:sev|severity|level|lvl|flag|mask):/, "")
+    if (token.negated) {
+      const stripped = lower.replace(/^(?:sev|severity|level|lvl|flag|mask):/, "")
       const parsed = parseSeverityCompoundExpr(stripped)
       if (parsed !== null) {
         excludeMask |= parsed
         hasExplicitExclude = true
         continue
       }
+      // Preserve literal negative tokens like `-110` (odds) as free-text lookup
+      textTerms.push(`-${lower}`)
+      continue
     }
 
     // 2. Explicit prefixed expression (`sev:crit|warn`, `mask:0x0c`, `flag:0b1100`)
@@ -255,6 +329,7 @@ export function parseBitwiseSeverityQuery(
     excludeMask,
     effectiveMask,
     textTerms,
+    excludeTextTerms,
     hasExplicitBitFilter: hasExplicitInclude || hasExplicitExclude,
   }
 }
@@ -336,19 +411,21 @@ export function evaluateBitwiseLogIndex(
   const effectiveMask = query.effectiveMask
   const terms = query.textTerms
   const termCount = terms.length
+  const excludeTerms = query.excludeTextTerms
+  const excludeCount = excludeTerms.length
 
   let matchedCount = 0
 
   if (effectiveMask === 0) {
     visible.fill(0)
-  } else if (termCount === 0) {
+  } else if (termCount === 0 && excludeCount === 0) {
     // Pure bitwise scan — single CPU bitwise AND per row
     for (let i = 0; i < len; i += 1) {
       const match = (flags[i]! & effectiveMask) !== 0 ? 1 : 0
       visible[i] = match
       matchedCount += match
     }
-  } else if (termCount === 1) {
+  } else if (termCount === 1 && excludeCount === 0) {
     const term0 = terms[0]!
     for (let i = 0; i < len; i += 1) {
       if ((flags[i]! & effectiveMask) === 0) {
@@ -371,6 +448,14 @@ export function evaluateBitwiseLogIndex(
         if (!hay.includes(terms[t]!)) {
           ok = 0
           break
+        }
+      }
+      if (ok === 1 && excludeCount > 0) {
+        for (let e = 0; e < excludeCount; e += 1) {
+          if (hay.includes(excludeTerms[e]!)) {
+            ok = 0
+            break
+          }
         }
       }
       visible[i] = ok

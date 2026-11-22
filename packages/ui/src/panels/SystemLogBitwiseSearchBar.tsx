@@ -216,13 +216,20 @@ export const SystemLogBitwiseSearchBar = memo(function SystemLogBitwiseSearchBar
           />
           <input
             type="text"
+            data-system-logs-search-input="true"
             value={snap.rawQuery}
             onChange={(e) => store.setQuery(e.target.value)}
-            aria-label="Client-side bitwise severity and log text search"
+            onKeyDown={(e) => {
+              if (e.key === "Escape" && snap.rawQuery !== "") {
+                e.preventDefault()
+                store.setQuery("")
+              }
+            }}
+            aria-label="Search log messages by text content or bitwise severity flags"
             placeholder={
               mode === "weblogs"
-                ? "Instant bitwise filter: crit|high, -norm, mask:0x0c, IP, account, or bot key..."
-                : "Instant bitwise filter: error|warn, -info, mask:0x0c, source, customer, or message..."
+                ? 'Filter log messages in real time: text, "quoted phrase", msg:error, IP, or crit|high...'
+                : 'Filter log messages in real time: text, "webhook 502", msg:ok, source, or error|warn...'
             }
             style={{
               width: "100%",
@@ -231,7 +238,12 @@ export const SystemLogBitwiseSearchBar = memo(function SystemLogBitwiseSearchBar
               borderRadius: "6px",
               borderWidth: "1px",
               borderStyle: "solid",
-              borderColor: snap.parsed.hasExplicitBitFilter ? "#38bdf8" : "#334155",
+              borderColor:
+                snap.parsed.hasExplicitBitFilter ||
+                snap.parsed.textTerms.length > 0 ||
+                snap.parsed.excludeTextTerms.length > 0
+                  ? "#38bdf8"
+                  : "#334155",
               backgroundColor: "#070b14",
               color: "#f1f5f9",
               fontSize: "12px",
@@ -444,10 +456,16 @@ export const SystemLogBitwiseSearchBar = memo(function SystemLogBitwiseSearchBar
               <span>terms: {snap.parsed.textTerms.join(", ")}</span>
             </>
           ) : null}
+          {snap.parsed.excludeTextTerms.length > 0 ? (
+            <>
+              <span aria-hidden="true">·</span>
+              <span>exclude: {snap.parsed.excludeTextTerms.join(", ")}</span>
+            </>
+          ) : null}
         </div>
 
         <span style={{ color: "#64748b", fontFamily: MONO_FONT }}>
-          Syntax: crit|high · -info · mask:0x0c · free text
+          Syntax: free text · "phrase" · msg:ok · crit|high · -info
         </span>
       </div>
     </section>

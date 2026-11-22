@@ -621,7 +621,7 @@ export function WebLogsInspectorSection({
       entries,
       (row) => severityLabelToBit(row.severity),
       (row) =>
-        `${row.severity} ${row.accountId} ${row.ip} ${row.ipMeta.classification} ${row.ipMeta.asnLabel} ${row.eventKind} ${row.portalHost ?? ""} ${row.ticketId ?? ""} ${row.gameId ?? ""} ${row.botKey ? `${row.botKey.rawKey} ${row.botKey.gameId} ${row.botKey.marketLabel}` : (row.clientVersion ?? "")} ${row.clusterLabel} ${row.rawAction}`,
+        `${row.severity} ${row.dateLabel} ${row.timeEst} ${row.sourceTime ?? ""} ${row.accountId} ${row.ip} ${row.ipMeta.classification} ${row.ipMeta.asnLabel} ${row.event} ${row.eventKind} ${row.portalHost ?? ""} ${row.clientVersion ?? ""} ${row.ticketId ?? ""} ${row.ticketNumber ?? ""} ${row.gameId ?? ""} ${row.botKey ? `${row.botKey.rawKey} ${row.botKey.gameId} ${row.botKey.marketLabel} ${row.botKey.periodLabel} ${row.botKey.sideLabel}` : ""} ${row.selection ? `${row.selection.period ?? ""} ${row.selection.market ?? ""} ${row.selection.pick ?? ""} ${row.selection.listedNumber ?? ""}` : ""} ${row.actionMeta?.selectionSummary ?? ""} ${row.parlayLegs ? row.parlayLegs.map((leg) => `${leg.sport ?? ""} ${leg.period ?? ""} ${leg.market ?? ""} ${leg.selection ?? ""}`).join(" ") : ""} ${row.clusterLabel} ${row.rawAction}`,
     )
   }, [data?.entries])
 
@@ -2268,7 +2268,7 @@ export function WebLogsInspectorSection({
             )}
             <tr data-bitwise-empty="true" hidden>
               <td
-                colSpan={11}
+                colSpan={WEBLOG_COLUMNS.length}
                 style={{
                   padding: "18px",
                   textAlign: "center",

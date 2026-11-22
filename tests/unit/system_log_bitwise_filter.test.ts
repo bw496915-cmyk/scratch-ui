@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test"
+import React from "react"
+import { renderToStaticMarkup } from "react-dom/server"
 import {
   BitwiseLogFilterStore,
   buildBitwiseLogIndex,
@@ -14,6 +16,7 @@ import {
   severityLabelToBit,
   toggleSeverityBit,
 } from "../../packages/ui/src/system_log_bitwise_filter.ts"
+import { SystemLogBitwiseSearchBar } from "../../packages/ui/src/panels/SystemLogBitwiseSearchBar.tsx"
 
 describe("system_log_bitwise_filter: flag bitmask helpers", () => {
   test("maps weblog and unified severity labels onto canonical 4-bit flags", () => {
@@ -42,11 +45,13 @@ describe("system_log_bitwise_filter: query parser", () => {
     const q1 = parseBitwiseSeverityQuery("crit|high BB55103")
     expect(q1.effectiveMask).toBe(LOG_SEVERITY_BIT_ERROR | LOG_SEVERITY_BIT_WARN)
     expect(q1.textTerms).toEqual(["bb55103"])
+    expect(q1.excludeTextTerms).toEqual([])
     expect(q1.hasExplicitBitFilter).toBe(true)
 
     const q2 = parseBitwiseSeverityQuery("-info !watch 104.28")
     expect(q2.effectiveMask).toBe(LOG_SEVERITY_BIT_ERROR | LOG_SEVERITY_BIT_WARN)
     expect(q2.textTerms).toEqual(["104.28"])
+    expect(q2.excludeTextTerms).toEqual([])
 
     const q3 = parseBitwiseSeverityQuery("mask:0x0c")
     expect(q3.effectiveMask).toBe(0x0c)
@@ -58,6 +63,29 @@ describe("system_log_bitwise_filter: query parser", () => {
 
     const q5 = parseBitwiseSeverityQuery("sev:error,warn")
     expect(q5.effectiveMask).toBe(LOG_SEVERITY_BIT_ERROR | LOG_SEVERITY_BIT_WARN)
+  })
+
+  test("parses quoted phrases, msg/message/text literal prefixes, text exclusions, and negative odds literals", () => {
+    const phraseQuery = parseBitwiseSeverityQuery('"webhook 502" jake231')
+    expect(phraseQuery.textTerms).toEqual(["webhook 502", "jake231"])
+    expect(phraseQuery.excludeTextTerms).toEqual([])
+    expect(phraseQuery.hasExplicitBitFilter).toBe(false)
+    expect(phraseQuery.effectiveMask).toBe(LOG_SEVERITY_MASK_ALL)
+
+    const literalSeverityText = parseBitwiseSeverityQuery('msg:ok message:warn text:crit "error"')
+    expect(literalSeverityText.textTerms).toEqual(["ok", "warn", "crit", "error"])
+    expect(literalSeverityText.hasExplicitBitFilter).toBe(false)
+    expect(literalSeverityText.effectiveMask).toBe(LOG_SEVERITY_MASK_ALL)
+
+    const excludedText = parseBitwiseSeverityQuery('-text:r2 -"exit 0" -msg:stale')
+    expect(excludedText.textTerms).toEqual([])
+    expect(excludedText.excludeTextTerms).toEqual(["r2", "exit 0", "stale"])
+    expect(excludedText.hasExplicitBitFilter).toBe(false)
+
+    const negativeOdds = parseBitwiseSeverityQuery("-110 'lakers -4.5'")
+    expect(negativeOdds.textTerms).toEqual(["-110", "lakers -4.5"])
+    expect(negativeOdds.excludeTextTerms).toEqual([])
+    expect(negativeOdds.hasExplicitBitFilter).toBe(false)
   })
 
   test("intersects explicit query flags with pre-toggled button bitmask", () => {
@@ -75,10 +103,10 @@ describe("system_log_bitwise_filter: SoA index & rapid evaluation", () => {
   }
 
   const sampleRows: readonly MockLog[] = [
-    { id: "1", severity: "CRITICAL", text: "BB55103 198.51.100.42 BOT_BLOCK" },
-    { id: "2", severity: "HIGH", text: "BB55103 203.0.113.10 RATE_LIMIT" },
-    { id: "3", severity: "WATCH", text: "AA10022 192.0.2.5 LOGIN_TOKEN" },
-    { id: "4", severity: "NORMAL", text: "CC99001 10.0.0.4 LOGIN_SUCCESS" },
+    { id: "1", severity: "CRITICAL", text: "BB55103 198.51.100.42 BOT_BLOCK webhook 502" },
+    { id: "2", severity: "HIGH", text: "BB55103 203.0.113.10 RATE_LIMIT ok -110" },
+    { id: "3", severity: "WATCH", text: "AA10022 192.0.2.5 LOGIN_TOKEN exit 0" },
+    { id: "4", severity: "NORMAL", text: "CC99001 10.0.0.4 LOGIN_SUCCESS ok" },
     { id: "5", severity: "ERROR", text: "Sink r2-wagers dead delivery" },
   ]
 
@@ -116,6 +144,38 @@ describe("system_log_bitwise_filter: SoA index & rapid evaluation", () => {
     )
     expect(resZero.matchedCount).toBe(0)
     expect(Array.from(resZero.visible)).toEqual([0, 0, 0, 0, 0])
+
+    const resPhrase = evaluateBitwiseLogIndex(
+      index,
+      parseBitwiseSeverityQuery('"webhook 502"'),
+      reusableBitmap,
+    )
+    expect(resPhrase.matchedCount).toBe(1)
+    expect(Array.from(resPhrase.visible)).toEqual([1, 0, 0, 0, 0])
+
+    const resLiteralAndExclude = evaluateBitwiseLogIndex(
+      index,
+      parseBitwiseSeverityQuery("msg:ok -text:login_success"),
+      reusableBitmap,
+    )
+    expect(resLiteralAndExclude.matchedCount).toBe(3)
+    expect(Array.from(resLiteralAndExclude.visible)).toEqual([1, 1, 1, 0, 0])
+
+    const resLiteralWatch = evaluateBitwiseLogIndex(
+      index,
+      parseBitwiseSeverityQuery("msg:watch"),
+      reusableBitmap,
+    )
+    expect(resLiteralWatch.matchedCount).toBe(1)
+    expect(Array.from(resLiteralWatch.visible)).toEqual([0, 0, 1, 0, 0])
+
+    const resExcludePhrase = evaluateBitwiseLogIndex(
+      index,
+      parseBitwiseSeverityQuery('-"exit 0" -text:r2'),
+      reusableBitmap,
+    )
+    expect(resExcludePhrase.matchedCount).toBe(3)
+    expect(Array.from(resExcludePhrase.visible)).toEqual([1, 1, 0, 1, 0])
   })
 
   test("BitwiseLogFilterStore notifies subscribers cleanly and resets to 0x0F", () => {
@@ -155,5 +215,30 @@ describe("system_log_bitwise_filter: SoA index & rapid evaluation", () => {
 
     unsubFilter()
     unsubStats()
+  })
+
+  test("SystemLogBitwiseSearchBar renders search input with live query, clear button, and active term readouts", () => {
+    const store = new BitwiseLogFilterStore('"webhook 502" -text:r2', LOG_SEVERITY_MASK_ALL)
+    store.reportStats({
+      matchedCount: 1,
+      totalCount: 5,
+      effectiveMask: LOG_SEVERITY_MASK_ALL,
+      elapsedMs: 0.04,
+      bitCounts: { error: 2, warn: 1, watch: 1, info: 1 },
+    })
+
+    const html = renderToStaticMarkup(
+      React.createElement(SystemLogBitwiseSearchBar, {
+        store,
+        mode: "unified",
+      }),
+    )
+
+    expect(html).toContain('data-system-logs-search-input="true"')
+    expect(html).toContain('value="&quot;webhook 502&quot; -text:r2"')
+    expect(html).toContain('aria-label="Clear search query"')
+    expect(html).toContain("terms: webhook 502")
+    expect(html).toContain("exclude: r2")
+    expect(html).toContain("1 / 5 rows matched")
   })
 })

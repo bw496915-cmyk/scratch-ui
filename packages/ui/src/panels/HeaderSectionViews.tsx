@@ -3440,7 +3440,8 @@ export function SystemLogsPanel({
       buildBitwiseLogIndex(
         sortedUnifiedLogs,
         (row) => severityLabelToBit(row.level),
-        (row) => `${row.source} ${row.level} ${row.customerId} ${row.ipCategory} ${row.message}`,
+        (row) =>
+          `${row.timestamp} ${formatUnifiedLogTimestamp(row.timestamp)} ${row.source} ${row.level} ${row.customerId} ${row.ipCategory} ${row.message}`,
       ),
     [sortedUnifiedLogs],
   )
