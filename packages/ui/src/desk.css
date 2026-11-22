@@ -847,18 +847,81 @@ html[data-dashboard-theme="light"] body {
   background-color: rgba(2, 132, 199, 0.16) !important;
 }
 
-/* Preserve readable light surfaces for panel cards inside the focused main region */
-[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(13, 21, 39)"],
-[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(11, 18, 32)"],
-[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(15, 23, 42)"],
-[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(7, 11, 20)"],
-[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(17, 28, 51)"],
-[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(19, 29, 53)"] {
+/* Preserve readable light surfaces for ALL panel cards & nested sub-cards inside the focused main region */
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(13, 21, 39)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgba(13, 21, 39"]:not(pre):not([style*="position: fixed"]),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(11, 18, 32)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(11, 17, 32)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgba(11, 17, 32"]:not(pre):not([style*="position: fixed"]),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(11, 18, 34)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(11, 20, 36)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(11, 21, 37)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgba(11, 15, 25"]:not(pre):not([style*="position: fixed"]),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(15, 23, 42)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgba(15, 23, 42"]:not(pre):not([style*="position: fixed"]),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(7, 11, 20)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background: rgb(7, 11, 20)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(7, 12, 24)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(7, 13, 25)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(10, 16, 29)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(10, 17, 32)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(9, 14, 28)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(9, 16, 32)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(8, 13, 24)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(8, 13, 26)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(6, 9, 19)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(5, 9, 18)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(2, 6, 23)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(16, 26, 43)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(17, 28, 51)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(19, 29, 53)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(20, 34, 56)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(22, 32, 51)"]:not(pre) {
   background-color: var(--surface-panel, #ffffff) !important;
   background-image: none !important;
   border-color: var(--border-default, #cbd5e1) !important;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
   color: var(--text-primary, #0f172a) !important;
+}
+
+/* Elevated dark-slate sub-cards, control buttons, and nested trays in Light mode */
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgb(30, 41, 59)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background: rgb(30, 41, 59)"]:not(pre),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgba(30, 41, 59"]:not(pre):not([style*="position: fixed"]),
+[data-dashboard-theme="light"] > main.sd-main-canvas [style*="background-color: rgba(2, 6, 23, 0.55)"]:not(pre) {
+  background-color: var(--surface-elevated, #f1f5f9) !important;
+  background-image: none !important;
+  border-color: var(--border-default, #cbd5e1) !important;
+  color: var(--text-primary, #0f172a) !important;
+}
+
+/* Light-mode overrides for remaining dark-styled utility classes */
+[data-dashboard-theme="light"] .sd-card-context-menu {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16) !important;
+  color: #0f172a !important;
+}
+
+[data-dashboard-theme="light"] .sd-card-context-menu-item {
+  color: #0f172a !important;
+}
+
+[data-dashboard-theme="light"] .sd-card-context-menu-item:hover,
+[data-dashboard-theme="light"] .sd-card-context-menu-item:focus-visible {
+  background-color: rgba(2, 132, 199, 0.1) !important;
+  color: #0369a1 !important;
+}
+
+[data-dashboard-theme="light"] .sd-drilldown-kpi-cell--interactive:hover {
+  background-color: #f1f5f9 !important;
+  border-color: #0284c7 !important;
+}
+
+[data-dashboard-theme="light"] .sd-forensic-inline-btn {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
 }
 
 [data-dashboard-theme="light"] > header [style*="background-color: rgb(15, 23, 42)"],

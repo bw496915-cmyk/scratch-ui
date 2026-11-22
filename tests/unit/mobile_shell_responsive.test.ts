@@ -179,4 +179,43 @@ describe("Mobile-First Responsive Dashboard Shell (375px–430px)", () => {
     expect(breadcrumbsSource).toContain('<kbd className="sd-breadcrumb-meta sd-kbd-shortcut"')
     expect(breadcrumbsSource).not.toContain('<span className="sd-breadcrumb-meta"')
   })
+
+  test("9. All inner panel dark card backgrounds have Light-mode surface overrides without altering Dark mode", () => {
+    const requiredDarkCardTokens = [
+      "rgb(13, 21, 39)",
+      "rgba(13, 21, 39",
+      "rgb(11, 17, 32)",
+      "rgba(11, 17, 32",
+      "rgb(11, 18, 32)",
+      "rgba(11, 15, 25",
+      "rgb(15, 23, 42)",
+      "rgba(15, 23, 42",
+      "rgb(30, 41, 59)",
+      "rgba(30, 41, 59",
+      "rgb(7, 11, 20)",
+      "rgb(10, 16, 29)",
+      "rgb(10, 17, 32)",
+      "rgb(7, 13, 25)",
+      "rgb(9, 16, 32)",
+      "rgb(11, 18, 34)",
+      "rgb(6, 9, 19)",
+      "rgb(16, 26, 43)",
+      "rgb(17, 28, 51)",
+      "rgb(19, 29, 53)",
+      "rgb(22, 32, 51)",
+      "rgb(2, 6, 23)",
+    ]
+
+    for (const token of requiredDarkCardTokens) {
+      expect(deskCss).toContain(token)
+    }
+
+    // Ensure dark console <pre> blocks remain high-contrast dark in Light mode
+    expect(deskCss).toContain('[data-dashboard-theme="light"] > main.sd-main-canvas pre:not(.sd-syntax-pre)')
+    expect(deskCss).toContain('[data-dashboard-theme="light"] > main.sd-main-canvas pre.sd-syntax-pre')
+
+    // Ensure Dark mode default canvas remains intact in dashboard_styles.ts
+    expect(stylesSource).toContain('backgroundColor: "#070b14"')
+    expect(stylesSource).toContain('backgroundColor: "#0d1527"')
+  })
 })
