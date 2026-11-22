@@ -1,5 +1,5 @@
 /**
- * @file src/dashboard/runtime_flags.ts
+ * @file packages/ui/src/runtime_flags.ts
  * @description Compile-time bun:bundle feature evaluation for the SportsDesk Dashboard.
  *
  * AST Constraint (AGENTS.md): `feature()` from `"bun:bundle"` MUST appear ONLY

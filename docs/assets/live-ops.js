@@ -1,5 +1,5 @@
 /**
- * @file live-ops.js
+ * @file docs/assets/live-ops.js
  * @description Pure helpers for the /graph "Live Wagers & Our Positions" panel.
  *
  * The page has three data planes, in freshness order:

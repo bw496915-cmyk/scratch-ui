@@ -1,13 +1,13 @@
-import { describe, expect, test } from "bun:test";
-import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-import type { NormalizedRankingsResult } from "../../packages/ui/src/hydration.ts";
+import { describe, expect, test } from "bun:test"
+import React from "react"
+import { renderToStaticMarkup } from "react-dom/server"
+import type { NormalizedRankingsResult } from "../../packages/ui/src/hydration.ts"
 import {
   AgentInspectorModal,
   buildAgentHandleTrendSeries,
   buildAgentInspectorTelemetry,
-} from "../../packages/ui/src/panels/AgentInspectorModal.tsx";
-import { RankingsTabPanel } from "../../packages/ui/src/panels/RankingsTabPanel.tsx";
+} from "../../packages/ui/src/panels/AgentInspectorModal.tsx"
+import { RankingsTabPanel } from "../../packages/ui/src/panels/RankingsTabPanel.tsx"
 
 describe("Rankings Row-Click & Agent Inspector Modal Telemetry", () => {
   const sampleRankings: NormalizedRankingsResult = {
@@ -115,58 +115,51 @@ describe("Rankings Row-Click & Agent Inspector Modal Telemetry", () => {
       endpoint: "/api/rankings/all",
       fetchedAtIso: "2026-11-20T18:00:00Z",
     },
-  };
+  }
 
   test("buildAgentInspectorTelemetry resolves Master Forest and Sub-Agent handle trends and sub-conduits", () => {
-    const masterTelemetry = buildAgentInspectorTelemetry(
-      "BILLY666",
-      sampleRankings,
-    );
-    expect(masterTelemetry).not.toBeNull();
-    expect(masterTelemetry?.role).toBe("master");
-    expect(masterTelemetry?.handleUsd).toBe(1_000_000);
-    expect(masterTelemetry?.handleDelta24hPct).toBe(2.9);
-    expect(masterTelemetry?.deskHandleSharePct).toBeCloseTo(100, 4);
-    expect(masterTelemetry?.subConduits.length).toBe(2);
-    expect(masterTelemetry?.subConduits[0]?.agentId).toBe("BILLY666_SUB1");
-    expect(masterTelemetry?.subConduits[0]?.shareOfParentPct).toBeCloseTo(60, 4);
+    const masterTelemetry = buildAgentInspectorTelemetry("BILLY666", sampleRankings)
+    expect(masterTelemetry).not.toBeNull()
+    expect(masterTelemetry?.role).toBe("master")
+    expect(masterTelemetry?.handleUsd).toBe(1_000_000)
+    expect(masterTelemetry?.handleDelta24hPct).toBe(2.9)
+    expect(masterTelemetry?.deskHandleSharePct).toBeCloseTo(100, 4)
+    expect(masterTelemetry?.subConduits.length).toBe(2)
+    expect(masterTelemetry?.subConduits[0]?.agentId).toBe("BILLY666_SUB1")
+    expect(masterTelemetry?.subConduits[0]?.shareOfParentPct).toBeCloseTo(60, 4)
 
-    const subTelemetry = buildAgentInspectorTelemetry(
-      "billy666_sub1",
-      sampleRankings,
-    );
-    expect(subTelemetry).not.toBeNull();
-    expect(subTelemetry?.role).toBe("conduit");
-    expect(subTelemetry?.handleUsd).toBe(600_000);
-    expect(subTelemetry?.handleDelta24hPct).toBe(7.2);
-    expect(subTelemetry?.isProxyConduit).toBe(true);
-    expect(subTelemetry?.subConduits.length).toBe(2);
+    const subTelemetry = buildAgentInspectorTelemetry("billy666_sub1", sampleRankings)
+    expect(subTelemetry).not.toBeNull()
+    expect(subTelemetry?.role).toBe("conduit")
+    expect(subTelemetry?.handleUsd).toBe(600_000)
+    expect(subTelemetry?.handleDelta24hPct).toBe(7.2)
+    expect(subTelemetry?.isProxyConduit).toBe(true)
+    expect(subTelemetry?.subConduits.length).toBe(2)
     expect(
-      subTelemetry?.subConduits.find((s) => s.agentId === "BILLY666_SUB1")
-        ?.isCurrentAgent,
-    ).toBe(true);
-  });
+      subTelemetry?.subConduits.find((s) => s.agentId === "BILLY666_SUB1")?.isCurrentAgent,
+    ).toBe(true)
+  })
 
   test("buildAgentHandleTrendSeries derives deterministic 7-day cadence matching 24h delta", () => {
-    const up = buildAgentHandleTrendSeries(600_000, 7.2, "BILLY666_SUB1");
-    expect(up).not.toBeNull();
-    expect(up?.points.length).toBe(7);
-    expect(up?.direction).toBe("up");
-    expect(up?.dailyAvgUsd).toBe(20_000);
-    expect(up?.latest24hUsd).toBeGreaterThan(up!.prior24hUsd);
+    const up = buildAgentHandleTrendSeries(600_000, 7.2, "BILLY666_SUB1")
+    expect(up).not.toBeNull()
+    expect(up?.points.length).toBe(7)
+    expect(up?.direction).toBe("up")
+    expect(up?.dailyAvgUsd).toBe(20_000)
+    expect(up?.latest24hUsd).toBeGreaterThan(up!.prior24hUsd)
 
-    const down = buildAgentHandleTrendSeries(400_000, -3.5, "BILLY666_SUB2");
-    expect(down).not.toBeNull();
-    expect(down?.direction).toBe("down");
-    expect(down?.latest24hUsd).toBeLessThan(down!.prior24hUsd);
+    const down = buildAgentHandleTrendSeries(400_000, -3.5, "BILLY666_SUB2")
+    expect(down).not.toBeNull()
+    expect(down?.direction).toBe("down")
+    expect(down?.latest24hUsd).toBeLessThan(down!.prior24hUsd)
 
-    const flat = buildAgentHandleTrendSeries(300_000, 0, "BILLY666");
-    expect(flat?.direction).toBe("flat");
-    expect(flat?.latest24hUsd).toBe(flat?.prior24hUsd);
+    const flat = buildAgentHandleTrendSeries(300_000, 0, "BILLY666")
+    expect(flat?.direction).toBe("flat")
+    expect(flat?.latest24hUsd).toBe(flat?.prior24hUsd)
 
-    expect(buildAgentHandleTrendSeries(0, 4.0, "EMPTY")).toBeNull();
-    expect(buildAgentHandleTrendSeries(null, 4.0, "EMPTY")).toBeNull();
-  });
+    expect(buildAgentHandleTrendSeries(0, 4.0, "EMPTY")).toBeNull()
+    expect(buildAgentHandleTrendSeries(null, 4.0, "EMPTY")).toBeNull()
+  })
 
   test("AgentInspectorModal renders 24h handle trends, 7-day sparkline, and clickable sub-conduit rows", () => {
     const html = renderToStaticMarkup(
@@ -178,22 +171,22 @@ describe("Rankings Row-Click & Agent Inspector Modal Telemetry", () => {
         onSelectCustomerById: () => {},
         onInspectPty: () => {},
       }),
-    );
+    )
 
-    expect(html).toContain('data-agent-inspector-modal="BILLY666_SUB1"');
-    expect(html).toContain('data-agent-handle-trends="true"');
-    expect(html).toContain('data-agent-handle-trend-chart="true"');
-    expect(html).toContain('data-handle-trend-direction="up"');
-    expect(html).toContain("7-Day Daily Handle Cadence (BILLY666_SUB1)");
-    expect(html).toContain('data-handle-trend-24h="up"');
-    expect(html).toContain("+7.2%");
-    expect(html).toContain('data-agent-sub-conduits="true"');
-    expect(html).toContain('data-sub-conduit-row="BILLY666_SUB1"');
-    expect(html).toContain('data-sub-conduit-row="BILLY666_SUB2"');
-    expect(html).toContain("Click row to inspect sub-conduit BILLY666_SUB2");
-    expect(html).toContain("60.0%");
-    expect(html).toContain("40.0%");
-  });
+    expect(html).toContain('data-agent-inspector-modal="BILLY666_SUB1"')
+    expect(html).toContain('data-agent-handle-trends="true"')
+    expect(html).toContain('data-agent-handle-trend-chart="true"')
+    expect(html).toContain('data-handle-trend-direction="up"')
+    expect(html).toContain("7-Day Daily Handle Cadence (BILLY666_SUB1)")
+    expect(html).toContain('data-handle-trend-24h="up"')
+    expect(html).toContain("+7.2%")
+    expect(html).toContain('data-agent-sub-conduits="true"')
+    expect(html).toContain('data-sub-conduit-row="BILLY666_SUB1"')
+    expect(html).toContain('data-sub-conduit-row="BILLY666_SUB2"')
+    expect(html).toContain("Click row to inspect sub-conduit BILLY666_SUB2")
+    expect(html).toContain("60.0%")
+    expect(html).toContain("40.0%")
+  })
 
   test("RankingsTabPanel wires clickable row attributes across master forest, sub-agents, customer rankings, and conduits", () => {
     const html = renderToStaticMarkup(
@@ -207,16 +200,16 @@ describe("Rankings Row-Click & Agent Inspector Modal Telemetry", () => {
         rankings: sampleRankings,
         rankingsStatus: "ready",
       }),
-    );
+    )
 
-    expect(html).toContain('class="sd-rankings-clickable-row"');
-    expect(html).toContain('data-downline-master-row="BILLY666"');
-    expect(html).toContain('data-rankings-row-agent="BILLY666"');
-    expect(html).toContain("Click row to inspect Master Forest BILLY666");
-    expect(html).toContain('data-downline-agent-row="BILLY666_SUB1"');
-    expect(html).toContain('data-downline-customer-row="PEY101"');
-    expect(html).toContain('data-rankings-row-agent="BILLY666_SUB1"');
-    expect(html).toContain('data-rankings-row-agent="BILLY666_SUB2"');
-    expect(html).toContain("Click row to inspect agent BILLY666_SUB1");
-  });
-});
+    expect(html).toContain('class="sd-rankings-clickable-row"')
+    expect(html).toContain('data-downline-master-row="BILLY666"')
+    expect(html).toContain('data-rankings-row-agent="BILLY666"')
+    expect(html).toContain("Click row to inspect Master Forest BILLY666")
+    expect(html).toContain('data-downline-agent-row="BILLY666_SUB1"')
+    expect(html).toContain('data-downline-customer-row="PEY101"')
+    expect(html).toContain('data-rankings-row-agent="BILLY666_SUB1"')
+    expect(html).toContain('data-rankings-row-agent="BILLY666_SUB2"')
+    expect(html).toContain("Click row to inspect agent BILLY666_SUB1")
+  })
+})

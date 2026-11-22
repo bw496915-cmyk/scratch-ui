@@ -1,5 +1,5 @@
 /**
- * @file alert_audit.ts
+ * @file packages/ui/src/alert_audit.ts
  * @description Audit-stream helpers for the Alerts / DLQ tab: a stable JSONL
  * projection of each delivery, a free-text matcher, and status counts.
  *

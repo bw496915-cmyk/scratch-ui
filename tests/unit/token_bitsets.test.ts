@@ -227,7 +227,16 @@ describe("TokenBitsetBuffer — reusable .clear() O(1) hot-path classification",
     const classifier = new TokenBitsetBuffer()
 
     // 1. Healthy tick -> matches activeDomSurveillance
-    const freshSla = evaluator.tickScalars(95, 0, 5, 0, 12, 100, 1_760_000_000_000, 1_760_000_000_000)
+    const freshSla = evaluator.tickScalars(
+      95,
+      0,
+      5,
+      0,
+      12,
+      100,
+      1_760_000_000_000,
+      1_760_000_000_000,
+    )
     classifier.classify(CHANNEL_ID.INTERNET, SURFACE_ID.CARD, ROUTE_ID.DEVIG, freshSla)
     expect(classifier.matchesPreset(PRECOMPUTED_TOKEN_BITSETS.presets.activeDomSurveillance)).toBe(
       true,

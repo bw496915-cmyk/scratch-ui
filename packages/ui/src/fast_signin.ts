@@ -1,5 +1,5 @@
 /**
- * @file fast_signin.ts
+ * @file packages/ui/src/fast_signin.ts
  * @description Hidden URL parameter extraction, immediate address-bar scrubbing,
  * and bookmark URL generation for temporary operator Fast Sign-In tokens.
  *

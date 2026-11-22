@@ -1,5 +1,5 @@
 /**
- * @file relative_time.ts
+ * @file packages/ui/src/relative_time.ts
  * @description One compact relative-age formatter for every "how old is this?"
  * label on the dashboard (feed freshness, alert audit rows).
  */

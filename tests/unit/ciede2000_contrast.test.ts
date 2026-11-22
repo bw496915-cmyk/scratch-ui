@@ -73,7 +73,9 @@ function loadLightThemeTokensFromCss(): Readonly<Record<string, string>> {
   const css = readFileSync(TOKENS_CSS_PATH, "utf8")
   const match = /\[data-dashboard-theme="light"\]\s*\{([\s\S]*?)\}/.exec(css)
   if (!match) {
-    throw new Error("Missing [data-dashboard-theme=\"light\"] block in packages/ui/src/styles/tokens.css")
+    throw new Error(
+      'Missing [data-dashboard-theme="light"] block in packages/ui/src/styles/tokens.css',
+    )
   }
   const result: Record<string, string> = {}
   const propRe = /(--[a-z0-9-]+)\s*:\s*([^;]+);/gi
@@ -112,7 +114,7 @@ describe("CIEDE2000 (ΔE00) — Metric Axioms, Sharma (2005) Vectors & HSL Non-U
     const referencePairs: readonly (readonly [LabTuple, LabTuple, number])[] = [
       [[50.0, 2.6772, -79.7751], [50.0, 0.0, -82.7485], 2.0425],
       [[50.0, 3.1571, -77.2803], [50.0, 0.0, -82.7485], 2.8615],
-      [[50.0, 2.8361, -74.02, ], [50.0, 0.0, -82.7485], 3.4412],
+      [[50.0, 2.8361, -74.02], [50.0, 0.0, -82.7485], 3.4412],
       [[50.0, -1.3802, -84.2814], [50.0, 0.0, -82.7485], 1.0],
       [[50.0, -1.1848, -84.8006], [50.0, 0.0, -82.7485], 1.0],
       [[50.0, -0.9009, -85.5211], [50.0, 0.0, -82.7485], 1.0],

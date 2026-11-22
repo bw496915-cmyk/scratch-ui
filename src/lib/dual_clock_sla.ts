@@ -25,10 +25,7 @@ export const SLA_STATE_STALE = 2 as const
 export const SLA_STATE_POISON = 3 as const
 
 export type SlaStateCode =
-  | typeof SLA_STATE_FRESH
-  | typeof SLA_STATE_WARN
-  | typeof SLA_STATE_STALE
-  | typeof SLA_STATE_POISON
+  typeof SLA_STATE_FRESH | typeof SLA_STATE_WARN | typeof SLA_STATE_STALE | typeof SLA_STATE_POISON
 
 export type SlaStateId = "SLA_FRESH" | "SLA_WARN" | "SLA_STALE" | "SLA_POISON"
 
@@ -265,8 +262,9 @@ export function thresholdsForChannel(
       ? (CHANNEL_SLA_MS_TABLE[channelId] ?? 0)
       : 0
   const probeStaleMs =
-    overrides.probeStaleMs ?? (rawSlaMs > 0 ? rawSlaMs : DEFAULT_DUAL_CLOCK_SLA_THRESHOLDS.probeStaleMs)
-  const probeWarnMs = overrides.probeWarnMs ?? (probeStaleMs >>> 1)
+    overrides.probeStaleMs ??
+    (rawSlaMs > 0 ? rawSlaMs : DEFAULT_DUAL_CLOCK_SLA_THRESHOLDS.probeStaleMs)
+  const probeWarnMs = overrides.probeWarnMs ?? probeStaleMs >>> 1
 
   return Object.freeze({
     ...DEFAULT_DUAL_CLOCK_SLA_THRESHOLDS,
@@ -519,7 +517,7 @@ export class DualClockSlaEvaluator {
       const staleMs = CHANNEL_SLA_MS_TABLE[channelId] ?? 0
       if (staleMs > 0) {
         this.probeStaleMs = staleMs
-        this.probeWarnMs = CHANNEL_WARN_MS_TABLE[channelId] ?? (staleMs >>> 1)
+        this.probeWarnMs = CHANNEL_WARN_MS_TABLE[channelId] ?? staleMs >>> 1
       }
     }
     return this
@@ -538,7 +536,8 @@ export class DualClockSlaEvaluator {
    */
   endProbe(): number {
     const endNs = this.monotonicNsFn()
-    const elapsedNs = this.probeStartNs >= 0 && endNs >= this.probeStartNs ? endNs - this.probeStartNs : 0
+    const elapsedNs =
+      this.probeStartNs >= 0 && endNs >= this.probeStartNs ? endNs - this.probeStartNs : 0
     this.probeStartNs = -1
     this._lastElapsedNs = elapsedNs
     this._lastElapsedMs = Math.trunc(elapsedNs / 1_000_000)
@@ -750,13 +749,7 @@ export class DualClockSlaEvaluator {
     const endNs = this.monotonicNsFn()
     const elapsedNs = endNs >= startNs ? endNs - startNs : 0
 
-    return this.tickDnsStats(
-      stats,
-      publishedEpochMs,
-      dataWindowMaxEpochMs,
-      uiStateMask,
-      elapsedNs,
-    )
+    return this.tickDnsStats(stats, publishedEpochMs, dataWindowMaxEpochMs, uiStateMask, elapsedNs)
   }
 
   /** Explicitly clears a latched `SLA_POISON` state after operator quarantine recovery. */

@@ -1,5 +1,5 @@
 /**
- * @file panels/ApiUsageCard.tsx
+ * @file packages/ui/src/panels/ApiUsageCard.tsx
  * @description Enhanced Session API usage & Base URL telemetry meter rendered
  * in the Surveillance/Telemetry tab.
  *

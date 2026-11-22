@@ -137,7 +137,9 @@ export function RiskRecentAlertsSidebar({
 
   const matchedCustomer = useMemo(() => {
     if (!activeAlertItem || !customers || customers.length === 0) return null
-    const targetId = (activeAlertItem.linkedWager?.customerId || activeAlertItem.customerId).trim().toUpperCase()
+    const targetId = (activeAlertItem.linkedWager?.customerId || activeAlertItem.customerId)
+      .trim()
+      .toUpperCase()
     if (!targetId || targetId === "UNKNOWN") return null
     return customers.find((c) => c.id.trim().toUpperCase() === targetId) ?? null
   }, [activeAlertItem, customers])
@@ -407,11 +409,7 @@ export function RiskRecentAlertsSidebar({
           <Sliders size={12} aria-hidden="true" />
           <span>Limits</span>
         </button>
-        <button
-          type="button"
-          onClick={onOpenAlertQueue}
-          className="sd-recent-alerts-footer-link"
-        >
+        <button type="button" onClick={onOpenAlertQueue} className="sd-recent-alerts-footer-link">
           <span>Alert Queue</span>
           <ArrowUpRight size={12} aria-hidden="true" />
         </button>

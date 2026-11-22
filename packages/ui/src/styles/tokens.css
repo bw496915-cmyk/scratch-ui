@@ -1,13 +1,13 @@
 /**
- * @file src/dashboard/styles/tokens.css
+ * @file packages/ui/src/styles/tokens.css
  * @description Canonical Design Tokens for SportsDesk Operator Dashboard.
  *
  * Architecture rules:
- * 1. Imported EXACTLY ONCE at application entry (src/dashboard/index.tsx).
- * 2. CSS Modules do not hash custom properties; all extracted components inherit from :root.
- * 3. Never import this file into a *.module.css file (avoids duplicate injection).
+ * 1. Imported ONCE via dashboard stylesheet composition alongside tokens.generated.css.
+ * 2. Custom properties live on :root and inherit cleanly across panel components.
+ * 3. Never import this file into per-component stylesheets (avoids duplicate injection).
  * 4. Colors use literal values with sRGB fallbacks so older browser baselines don't drop rules.
- * 5. CI Invariant: `oklch(` may only appear in this file within src/dashboard/styles/.
+ * 5. Generated Houdini `@property` / palette tokens are emitted by `bun run gen:tokens` into src/dashboard/tokens.generated.css.
  */
 
 :root {

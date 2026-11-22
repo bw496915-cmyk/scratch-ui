@@ -1,5 +1,5 @@
 /**
- * @file src/risk/slice_registry.ts
+ * @file packages/contracts/src/slice_registry.ts
  * @description Canonical Array-of-Structures (AoS) `SLICE_REGISTRY` source of truth.
  *
  * Design contract:

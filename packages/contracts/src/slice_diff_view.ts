@@ -1,5 +1,5 @@
 /**
- * @file src/risk/slice_diff_view.ts
+ * @file packages/contracts/src/slice_diff_view.ts
  * @description Pre/post-trade DiffView evaluator over `{ policy, block_enforced }` pairs.
  *
  * Alert contract: raises `BLOCK_ENFORCED_FLIPPED_FALSE` whenever `block_enforced`

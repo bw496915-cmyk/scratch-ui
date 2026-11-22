@@ -27,8 +27,8 @@
       "path": "design/domain-branded-types.ts",
       "role": "Nominal branded primitives & neuron registry contracts",
       "source": "design/tokens.toml",
-      "bytes": 44143,
-      "sha256": "d98fab5bf45b122cae2025b31b8d81fff93c648327c70924dfc2774f49721a85"
+      "bytes": 44150,
+      "sha256": "3cc8ba737a063a1cf4819a485bad353882d28d1aeabf7ed891f1d9584115ec31"
     }
   ],
   "pipelineDiagrams": {
@@ -103,8 +103,8 @@
       "path": "packages/contracts/README.md",
       "title": "`@sportsdesk-ops/contracts`",
       "lines": 47,
-      "bytes": 4124,
-      "sha256": "e07ad566999f0a5428a886af8fb21aa4540bbf6f07cf6c9a0d35800beb3a94f1",
+      "bytes": 4591,
+      "sha256": "b4d230a7bcb79c79ee4630b1b4da3956b727a50a55157395ba7621d5d2e9aa30",
       "localLinksChecked": 0
     },
     {
@@ -119,8 +119,8 @@
       "path": "schema/README.md",
       "title": "Schema & Data Contracts",
       "lines": 19,
-      "bytes": 1152,
-      "sha256": "8cedb0dc6cffde72c6361e4d08acb27d2e227436cadf5abfea722967754301ec",
+      "bytes": 1157,
+      "sha256": "bdbdbeeb7b2178fe3ba77ac65e39e11d4ef40f14e21316b418de36ed25b4e77c",
       "localLinksChecked": 3
     },
     {

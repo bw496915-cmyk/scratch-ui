@@ -1,5 +1,5 @@
 /**
- * @file src/risk/slice_data_table.ts
+ * @file packages/contracts/src/slice_data_table.ts
  * @description Structure-of-Arrays (SoA) TypedArray DataTable spine for `SliceMetrics`.
  *
  * Wiring contract:

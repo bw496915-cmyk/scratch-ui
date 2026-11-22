@@ -12,37 +12,29 @@
  * - NEVER reads, serializes, or transmits `Bun.env`, `process.env`, or `Bun.secrets` values.
  */
 
-import {
-  bunColorCss,
-  bunEscapeHtml,
-  bunStringWidth,
-  bunStripAnsi,
-} from "./bun_syntax_highlight.ts";
+import { bunColorCss, bunEscapeHtml, bunStringWidth, bunStripAnsi } from "./bun_syntax_highlight.ts"
 
-export type GlobalTierId = "bun-specific" | "node-compat" | "web-standards";
+export type GlobalTierId = "bun-specific" | "node-compat" | "web-standards"
 
 export interface RuntimeGlobalTierSpec {
-  readonly id: GlobalTierId;
-  readonly label: string;
-  readonly globals: readonly string[];
-  readonly notes: string;
+  readonly id: GlobalTierId
+  readonly label: string
+  readonly globals: readonly string[]
+  readonly notes: string
 }
 
 export type BunUtilityCategoryId =
-  | "timing-memory"
-  | "paths-inspection"
-  | "strings-terminal"
-  | "compression-buffers";
+  "timing-memory" | "paths-inspection" | "strings-terminal" | "compression-buffers"
 
 export interface BunUtilitySpec {
-  readonly id: string;
-  readonly category: BunUtilityCategoryId;
-  readonly categoryLabel: string;
-  readonly signature: string;
-  readonly purpose: string;
-  readonly runtimeNotes?: string | undefined;
+  readonly id: string
+  readonly category: BunUtilityCategoryId
+  readonly categoryLabel: string
+  readonly signature: string
+  readonly purpose: string
+  readonly runtimeNotes?: string | undefined
   /** Property names on `Bun` to probe for live availability. */
-  readonly probeKeys: readonly string[];
+  readonly probeKeys: readonly string[]
 }
 
 export type BunCoreApiDomainId =
@@ -52,112 +44,112 @@ export type BunCoreApiDomainId =
   | "parsers-formats"
   | "subprocesses-shell"
   | "crypto-hashing"
-  | "build-ffi-ui";
+  | "build-ffi-ui"
 
 export interface BunCoreApiDomainSpec {
-  readonly id: BunCoreApiDomainId;
-  readonly domain: string;
-  readonly apis: readonly string[];
-  readonly capabilities: string;
+  readonly id: BunCoreApiDomainId
+  readonly domain: string
+  readonly apis: readonly string[]
+  readonly capabilities: string
   /** Property names on `Bun` (without `Bun.` prefix) to probe for live availability. */
-  readonly probeBunKeys: readonly string[];
+  readonly probeBunKeys: readonly string[]
   /** Built-in `bun:*` module specifiers belonging to this domain. */
-  readonly builtinModules: readonly string[];
+  readonly builtinModules: readonly string[]
 }
 
-export type BunExportKind = "class" | "namespace" | "function" | "constant" | "object";
+export type BunExportKind = "class" | "namespace" | "function" | "constant" | "object"
 
-export type BunDeepInspectionCategory = "builtin-module" | "bun-namespace" | "bun-class";
+export type BunDeepInspectionCategory = "builtin-module" | "bun-namespace" | "bun-class"
 
 export interface BunKindCounts {
-  readonly class: number;
-  readonly namespace: number;
-  readonly function: number;
-  readonly constant: number;
-  readonly object: number;
+  readonly class: number
+  readonly namespace: number
+  readonly function: number
+  readonly constant: number
+  readonly object: number
 }
 
 export interface BunNamespaceExportEntry {
-  readonly key: string;
-  readonly type: string;
-  readonly kind: BunExportKind;
-  readonly memberCount?: number | undefined;
-  readonly staticMemberCount?: number | undefined;
-  readonly prototypeMethodCount?: number | undefined;
-  readonly safePreview?: string | undefined;
-  readonly redacted?: boolean | undefined;
+  readonly key: string
+  readonly type: string
+  readonly kind: BunExportKind
+  readonly memberCount?: number | undefined
+  readonly staticMemberCount?: number | undefined
+  readonly prototypeMethodCount?: number | undefined
+  readonly safePreview?: string | undefined
+  readonly redacted?: boolean | undefined
 }
 
 export interface BunDeepSymbolMember {
-  readonly name: string;
-  readonly kind: BunExportKind;
-  readonly type: string;
-  readonly scope: "export" | "static" | "prototype" | "constant";
-  readonly safePreview?: string | undefined;
+  readonly name: string
+  readonly kind: BunExportKind
+  readonly type: string
+  readonly scope: "export" | "static" | "prototype" | "constant"
+  readonly safePreview?: string | undefined
 }
 
 export interface BunDeepInspectionEntry {
-  readonly id: string;
-  readonly label: string;
-  readonly category: BunDeepInspectionCategory;
-  readonly domain: string;
-  readonly available: boolean;
-  readonly memberCount: number;
-  readonly classCount: number;
-  readonly functionCount: number;
-  readonly constantCount: number;
-  readonly namespaceCount: number;
-  readonly members: readonly BunDeepSymbolMember[];
-  readonly notes: string;
+  readonly id: string
+  readonly label: string
+  readonly category: BunDeepInspectionCategory
+  readonly domain: string
+  readonly available: boolean
+  readonly memberCount: number
+  readonly classCount: number
+  readonly functionCount: number
+  readonly constantCount: number
+  readonly namespaceCount: number
+  readonly members: readonly BunDeepSymbolMember[]
+  readonly notes: string
 }
 
 export interface LiveGlobalProbeEntry {
-  readonly name: string;
-  readonly tier: GlobalTierId;
-  readonly present: boolean;
-  readonly valueType: string;
+  readonly name: string
+  readonly tier: GlobalTierId
+  readonly present: boolean
+  readonly valueType: string
 }
 
 export interface LiveUtilityProbeEntry {
-  readonly id: string;
-  readonly signature: string;
-  readonly category: BunUtilityCategoryId;
-  readonly available: boolean;
-  readonly matchedKeys: readonly string[];
+  readonly id: string
+  readonly signature: string
+  readonly category: BunUtilityCategoryId
+  readonly available: boolean
+  readonly matchedKeys: readonly string[]
 }
 
 export interface LiveCoreApiDomainProbeEntry {
-  readonly id: BunCoreApiDomainId;
-  readonly domain: string;
-  readonly availableCount: number;
-  readonly totalProbed: number;
-  readonly availableKeys: readonly string[];
-  readonly missingKeys: readonly string[];
+  readonly id: BunCoreApiDomainId
+  readonly domain: string
+  readonly availableCount: number
+  readonly totalProbed: number
+  readonly availableKeys: readonly string[]
+  readonly missingKeys: readonly string[]
 }
 
 export interface BunRuntimeSurfaceAuditSnapshot {
   /** Whether the snapshot was gathered directly from a live Bun runtime, via the installed Bun binary, or Node/browser fallback. */
-  readonly source: "bun-in-process" | "bun-binary-probe" | "node-fallback" | "browser-fallback";
-  readonly hostRuntime: string;
-  readonly bunDetected: boolean;
-  readonly bunVersion: string | null;
-  readonly bunRevision: string | null;
-  readonly bunRevisionShort: string | null;
-  readonly isMainThread: boolean | null;
-  readonly enableAnsiColors: boolean | null;
-  readonly processEnvEqualsBunEnv: boolean | null;
-  readonly memoryPressureSupported: boolean;
-  readonly exportCount: number;
-  readonly exports: readonly BunNamespaceExportEntry[];
-  readonly exportTypeCounts: Readonly<Record<string, number>>;
-  readonly kindCounts: BunKindCounts;
-  readonly deepInspections: readonly BunDeepInspectionEntry[];
-  readonly inspectTableText: string;
-  readonly globalProbes: readonly LiveGlobalProbeEntry[];
-  readonly utilityProbes: readonly LiveUtilityProbeEntry[];
-  readonly coreDomainProbes: readonly LiveCoreApiDomainProbeEntry[];
-  readonly auditedAt: string;
-  readonly auditDurationMs: number;
+  readonly source: "bun-in-process" | "bun-binary-probe" | "node-fallback" | "browser-fallback"
+  readonly hostRuntime: string
+  readonly bunDetected: boolean
+  readonly bunVersion: string | null
+  readonly bunRevision: string | null
+  readonly bunRevisionShort: string | null
+  readonly isMainThread: boolean | null
+  readonly enableAnsiColors: boolean | null
+  readonly processEnvEqualsBunEnv: boolean | null
+  readonly memoryPressureSupported: boolean
+  readonly exportCount: number
+  readonly exports: readonly BunNamespaceExportEntry[]
+  readonly exportTypeCounts: Readonly<Record<string, number>>
+  readonly kindCounts: BunKindCounts
+  readonly deepInspections: readonly BunDeepInspectionEntry[]
+  readonly inspectTableText: string
+  readonly globalProbes: readonly LiveGlobalProbeEntry[]
+  readonly utilityProbes: readonly LiveUtilityProbeEntry[]
+  readonly coreDomainProbes: readonly LiveCoreApiDomainProbeEntry[]
+  readonly auditedAt: string
+  readonly auditDurationMs: number
 }
 
 /** Section 1: Three tiers of globals exposed by Bun without imports. */
@@ -223,17 +215,17 @@ export const BUN_GLOBAL_TIERS: readonly RuntimeGlobalTierSpec[] = [
     notes:
       "Streams and CompressionStream/DecompressionStream are native in v1.4+; alert/confirm/prompt map to CLI stdio.",
   },
-];
+]
 
 export const BUN_UTILITY_CATEGORIES: readonly {
-  readonly id: BunUtilityCategoryId;
-  readonly label: string;
+  readonly id: BunUtilityCategoryId
+  readonly label: string
 }[] = [
   { id: "timing-memory", label: "Timing, Memory & Runtime Control" },
   { id: "paths-inspection", label: "Paths, Inspection & Comparison" },
   { id: "strings-terminal", label: "Strings, Terminal & IDs" },
   { id: "compression-buffers", label: "Compression & Buffer/Stream Conversion" },
-];
+]
 
 /** Section 2: Native Zig/C++ `Bun.*` utility helpers. */
 export const BUN_UTILITIES_CATALOG: readonly BunUtilitySpec[] = [
@@ -451,12 +443,7 @@ export const BUN_UTILITIES_CATALOG: readonly BunUtilitySpec[] = [
     categoryLabel: "Compression & Buffer/Stream Conversion",
     signature: "Bun.zstdCompress / Bun.zstdDecompress (+ Sync)",
     purpose: "Native Zstandard compression",
-    probeKeys: [
-      "zstdCompress",
-      "zstdDecompress",
-      "zstdCompressSync",
-      "zstdDecompressSync",
-    ],
+    probeKeys: ["zstdCompress", "zstdDecompress", "zstdCompressSync", "zstdDecompressSync"],
   },
   {
     id: "readableStreamTo",
@@ -489,7 +476,7 @@ export const BUN_UTILITIES_CATALOG: readonly BunUtilitySpec[] = [
     purpose: "Uninitialized Uint8Array allocation",
     probeKeys: ["allocUnsafe"],
   },
-];
+]
 
 /** Section 3: Core Bun APIs (`Bun.*` & `bun:*`) grouped across 7 domains. */
 export const BUN_CORE_API_DOMAINS: readonly BunCoreApiDomainSpec[] = [
@@ -583,20 +570,21 @@ export const BUN_CORE_API_DOMAINS: readonly BunCoreApiDomainSpec[] = [
     probeBunKeys: ["build", "Transpiler", "plugin", "Image", "WebView", "ModuleGraph"],
     builtinModules: ["bun:ffi", "bun:jsc", "bun:test", "bun:bundle"],
   },
-];
+]
 
 /** Targets for deep nested introspection of `Bun.*` namespaces, classes, and `bun:*` modules. */
 export const BUN_DEEP_NAMESPACE_TARGETS: readonly {
-  readonly key: string;
-  readonly label: string;
-  readonly domain: string;
-  readonly notes: string;
+  readonly key: string
+  readonly label: string
+  readonly domain: string
+  readonly notes: string
 }[] = [
   {
     key: "markdown",
     label: "Bun.markdown",
     domain: "Parsers & Formats",
-    notes: "Native GFM Markdown engine: html(), ansi(md, AnsiTheme), render(md, callbacks), react()",
+    notes:
+      "Native GFM Markdown engine: html(), ansi(md, AnsiTheme), render(md, callbacks), react()",
   },
   {
     key: "YAML",
@@ -676,13 +664,13 @@ export const BUN_DEEP_NAMESPACE_TARGETS: readonly {
     domain: "Build, FFI & UI",
     notes: "Low-level buffer/pointer utilities for zero-copy native bridges",
   },
-];
+]
 
 export const BUN_DEEP_CLASS_TARGETS: readonly {
-  readonly key: string;
-  readonly label: string;
-  readonly domain: string;
-  readonly notes: string;
+  readonly key: string
+  readonly label: string
+  readonly domain: string
+  readonly notes: string
 }[] = [
   {
     key: "S3Client",
@@ -768,22 +756,24 @@ export const BUN_DEEP_CLASS_TARGETS: readonly {
     domain: "HTTP & Networking",
     notes: "Stateful HTTP client session with persistent connection pool & cookies",
   },
-];
+]
 
 export const BUN_BUILTIN_MODULE_TARGETS: readonly {
-  readonly specifier: string;
-  readonly domain: string;
-  readonly notes: string;
+  readonly specifier: string
+  readonly domain: string
+  readonly notes: string
 }[] = [
   {
     specifier: "bun:sqlite",
     domain: "Databases & Caches",
-    notes: "Synchronous SQLite3 engine: Database, Statement, SQLiteError, and 60+ SQLITE_* constants",
+    notes:
+      "Synchronous SQLite3 engine: Database, Statement, SQLiteError, and 60+ SQLITE_* constants",
   },
   {
     specifier: "bun:ffi",
     domain: "Build, FFI & UI",
-    notes: "Native C/Zig foreign function interface: dlopen, cc, ptr, CString, JSCallback, FFIType constants",
+    notes:
+      "Native C/Zig foreign function interface: dlopen, cc, ptr, CString, JSCallback, FFIType constants",
   },
   {
     specifier: "bun:jsc",
@@ -800,7 +790,7 @@ export const BUN_BUILTIN_MODULE_TARGETS: readonly {
     domain: "Build, FFI & UI",
     notes: "Compile-time dead-code elimination feature(flag) intrinsic",
   },
-];
+]
 
 /** Section 4: Exact Live Surface Audit Snippet for inspecting installed Bun binary exports. */
 export const LIVE_SURFACE_AUDIT_SNIPPET = `const bunKeys = Object.getOwnPropertyNames(Bun)
@@ -811,7 +801,7 @@ export const LIVE_SURFACE_AUDIT_SNIPPET = `const bunKeys = Object.getOwnProperty
   .sort((a, b) => a.key.localeCompare(b.key));
 
 console.log(\`Bun \${Bun.version} (\${Bun.revision.slice(0, 8)}) — \${bunKeys.length} exports\`);
-console.log(Bun.inspect.table(bunKeys, ["key", "type"]));`;
+console.log(Bun.inspect.table(bunKeys, ["key", "type"]));`
 
 /** Deep module/namespace/class/kind audit snippet (strictly omits Bun.env and Bun.secrets values). */
 export const DEEP_SURFACE_AUDIT_SNIPPET = `const classify = (val: unknown, key?: string) => {
@@ -830,7 +820,7 @@ const rows = Object.getOwnPropertyNames(Bun)
 console.log(Bun.inspect.table(rows, ["key", "kind", "type"]));
 console.log("Bun.markdown:", Object.getOwnPropertyNames(Bun.markdown));
 console.log("bun:sqlite:", Object.getOwnPropertyNames(await import("bun:sqlite")));
-console.log("bun:ffi:", Object.getOwnPropertyNames(await import("bun:ffi")));`;
+console.log("bun:ffi:", Object.getOwnPropertyNames(await import("bun:ffi")));`
 
 /**
  * Deterministic Unicode table renderer matching `Bun.inspect.table(rows, columns)`.
@@ -848,111 +838,107 @@ export function formatInspectTable(
             data: readonly object[],
             cols?: readonly string[],
             opts?: { readonly colors?: boolean },
-          ) => string;
-        };
+          ) => string
+        }
       }
-    | undefined;
+    | undefined
 
   if (bunObj?.inspect && typeof bunObj.inspect.table === "function") {
     try {
-      const cols = columns ? [...columns] : undefined;
-      return bunObj.inspect.table(rows, cols, { colors: false }).trimEnd();
+      const cols = columns ? [...columns] : undefined
+      return bunObj.inspect.table(rows, cols, { colors: false }).trimEnd()
     } catch {
       // Fall through to pure-TS box renderer
     }
   }
 
-  const recordRows = rows as readonly Readonly<Record<string, unknown>>[];
+  const recordRows = rows as readonly Readonly<Record<string, unknown>>[]
   const cols =
     columns && columns.length > 0
       ? [...columns]
       : Array.from(
           recordRows.reduce<Set<string>>((acc, row) => {
-            for (const k of Object.keys(row)) acc.add(k);
-            return acc;
+            for (const k of Object.keys(row)) acc.add(k)
+            return acc
           }, new Set<string>()),
-        );
+        )
 
   if (cols.length === 0) {
-    return "┌───┐\n│   │\n└───┘";
+    return "┌───┐\n│   │\n└───┘"
   }
 
-  const allCols = ["", ...cols];
+  const allCols = ["", ...cols]
   const cellRows: string[][] = recordRows.map((row, idx) => [
     String(idx),
     ...cols.map((col) => {
-      const val = row[col];
-      if (val === null) return "null";
-      if (val === undefined) return "";
-      return typeof val === "string" ? val : String(val);
+      const val = row[col]
+      if (val === null) return "null"
+      if (val === undefined) return ""
+      return typeof val === "string" ? val : String(val)
     }),
-  ]);
+  ])
 
   const widths = allCols.map((header, colIdx) => {
-    let maxW = bunStringWidth(header);
+    let maxW = bunStringWidth(header)
     for (const r of cellRows) {
-      const w = bunStringWidth(r[colIdx] ?? "");
-      if (w > maxW) maxW = w;
+      const w = bunStringWidth(r[colIdx] ?? "")
+      if (w > maxW) maxW = w
     }
-    return Math.max(1, maxW);
-  });
+    return Math.max(1, maxW)
+  })
 
   const pad = (val: string, width: number, rightAlign = false): string => {
-    const w = bunStringWidth(val);
-    const diff = Math.max(0, width - w);
-    return rightAlign ? `${" ".repeat(diff)}${val}` : `${val}${" ".repeat(diff)}`;
-  };
+    const w = bunStringWidth(val)
+    const diff = Math.max(0, width - w)
+    return rightAlign ? `${" ".repeat(diff)}${val}` : `${val}${" ".repeat(diff)}`
+  }
 
   const makeBorder = (left: string, mid: string, right: string): string =>
-    `${left}${widths.map((w) => "─".repeat(w + 2)).join(mid)}${right}`;
+    `${left}${widths.map((w) => "─".repeat(w + 2)).join(mid)}${right}`
 
-  const lines: string[] = [];
-  lines.push(makeBorder("┌", "┬", "┐"));
-  lines.push(
-    `│ ${allCols.map((h, i) => pad(h, widths[i]!)).join(" │ ")} │`,
-  );
-  lines.push(makeBorder("├", "┼", "┤"));
+  const lines: string[] = []
+  lines.push(makeBorder("┌", "┬", "┐"))
+  lines.push(`│ ${allCols.map((h, i) => pad(h, widths[i]!)).join(" │ ")} │`)
+  lines.push(makeBorder("├", "┼", "┤"))
   for (const r of cellRows) {
-    lines.push(
-      `│ ${r.map((cell, i) => pad(cell, widths[i]!, i === 0)).join(" │ ")} │`,
-    );
+    lines.push(`│ ${r.map((cell, i) => pad(cell, widths[i]!, i === 0)).join(" │ ")} │`)
   }
-  lines.push(makeBorder("└", "┴", "┘"));
-  return lines.join("\n");
+  lines.push(makeBorder("└", "┴", "┘"))
+  return lines.join("\n")
 }
 
 function resolveHostRuntimeLabel(): string {
-  const g = globalThis as Record<string, unknown>;
-  const bunObj = g.Bun as { readonly version?: unknown } | undefined;
+  const g = globalThis as Record<string, unknown>
+  const bunObj = g.Bun as { readonly version?: unknown } | undefined
   if (bunObj && typeof bunObj === "object" && typeof bunObj.version === "string") {
-    return `bun/${bunObj.version}`;
+    return `bun/${bunObj.version}`
   }
-  const proc = g.process as { readonly versions?: { readonly node?: string } } | undefined;
+  const proc = g.process as { readonly versions?: { readonly node?: string } } | undefined
   if (proc?.versions?.node) {
-    return `node/${proc.versions.node}`;
+    return `node/${proc.versions.node}`
   }
-  return "browser";
+  return "browser"
 }
 
 function buildGlobalProbes(scope: Record<string, unknown>): readonly LiveGlobalProbeEntry[] {
-  const results: LiveGlobalProbeEntry[] = [];
+  const results: LiveGlobalProbeEntry[] = []
   for (const tier of BUN_GLOBAL_TIERS) {
     for (const name of tier.globals) {
-      let present = false;
-      let valueType = "undefined";
+      let present = false
+      let valueType = "undefined"
       if (name === "__dirname" || name === "__filename" || name === "require") {
         // CommonJS module-scoped bindings: probe on globalThis safely without throwing
-        const val = scope[name];
-        present = val !== undefined;
-        valueType = typeof val;
+        const val = scope[name]
+        present = val !== undefined
+        valueType = typeof val
       } else {
         try {
-          const val = scope[name];
-          present = val !== undefined;
-          valueType = typeof val;
+          const val = scope[name]
+          present = val !== undefined
+          valueType = typeof val
         } catch {
-          present = false;
-          valueType = "inaccessible";
+          present = false
+          valueType = "inaccessible"
         }
       }
       results.push({
@@ -960,33 +946,31 @@ function buildGlobalProbes(scope: Record<string, unknown>): readonly LiveGlobalP
         tier: tier.id,
         present,
         valueType,
-      });
+      })
     }
   }
-  return results;
+  return results
 }
 
-function buildUtilityProbes(
-  bunExportSet: ReadonlySet<string>,
-): readonly LiveUtilityProbeEntry[] {
+function buildUtilityProbes(bunExportSet: ReadonlySet<string>): readonly LiveUtilityProbeEntry[] {
   return BUN_UTILITIES_CATALOG.map((spec) => {
-    const matchedKeys = spec.probeKeys.filter((k) => bunExportSet.has(k));
+    const matchedKeys = spec.probeKeys.filter((k) => bunExportSet.has(k))
     return {
       id: spec.id,
       signature: spec.signature,
       category: spec.category,
       available: matchedKeys.length > 0,
       matchedKeys,
-    };
-  });
+    }
+  })
 }
 
 function buildCoreDomainProbes(
   bunExportSet: ReadonlySet<string>,
 ): readonly LiveCoreApiDomainProbeEntry[] {
   return BUN_CORE_API_DOMAINS.map((spec) => {
-    const availableKeys = spec.probeBunKeys.filter((k) => bunExportSet.has(k));
-    const missingKeys = spec.probeBunKeys.filter((k) => !bunExportSet.has(k));
+    const availableKeys = spec.probeBunKeys.filter((k) => bunExportSet.has(k))
+    const missingKeys = spec.probeBunKeys.filter((k) => !bunExportSet.has(k))
     return {
       id: spec.id,
       domain: spec.domain,
@@ -994,11 +978,11 @@ function buildCoreDomainProbes(
       totalProbed: spec.probeBunKeys.length,
       availableKeys,
       missingKeys,
-    };
-  });
+    }
+  })
 }
 
-const REDACTED_BUN_KEYS = new Set(["env", "secrets"]);
+const REDACTED_BUN_KEYS = new Set(["env", "secrets"])
 const SAFE_CONSTANT_PREVIEW_KEYS = new Set([
   "version",
   "revision",
@@ -1007,7 +991,7 @@ const SAFE_CONSTANT_PREVIEW_KEYS = new Set([
   "isMainThread",
   "isStandaloneExecutable",
   "origin",
-]);
+])
 const KNOWN_CLASS_CONSTRUCTORS = new Set([
   "SQL",
   "ArrayBufferSink",
@@ -1031,17 +1015,17 @@ const KNOWN_CLASS_CONSTRUCTORS = new Set([
   "CFunction",
   "CString",
   "JSCallback",
-]);
-const FUNCTION_OWN_IGNORED = new Set(["length", "name", "prototype", "arguments", "caller"]);
+])
+const FUNCTION_OWN_IGNORED = new Set(["length", "name", "prototype", "arguments", "caller"])
 
 /**
  * Classifies a runtime export into its semantic symbol kind without executing
  * or leaking secret values.
  */
 export function classifyBunSymbolKind(value: unknown, key?: string): BunExportKind {
-  if (key && REDACTED_BUN_KEYS.has(key)) return "namespace";
-  if (value === null) return "constant";
-  const t = typeof value;
+  if (key && REDACTED_BUN_KEYS.has(key)) return "namespace"
+  if (value === null) return "constant"
+  const t = typeof value
   if (
     t === "string" ||
     t === "number" ||
@@ -1050,82 +1034,82 @@ export function classifyBunSymbolKind(value: unknown, key?: string): BunExportKi
     t === "symbol" ||
     t === "undefined"
   ) {
-    return "constant";
+    return "constant"
   }
   if (t === "function") {
-    if (key && KNOWN_CLASS_CONSTRUCTORS.has(key)) return "class";
+    if (key && KNOWN_CLASS_CONSTRUCTORS.has(key)) return "class"
     try {
-      const src = Function.prototype.toString.call(value);
-      if (/^\s*class\b/.test(src)) return "class";
+      const src = Function.prototype.toString.call(value)
+      if (/^\s*class\b/.test(src)) return "class"
     } catch {
       // ignore native toString errors
     }
     try {
-      const proto = (value as { readonly prototype?: unknown }).prototype;
+      const proto = (value as { readonly prototype?: unknown }).prototype
       if (
         proto &&
         typeof proto === "object" &&
         Object.getOwnPropertyNames(proto).some((p) => p !== "constructor")
       ) {
-        return "class";
+        return "class"
       }
     } catch {
       // ignore
     }
-    return "function";
+    return "function"
   }
   if (t === "object") {
     try {
-      const keys = Object.getOwnPropertyNames(value);
+      const keys = Object.getOwnPropertyNames(value)
       const hasFn = keys.some((k) => {
         try {
-          return typeof (value as Record<string, unknown>)[k] === "function";
+          return typeof (value as Record<string, unknown>)[k] === "function"
         } catch {
-          return false;
+          return false
         }
-      });
-      return hasFn ? "namespace" : "object";
+      })
+      return hasFn ? "namespace" : "object"
     } catch {
-      return "object";
+      return "object"
     }
   }
-  return "object";
+  return "object"
 }
 
 function formatSafeConstantPreview(value: unknown): string | undefined {
   if (typeof value === "boolean" || typeof value === "number" || typeof value === "bigint") {
-    return String(value);
+    return String(value)
   }
   if (typeof value === "string") {
-    const clean = value.replace(/[\u0000-\u001f\u007f]/g, "");
-    return clean.length > 48 ? `${clean.slice(0, 45)}...` : clean;
+    const clean = value.replace(/[\u0000-\u001f\u007f]/g, "")
+    return clean.length > 48 ? `${clean.slice(0, 45)}...` : clean
   }
-  return undefined;
+  return undefined
 }
 
 function summarizeKindCounts(exportsList: readonly BunNamespaceExportEntry[]): BunKindCounts {
-  let classCount = 0;
-  let namespaceCount = 0;
-  let functionCount = 0;
-  let constantCount = 0;
-  let objectCount = 0;
+  let classCount = 0
+  let namespaceCount = 0
+  let functionCount = 0
+  let constantCount = 0
+  let objectCount = 0
   for (const entry of exportsList) {
     switch (entry.kind) {
       case "class":
-        classCount += 1;
-        break;
+        classCount += 1
+        break
       case "namespace":
-        namespaceCount += 1;
-        break;
+        namespaceCount += 1
+        break
       case "function":
-        functionCount += 1;
-        break;
+        functionCount += 1
+        break
       case "constant":
-        constantCount += 1;
-        break;
+        constantCount += 1
+        break
       case "object":
-        objectCount += 1;
-        break;
+        objectCount += 1
+        break
     }
   }
   return {
@@ -1134,7 +1118,7 @@ function summarizeKindCounts(exportsList: readonly BunNamespaceExportEntry[]): B
     function: functionCount,
     constant: constantCount,
     object: objectCount,
-  };
+  }
 }
 
 /**
@@ -1144,14 +1128,18 @@ function summarizeKindCounts(exportsList: readonly BunNamespaceExportEntry[]): B
 export function inspectBunDeepTarget(
   target: unknown,
   meta: {
-    readonly id: string;
-    readonly label: string;
-    readonly category: BunDeepInspectionCategory;
-    readonly domain: string;
-    readonly notes: string;
+    readonly id: string
+    readonly label: string
+    readonly category: BunDeepInspectionCategory
+    readonly domain: string
+    readonly notes: string
   },
 ): BunDeepInspectionEntry {
-  if (target === null || target === undefined || (typeof target !== "object" && typeof target !== "function")) {
+  if (
+    target === null ||
+    target === undefined ||
+    (typeof target !== "object" && typeof target !== "function")
+  ) {
     return {
       id: meta.id,
       label: meta.label,
@@ -1165,76 +1153,68 @@ export function inspectBunDeepTarget(
       namespaceCount: 0,
       members: [],
       notes: meta.notes,
-    };
+    }
   }
 
-  const members: BunDeepSymbolMember[] = [];
-  const seen = new Set<string>();
-  const record = target as Record<string, unknown>;
+  const members: BunDeepSymbolMember[] = []
+  const seen = new Set<string>()
+  const record = target as Record<string, unknown>
 
   const ownKeys = Object.getOwnPropertyNames(target)
     .filter((k) => {
-      if (k === "__esModule" || k === "default") return false;
-      if (typeof target === "function" && FUNCTION_OWN_IGNORED.has(k)) return false;
-      return true;
+      if (k === "__esModule" || k === "default") return false
+      if (typeof target === "function" && FUNCTION_OWN_IGNORED.has(k)) return false
+      return true
     })
-    .sort((a, b) => a.localeCompare(b));
+    .sort((a, b) => a.localeCompare(b))
 
   for (const name of ownKeys) {
-    let val: unknown;
-    let valType = "unknown";
+    let val: unknown
+    let valType = "unknown"
     try {
-      val = record[name];
-      valType = typeof val;
+      val = record[name]
+      valType = typeof val
     } catch {
-      valType = "getter";
+      valType = "getter"
     }
-    const kind = classifyBunSymbolKind(val, name);
+    const kind = classifyBunSymbolKind(val, name)
     const scope: BunDeepSymbolMember["scope"] =
-      meta.category === "bun-class"
-        ? "static"
-        : kind === "constant"
-          ? "constant"
-          : "export";
+      meta.category === "bun-class" ? "static" : kind === "constant" ? "constant" : "export"
 
     const safePreview =
       kind === "constant" && !REDACTED_BUN_KEYS.has(name)
         ? formatSafeConstantPreview(val)
-        : undefined;
+        : undefined
 
-    const dedupeKey = `${scope}:${name}`;
+    const dedupeKey = `${scope}:${name}`
     if (!seen.has(dedupeKey)) {
-      seen.add(dedupeKey);
+      seen.add(dedupeKey)
       members.push({
         name,
         kind,
         type: valType,
         scope,
         ...(safePreview !== undefined ? { safePreview } : {}),
-      });
+      })
     }
 
     // Expand nested constant enums like `bun:sqlite.constants` or `bun:ffi.FFIType`
-    if (
-      (name === "constants" || name === "FFIType") &&
-      val &&
-      typeof val === "object"
-    ) {
-      const subObj = val as Record<string, unknown>;
+    if ((name === "constants" || name === "FFIType") && val && typeof val === "object") {
+      const subObj = val as Record<string, unknown>
       const subKeys = Object.getOwnPropertyNames(subObj)
         .filter((sk) => !/^\d+$/.test(sk))
         .sort((a, b) => a.localeCompare(b))
-        .slice(0, 28);
+        .slice(0, 28)
       for (const sk of subKeys) {
-        let subVal: unknown;
+        let subVal: unknown
         try {
-          subVal = subObj[sk];
+          subVal = subObj[sk]
         } catch {
-          subVal = undefined;
+          subVal = undefined
         }
-        const subName = `${name}.${sk}`;
+        const subName = `${name}.${sk}`
         if (!seen.has(`constant:${subName}`)) {
-          seen.add(`constant:${subName}`);
+          seen.add(`constant:${subName}`)
           members.push({
             name: subName,
             kind: "constant",
@@ -1243,7 +1223,7 @@ export function inspectBunDeepTarget(
             ...(formatSafeConstantPreview(subVal) !== undefined
               ? { safePreview: formatSafeConstantPreview(subVal) }
               : {}),
-          });
+          })
         }
       }
     }
@@ -1252,35 +1232,35 @@ export function inspectBunDeepTarget(
   // Prototype methods for classes
   if (typeof target === "function") {
     try {
-      const proto = (target as { readonly prototype?: unknown }).prototype;
+      const proto = (target as { readonly prototype?: unknown }).prototype
       if (proto && typeof proto === "object") {
         const protoKeys = Object.getOwnPropertyNames(proto)
           .filter((k) => k !== "constructor")
-          .sort((a, b) => a.localeCompare(b));
+          .sort((a, b) => a.localeCompare(b))
         for (const pName of protoKeys) {
-          let pType = "function";
-          let pKind: BunExportKind = "function";
+          let pType = "function"
+          let pKind: BunExportKind = "function"
           try {
-            const desc = Object.getOwnPropertyDescriptor(proto, pName);
+            const desc = Object.getOwnPropertyDescriptor(proto, pName)
             if (desc && ("get" in desc || "set" in desc) && !("value" in desc)) {
-              pType = "accessor";
-              pKind = "constant";
+              pType = "accessor"
+              pKind = "constant"
             } else if (desc) {
-              pType = typeof desc.value;
-              pKind = classifyBunSymbolKind(desc.value, pName);
+              pType = typeof desc.value
+              pKind = classifyBunSymbolKind(desc.value, pName)
             }
           } catch {
-            pType = "accessor";
+            pType = "accessor"
           }
-          const dedupeKey = `prototype:${pName}`;
+          const dedupeKey = `prototype:${pName}`
           if (!seen.has(dedupeKey)) {
-            seen.add(dedupeKey);
+            seen.add(dedupeKey)
             members.push({
               name: pName,
               kind: pKind,
               type: pType,
               scope: "prototype",
-            });
+            })
           }
         }
       }
@@ -1302,7 +1282,7 @@ export function inspectBunDeepTarget(
     namespaceCount: members.filter((m) => m.kind === "namespace").length,
     members,
     notes: meta.notes,
-  };
+  }
 }
 
 /**
@@ -1313,10 +1293,10 @@ export function inspectBunDeepSurface(
   bunObj: Record<string, unknown> | null,
   builtinModuleObjects: Readonly<Record<string, unknown>> = {},
 ): readonly BunDeepInspectionEntry[] {
-  const results: BunDeepInspectionEntry[] = [];
+  const results: BunDeepInspectionEntry[] = []
 
   for (const mod of BUN_BUILTIN_MODULE_TARGETS) {
-    const resolved = builtinModuleObjects[mod.specifier];
+    const resolved = builtinModuleObjects[mod.specifier]
     results.push(
       inspectBunDeepTarget(resolved, {
         id: mod.specifier,
@@ -1325,16 +1305,16 @@ export function inspectBunDeepSurface(
         domain: mod.domain,
         notes: mod.notes,
       }),
-    );
+    )
   }
 
   for (const ns of BUN_DEEP_NAMESPACE_TARGETS) {
-    let target: unknown = undefined;
+    let target: unknown = undefined
     if (bunObj) {
       try {
-        target = bunObj[ns.key];
+        target = bunObj[ns.key]
       } catch {
-        target = undefined;
+        target = undefined
       }
     }
     results.push(
@@ -1345,16 +1325,16 @@ export function inspectBunDeepSurface(
         domain: ns.domain,
         notes: ns.notes,
       }),
-    );
+    )
   }
 
   for (const cls of BUN_DEEP_CLASS_TARGETS) {
-    let target: unknown = undefined;
+    let target: unknown = undefined
     if (bunObj) {
       try {
-        target = bunObj[cls.key];
+        target = bunObj[cls.key]
       } catch {
-        target = undefined;
+        target = undefined
       }
     }
     results.push(
@@ -1365,10 +1345,10 @@ export function inspectBunDeepSurface(
         domain: cls.domain,
         notes: cls.notes,
       }),
-    );
+    )
   }
 
-  return results;
+  return results
 }
 
 /**
@@ -1379,10 +1359,9 @@ export function runBunSurfaceAudit(
   scope: Record<string, unknown> = globalThis as unknown as Record<string, unknown>,
   builtinModuleObjects: Readonly<Record<string, unknown>> = {},
 ): BunRuntimeSurfaceAuditSnapshot {
-  const startedMs = performance.now();
-  const bunRaw = scope.Bun;
-  const bunObj =
-    bunRaw && typeof bunRaw === "object" ? (bunRaw as Record<string, unknown>) : null;
+  const startedMs = performance.now()
+  const bunRaw = scope.Bun
+  const bunObj = bunRaw && typeof bunRaw === "object" ? (bunRaw as Record<string, unknown>) : null
 
   const exportsList: BunNamespaceExportEntry[] = bunObj
     ? Object.getOwnPropertyNames(bunObj)
@@ -1394,46 +1373,46 @@ export function runBunSurfaceAudit(
               kind: "namespace",
               redacted: true,
               safePreview: "[REDACTED — values never serialized]",
-            };
+            }
           }
-          let val: unknown;
-          let valueType = "unknown";
+          let val: unknown
+          let valueType = "unknown"
           try {
-            val = bunObj[key];
-            valueType = typeof val;
+            val = bunObj[key]
+            valueType = typeof val
           } catch {
-            valueType = "getter";
+            valueType = "getter"
           }
-          const kind = classifyBunSymbolKind(val, key);
-          let memberCount: number | undefined;
-          let staticMemberCount: number | undefined;
-          let prototypeMethodCount: number | undefined;
+          const kind = classifyBunSymbolKind(val, key)
+          let memberCount: number | undefined
+          let staticMemberCount: number | undefined
+          let prototypeMethodCount: number | undefined
           if (kind === "namespace" && val && typeof val === "object") {
             try {
-              memberCount = Object.getOwnPropertyNames(val).length;
+              memberCount = Object.getOwnPropertyNames(val).length
             } catch {
-              memberCount = undefined;
+              memberCount = undefined
             }
           } else if (kind === "class" && typeof val === "function") {
             try {
               staticMemberCount = Object.getOwnPropertyNames(val).filter(
                 (k) => !FUNCTION_OWN_IGNORED.has(k),
-              ).length;
-              const proto = (val as { readonly prototype?: unknown }).prototype;
+              ).length
+              const proto = (val as { readonly prototype?: unknown }).prototype
               if (proto && typeof proto === "object") {
                 prototypeMethodCount = Object.getOwnPropertyNames(proto).filter(
                   (k) => k !== "constructor",
-                ).length;
+                ).length
               }
-              memberCount = (staticMemberCount ?? 0) + (prototypeMethodCount ?? 0);
+              memberCount = (staticMemberCount ?? 0) + (prototypeMethodCount ?? 0)
             } catch {
-              memberCount = undefined;
+              memberCount = undefined
             }
           }
           const safePreview =
             kind === "constant" && SAFE_CONSTANT_PREVIEW_KEYS.has(key)
               ? formatSafeConstantPreview(val)
-              : undefined;
+              : undefined
 
           return {
             key,
@@ -1443,49 +1422,51 @@ export function runBunSurfaceAudit(
             ...(staticMemberCount !== undefined ? { staticMemberCount } : {}),
             ...(prototypeMethodCount !== undefined ? { prototypeMethodCount } : {}),
             ...(safePreview !== undefined ? { safePreview } : {}),
-          };
+          }
         })
         .sort((a, b) => a.key.localeCompare(b.key))
-    : [];
+    : []
 
-  const exportTypeCounts: Record<string, number> = {};
+  const exportTypeCounts: Record<string, number> = {}
   for (const item of exportsList) {
-    exportTypeCounts[item.type] = (exportTypeCounts[item.type] ?? 0) + 1;
+    exportTypeCounts[item.type] = (exportTypeCounts[item.type] ?? 0) + 1
   }
-  const kindCounts = summarizeKindCounts(exportsList);
+  const kindCounts = summarizeKindCounts(exportsList)
 
-  const bunExportSet = new Set(exportsList.map((e) => e.key));
-  const bunVersion =
-    bunObj && typeof bunObj.version === "string" ? bunObj.version : null;
-  const bunRevision =
-    bunObj && typeof bunObj.revision === "string" ? bunObj.revision : null;
+  const bunExportSet = new Set(exportsList.map((e) => e.key))
+  const bunVersion = bunObj && typeof bunObj.version === "string" ? bunObj.version : null
+  const bunRevision = bunObj && typeof bunObj.revision === "string" ? bunObj.revision : null
   const isMainThread =
-    bunObj && typeof bunObj.isMainThread === "boolean" ? bunObj.isMainThread : null;
+    bunObj && typeof bunObj.isMainThread === "boolean" ? bunObj.isMainThread : null
   const enableAnsiColors =
-    bunObj && typeof bunObj.enableANSIColors === "boolean" ? bunObj.enableANSIColors : null;
+    bunObj && typeof bunObj.enableANSIColors === "boolean" ? bunObj.enableANSIColors : null
 
   const proc = scope.process as
-    | { readonly env?: unknown; readonly on?: unknown; readonly versions?: { readonly node?: string } }
-    | undefined;
+    | {
+        readonly env?: unknown
+        readonly on?: unknown
+        readonly versions?: { readonly node?: string }
+      }
+    | undefined
   const processEnvEqualsBunEnv =
-    bunObj && proc && typeof proc === "object" ? proc.env === bunObj.env : null;
-  const memoryPressureSupported = Boolean(bunObj && typeof proc?.on === "function");
+    bunObj && proc && typeof proc === "object" ? proc.env === bunObj.env : null
+  const memoryPressureSupported = Boolean(bunObj && typeof proc?.on === "function")
 
   const source: BunRuntimeSurfaceAuditSnapshot["source"] = bunObj
     ? "bun-in-process"
     : proc?.versions?.node
       ? "node-fallback"
-      : "browser-fallback";
+      : "browser-fallback"
 
   const headerLine =
     bunObj && bunVersion
       ? `Bun ${bunVersion} (${(bunRevision ?? "").slice(0, 8)}) — ${exportsList.length} exports (${kindCounts.class} classes · ${kindCounts.namespace} namespaces · ${kindCounts.function} functions · ${kindCounts.constant} constants)`
-      : `${resolveHostRuntimeLabel()} — Bun namespace not active in host process`;
+      : `${resolveHostRuntimeLabel()} — Bun namespace not active in host process`
 
   const inspectTableText =
     exportsList.length > 0
       ? `${headerLine}\n${formatInspectTable(exportsList, ["key", "kind", "type"])}`
-      : headerLine;
+      : headerLine
 
   return {
     source,
@@ -1509,7 +1490,7 @@ export function runBunSurfaceAudit(
     coreDomainProbes: buildCoreDomainProbes(bunExportSet),
     auditedAt: new Date().toISOString(),
     auditDurationMs: Math.max(0, Number((performance.now() - startedMs).toFixed(2))),
-  };
+  }
 }
 
 /**
@@ -1519,17 +1500,17 @@ export function runBunSurfaceAudit(
  */
 export function buildAuditSnapshotFromBinaryProbe(
   probe: {
-    readonly bunVersion: string;
-    readonly bunRevision: string;
-    readonly isMainThread: boolean;
-    readonly enableAnsiColors?: boolean | null | undefined;
-    readonly processEnvEqualsBunEnv: boolean;
+    readonly bunVersion: string
+    readonly bunRevision: string
+    readonly isMainThread: boolean
+    readonly enableAnsiColors?: boolean | null | undefined
+    readonly processEnvEqualsBunEnv: boolean
     readonly exports: readonly (Omit<BunNamespaceExportEntry, "kind"> & {
-      readonly kind?: BunExportKind | undefined;
-    })[];
-    readonly deepInspections?: readonly BunDeepInspectionEntry[] | undefined;
-    readonly globalProbes?: readonly LiveGlobalProbeEntry[] | undefined;
-    readonly inspectTableText?: string | undefined;
+      readonly kind?: BunExportKind | undefined
+    })[]
+    readonly deepInspections?: readonly BunDeepInspectionEntry[] | undefined
+    readonly globalProbes?: readonly LiveGlobalProbeEntry[] | undefined
+    readonly inspectTableText?: string | undefined
   },
   durationMs: number,
 ): BunRuntimeSurfaceAuditSnapshot {
@@ -1546,19 +1527,19 @@ export function buildAuditSnapshotFromBinaryProbe(
             ? "object"
             : "constant"),
     }))
-    .sort((a, b) => a.key.localeCompare(b.key));
+    .sort((a, b) => a.key.localeCompare(b.key))
 
-  const exportTypeCounts: Record<string, number> = {};
+  const exportTypeCounts: Record<string, number> = {}
   for (const item of normalizedExports) {
-    exportTypeCounts[item.type] = (exportTypeCounts[item.type] ?? 0) + 1;
+    exportTypeCounts[item.type] = (exportTypeCounts[item.type] ?? 0) + 1
   }
-  const kindCounts = summarizeKindCounts(normalizedExports);
-  const bunExportSet = new Set(normalizedExports.map((e) => e.key));
-  const headerLine = `Bun ${probe.bunVersion} (${probe.bunRevision.slice(0, 8)}) — ${normalizedExports.length} exports (${kindCounts.class} classes · ${kindCounts.namespace} namespaces · ${kindCounts.function} functions · ${kindCounts.constant} constants)`;
+  const kindCounts = summarizeKindCounts(normalizedExports)
+  const bunExportSet = new Set(normalizedExports.map((e) => e.key))
+  const headerLine = `Bun ${probe.bunVersion} (${probe.bunRevision.slice(0, 8)}) — ${normalizedExports.length} exports (${kindCounts.class} classes · ${kindCounts.namespace} namespaces · ${kindCounts.function} functions · ${kindCounts.constant} constants)`
   const tableText =
     probe.inspectTableText && probe.inspectTableText.trim().length > 0
       ? `${headerLine}\n${probe.inspectTableText.trimEnd()}`
-      : `${headerLine}\n${formatInspectTable(normalizedExports, ["key", "kind", "type"])}`;
+      : `${headerLine}\n${formatInspectTable(normalizedExports, ["key", "kind", "type"])}`
 
   return {
     source: "bun-binary-probe",
@@ -1585,7 +1566,7 @@ export function buildAuditSnapshotFromBinaryProbe(
     coreDomainProbes: buildCoreDomainProbes(bunExportSet),
     auditedAt: new Date().toISOString(),
     auditDurationMs: Math.max(0, Number(durationMs.toFixed(2))),
-  };
+  }
 }
 
 // ── Cross-Runtime Interactive Utility Helpers (for the Live Utility Sandbox) ──
@@ -1597,55 +1578,54 @@ export function buildAuditSnapshotFromBinaryProbe(
  */
 export function generateBunUuidV7(timestampMs: number = Date.now()): string {
   const bunObj = (globalThis as Record<string, unknown>).Bun as
-    | { readonly randomUUIDv7?: (encoding?: "hex", timestamp?: number) => string }
-    | undefined;
+    { readonly randomUUIDv7?: (encoding?: "hex", timestamp?: number) => string } | undefined
   if (bunObj && typeof bunObj.randomUUIDv7 === "function") {
     try {
-      return bunObj.randomUUIDv7("hex", timestampMs);
+      return bunObj.randomUUIDv7("hex", timestampMs)
     } catch {
       // Fallback below
     }
   }
 
-  const bytes = new Uint8Array(16);
-  const ts = BigInt(Math.max(0, Math.floor(timestampMs)));
-  bytes[0] = Number((ts >> 40n) & 0xffn);
-  bytes[1] = Number((ts >> 32n) & 0xffn);
-  bytes[2] = Number((ts >> 24n) & 0xffn);
-  bytes[3] = Number((ts >> 16n) & 0xffn);
-  bytes[4] = Number((ts >> 8n) & 0xffn);
-  bytes[5] = Number(ts & 0xffn);
+  const bytes = new Uint8Array(16)
+  const ts = BigInt(Math.max(0, Math.floor(timestampMs)))
+  bytes[0] = Number((ts >> 40n) & 0xffn)
+  bytes[1] = Number((ts >> 32n) & 0xffn)
+  bytes[2] = Number((ts >> 24n) & 0xffn)
+  bytes[3] = Number((ts >> 16n) & 0xffn)
+  bytes[4] = Number((ts >> 8n) & 0xffn)
+  bytes[5] = Number(ts & 0xffn)
 
-  const rand = new Uint8Array(10);
+  const rand = new Uint8Array(10)
   if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
-    crypto.getRandomValues(rand);
+    crypto.getRandomValues(rand)
   } else {
     for (let i = 0; i < rand.length; i += 1) {
-      rand[i] = Math.floor(Math.random() * 256);
+      rand[i] = Math.floor(Math.random() * 256)
     }
   }
 
-  bytes[6] = 0x70 | (rand[0]! & 0x0f); // version 7
-  bytes[7] = rand[1]!;
-  bytes[8] = 0x80 | (rand[2]! & 0x3f); // RFC 4122/9562 variant 10
+  bytes[6] = 0x70 | (rand[0]! & 0x0f) // version 7
+  bytes[7] = rand[1]!
+  bytes[8] = 0x80 | (rand[2]! & 0x3f) // RFC 4122/9562 variant 10
   for (let i = 0; i < 7; i += 1) {
-    bytes[9 + i] = rand[3 + i]!;
+    bytes[9 + i] = rand[3 + i]!
   }
 
-  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
 
 /**
  * Extracts the embedded 48-bit Unix millisecond timestamp from a UUIDv7 string.
  */
 export function decodeUuidV7TimestampIso(uuid: string): string | null {
-  const clean = uuid.replace(/-/g, "");
-  if (!/^[0-9a-fA-F]{32}$/.test(clean)) return null;
-  if (clean[12] !== "7") return null;
-  const ms = Number.parseInt(clean.slice(0, 12), 16);
-  if (!Number.isFinite(ms)) return null;
-  return new Date(ms).toISOString();
+  const clean = uuid.replace(/-/g, "")
+  if (!/^[0-9a-fA-F]{32}$/.test(clean)) return null
+  if (clean[12] !== "7") return null
+  const ms = Number.parseInt(clean.slice(0, 12), 16)
+  if (!Number.isFinite(ms)) return null
+  return new Date(ms).toISOString()
 }
 
 /**
@@ -1653,49 +1633,48 @@ export function decodeUuidV7TimestampIso(uuid: string): string | null {
  */
 export function bunDeepEquals(a: unknown, b: unknown, strict = false): boolean {
   const bunObj = (globalThis as Record<string, unknown>).Bun as
-    | { readonly deepEquals?: (x: unknown, y: unknown, strict?: boolean) => boolean }
-    | undefined;
+    { readonly deepEquals?: (x: unknown, y: unknown, strict?: boolean) => boolean } | undefined
   if (bunObj && typeof bunObj.deepEquals === "function") {
     try {
-      return bunObj.deepEquals(a, b, strict);
+      return bunObj.deepEquals(a, b, strict)
     } catch {
       // Fall through to pure-TS structural equality
     }
   }
 
-  if (Object.is(a, b)) return true;
+  if (Object.is(a, b)) return true
   if (a === null || b === null || typeof a !== "object" || typeof b !== "object") {
-    return false;
+    return false
   }
-  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false
   if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false;
+    if (a.length !== b.length) return false
     for (let i = 0; i < a.length; i += 1) {
-      if (strict && (i in a) !== (i in b)) return false;
-      if (!bunDeepEquals(a[i], b[i], strict)) return false;
+      if (strict && i in a !== i in b) return false
+      if (!bunDeepEquals(a[i], b[i], strict)) return false
     }
-    return true;
+    return true
   }
 
-  const objA = a as Record<string, unknown>;
-  const objB = b as Record<string, unknown>;
-  const keysA = Object.keys(objA).filter((k) => strict || objA[k] !== undefined);
-  const keysB = Object.keys(objB).filter((k) => strict || objB[k] !== undefined);
-  if (keysA.length !== keysB.length) return false;
+  const objA = a as Record<string, unknown>
+  const objB = b as Record<string, unknown>
+  const keysA = Object.keys(objA).filter((k) => strict || objA[k] !== undefined)
+  const keysB = Object.keys(objB).filter((k) => strict || objB[k] !== undefined)
+  if (keysA.length !== keysB.length) return false
   for (const key of keysA) {
     if (!Object.prototype.hasOwnProperty.call(objB, key) && (strict || objA[key] !== undefined)) {
-      return false;
+      return false
     }
-    if (!bunDeepEquals(objA[key], objB[key], strict)) return false;
+    if (!bunDeepEquals(objA[key], objB[key], strict)) return false
   }
-  return true;
+  return true
 }
 
 export interface BunStringUtilityProbeResult {
-  readonly rawLength: number;
-  readonly stripped: string;
-  readonly displayWidth: number;
-  readonly escapedHtml: string;
+  readonly rawLength: number
+  readonly stripped: string
+  readonly displayWidth: number
+  readonly escapedHtml: string
 }
 
 export function evaluateBunStringUtilities(input: string): BunStringUtilityProbeResult {
@@ -1704,36 +1683,35 @@ export function evaluateBunStringUtilities(input: string): BunStringUtilityProbe
     stripped: bunStripAnsi(input),
     displayWidth: bunStringWidth(input),
     escapedHtml: bunEscapeHtml(input),
-  };
+  }
 }
 
 export interface BunColorConversionResult {
-  readonly valid: boolean;
-  readonly input: string;
-  readonly hex: string | null;
-  readonly rgb: string | null;
-  readonly rgba: string | null;
-  readonly number: number | null;
-  readonly ansi16m: string | null;
+  readonly valid: boolean
+  readonly input: string
+  readonly hex: string | null
+  readonly rgb: string | null
+  readonly rgba: string | null
+  readonly number: number | null
+  readonly ansi16m: string | null
 }
 
 /**
  * Parses hex (`#rgb`, `#rrggbb`) or `rgb(r, g, b)` inputs into Bun.color formats.
  */
 export function evaluateBunColorConversions(input: string): BunColorConversionResult {
-  const trimmed = input.trim();
+  const trimmed = input.trim()
   const bunObj = (globalThis as Record<string, unknown>).Bun as
-    | { readonly color?: (val: string, format: string) => string | number | null }
-    | undefined;
+    { readonly color?: (val: string, format: string) => string | number | null } | undefined
 
   if (bunObj && typeof bunObj.color === "function") {
     try {
-      const hex = bunObj.color(trimmed, "hex");
+      const hex = bunObj.color(trimmed, "hex")
       if (typeof hex === "string") {
-        const rgb = bunObj.color(trimmed, "rgb");
-        const rgba = bunObj.color(trimmed, "rgba");
-        const num = bunObj.color(trimmed, "number");
-        const ansi16m = bunObj.color(trimmed, "ansi-16m");
+        const rgb = bunObj.color(trimmed, "rgb")
+        const rgba = bunObj.color(trimmed, "rgba")
+        const num = bunObj.color(trimmed, "number")
+        const ansi16m = bunObj.color(trimmed, "ansi-16m")
         return {
           valid: true,
           input: trimmed,
@@ -1742,35 +1720,34 @@ export function evaluateBunColorConversions(input: string): BunColorConversionRe
           rgba: typeof rgba === "string" ? rgba : null,
           number: typeof num === "number" ? num : null,
           ansi16m: typeof ansi16m === "string" ? ansi16m : null,
-        };
+        }
       }
     } catch {
       // Fall through to pure-TS converter
     }
   }
 
-  let r: number | null = null;
-  let g: number | null = null;
-  let b: number | null = null;
+  let r: number | null = null
+  let g: number | null = null
+  let b: number | null = null
 
-  const shortHex = /^#([0-9a-f]{3})$/i.exec(trimmed);
-  const fullHex = /^#([0-9a-f]{6})$/i.exec(trimmed);
-  const rgbMatch = /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*[0-9.]+)?\s*\)$/i.exec(
-    trimmed,
-  );
+  const shortHex = /^#([0-9a-f]{3})$/i.exec(trimmed)
+  const fullHex = /^#([0-9a-f]{6})$/i.exec(trimmed)
+  const rgbMatch =
+    /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*[0-9.]+)?\s*\)$/i.exec(trimmed)
 
   if (shortHex?.[1]) {
-    r = Number.parseInt(shortHex[1][0]! + shortHex[1][0]!, 16);
-    g = Number.parseInt(shortHex[1][1]! + shortHex[1][1]!, 16);
-    b = Number.parseInt(shortHex[1][2]! + shortHex[1][2]!, 16);
+    r = Number.parseInt(shortHex[1][0]! + shortHex[1][0]!, 16)
+    g = Number.parseInt(shortHex[1][1]! + shortHex[1][1]!, 16)
+    b = Number.parseInt(shortHex[1][2]! + shortHex[1][2]!, 16)
   } else if (fullHex?.[1]) {
-    r = Number.parseInt(fullHex[1].slice(0, 2), 16);
-    g = Number.parseInt(fullHex[1].slice(2, 4), 16);
-    b = Number.parseInt(fullHex[1].slice(4, 6), 16);
+    r = Number.parseInt(fullHex[1].slice(0, 2), 16)
+    g = Number.parseInt(fullHex[1].slice(2, 4), 16)
+    b = Number.parseInt(fullHex[1].slice(4, 6), 16)
   } else if (rgbMatch) {
-    r = Math.min(255, Number.parseInt(rgbMatch[1]!, 10));
-    g = Math.min(255, Number.parseInt(rgbMatch[2]!, 10));
-    b = Math.min(255, Number.parseInt(rgbMatch[3]!, 10));
+    r = Math.min(255, Number.parseInt(rgbMatch[1]!, 10))
+    g = Math.min(255, Number.parseInt(rgbMatch[2]!, 10))
+    b = Math.min(255, Number.parseInt(rgbMatch[3]!, 10))
   }
 
   if (r === null || g === null || b === null) {
@@ -1782,12 +1759,12 @@ export function evaluateBunColorConversions(input: string): BunColorConversionRe
       rgba: null,
       number: null,
       ansi16m: null,
-    };
+    }
   }
 
   const hex = bunColorCss(
     `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`,
-  );
+  )
   return {
     valid: true,
     input: trimmed,
@@ -1796,45 +1773,42 @@ export function evaluateBunColorConversions(input: string): BunColorConversionRe
     rgba: `rgba(${r}, ${g}, ${b}, 1)`,
     number: (r << 16) | (g << 8) | b,
     ansi16m: `\u001b[38;2;${r};${g};${b}m`,
-  };
+  }
 }
 
 // ── Bun.markdown.render & AnsiTheme Cross-Runtime Studio Engine ───────────────
 
 /** Mirrors `import("bun").markdown.AnsiTheme` across Bun, Node.js, and browser runtimes. */
 export interface BunAnsiThemeConfig {
-  readonly colors: boolean;
-  readonly columns: number;
-  readonly hyperlinks: boolean;
-  readonly light: boolean;
-  readonly kittyGraphics: boolean;
+  readonly colors: boolean
+  readonly columns: number
+  readonly hyperlinks: boolean
+  readonly light: boolean
+  readonly kittyGraphics: boolean
 }
 
 export interface BunAnsiSemanticPaletteHex {
-  readonly heading: string;
-  readonly key: string;
-  readonly code: string;
-  readonly ok: string;
-  readonly warn: string;
-  readonly redacted: string;
-  readonly quote: string;
-  readonly link: string;
+  readonly heading: string
+  readonly key: string
+  readonly code: string
+  readonly ok: string
+  readonly warn: string
+  readonly redacted: string
+  readonly quote: string
+  readonly link: string
 }
 
 export type BunMarkdownRenderPresetId =
-  | "obsidian-desk"
-  | "amber-surveillance"
-  | "emerald-audit"
-  | "light-paper";
+  "obsidian-desk" | "amber-surveillance" | "emerald-audit" | "light-paper"
 
-export type BunMarkdownRenderMode = "render-callbacks" | "ansi-theme" | "html";
+export type BunMarkdownRenderMode = "render-callbacks" | "ansi-theme" | "html"
 
 export interface BunMarkdownRenderPreset {
-  readonly id: BunMarkdownRenderPresetId;
-  readonly label: string;
-  readonly description: string;
-  readonly defaultTheme: BunAnsiThemeConfig;
-  readonly paletteHex: BunAnsiSemanticPaletteHex;
+  readonly id: BunMarkdownRenderPresetId
+  readonly label: string
+  readonly description: string
+  readonly defaultTheme: BunAnsiThemeConfig
+  readonly paletteHex: BunAnsiSemanticPaletteHex
 }
 
 export const BUN_ANSI_THEME_PRESETS: readonly BunMarkdownRenderPreset[] = [
@@ -1926,12 +1900,12 @@ export const BUN_ANSI_THEME_PRESETS: readonly BunMarkdownRenderPreset[] = [
       link: "#1d4ed8",
     },
   },
-];
+]
 
 export interface BunMarkdownCallbackSpec {
-  readonly hook: string;
-  readonly signature: string;
-  readonly role: string;
+  readonly hook: string
+  readonly signature: string
+  readonly role: string
 }
 
 export const BUN_MARKDOWN_CALLBACK_SPECS: readonly BunMarkdownCallbackSpec[] = [
@@ -1995,7 +1969,7 @@ export const BUN_MARKDOWN_CALLBACK_SPECS: readonly BunMarkdownCallbackSpec[] = [
     signature: "(text) => string",
     role: "Leaf sanitizer stripping raw C0/C1 terminal control codes",
   },
-];
+]
 
 export const DEFAULT_BUN_MARKDOWN_STUDIO_SAMPLE = `# SportsDesk Ops — Live Surface Brief
 
@@ -2007,120 +1981,125 @@ export const DEFAULT_BUN_MARKDOWN_STUDIO_SAMPLE = `# SportsDesk Ops — Live Sur
 
 > Use \`Bun.markdown.render(md, callbacks)\` for custom SGR themes and \`Bun.markdown.ansi(md, theme)\` for built-in terminal layout.
 
----`;
+---`
 
 export interface BunMarkdownStudioOptions {
-  readonly mode?: BunMarkdownRenderMode | undefined;
-  readonly presetId?: BunMarkdownRenderPresetId | undefined;
-  readonly theme?: Partial<BunAnsiThemeConfig> | undefined;
+  readonly mode?: BunMarkdownRenderMode | undefined
+  readonly presetId?: BunMarkdownRenderPresetId | undefined
+  readonly theme?: Partial<BunAnsiThemeConfig> | undefined
 }
 
 export interface BunMarkdownStudioResult {
-  readonly engine: "bun-native" | "ts-fallback";
-  readonly mode: BunMarkdownRenderMode;
-  readonly presetId: BunMarkdownRenderPresetId;
-  readonly ansiTheme: BunAnsiThemeConfig;
-  readonly paletteHex: BunAnsiSemanticPaletteHex;
-  readonly resolvedPaletteAnsi: Readonly<Record<keyof BunAnsiSemanticPaletteHex, string>>;
-  readonly ansi: string;
-  readonly plain: string;
-  readonly html: string;
-  readonly lineCount: number;
-  readonly maxColumns: number;
-  readonly ansiByteLength: number;
-  readonly callbacksInvoked: readonly string[];
+  readonly engine: "bun-native" | "ts-fallback"
+  readonly mode: BunMarkdownRenderMode
+  readonly presetId: BunMarkdownRenderPresetId
+  readonly ansiTheme: BunAnsiThemeConfig
+  readonly paletteHex: BunAnsiSemanticPaletteHex
+  readonly resolvedPaletteAnsi: Readonly<Record<keyof BunAnsiSemanticPaletteHex, string>>
+  readonly ansi: string
+  readonly plain: string
+  readonly html: string
+  readonly lineCount: number
+  readonly maxColumns: number
+  readonly ansiByteLength: number
+  readonly callbacksInvoked: readonly string[]
 }
 
-const STUDIO_TERMINAL_CONTROLS = /[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/g;
+const STUDIO_TERMINAL_CONTROLS = /[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/g
 const STUDIO_SIGNED_S3_PARAMS = new Set([
   "x-amz-credential",
   "x-amz-signature",
   "x-amz-security-token",
-]);
+])
 
 function stripTerminalControls(text: string): string {
-  return text.replace(STUDIO_TERMINAL_CONTROLS, "");
+  return text.replace(STUDIO_TERMINAL_CONTROLS, "")
 }
 
 function validateSafeStudioHref(href: string): string | null {
-  if (/[\u0000-\u001f\u007f-\u009f\t\n]/.test(href)) return null;
+  if (/[\u0000-\u001f\u007f-\u009f\t\n]/.test(href)) return null
   try {
-    const parsed = new URL(href.trim());
+    const parsed = new URL(href.trim())
     if (
       parsed.protocol !== "https:" &&
       parsed.protocol !== "http:" &&
       parsed.protocol !== "mailto:"
     ) {
-      return null;
+      return null
     }
     for (const key of parsed.searchParams.keys()) {
-      if (STUDIO_SIGNED_S3_PARAMS.has(key.toLowerCase())) return null;
+      if (STUDIO_SIGNED_S3_PARAMS.has(key.toLowerCase())) return null
     }
-    return parsed.href;
+    return parsed.href
   } catch {
-    return null;
+    return null
   }
 }
 
-function buildOsc8Link(label: string, href: string, enabled: boolean, linkColor: string, reset: string): string {
-  const safe = validateSafeStudioHref(href);
-  const cleanLabel = stripTerminalControls(label).replace(/[\t\n]/g, " ");
-  if (!safe) return cleanLabel;
-  if (!enabled) return `${linkColor}${cleanLabel}${reset} (${safe})`;
-  return `\u001b]8;;${safe}\u001b\\${linkColor}\u001b[4m${cleanLabel}\u001b[24m${reset}\u001b]8;;\u001b\\`;
+function buildOsc8Link(
+  label: string,
+  href: string,
+  enabled: boolean,
+  linkColor: string,
+  reset: string,
+): string {
+  const safe = validateSafeStudioHref(href)
+  const cleanLabel = stripTerminalControls(label).replace(/[\t\n]/g, " ")
+  if (!safe) return cleanLabel
+  if (!enabled) return `${linkColor}${cleanLabel}${reset} (${safe})`
+  return `\u001b]8;;${safe}\u001b\\${linkColor}\u001b[4m${cleanLabel}\u001b[24m${reset}\u001b]8;;\u001b\\`
 }
 
 function wrapTextToColumns(text: string, columns: number): string {
-  if (!Number.isFinite(columns) || columns <= 0) return text;
+  if (!Number.isFinite(columns) || columns <= 0) return text
   const bunObj = (globalThis as Record<string, unknown>).Bun as
-    | { readonly wrapAnsi?: (input: string, cols: number) => string }
-    | undefined;
+    { readonly wrapAnsi?: (input: string, cols: number) => string } | undefined
   if (typeof bunObj?.wrapAnsi === "function") {
     try {
-      return bunObj.wrapAnsi(text, columns);
+      return bunObj.wrapAnsi(text, columns)
     } catch {
       // fall through
     }
   }
-  const lines = text.split("\n");
-  const out: string[] = [];
+  const lines = text.split("\n")
+  const out: string[] = []
   for (const line of lines) {
     if (bunStringWidth(line) <= columns) {
-      out.push(line);
-      continue;
+      out.push(line)
+      continue
     }
-    const words = line.split(" ");
-    let current = "";
+    const words = line.split(" ")
+    let current = ""
     for (const word of words) {
       if (!current) {
-        current = word;
+        current = word
       } else if (bunStringWidth(current) + 1 + bunStringWidth(word) <= columns) {
-        current = `${current} ${word}`;
+        current = `${current} ${word}`
       } else {
-        out.push(current);
-        current = word;
+        out.push(current)
+        current = word
       }
     }
-    if (current) out.push(current);
+    if (current) out.push(current)
   }
-  return out.join("\n");
+  return out.join("\n")
 }
 
 function resolveSemanticPaletteAnsi(
   paletteHex: BunAnsiSemanticPaletteHex,
   colorsEnabled: boolean,
 ): Record<keyof BunAnsiSemanticPaletteHex, string> {
-  const keys = Object.keys(paletteHex) as (keyof BunAnsiSemanticPaletteHex)[];
-  const resolved = {} as Record<keyof BunAnsiSemanticPaletteHex, string>;
+  const keys = Object.keys(paletteHex) as (keyof BunAnsiSemanticPaletteHex)[]
+  const resolved = {} as Record<keyof BunAnsiSemanticPaletteHex, string>
   for (const k of keys) {
     if (!colorsEnabled) {
-      resolved[k] = "";
+      resolved[k] = ""
     } else {
-      const converted = evaluateBunColorConversions(paletteHex[k]);
-      resolved[k] = converted.ansi16m ?? "";
+      const converted = evaluateBunColorConversions(paletteHex[k])
+      resolved[k] = converted.ansi16m ?? ""
     }
   }
-  return resolved;
+  return resolved
 }
 
 function fallbackMarkdownRenderToAnsi(
@@ -2130,16 +2109,16 @@ function fallbackMarkdownRenderToAnsi(
   paletteAnsi: Readonly<Record<keyof BunAnsiSemanticPaletteHex, string>>,
   callbacksInvoked: Set<string>,
 ): string {
-  const useColor = theme.colors;
-  const reset = useColor ? "\u001b[0m" : "";
-  const boldOn = useColor ? "\u001b[1m" : "";
-  const boldOff = useColor ? "\u001b[22m" : "";
-  const dimOn = useColor ? "\u001b[2m" : "";
-  const italicOn = useColor ? "\u001b[3m" : "";
-  const italicOff = useColor ? "\u001b[23m" : "";
-  const strikeOn = useColor ? "\u001b[9m" : "";
-  const strikeOff = useColor ? "\u001b[29m" : "";
-  const cols = Math.max(24, Math.min(200, Math.floor(theme.columns || 76)));
+  const useColor = theme.colors
+  const reset = useColor ? "\u001b[0m" : ""
+  const boldOn = useColor ? "\u001b[1m" : ""
+  const boldOff = useColor ? "\u001b[22m" : ""
+  const dimOn = useColor ? "\u001b[2m" : ""
+  const italicOn = useColor ? "\u001b[3m" : ""
+  const italicOff = useColor ? "\u001b[23m" : ""
+  const strikeOn = useColor ? "\u001b[9m" : ""
+  const strikeOff = useColor ? "\u001b[29m" : ""
+  const cols = Math.max(24, Math.min(200, Math.floor(theme.columns || 76)))
 
   const hColor =
     mode === "ansi-theme"
@@ -2148,7 +2127,7 @@ function fallbackMarkdownRenderToAnsi(
           ? "\u001b[1;34m"
           : "\u001b[1;35m"
         : ""
-      : `${boldOn}${paletteAnsi.heading}`;
+      : `${boldOn}${paletteAnsi.heading}`
   const codeDefault =
     mode === "ansi-theme"
       ? useColor
@@ -2156,105 +2135,102 @@ function fallbackMarkdownRenderToAnsi(
           ? "\u001b[48;5;254m\u001b[38;5;124m"
           : "\u001b[48;5;236m\u001b[38;5;215m"
         : ""
-      : paletteAnsi.code;
-  const linkColor =
-    mode === "ansi-theme"
-      ? useColor
-        ? "\u001b[34m"
-        : ""
-      : paletteAnsi.link;
+      : paletteAnsi.code
+  const linkColor = mode === "ansi-theme" ? (useColor ? "\u001b[34m" : "") : paletteAnsi.link
 
   const formatInline = (raw: string): string => {
-    let s = stripTerminalControls(raw);
+    let s = stripTerminalControls(raw)
     s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label: string, href: string) => {
-      callbacksInvoked.add("link");
-      return buildOsc8Link(label, href, useColor && theme.hyperlinks, linkColor, reset);
-    });
+      callbacksInvoked.add("link")
+      return buildOsc8Link(label, href, useColor && theme.hyperlinks, linkColor, reset)
+    })
     s = s.replace(/`([^`]+)`/g, (_m, code: string) => {
-      callbacksInvoked.add("codespan");
-      const isRedacted = code.startsWith("[REDACTED");
-      const tint = isRedacted && mode === "render-callbacks" ? paletteAnsi.redacted : codeDefault;
-      return `${tint}${code}${reset}`;
-    });
+      callbacksInvoked.add("codespan")
+      const isRedacted = code.startsWith("[REDACTED")
+      const tint = isRedacted && mode === "render-callbacks" ? paletteAnsi.redacted : codeDefault
+      return `${tint}${code}${reset}`
+    })
     s = s.replace(/\*\*([^*]+)\*\*/g, (_m, inner: string) => {
-      callbacksInvoked.add("strong");
+      callbacksInvoked.add("strong")
       return mode === "render-callbacks"
         ? `${boldOn}${paletteAnsi.key}${inner}${reset}`
-        : `${boldOn}${inner}${boldOff}`;
-    });
+        : `${boldOn}${inner}${boldOff}`
+    })
     s = s.replace(/~~([^~]+)~~/g, (_m, inner: string) => {
-      callbacksInvoked.add("strikethrough");
-      return `${strikeOn}${inner}${strikeOff}`;
-    });
+      callbacksInvoked.add("strikethrough")
+      return `${strikeOn}${inner}${strikeOff}`
+    })
     s = s.replace(/(^|[^*])\*([^*]+)\*/g, (_m, prefix: string, inner: string) => {
-      callbacksInvoked.add("emphasis");
-      return `${prefix}${italicOn}${inner}${italicOff}`;
-    });
-    return s;
-  };
+      callbacksInvoked.add("emphasis")
+      return `${prefix}${italicOn}${inner}${italicOff}`
+    })
+    return s
+  }
 
-  let inFence = false;
-  const lines: string[] = [];
+  let inFence = false
+  const lines: string[] = []
   for (const rawLine of markdown.replace(/\r\n?/g, "\n").split("\n")) {
-    const trimmed = rawLine.trim();
+    const trimmed = rawLine.trim()
     if (trimmed.startsWith("```")) {
-      inFence = !inFence;
-      callbacksInvoked.add("code");
-      continue;
+      inFence = !inFence
+      callbacksInvoked.add("code")
+      continue
     }
     if (inFence) {
-      lines.push(`${dimOn}${stripTerminalControls(rawLine)}${reset}`);
-      continue;
+      lines.push(`${dimOn}${stripTerminalControls(rawLine)}${reset}`)
+      continue
     }
     if (/^(?:---+|\*\*\*+|___+)$/.test(trimmed)) {
-      callbacksInvoked.add("hr");
-      lines.push(`${dimOn}${"─".repeat(Math.min(cols, 56))}${reset}`);
-      continue;
+      callbacksInvoked.add("hr")
+      lines.push(`${dimOn}${"─".repeat(Math.min(cols, 56))}${reset}`)
+      continue
     }
-    const headingMatch = /^(#{1,6})\s+(.*)$/.exec(rawLine);
+    const headingMatch = /^(#{1,6})\s+(.*)$/.exec(rawLine)
     if (headingMatch) {
-      callbacksInvoked.add("heading");
-      const level = headingMatch[1]!.length;
-      const body = formatInline(headingMatch[2] ?? "");
+      callbacksInvoked.add("heading")
+      const level = headingMatch[1]!.length
+      const body = formatInline(headingMatch[2] ?? "")
       if (mode === "ansi-theme" && level === 1) {
-        lines.push(`${hColor}${body}${reset}`);
-        lines.push(`${dimOn}${"═".repeat(Math.min(cols, Math.max(8, bunStringWidth(body))))}${reset}`);
+        lines.push(`${hColor}${body}${reset}`)
+        lines.push(
+          `${dimOn}${"═".repeat(Math.min(cols, Math.max(8, bunStringWidth(body))))}${reset}`,
+        )
       } else {
-        const prefix = level > 1 ? `${"#".repeat(level)} ` : "";
-        lines.push(`${hColor}${prefix}${body}${reset}`);
+        const prefix = level > 1 ? `${"#".repeat(level)} ` : ""
+        lines.push(`${hColor}${prefix}${body}${reset}`)
       }
-      continue;
+      continue
     }
-    const quoteMatch = /^>\s?(.*)$/.exec(rawLine);
+    const quoteMatch = /^>\s?(.*)$/.exec(rawLine)
     if (quoteMatch) {
-      callbacksInvoked.add("blockquote");
-      const bar = useColor ? `${paletteAnsi.quote}│ ${reset}` : "| ";
-      lines.push(`${bar}${formatInline(quoteMatch[1] ?? "")}`);
-      continue;
+      callbacksInvoked.add("blockquote")
+      const bar = useColor ? `${paletteAnsi.quote}│ ${reset}` : "| "
+      lines.push(`${bar}${formatInline(quoteMatch[1] ?? "")}`)
+      continue
     }
-    const listMatch = /^(\s*[-*+]|\s*\d+\.)\s+(.*)$/.exec(rawLine);
+    const listMatch = /^(\s*[-*+]|\s*\d+\.)\s+(.*)$/.exec(rawLine)
     if (listMatch) {
-      callbacksInvoked.add("listItem");
-      const marker = listMatch[1]!.trim();
+      callbacksInvoked.add("listItem")
+      const marker = listMatch[1]!.trim()
       const bullet = /^\d+\./.test(marker)
         ? `${paletteAnsi.key}${marker}${reset}`
-        : `${paletteAnsi.ok}•${reset}`;
-      lines.push(`  ${bullet} ${formatInline(listMatch[2] ?? "")}`);
-      continue;
+        : `${paletteAnsi.ok}•${reset}`
+      lines.push(`  ${bullet} ${formatInline(listMatch[2] ?? "")}`)
+      continue
     }
     if (trimmed === "") {
-      lines.push("");
-      continue;
+      lines.push("")
+      continue
     }
-    callbacksInvoked.add("paragraph");
-    lines.push(wrapTextToColumns(formatInline(rawLine), cols));
+    callbacksInvoked.add("paragraph")
+    lines.push(wrapTextToColumns(formatInline(rawLine), cols))
   }
-  return `${lines.join("\n").trimEnd()}\n`;
+  return `${lines.join("\n").trimEnd()}\n`
 }
 
 function fallbackMarkdownToSafeHtml(markdown: string): string {
-  const escaped = bunEscapeHtml(stripTerminalControls(markdown));
-  return `<pre>${escaped}</pre>`;
+  const escaped = bunEscapeHtml(stripTerminalControls(markdown))
+  return `<pre>${escaped}</pre>`
 }
 
 /**
@@ -2267,39 +2243,42 @@ export function renderBunMarkdownStudio(
   markdown: string,
   options: BunMarkdownStudioOptions = {},
 ): BunMarkdownStudioResult {
-  const mode: BunMarkdownRenderMode = options.mode ?? "render-callbacks";
+  const mode: BunMarkdownRenderMode = options.mode ?? "render-callbacks"
   const preset =
-    BUN_ANSI_THEME_PRESETS.find((p) => p.id === options.presetId) ?? BUN_ANSI_THEME_PRESETS[0]!;
+    BUN_ANSI_THEME_PRESETS.find((p) => p.id === options.presetId) ?? BUN_ANSI_THEME_PRESETS[0]!
   const ansiTheme: BunAnsiThemeConfig = {
     colors: options.theme?.colors ?? preset.defaultTheme.colors,
-    columns: Math.max(24, Math.min(200, Math.floor(options.theme?.columns ?? preset.defaultTheme.columns))),
+    columns: Math.max(
+      24,
+      Math.min(200, Math.floor(options.theme?.columns ?? preset.defaultTheme.columns)),
+    ),
     hyperlinks: options.theme?.hyperlinks ?? preset.defaultTheme.hyperlinks,
     light: options.theme?.light ?? preset.defaultTheme.light,
     kittyGraphics: options.theme?.kittyGraphics ?? preset.defaultTheme.kittyGraphics,
-  };
-  const resolvedPaletteAnsi = resolveSemanticPaletteAnsi(preset.paletteHex, ansiTheme.colors);
-  const cleanSource = stripTerminalControls(markdown.replace(/\r\n?/g, "\n"));
-  const callbacksInvoked = new Set<string>();
+  }
+  const resolvedPaletteAnsi = resolveSemanticPaletteAnsi(preset.paletteHex, ansiTheme.colors)
+  const cleanSource = stripTerminalControls(markdown.replace(/\r\n?/g, "\n"))
+  const callbacksInvoked = new Set<string>()
 
   const bunMd = (
     (globalThis as Record<string, unknown>).Bun as
       | {
           readonly markdown?: {
-            readonly html?: (input: string, opts?: Record<string, unknown>) => string;
-            readonly ansi?: (input: string, theme?: BunAnsiThemeConfig) => string;
+            readonly html?: (input: string, opts?: Record<string, unknown>) => string
+            readonly ansi?: (input: string, theme?: BunAnsiThemeConfig) => string
             readonly render?: (
               input: string,
               callbacks: Record<string, (...args: unknown[]) => string>,
               opts?: Record<string, unknown>,
-            ) => string;
-          };
+            ) => string
+          }
         }
       | undefined
-  )?.markdown;
+  )?.markdown
 
-  let engine: "bun-native" | "ts-fallback" = "ts-fallback";
-  let ansi = "";
-  let html = "";
+  let engine: "bun-native" | "ts-fallback" = "ts-fallback"
+  let ansi = ""
+  let html = ""
 
   if (typeof bunMd?.html === "function") {
     try {
@@ -2311,24 +2290,24 @@ export function renderBunMarkdownStudio(
         tagFilter: true,
         noHtmlBlocks: true,
         noHtmlSpans: true,
-      });
-      if (mode === "html") engine = "bun-native";
+      })
+      if (mode === "html") engine = "bun-native"
     } catch {
-      html = fallbackMarkdownToSafeHtml(cleanSource);
+      html = fallbackMarkdownToSafeHtml(cleanSource)
     }
   } else {
-    html = fallbackMarkdownToSafeHtml(cleanSource);
+    html = fallbackMarkdownToSafeHtml(cleanSource)
   }
 
   if (mode === "ansi-theme" && typeof bunMd?.ansi === "function") {
     try {
-      const rawAnsi = bunMd.ansi(cleanSource, ansiTheme);
+      const rawAnsi = bunMd.ansi(cleanSource, ansiTheme)
       // Sanitize any OSC-8 hyperlink emitted by Bun.markdown.ansi
       ansi = rawAnsi.replace(/\u001b\]8;;([^\u001b]*)\u001b\\/g, (seq, href: string) =>
         href === "" || validateSafeStudioHref(href) !== null ? seq : "",
-      );
-      engine = "bun-native";
-      callbacksInvoked.add("Bun.markdown.ansi(AnsiTheme)");
+      )
+      engine = "bun-native"
+      callbacksInvoked.add("Bun.markdown.ansi(AnsiTheme)")
     } catch {
       ansi = fallbackMarkdownRenderToAnsi(
         cleanSource,
@@ -2336,115 +2315,115 @@ export function renderBunMarkdownStudio(
         ansiTheme,
         resolvedPaletteAnsi,
         callbacksInvoked,
-      );
+      )
     }
   } else if (mode === "render-callbacks" && typeof bunMd?.render === "function") {
     try {
-      const reset = ansiTheme.colors ? "\u001b[0m" : "";
-      const bold = ansiTheme.colors ? "\u001b[1m" : "";
-      const dim = ansiTheme.colors ? "\u001b[2m" : "";
-      const italic = ansiTheme.colors ? "\u001b[3m" : "";
-      const italicOff = ansiTheme.colors ? "\u001b[23m" : "";
-      const strike = ansiTheme.colors ? "\u001b[9m" : "";
-      const strikeOff = ansiTheme.colors ? "\u001b[29m" : "";
-      const cols = ansiTheme.columns;
+      const reset = ansiTheme.colors ? "\u001b[0m" : ""
+      const bold = ansiTheme.colors ? "\u001b[1m" : ""
+      const dim = ansiTheme.colors ? "\u001b[2m" : ""
+      const italic = ansiTheme.colors ? "\u001b[3m" : ""
+      const italicOff = ansiTheme.colors ? "\u001b[23m" : ""
+      const strike = ansiTheme.colors ? "\u001b[9m" : ""
+      const strikeOff = ansiTheme.colors ? "\u001b[29m" : ""
+      const cols = ansiTheme.columns
 
       ansi = bunMd.render(
         cleanSource,
         {
           text: (t: unknown) => {
-            callbacksInvoked.add("text");
-            return stripTerminalControls(String(t ?? ""));
+            callbacksInvoked.add("text")
+            return stripTerminalControls(String(t ?? ""))
           },
           html: (h: unknown) => {
-            callbacksInvoked.add("html");
-            return stripTerminalControls(String(h ?? ""));
+            callbacksInvoked.add("html")
+            return stripTerminalControls(String(h ?? ""))
           },
           heading: (children: unknown, meta?: unknown) => {
-            callbacksInvoked.add("heading");
+            callbacksInvoked.add("heading")
             const level =
               meta && typeof meta === "object" && "level" in meta
                 ? Number((meta as { level?: unknown }).level ?? 1)
-                : 1;
-            const prefix = level > 1 ? `${"#".repeat(level)} ` : "";
-            const line = wrapTextToColumns(`${prefix}${String(children ?? "")}`, cols);
-            return `${bold}${resolvedPaletteAnsi.heading}${line}${reset}\n`;
+                : 1
+            const prefix = level > 1 ? `${"#".repeat(level)} ` : ""
+            const line = wrapTextToColumns(`${prefix}${String(children ?? "")}`, cols)
+            return `${bold}${resolvedPaletteAnsi.heading}${line}${reset}\n`
           },
           paragraph: (children: unknown) => {
-            callbacksInvoked.add("paragraph");
-            return `${wrapTextToColumns(String(children ?? ""), cols)}\n\n`;
+            callbacksInvoked.add("paragraph")
+            return `${wrapTextToColumns(String(children ?? ""), cols)}\n\n`
           },
           strong: (children: unknown) => {
-            callbacksInvoked.add("strong");
-            return `${bold}${resolvedPaletteAnsi.key}${String(children ?? "")}${reset}`;
+            callbacksInvoked.add("strong")
+            return `${bold}${resolvedPaletteAnsi.key}${String(children ?? "")}${reset}`
           },
           emphasis: (children: unknown) => {
-            callbacksInvoked.add("emphasis");
-            return `${italic}${String(children ?? "")}${italicOff}`;
+            callbacksInvoked.add("emphasis")
+            return `${italic}${String(children ?? "")}${italicOff}`
           },
           strikethrough: (children: unknown) => {
-            callbacksInvoked.add("strikethrough");
-            return `${strike}${String(children ?? "")}${strikeOff}`;
+            callbacksInvoked.add("strikethrough")
+            return `${strike}${String(children ?? "")}${strikeOff}`
           },
           codespan: (children: unknown) => {
-            callbacksInvoked.add("codespan");
-            const clean = stripTerminalControls(String(children ?? ""));
+            callbacksInvoked.add("codespan")
+            const clean = stripTerminalControls(String(children ?? ""))
             const color = clean.startsWith("[REDACTED")
               ? resolvedPaletteAnsi.redacted
-              : resolvedPaletteAnsi.code;
-            return `${color}${clean}${reset}`;
+              : resolvedPaletteAnsi.code
+            return `${color}${clean}${reset}`
           },
           code: (children: unknown) => {
-            callbacksInvoked.add("code");
-            return `${dim}${stripTerminalControls(String(children ?? ""))}${reset}\n`;
+            callbacksInvoked.add("code")
+            return `${dim}${stripTerminalControls(String(children ?? ""))}${reset}\n`
           },
           blockquote: (children: unknown) => {
-            callbacksInvoked.add("blockquote");
-            const body = String(children ?? "").trimEnd();
-            const prefix = ansiTheme.colors ? `${resolvedPaletteAnsi.quote}│ ${reset}` : "| ";
+            callbacksInvoked.add("blockquote")
+            const body = String(children ?? "").trimEnd()
+            const prefix = ansiTheme.colors ? `${resolvedPaletteAnsi.quote}│ ${reset}` : "| "
             return `${body
               .split("\n")
               .map((l) => `${prefix}${l}`)
-              .join("\n")}\n\n`;
+              .join("\n")}\n\n`
           },
           list: (children: unknown) => {
-            callbacksInvoked.add("list");
-            return `${String(children ?? "")}\n`;
+            callbacksInvoked.add("list")
+            return `${String(children ?? "")}\n`
           },
           listItem: (children: unknown, meta?: unknown) => {
-            callbacksInvoked.add("listItem");
-            const m = (meta ?? {}) as { ordered?: boolean; index?: number; start?: number };
+            callbacksInvoked.add("listItem")
+            const m = (meta ?? {}) as { ordered?: boolean; index?: number; start?: number }
             const bullet = m.ordered
               ? `${resolvedPaletteAnsi.key}${(m.start ?? 1) + (m.index ?? 0)}.${reset}`
-              : `${resolvedPaletteAnsi.ok}•${reset}`;
-            return `  ${bullet} ${String(children ?? "").trimEnd()}\n`;
+              : `${resolvedPaletteAnsi.ok}•${reset}`
+            return `  ${bullet} ${String(children ?? "").trimEnd()}\n`
           },
           hr: () => {
-            callbacksInvoked.add("hr");
-            return `${dim}${"─".repeat(Math.min(cols, 56))}${reset}\n`;
+            callbacksInvoked.add("hr")
+            return `${dim}${"─".repeat(Math.min(cols, 56))}${reset}\n`
           },
           link: (children: unknown, meta?: unknown) => {
-            callbacksInvoked.add("link");
+            callbacksInvoked.add("link")
             const href =
               meta && typeof meta === "object" && "href" in meta
                 ? String((meta as { href?: unknown }).href ?? "")
-                : "";
+                : ""
             return buildOsc8Link(
               String(children ?? ""),
               href,
               ansiTheme.colors && ansiTheme.hyperlinks,
               resolvedPaletteAnsi.link,
               reset,
-            );
+            )
           },
           image: (alt: unknown) => {
-            callbacksInvoked.add("image");
-            return stripTerminalControls(String(alt ?? ""));
+            callbacksInvoked.add("image")
+            return stripTerminalControls(String(alt ?? ""))
           },
         },
         { tables: true, strikethrough: true, tasklists: true, autolinks: true },
-      );
-      engine = "bun-native";
+      )
+      engine = "bun-native"
     } catch {
       ansi = fallbackMarkdownRenderToAnsi(
         cleanSource,
@@ -2452,11 +2431,11 @@ export function renderBunMarkdownStudio(
         ansiTheme,
         resolvedPaletteAnsi,
         callbacksInvoked,
-      );
+      )
     }
   } else if (mode === "html") {
-    ansi = html;
-    callbacksInvoked.add("Bun.markdown.html");
+    ansi = html
+    callbacksInvoked.add("Bun.markdown.html")
   } else {
     ansi = fallbackMarkdownRenderToAnsi(
       cleanSource,
@@ -2464,15 +2443,15 @@ export function renderBunMarkdownStudio(
       ansiTheme,
       resolvedPaletteAnsi,
       callbacksInvoked,
-    );
+    )
   }
 
-  const plain = bunStripAnsi(ansi);
-  const splitLines = plain.replace(/\n$/, "").split("\n");
-  let maxColumns = 0;
+  const plain = bunStripAnsi(ansi)
+  const splitLines = plain.replace(/\n$/, "").split("\n")
+  let maxColumns = 0
   for (const line of splitLines) {
-    const w = bunStringWidth(line);
-    if (w > maxColumns) maxColumns = w;
+    const w = bunStringWidth(line)
+    if (w > maxColumns) maxColumns = w
   }
 
   return {
@@ -2489,5 +2468,5 @@ export function renderBunMarkdownStudio(
     maxColumns,
     ansiByteLength: new TextEncoder().encode(ansi).length,
     callbacksInvoked: Array.from(callbacksInvoked),
-  };
+  }
 }

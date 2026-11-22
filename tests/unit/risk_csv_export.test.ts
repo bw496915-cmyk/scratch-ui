@@ -154,8 +154,18 @@ describe("risk_csv_export", () => {
     ]
     const wagers = [
       makeWager({ customerId: "SHARP-101", riskUsd: 2200, alertTier: "CRITICAL" }),
-      makeWager({ customerId: "SHARP-101", ticketId: "TKT-9003", riskUsd: 1800, alertTier: "STEAM" }),
-      makeWager({ customerId: "SHARP-101", ticketId: "TKT-9004", riskUsd: 400, alertTier: "BASELINE" }),
+      makeWager({
+        customerId: "SHARP-101",
+        ticketId: "TKT-9003",
+        riskUsd: 1800,
+        alertTier: "STEAM",
+      }),
+      makeWager({
+        customerId: "SHARP-101",
+        ticketId: "TKT-9004",
+        riskUsd: 400,
+        alertTier: "BASELINE",
+      }),
     ]
 
     const csv = buildRiskOverviewAccountsCsv(customers, wagers)

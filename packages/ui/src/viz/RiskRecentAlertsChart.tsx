@@ -71,12 +71,12 @@ export function RiskRecentAlertsChart({
       .paddingOuter(0.08)
 
     const yMax = Math.max(2, series.maxBucketTotal)
-    const yScale = scaleLinear().domain([0, yMax]).range([PAD_TOP + plotHeight, PAD_TOP]).nice()
+    const yScale = scaleLinear()
+      .domain([0, yMax])
+      .range([PAD_TOP + plotHeight, PAD_TOP])
+      .nice()
     const niceMax = yScale.domain()[1] ?? yMax
-    const yTicks =
-      niceMax <= 2
-        ? [0, 1, 2]
-        : [0, Math.round(niceMax / 2), niceMax]
+    const yTicks = niceMax <= 2 ? [0, 1, 2] : [0, Math.round(niceMax / 2), niceMax]
 
     // D3 stack layout: Warnings form the base, Breaches stack on top
     const stackGen = stack<AlertFrequencyBucket, "warnCount" | "breachCount">().keys([
@@ -151,8 +151,7 @@ export function RiskRecentAlertsChart({
   const marker = series.thresholdMarker
   const compactLimit = formatRiskCompactUsd(marker.breachLimitUsd)
   const inspectedIdx = hoveredThreshold ? null : (hoveredIdx ?? selectedBucketIndex)
-  const inspectedBucket =
-    inspectedIdx !== null ? (series.buckets[inspectedIdx] ?? null) : null
+  const inspectedBucket = inspectedIdx !== null ? (series.buckets[inspectedIdx] ?? null) : null
   const trendMeta = TREND_META[series.trend]
 
   const xLabelIndices = [0, 4, 8, Math.max(0, series.buckets.length - 1)]
@@ -307,12 +306,7 @@ export function RiskRecentAlertsChart({
                 y2={y}
                 className={tick === 0 ? "sd-alerts-d3-axis-base" : "sd-alerts-d3-grid"}
               />
-              <text
-                x={PAD_LEFT - 5}
-                y={y + 3}
-                textAnchor="end"
-                className="sd-alerts-d3-tick"
-              >
+              <text x={PAD_LEFT - 5} y={y + 3} textAnchor="end" className="sd-alerts-d3-tick">
                 {tick}
               </text>
             </g>
@@ -501,12 +495,17 @@ export function RiskRecentAlertsChart({
           const bucket = series.buckets[idx]
           if (!bucket) return null
           const x = (layout.xScale(bucket.index) ?? PAD_LEFT) + layout.bandwidth / 2
-          const anchor =
-            idx === 0 ? "start" : idx === series.buckets.length - 1 ? "end" : "middle"
+          const anchor = idx === 0 ? "start" : idx === series.buckets.length - 1 ? "end" : "middle"
           return (
             <text
               key={`x-${idx}`}
-              x={idx === 0 ? PAD_LEFT : idx === series.buckets.length - 1 ? CHART_WIDTH - PAD_RIGHT : x}
+              x={
+                idx === 0
+                  ? PAD_LEFT
+                  : idx === series.buckets.length - 1
+                    ? CHART_WIDTH - PAD_RIGHT
+                    : x
+              }
               y={CHART_HEIGHT - 5}
               textAnchor={anchor}
               className="sd-alerts-d3-tick"
@@ -550,7 +549,10 @@ export function RiskRecentAlertsChart({
               aria-pressed={statusFilter === "BREACH"}
               title={statusFilter === "BREACH" ? "Show all severities" : "Isolate Breach events"}
             >
-              <span className="sd-alerts-d3-swatch sd-alerts-d3-swatch--breach" aria-hidden="true" />
+              <span
+                className="sd-alerts-d3-swatch sd-alerts-d3-swatch--breach"
+                aria-hidden="true"
+              />
               <span>Breach</span>
             </button>
           </>
@@ -561,7 +563,10 @@ export function RiskRecentAlertsChart({
               <span>Warning</span>
             </span>
             <span className="sd-alerts-d3-legend-item">
-              <span className="sd-alerts-d3-swatch sd-alerts-d3-swatch--breach" aria-hidden="true" />
+              <span
+                className="sd-alerts-d3-swatch sd-alerts-d3-swatch--breach"
+                aria-hidden="true"
+              />
               <span>Breach</span>
             </span>
           </>

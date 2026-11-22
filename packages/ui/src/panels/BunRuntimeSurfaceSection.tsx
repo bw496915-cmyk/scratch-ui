@@ -1,5 +1,5 @@
-import type React from "react";
-import { useMemo, useState } from "react";
+import type React from "react"
+import { useMemo, useState } from "react"
 import {
   Box,
   Check,
@@ -16,7 +16,7 @@ import {
   ShieldCheck,
   Terminal,
   Wrench,
-} from "lucide-react";
+} from "lucide-react"
 import {
   BUN_ANSI_THEME_PRESETS,
   BUN_CORE_API_DOMAINS,
@@ -41,68 +41,63 @@ import {
   type BunRuntimeSurfaceAuditSnapshot,
   type BunUtilityCategoryId,
   type GlobalTierId,
-} from "@sportsdesk-ops/contracts";
-import { renderAnsiReact } from "../ansi.tsx";
-import { CopyBunTerminalAnsiButton } from "./SyntaxHighlightedPre.tsx";
+} from "@sportsdesk-ops/contracts"
+import { renderAnsiReact } from "../ansi.tsx"
+import { CopyBunTerminalAnsiButton } from "./SyntaxHighlightedPre.tsx"
 
 const MONO_FONT =
-  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace';
+  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace'
 
 export type RuntimeSurfaceSubTab =
-  | "globals"
-  | "utilities"
-  | "core-apis"
-  | "modules-classes"
-  | "live-audit"
-  | "sandbox";
+  "globals" | "utilities" | "core-apis" | "modules-classes" | "live-audit" | "sandbox"
 
 export interface BunRuntimeSurfaceSectionProps {
-  readonly audit?: BunRuntimeSurfaceAuditSnapshot | null | undefined;
-  readonly initialSubTab?: RuntimeSurfaceSubTab | undefined;
-  readonly onRefresh?: (() => void) | undefined;
+  readonly audit?: BunRuntimeSurfaceAuditSnapshot | null | undefined
+  readonly initialSubTab?: RuntimeSurfaceSubTab | undefined
+  readonly onRefresh?: (() => void) | undefined
 }
 
 function sourceLabel(source: BunRuntimeSurfaceAuditSnapshot["source"]): string {
   switch (source) {
     case "bun-in-process":
-      return "In-process Bun runtime";
+      return "In-process Bun runtime"
     case "bun-binary-probe":
-      return "Installed Bun binary probe";
+      return "Installed Bun binary probe"
     case "node-fallback":
-      return "Node.js host fallback";
+      return "Node.js host fallback"
     case "browser-fallback":
-      return "Browser runtime probe";
+      return "Browser runtime probe"
   }
 }
 
 function kindColor(kind: BunExportKind): string {
   switch (kind) {
     case "class":
-      return "#f59e0b";
+      return "#f59e0b"
     case "namespace":
-      return "#c084fc";
+      return "#c084fc"
     case "function":
-      return "#38bdf8";
+      return "#38bdf8"
     case "constant":
-      return "#4ade80";
+      return "#4ade80"
     case "object":
-      return "#94a3b8";
+      return "#94a3b8"
   }
 }
 
 function categoryLabel(category: BunDeepInspectionCategory): string {
   switch (category) {
     case "builtin-module":
-      return "bun:* Module";
+      return "bun:* Module"
     case "bun-namespace":
-      return "Bun.* Namespace";
+      return "Bun.* Namespace"
     case "bun-class":
-      return "Bun.* Class";
+      return "Bun.* Class"
   }
 }
 
 function escapeAnsiForDisplay(raw: string): string {
-  return raw.replace(/\u001b/g, "\\x1b");
+  return raw.replace(/\u001b/g, "\\x1b")
 }
 
 export function BunRuntimeSurfaceSection({
@@ -113,198 +108,196 @@ export function BunRuntimeSurfaceSection({
   const effectiveAudit = useMemo<BunRuntimeSurfaceAuditSnapshot>(
     () => audit ?? runBunSurfaceAudit(),
     [audit],
-  );
+  )
 
-  const [subTab, setSubTab] = useState<RuntimeSurfaceSubTab>(initialSubTab);
+  const [subTab, setSubTab] = useState<RuntimeSurfaceSubTab>(initialSubTab)
 
   // Globals filter state
-  const [globalTierFilter, setGlobalTierFilter] = useState<"all" | GlobalTierId>("all");
-  const [globalSearch, setGlobalSearch] = useState<string>("");
+  const [globalTierFilter, setGlobalTierFilter] = useState<"all" | GlobalTierId>("all")
+  const [globalSearch, setGlobalSearch] = useState<string>("")
 
   // Utilities filter state
-  const [utilityCategoryFilter, setUtilityCategoryFilter] = useState<
-    "all" | BunUtilityCategoryId
-  >("all");
-  const [utilitySearch, setUtilitySearch] = useState<string>("");
+  const [utilityCategoryFilter, setUtilityCategoryFilter] = useState<"all" | BunUtilityCategoryId>(
+    "all",
+  )
+  const [utilitySearch, setUtilitySearch] = useState<string>("")
 
   // Core APIs filter state
-  const [coreApiSearch, setCoreApiSearch] = useState<string>("");
+  const [coreApiSearch, setCoreApiSearch] = useState<string>("")
 
   // Deep Modules, Namespaces & Classes filter state
-  const [deepCategoryFilter, setDeepCategoryFilter] = useState<
-    "all" | BunDeepInspectionCategory
-  >("all");
-  const [deepKindFilter, setDeepKindFilter] = useState<"all" | BunExportKind>("all");
-  const [deepSearch, setDeepSearch] = useState<string>("");
-  const [expandedDeepIds, setExpandedDeepIds] = useState<Readonly<Record<string, boolean>>>({});
+  const [deepCategoryFilter, setDeepCategoryFilter] = useState<"all" | BunDeepInspectionCategory>(
+    "all",
+  )
+  const [deepKindFilter, setDeepKindFilter] = useState<"all" | BunExportKind>("all")
+  const [deepSearch, setDeepSearch] = useState<string>("")
+  const [expandedDeepIds, setExpandedDeepIds] = useState<Readonly<Record<string, boolean>>>({})
 
   // Live Surface Audit state
-  const [auditSearch, setAuditSearch] = useState<string>("");
-  const [auditKindFilter, setAuditKindFilter] = useState<"all" | BunExportKind>("all");
-  const [auditTypeFilter, setAuditTypeFilter] = useState<string>("all");
-  const [auditDisplayMode, setAuditDisplayMode] = useState<"table" | "inspect">("table");
-  const [auditSnippetMode, setAuditSnippetMode] = useState<"basic" | "deep">("basic");
-  const [copiedSnippet, setCopiedSnippet] = useState<boolean>(false);
-  const [copiedTable, setCopiedTable] = useState<boolean>(false);
+  const [auditSearch, setAuditSearch] = useState<string>("")
+  const [auditKindFilter, setAuditKindFilter] = useState<"all" | BunExportKind>("all")
+  const [auditTypeFilter, setAuditTypeFilter] = useState<string>("all")
+  const [auditDisplayMode, setAuditDisplayMode] = useState<"table" | "inspect">("table")
+  const [auditSnippetMode, setAuditSnippetMode] = useState<"basic" | "deep">("basic")
+  const [copiedSnippet, setCopiedSnippet] = useState<boolean>(false)
+  const [copiedTable, setCopiedTable] = useState<boolean>(false)
 
   // Bun.markdown.render & AnsiTheme Studio state
-  const [mdSource, setMdSource] = useState<string>(DEFAULT_BUN_MARKDOWN_STUDIO_SAMPLE);
-  const [mdMode, setMdMode] = useState<BunMarkdownRenderMode>("render-callbacks");
-  const [mdPresetId, setMdPresetId] = useState<BunMarkdownRenderPresetId>("obsidian-desk");
-  const [mdColors, setMdColors] = useState<boolean>(true);
-  const [mdLight, setMdLight] = useState<boolean>(false);
-  const [mdHyperlinks, setMdHyperlinks] = useState<boolean>(true);
-  const [mdColumns, setMdColumns] = useState<number>(76);
-  const [mdOutputView, setMdOutputView] = useState<"terminal" | "raw-ansi" | "html">("terminal");
+  const [mdSource, setMdSource] = useState<string>(DEFAULT_BUN_MARKDOWN_STUDIO_SAMPLE)
+  const [mdMode, setMdMode] = useState<BunMarkdownRenderMode>("render-callbacks")
+  const [mdPresetId, setMdPresetId] = useState<BunMarkdownRenderPresetId>("obsidian-desk")
+  const [mdColors, setMdColors] = useState<boolean>(true)
+  const [mdLight, setMdLight] = useState<boolean>(false)
+  const [mdHyperlinks, setMdHyperlinks] = useState<boolean>(true)
+  const [mdColumns, setMdColumns] = useState<number>(76)
+  const [mdOutputView, setMdOutputView] = useState<"terminal" | "raw-ansi" | "html">("terminal")
 
   // Utility Sandbox state
   const [sandboxStringInput, setSandboxStringInput] = useState<string>(
     '\u001b[36mSportsDesk\u001b[0m · <script>alert("x")</script> · 東京 🚀',
-  );
-  const [sandboxColorInput, setSandboxColorInput] = useState<string>("#38bdf8");
-  const [uuidHistory, setUuidHistory] = useState<readonly string[]>(() => [
-    generateBunUuidV7(),
-  ]);
+  )
+  const [sandboxColorInput, setSandboxColorInput] = useState<string>("#38bdf8")
+  const [uuidHistory, setUuidHistory] = useState<readonly string[]>(() => [generateBunUuidV7()])
   const [deepEqLeft, setDeepEqLeft] = useState<string>(
     '{\n  "desk": "main",\n  "tiers": [1, 2, 3],\n  "optionalFlag": null\n}',
-  );
+  )
   const [deepEqRight, setDeepEqRight] = useState<string>(
     '{\n  "tiers": [1, 2, 3],\n  "desk": "main",\n  "optionalFlag": null\n}',
-  );
-  const [deepEqStrict, setDeepEqStrict] = useState<boolean>(false);
+  )
+  const [deepEqStrict, setDeepEqStrict] = useState<boolean>(false)
 
   // Lookup maps from live probes
   const globalProbeMap = useMemo(() => {
-    const map = new Map<string, { readonly present: boolean; readonly valueType: string }>();
+    const map = new Map<string, { readonly present: boolean; readonly valueType: string }>()
     for (const probe of effectiveAudit.globalProbes) {
       map.set(`${probe.tier}:${probe.name}`, {
         present: probe.present,
         valueType: probe.valueType,
-      });
+      })
     }
-    return map;
-  }, [effectiveAudit.globalProbes]);
+    return map
+  }, [effectiveAudit.globalProbes])
 
   const utilityProbeMap = useMemo(() => {
-    const map = new Map<string, boolean>();
+    const map = new Map<string, boolean>()
     for (const probe of effectiveAudit.utilityProbes) {
-      map.set(probe.id, probe.available);
+      map.set(probe.id, probe.available)
     }
-    return map;
-  }, [effectiveAudit.utilityProbes]);
+    return map
+  }, [effectiveAudit.utilityProbes])
 
   const coreDomainProbeMap = useMemo(() => {
     const map = new Map<
       string,
       {
-        readonly availableCount: number;
-        readonly totalProbed: number;
-        readonly availableKeys: readonly string[];
+        readonly availableCount: number
+        readonly totalProbed: number
+        readonly availableKeys: readonly string[]
       }
-    >();
+    >()
     for (const probe of effectiveAudit.coreDomainProbes) {
       map.set(probe.id, {
         availableCount: probe.availableCount,
         totalProbed: probe.totalProbed,
         availableKeys: probe.availableKeys,
-      });
+      })
     }
-    return map;
-  }, [effectiveAudit.coreDomainProbes]);
+    return map
+  }, [effectiveAudit.coreDomainProbes])
 
   // Summary counts
   const presentGlobalsCount = useMemo(
     () => effectiveAudit.globalProbes.filter((g) => g.present).length,
     [effectiveAudit.globalProbes],
-  );
+  )
   const availableUtilitiesCount = useMemo(
     () => effectiveAudit.utilityProbes.filter((u) => u.available).length,
     [effectiveAudit.utilityProbes],
-  );
+  )
   const availableCoreApisCount = useMemo(
-    () =>
-      effectiveAudit.coreDomainProbes.reduce((acc, d) => acc + d.availableCount, 0),
+    () => effectiveAudit.coreDomainProbes.reduce((acc, d) => acc + d.availableCount, 0),
     [effectiveAudit.coreDomainProbes],
-  );
+  )
   const totalCoreApisProbed = useMemo(
-    () =>
-      effectiveAudit.coreDomainProbes.reduce((acc, d) => acc + d.totalProbed, 0),
+    () => effectiveAudit.coreDomainProbes.reduce((acc, d) => acc + d.totalProbed, 0),
     [effectiveAudit.coreDomainProbes],
-  );
+  )
 
   // Filtered Views
   const filteredGlobalTiers = useMemo(() => {
-    const q = globalSearch.trim().toLowerCase();
+    const q = globalSearch.trim().toLowerCase()
     return BUN_GLOBAL_TIERS.filter((tier) => {
-      if (globalTierFilter !== "all" && tier.id !== globalTierFilter) return false;
-      if (!q) return true;
+      if (globalTierFilter !== "all" && tier.id !== globalTierFilter) return false
+      if (!q) return true
       return (
         tier.label.toLowerCase().includes(q) ||
         tier.notes.toLowerCase().includes(q) ||
         tier.globals.some((g) => g.toLowerCase().includes(q))
-      );
+      )
     }).map((tier) => {
-      if (!q) return tier;
-      const matchingGlobals = tier.globals.filter((g) => g.toLowerCase().includes(q));
+      if (!q) return tier
+      const matchingGlobals = tier.globals.filter((g) => g.toLowerCase().includes(q))
       return {
         ...tier,
         globals: matchingGlobals.length > 0 ? matchingGlobals : tier.globals,
-      };
-    });
-  }, [globalTierFilter, globalSearch]);
+      }
+    })
+  }, [globalTierFilter, globalSearch])
 
   const filteredUtilities = useMemo(() => {
-    const q = utilitySearch.trim().toLowerCase();
+    const q = utilitySearch.trim().toLowerCase()
     return BUN_UTILITIES_CATALOG.filter((item) => {
       if (utilityCategoryFilter !== "all" && item.category !== utilityCategoryFilter) {
-        return false;
+        return false
       }
-      if (!q) return true;
-      const hay = `${item.signature} ${item.purpose} ${item.runtimeNotes ?? ""} ${item.categoryLabel}`.toLowerCase();
-      return hay.includes(q);
-    });
-  }, [utilityCategoryFilter, utilitySearch]);
+      if (!q) return true
+      const hay =
+        `${item.signature} ${item.purpose} ${item.runtimeNotes ?? ""} ${item.categoryLabel}`.toLowerCase()
+      return hay.includes(q)
+    })
+  }, [utilityCategoryFilter, utilitySearch])
 
   const filteredCoreDomains = useMemo(() => {
-    const q = coreApiSearch.trim().toLowerCase();
-    if (!q) return BUN_CORE_API_DOMAINS;
+    const q = coreApiSearch.trim().toLowerCase()
+    if (!q) return BUN_CORE_API_DOMAINS
     return BUN_CORE_API_DOMAINS.filter((d) => {
-      const hay = `${d.domain} ${d.apis.join(" ")} ${d.capabilities}`.toLowerCase();
-      return hay.includes(q);
-    });
-  }, [coreApiSearch]);
+      const hay = `${d.domain} ${d.apis.join(" ")} ${d.capabilities}`.toLowerCase()
+      return hay.includes(q)
+    })
+  }, [coreApiSearch])
 
   const exportTypes = useMemo(
     () => Object.keys(effectiveAudit.exportTypeCounts).sort(),
     [effectiveAudit.exportTypeCounts],
-  );
+  )
 
   const filteredExports = useMemo(() => {
-    const q = auditSearch.trim().toLowerCase();
+    const q = auditSearch.trim().toLowerCase()
     return effectiveAudit.exports.filter((entry) => {
-      if (auditKindFilter !== "all" && entry.kind !== auditKindFilter) return false;
-      if (auditTypeFilter !== "all" && entry.type !== auditTypeFilter) return false;
+      if (auditKindFilter !== "all" && entry.kind !== auditKindFilter) return false
+      if (auditTypeFilter !== "all" && entry.type !== auditTypeFilter) return false
       if (q) {
-        const hay = `${entry.key} ${entry.kind} ${entry.type} ${entry.safePreview ?? ""}`.toLowerCase();
-        if (!hay.includes(q)) return false;
+        const hay =
+          `${entry.key} ${entry.kind} ${entry.type} ${entry.safePreview ?? ""}`.toLowerCase()
+        if (!hay.includes(q)) return false
       }
-      return true;
-    });
-  }, [effectiveAudit.exports, auditSearch, auditKindFilter, auditTypeFilter]);
+      return true
+    })
+  }, [effectiveAudit.exports, auditSearch, auditKindFilter, auditTypeFilter])
 
   const deepSummary = useMemo(() => {
-    const all = effectiveAudit.deepInspections ?? [];
-    let available = 0;
-    let totalMembers = 0;
-    let modules = 0;
-    let namespaces = 0;
-    let classes = 0;
+    const all = effectiveAudit.deepInspections ?? []
+    let available = 0
+    let totalMembers = 0
+    let modules = 0
+    let namespaces = 0
+    let classes = 0
     for (const item of all) {
-      if (item.available) available += 1;
-      totalMembers += item.memberCount;
-      if (item.category === "builtin-module") modules += 1;
-      else if (item.category === "bun-namespace") namespaces += 1;
-      else if (item.category === "bun-class") classes += 1;
+      if (item.available) available += 1
+      totalMembers += item.memberCount
+      if (item.category === "builtin-module") modules += 1
+      else if (item.category === "bun-namespace") namespaces += 1
+      else if (item.category === "bun-class") classes += 1
     }
     return {
       total: all.length,
@@ -313,58 +306,58 @@ export function BunRuntimeSurfaceSection({
       modules,
       namespaces,
       classes,
-    };
-  }, [effectiveAudit.deepInspections]);
+    }
+  }, [effectiveAudit.deepInspections])
 
   const filteredDeepInspections = useMemo(() => {
-    const q = deepSearch.trim().toLowerCase();
-    const list = effectiveAudit.deepInspections ?? [];
+    const q = deepSearch.trim().toLowerCase()
+    const list = effectiveAudit.deepInspections ?? []
     return list
       .filter((entry) => {
-        if (deepCategoryFilter !== "all" && entry.category !== deepCategoryFilter) return false;
+        if (deepCategoryFilter !== "all" && entry.category !== deepCategoryFilter) return false
         const matchingMembers = entry.members.filter((m) => {
-          if (deepKindFilter !== "all" && m.kind !== deepKindFilter) return false;
-          if (!q) return true;
+          if (deepKindFilter !== "all" && m.kind !== deepKindFilter) return false
+          if (!q) return true
           return (
             m.name.toLowerCase().includes(q) ||
             m.kind.toLowerCase().includes(q) ||
             m.scope.toLowerCase().includes(q) ||
             (m.safePreview?.toLowerCase().includes(q) ?? false)
-          );
-        });
-        if (!q && deepKindFilter === "all") return true;
+          )
+        })
+        if (!q && deepKindFilter === "all") return true
         const headerMatch =
           q.length > 0 &&
           (entry.label.toLowerCase().includes(q) ||
             entry.domain.toLowerCase().includes(q) ||
-            entry.notes.toLowerCase().includes(q));
+            entry.notes.toLowerCase().includes(q))
         if (deepKindFilter !== "all") {
-          return matchingMembers.length > 0;
+          return matchingMembers.length > 0
         }
-        return headerMatch || matchingMembers.length > 0;
+        return headerMatch || matchingMembers.length > 0
       })
       .map((entry) => {
         const qMatchesHeader =
           q.length > 0 &&
           (entry.label.toLowerCase().includes(q) ||
             entry.domain.toLowerCase().includes(q) ||
-            entry.notes.toLowerCase().includes(q));
+            entry.notes.toLowerCase().includes(q))
         const filteredMembers = entry.members.filter((m) => {
-          if (deepKindFilter !== "all" && m.kind !== deepKindFilter) return false;
-          if (!q || qMatchesHeader) return true;
+          if (deepKindFilter !== "all" && m.kind !== deepKindFilter) return false
+          if (!q || qMatchesHeader) return true
           return (
             m.name.toLowerCase().includes(q) ||
             m.kind.toLowerCase().includes(q) ||
             m.scope.toLowerCase().includes(q) ||
             (m.safePreview?.toLowerCase().includes(q) ?? false)
-          );
-        });
+          )
+        })
         return {
           ...entry,
           filteredMembers,
-        };
-      });
-  }, [effectiveAudit.deepInspections, deepCategoryFilter, deepKindFilter, deepSearch]);
+        }
+      })
+  }, [effectiveAudit.deepInspections, deepCategoryFilter, deepKindFilter, deepSearch])
 
   // Bun.markdown.render & AnsiTheme Studio live evaluation
   const mdStudioResult = useMemo(
@@ -380,86 +373,86 @@ export function BunRuntimeSurfaceSection({
         },
       }),
     [mdSource, mdMode, mdPresetId, mdColors, mdLight, mdHyperlinks, mdColumns],
-  );
+  )
 
   const handleSelectMdPreset = (presetId: BunMarkdownRenderPresetId) => {
-    setMdPresetId(presetId);
-    const preset = BUN_ANSI_THEME_PRESETS.find((p) => p.id === presetId);
+    setMdPresetId(presetId)
+    const preset = BUN_ANSI_THEME_PRESETS.find((p) => p.id === presetId)
     if (preset) {
-      setMdLight(preset.defaultTheme.light);
-      setMdColumns(preset.defaultTheme.columns);
-      setMdColors(preset.defaultTheme.colors);
-      setMdHyperlinks(preset.defaultTheme.hyperlinks);
+      setMdLight(preset.defaultTheme.light)
+      setMdColumns(preset.defaultTheme.columns)
+      setMdColors(preset.defaultTheme.colors)
+      setMdHyperlinks(preset.defaultTheme.hyperlinks)
     }
-  };
+  }
 
   // Sandbox evaluations
   const stringProbe = useMemo(
     () => evaluateBunStringUtilities(sandboxStringInput),
     [sandboxStringInput],
-  );
+  )
   const colorProbe = useMemo(
     () => evaluateBunColorConversions(sandboxColorInput),
     [sandboxColorInput],
-  );
+  )
   const deepEqResult = useMemo(() => {
     try {
-      const parsedA = JSON.parse(deepEqLeft) as unknown;
-      const parsedB = JSON.parse(deepEqRight) as unknown;
+      const parsedA = JSON.parse(deepEqLeft) as unknown
+      const parsedB = JSON.parse(deepEqRight) as unknown
       return {
         ok: true as const,
         equal: bunDeepEquals(parsedA, parsedB, deepEqStrict),
-      };
+      }
     } catch (err) {
       return {
         ok: false as const,
         error: err instanceof Error ? err.message : "Invalid JSON input",
-      };
+      }
     }
-  }, [deepEqLeft, deepEqRight, deepEqStrict]);
+  }, [deepEqLeft, deepEqRight, deepEqStrict])
 
   const activeAuditSnippet =
-    auditSnippetMode === "deep" ? DEEP_SURFACE_AUDIT_SNIPPET : LIVE_SURFACE_AUDIT_SNIPPET;
+    auditSnippetMode === "deep" ? DEEP_SURFACE_AUDIT_SNIPPET : LIVE_SURFACE_AUDIT_SNIPPET
 
   const handleCopySnippet = async () => {
     try {
-      await navigator.clipboard.writeText(activeAuditSnippet);
-      setCopiedSnippet(true);
-      setTimeout(() => setCopiedSnippet(false), 1800);
+      await navigator.clipboard.writeText(activeAuditSnippet)
+      setCopiedSnippet(true)
+      setTimeout(() => setCopiedSnippet(false), 1800)
     } catch {
-      setCopiedSnippet(false);
+      setCopiedSnippet(false)
     }
-  };
+  }
 
   const handleCopyTable = async () => {
     try {
-      await navigator.clipboard.writeText(effectiveAudit.inspectTableText);
-      setCopiedTable(true);
-      setTimeout(() => setCopiedTable(false), 1800);
+      await navigator.clipboard.writeText(effectiveAudit.inspectTableText)
+      setCopiedTable(true)
+      setTimeout(() => setCopiedTable(false), 1800)
     } catch {
-      setCopiedTable(false);
+      setCopiedTable(false)
     }
-  };
+  }
 
   const handleDownloadAuditJson = () => {
-    if (typeof document === "undefined") return;
+    if (typeof document === "undefined") return
     const blob = new Blob([`${JSON.stringify(effectiveAudit, null, 2)}\n`], {
       type: "application/json;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `bun-runtime-surface-${effectiveAudit.bunVersion ?? "host"}.json`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 10_000);
-  };
+    })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement("a")
+    anchor.href = url
+    anchor.download = `bun-runtime-surface-${effectiveAudit.bunVersion ?? "host"}.json`
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 10_000)
+  }
 
   const handleMintUuidV7 = () => {
-    const next = generateBunUuidV7();
-    setUuidHistory((prev) => [next, ...prev.slice(0, 5)]);
-  };
+    const next = generateBunUuidV7()
+    setUuidHistory((prev) => [next, ...prev.slice(0, 5)])
+  }
 
   return (
     <div
@@ -711,8 +704,8 @@ export function BunRuntimeSurfaceSection({
             { id: "sandbox", label: "06. Markdown & Sandbox", icon: FlaskConical },
           ] as const
         ).map((tab) => {
-          const Icon = tab.icon;
-          const active = subTab === tab.id;
+          const Icon = tab.icon
+          const active = subTab === tab.id
           return (
             <button
               key={tab.id}
@@ -739,7 +732,7 @@ export function BunRuntimeSurfaceSection({
               <Icon size={13} aria-hidden="true" />
               <span>{tab.label}</span>
             </button>
-          );
+          )
         })}
       </div>
 
@@ -792,7 +785,7 @@ export function BunRuntimeSurfaceSection({
                   { id: "web-standards", label: "Web Standards" },
                 ] as const
               ).map((opt) => {
-                const active = globalTierFilter === opt.id;
+                const active = globalTierFilter === opt.id
                 return (
                   <button
                     key={opt.id}
@@ -812,7 +805,7 @@ export function BunRuntimeSurfaceSection({
                   >
                     {opt.label}
                   </button>
-                );
+                )
               })}
             </div>
 
@@ -880,22 +873,18 @@ export function BunRuntimeSurfaceSection({
                       borderBottomColor: "var(--border-default, #1e293b)",
                     }}
                   >
-                    <th style={{ padding: "8px 14px", width: "160px", fontWeight: 600 }}>
-                      Tier
-                    </th>
+                    <th style={{ padding: "8px 14px", width: "160px", fontWeight: 600 }}>Tier</th>
                     <th style={{ padding: "8px 14px", fontWeight: 600 }}>
                       Key Globals (Live Runtime Probe)
                     </th>
-                    <th style={{ padding: "8px 14px", width: "310px", fontWeight: 600 }}>
-                      Notes
-                    </th>
+                    <th style={{ padding: "8px 14px", width: "310px", fontWeight: 600 }}>Notes</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredGlobalTiers.map((tier) => {
                     const liveCount = tier.globals.filter(
                       (g) => globalProbeMap.get(`${tier.id}:${g}`)?.present,
-                    ).length;
+                    ).length
                     return (
                       <tr
                         key={tier.id}
@@ -940,25 +929,19 @@ export function BunRuntimeSurfaceSection({
                             }}
                           >
                             {tier.globals.map((gName) => {
-                              const probe = globalProbeMap.get(`${tier.id}:${gName}`);
-                              const present = probe?.present ?? false;
+                              const probe = globalProbeMap.get(`${tier.id}:${gName}`)
+                              const present = probe?.present ?? false
                               return (
                                 <span
                                   key={gName}
                                   title={
-                                    probe
-                                      ? `${gName}: typeof === "${probe.valueType}"`
-                                      : gName
+                                    probe ? `${gName}: typeof === "${probe.valueType}"` : gName
                                   }
                                   style={{
-                                    color: present
-                                      ? "var(--text-primary, #e2e8f0)"
-                                      : "#64748b",
+                                    color: present ? "var(--text-primary, #e2e8f0)" : "#64748b",
                                   }}
                                 >
-                                  <span style={{ fontWeight: present ? 600 : 400 }}>
-                                    {gName}
-                                  </span>
+                                  <span style={{ fontWeight: present ? 600 : 400 }}>{gName}</span>
                                   {probe && probe.present ? (
                                     <span style={{ color: "#4ade80", fontSize: "10px" }}>
                                       {" "}
@@ -971,7 +954,7 @@ export function BunRuntimeSurfaceSection({
                                     </span>
                                   )}
                                 </span>
-                              );
+                              )
                             })}
                           </div>
                         </td>
@@ -987,7 +970,7 @@ export function BunRuntimeSurfaceSection({
                           {tier.notes}
                         </td>
                       </tr>
-                    );
+                    )
                   })}
                 </tbody>
               </table>
@@ -1045,13 +1028,8 @@ export function BunRuntimeSurfaceSection({
                   borderRadius: "4px",
                   border: "none",
                   backgroundColor:
-                    utilityCategoryFilter === "all"
-                      ? "rgba(56, 189, 248, 0.14)"
-                      : "transparent",
-                  color:
-                    utilityCategoryFilter === "all"
-                      ? "#38bdf8"
-                      : "var(--text-muted, #94a3b8)",
+                    utilityCategoryFilter === "all" ? "rgba(56, 189, 248, 0.14)" : "transparent",
+                  color: utilityCategoryFilter === "all" ? "#38bdf8" : "var(--text-muted, #94a3b8)",
                   fontSize: "11px",
                   fontWeight: utilityCategoryFilter === "all" ? 600 : 500,
                   cursor: "pointer",
@@ -1061,7 +1039,7 @@ export function BunRuntimeSurfaceSection({
                 All ({BUN_UTILITIES_CATALOG.length})
               </button>
               {BUN_UTILITY_CATEGORIES.map((cat) => {
-                const active = utilityCategoryFilter === cat.id;
+                const active = utilityCategoryFilter === cat.id
                 return (
                   <button
                     key={cat.id}
@@ -1071,9 +1049,7 @@ export function BunRuntimeSurfaceSection({
                       padding: "4px 9px",
                       borderRadius: "4px",
                       border: "none",
-                      backgroundColor: active
-                        ? "rgba(56, 189, 248, 0.14)"
-                        : "transparent",
+                      backgroundColor: active ? "rgba(56, 189, 248, 0.14)" : "transparent",
                       color: active ? "#38bdf8" : "var(--text-muted, #94a3b8)",
                       fontSize: "11px",
                       fontWeight: active ? 600 : 500,
@@ -1083,7 +1059,7 @@ export function BunRuntimeSurfaceSection({
                   >
                     {cat.label}
                   </button>
-                );
+                )
               })}
             </div>
 
@@ -1174,7 +1150,7 @@ export function BunRuntimeSurfaceSection({
                 </thead>
                 <tbody>
                   {filteredUtilities.map((util) => {
-                    const available = utilityProbeMap.get(util.id) ?? false;
+                    const available = utilityProbeMap.get(util.id) ?? false
                     return (
                       <tr
                         key={util.id}
@@ -1238,7 +1214,7 @@ export function BunRuntimeSurfaceSection({
                           {available ? "Verified" : "Bun-only"}
                         </td>
                       </tr>
-                    );
+                    )
                   })}
                 </tbody>
               </table>
@@ -1273,7 +1249,9 @@ export function BunRuntimeSurfaceSection({
               borderBottomColor: "var(--border-default, #1e293b)",
             }}
           >
-            <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-primary, #f8fafc)" }}>
+            <div
+              style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-primary, #f8fafc)" }}
+            >
               Core Bun APIs (Bun.* &amp; bun:*) across {BUN_CORE_API_DOMAINS.length} Domains
             </div>
             <div
@@ -1335,15 +1313,9 @@ export function BunRuntimeSurfaceSection({
                     borderBottomColor: "var(--border-default, #1e293b)",
                   }}
                 >
-                  <th style={{ padding: "8px 14px", width: "175px", fontWeight: 600 }}>
-                    Domain
-                  </th>
-                  <th style={{ padding: "8px 14px", width: "280px", fontWeight: 600 }}>
-                    APIs
-                  </th>
-                  <th style={{ padding: "8px 14px", fontWeight: 600 }}>
-                    Key Capabilities
-                  </th>
+                  <th style={{ padding: "8px 14px", width: "175px", fontWeight: 600 }}>Domain</th>
+                  <th style={{ padding: "8px 14px", width: "280px", fontWeight: 600 }}>APIs</th>
+                  <th style={{ padding: "8px 14px", fontWeight: 600 }}>Key Capabilities</th>
                   <th
                     style={{
                       padding: "8px 14px",
@@ -1358,11 +1330,11 @@ export function BunRuntimeSurfaceSection({
               </thead>
               <tbody>
                 {filteredCoreDomains.map((domain) => {
-                  const probe = coreDomainProbeMap.get(domain.id);
+                  const probe = coreDomainProbeMap.get(domain.id)
                   const allLive =
                     probe !== undefined &&
                     probe.totalProbed > 0 &&
-                    probe.availableCount === probe.totalProbed;
+                    probe.availableCount === probe.totalProbed
                   return (
                     <tr
                       key={domain.id}
@@ -1438,7 +1410,7 @@ export function BunRuntimeSurfaceSection({
                         {probe ? `${probe.availableCount}/${probe.totalProbed}` : "—"}
                       </td>
                     </tr>
-                  );
+                  )
                 })}
               </tbody>
             </table>
@@ -1495,7 +1467,7 @@ export function BunRuntimeSurfaceSection({
                     { id: "bun-class", label: `Bun.* Classes (${deepSummary.classes})` },
                   ] as const
                 ).map((cat) => {
-                  const active = deepCategoryFilter === cat.id;
+                  const active = deepCategoryFilter === cat.id
                   return (
                     <button
                       key={cat.id}
@@ -1515,7 +1487,7 @@ export function BunRuntimeSurfaceSection({
                     >
                       {cat.label}
                     </button>
-                  );
+                  )
                 })}
               </div>
 
@@ -1529,7 +1501,7 @@ export function BunRuntimeSurfaceSection({
                 }}
               >
                 {(["all", "class", "namespace", "function", "constant"] as const).map((k) => {
-                  const active = deepKindFilter === k;
+                  const active = deepKindFilter === k
                   return (
                     <button
                       key={k}
@@ -1554,7 +1526,7 @@ export function BunRuntimeSurfaceSection({
                     >
                       {k}
                     </button>
-                  );
+                  )
                 })}
               </div>
             </div>
@@ -1623,11 +1595,14 @@ export function BunRuntimeSurfaceSection({
               }}
             >
               {filteredDeepInspections.map((entry) => {
-                const isExpanded = Boolean(expandedDeepIds[entry.id]);
+                const isExpanded = Boolean(expandedDeepIds[entry.id])
                 const visibleMembers = isExpanded
                   ? entry.filteredMembers
-                  : entry.filteredMembers.slice(0, 14);
-                const hiddenCount = Math.max(0, entry.filteredMembers.length - visibleMembers.length);
+                  : entry.filteredMembers.slice(0, 14)
+                const hiddenCount = Math.max(
+                  0,
+                  entry.filteredMembers.length - visibleMembers.length,
+                )
 
                 return (
                   <div
@@ -1789,8 +1764,7 @@ export function BunRuntimeSurfaceSection({
                                   style={{
                                     padding: "4px 12px",
                                     textAlign: "right",
-                                    color:
-                                      member.safePreview !== undefined ? "#86efac" : "#94a3b8",
+                                    color: member.safePreview !== undefined ? "#86efac" : "#94a3b8",
                                   }}
                                 >
                                   {member.safePreview !== undefined
@@ -1846,7 +1820,7 @@ export function BunRuntimeSurfaceSection({
                       </div>
                     )}
                   </div>
-                );
+                )
               })}
             </div>
           )}
@@ -1919,7 +1893,7 @@ export function BunRuntimeSurfaceSection({
                       { id: "deep", label: "Deep Kinds + bun:*" },
                     ] as const
                   ).map((variant) => {
-                    const active = auditSnippetMode === variant.id;
+                    const active = auditSnippetMode === variant.id
                     return (
                       <button
                         key={variant.id}
@@ -1938,7 +1912,7 @@ export function BunRuntimeSurfaceSection({
                       >
                         {variant.label}
                       </button>
-                    );
+                    )
                   })}
                 </div>
               </div>
@@ -2031,7 +2005,7 @@ export function BunRuntimeSurfaceSection({
                       { id: "inspect", label: "Bun.inspect.table() Raw" },
                     ] as const
                   ).map((mode) => {
-                    const active = auditDisplayMode === mode.id;
+                    const active = auditDisplayMode === mode.id
                     return (
                       <button
                         key={mode.id}
@@ -2041,9 +2015,7 @@ export function BunRuntimeSurfaceSection({
                           padding: "4px 9px",
                           borderRadius: "4px",
                           border: "none",
-                          backgroundColor: active
-                            ? "rgba(56, 189, 248, 0.14)"
-                            : "transparent",
+                          backgroundColor: active ? "rgba(56, 189, 248, 0.14)" : "transparent",
                           color: active ? "#38bdf8" : "var(--text-muted, #94a3b8)",
                           fontSize: "11px",
                           fontWeight: active ? 600 : 500,
@@ -2053,7 +2025,7 @@ export function BunRuntimeSurfaceSection({
                       >
                         {mode.label}
                       </button>
-                    );
+                    )
                   })}
                 </div>
 
@@ -2086,8 +2058,8 @@ export function BunRuntimeSurfaceSection({
                         { id: "object", label: `object (${effectiveAudit.kindCounts.object})` },
                       ] as const
                     ).map((item) => {
-                      const active = auditKindFilter === item.id;
-                      const accent = item.id === "all" ? "#38bdf8" : kindColor(item.id);
+                      const active = auditKindFilter === item.id
+                      const accent = item.id === "all" ? "#38bdf8" : kindColor(item.id)
                       return (
                         <button
                           key={item.id}
@@ -2108,7 +2080,7 @@ export function BunRuntimeSurfaceSection({
                         >
                           {item.label}
                         </button>
-                      );
+                      )
                     })}
                   </div>
                 ) : null}
@@ -2198,9 +2170,7 @@ export function BunRuntimeSurfaceSection({
                         borderRadius: "5px",
                         borderWidth: "1px",
                         borderStyle: "solid",
-                        borderColor: copiedTable
-                          ? "#4ade80"
-                          : "var(--border-strong, #334155)",
+                        borderColor: copiedTable ? "#4ade80" : "var(--border-strong, #334155)",
                         backgroundColor: "transparent",
                         color: copiedTable ? "#4ade80" : "var(--text-primary, #e2e8f0)",
                         fontSize: "11px",
@@ -2266,9 +2236,7 @@ export function BunRuntimeSurfaceSection({
                         borderBottomColor: "var(--border-default, #1e293b)",
                       }}
                     >
-                      <th style={{ padding: "7px 14px", width: "48px", textAlign: "right" }}>
-                        #
-                      </th>
+                      <th style={{ padding: "7px 14px", width: "48px", textAlign: "right" }}>#</th>
                       <th style={{ padding: "7px 14px" }}>Export Key (Bun.*)</th>
                       <th style={{ padding: "7px 14px", width: "105px" }}>Kind</th>
                       <th style={{ padding: "7px 14px", width: "95px" }}>typeof</th>
@@ -2278,7 +2246,7 @@ export function BunRuntimeSurfaceSection({
                   <tbody>
                     {filteredExports.map((entry, idx) => {
                       const detail = entry.redacted
-                        ? entry.safePreview ?? "[REDACTED]"
+                        ? (entry.safePreview ?? "[REDACTED]")
                         : entry.kind === "class" &&
                             (entry.staticMemberCount !== undefined ||
                               entry.prototypeMethodCount !== undefined)
@@ -2287,7 +2255,7 @@ export function BunRuntimeSurfaceSection({
                             ? `${entry.memberCount} exports`
                             : entry.safePreview !== undefined
                               ? entry.safePreview
-                              : "—";
+                              : "—"
                       return (
                         <tr
                           key={entry.key}
@@ -2347,7 +2315,7 @@ export function BunRuntimeSurfaceSection({
                             {detail}
                           </td>
                         </tr>
-                      );
+                      )
                     })}
                   </tbody>
                 </table>
@@ -2426,11 +2394,7 @@ export function BunRuntimeSurfaceSection({
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                <CopyBunTerminalAnsiButton
-                  text={mdStudioResult.ansi}
-                  format="markdown"
-                  compact
-                />
+                <CopyBunTerminalAnsiButton text={mdStudioResult.ansi} format="markdown" compact />
                 <button
                   type="button"
                   onClick={() => setMdSource(DEFAULT_BUN_MARKDOWN_STUDIO_SAMPLE)}
@@ -2490,16 +2454,16 @@ export function BunRuntimeSurfaceSection({
                     { id: "html", label: "Bun.markdown.html()" },
                   ] as const
                 ).map((m) => {
-                  const active = mdMode === m.id;
+                  const active = mdMode === m.id
                   return (
                     <button
                       key={m.id}
                       type="button"
                       data-md-mode={m.id}
                       onClick={() => {
-                        setMdMode(m.id);
-                        if (m.id === "html") setMdOutputView("html");
-                        else if (mdOutputView === "html") setMdOutputView("terminal");
+                        setMdMode(m.id)
+                        if (m.id === "html") setMdOutputView("html")
+                        else if (mdOutputView === "html") setMdOutputView("terminal")
                       }}
                       style={{
                         padding: "4px 9px",
@@ -2516,7 +2480,7 @@ export function BunRuntimeSurfaceSection({
                     >
                       {m.label}
                     </button>
-                  );
+                  )
                 })}
               </div>
 
@@ -2528,7 +2492,7 @@ export function BunRuntimeSurfaceSection({
                   style={{ display: "inline-flex", gap: "4px", flexWrap: "wrap" }}
                 >
                   {BUN_ANSI_THEME_PRESETS.map((preset) => {
-                    const active = mdPresetId === preset.id;
+                    const active = mdPresetId === preset.id
                     return (
                       <button
                         key={preset.id}
@@ -2552,7 +2516,7 @@ export function BunRuntimeSurfaceSection({
                       >
                         {preset.label}
                       </button>
-                    );
+                    )
                   })}
                 </div>
 
@@ -2801,7 +2765,7 @@ export function BunRuntimeSurfaceSection({
                         { id: "html", label: "HTML Output" },
                       ] as const
                     ).map((view) => {
-                      const active = mdOutputView === view.id;
+                      const active = mdOutputView === view.id
                       return (
                         <button
                           key={view.id}
@@ -2820,7 +2784,7 @@ export function BunRuntimeSurfaceSection({
                         >
                           {view.label}
                         </button>
-                      );
+                      )
                     })}
                   </div>
                 </div>
@@ -2939,7 +2903,7 @@ export function BunRuntimeSurfaceSection({
                 }}
               >
                 {BUN_MARKDOWN_CALLBACK_SPECS.map((spec) => {
-                  const hit = mdStudioResult.callbacksInvoked.includes(spec.hook);
+                  const hit = mdStudioResult.callbacksInvoked.includes(spec.hook)
                   return (
                     <div
                       key={spec.hook}
@@ -2961,7 +2925,7 @@ export function BunRuntimeSurfaceSection({
                       </div>
                       <div style={{ color: "#64748b" }}>{spec.role}</div>
                     </div>
-                  );
+                  )
                 })}
               </div>
             </div>
@@ -3028,9 +2992,7 @@ export function BunRuntimeSurfaceSection({
               }}
             >
               <div>
-                <div style={{ color: "#64748b", fontSize: "10.5px" }}>
-                  Bun.stringWidth()
-                </div>
+                <div style={{ color: "#64748b", fontSize: "10.5px" }}>Bun.stringWidth()</div>
                 <div style={{ color: "#38bdf8", fontWeight: 700, marginTop: "2px" }}>
                   {stringProbe.displayWidth} cols
                 </div>
@@ -3312,9 +3274,7 @@ export function BunRuntimeSurfaceSection({
                 </label>
 
                 <span
-                  data-deep-equals-verdict={
-                    deepEqResult.ok ? String(deepEqResult.equal) : "error"
-                  }
+                  data-deep-equals-verdict={deepEqResult.ok ? String(deepEqResult.equal) : "error"}
                   style={{
                     fontFamily: MONO_FONT,
                     fontSize: "12px",
@@ -3389,5 +3349,5 @@ export function BunRuntimeSurfaceSection({
         </div>
       ) : null}
     </div>
-  );
+  )
 }

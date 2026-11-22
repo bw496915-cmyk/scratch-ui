@@ -1,5 +1,5 @@
 /**
- * @file src/risk/slice_metrics.ts
+ * @file packages/contracts/src/slice_metrics.ts
  * @description Typed SliceMetrics schema, pure column derivations, pure policy/risk
  * gates, and ex-blocked / ex-directional Blended Hold SLO evaluation.
  */

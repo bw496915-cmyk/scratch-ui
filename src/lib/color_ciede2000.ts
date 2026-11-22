@@ -100,11 +100,7 @@ export function hslToRgb(hsl: HslColor): RgbTuple {
     return p
   }
 
-  return [
-    hueToChannel(h + 1 / 3) * 255,
-    hueToChannel(h) * 255,
-    hueToChannel(h - 1 / 3) * 255,
-  ]
+  return [hueToChannel(h + 1 / 3) * 255, hueToChannel(h) * 255, hueToChannel(h - 1 / 3) * 255]
 }
 
 export function hslToHex(hsl: HslColor): string {

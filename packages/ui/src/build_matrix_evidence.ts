@@ -1,5 +1,5 @@
 /**
- * @file build_matrix_evidence.ts
+ * @file packages/ui/src/build_matrix_evidence.ts
  * @description Plain-text evidence for the DCE build matrix: one line per target
  * and a Markdown table, so a probe result can be pasted into a PR, an issue or the
  * evidence ledger with the numbers copied rather than re-typed.

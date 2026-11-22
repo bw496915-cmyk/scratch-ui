@@ -165,22 +165,22 @@ export function SharpestOnChainXrefPanel({
               >
                 {summary.quarantinedCount}
               </span>
-              <span className="sd-xref-kpi-sub">
-                Invalid EVM address or fixture-only mapping
-              </span>
+              <span className="sd-xref-kpi-sub">Invalid EVM address or fixture-only mapping</span>
             </div>
 
             <div className="sd-xref-kpi-cell">
               <span className="sd-xref-kpi-label">Unlinked Blind Spots</span>
               <span className="sd-xref-kpi-val">{summary.unlinkedCount}</span>
-              <span className="sd-xref-kpi-sub">
-                Sharp accounts with zero on-chain attribution
-              </span>
+              <span className="sd-xref-kpi-sub">Sharp accounts with zero on-chain attribution</span>
             </div>
           </div>
 
           {/* Interactive Status Filter Bar */}
-          <div className="sd-xref-filter-bar" role="tablist" aria-label="Cross-reference status filter">
+          <div
+            className="sd-xref-filter-bar"
+            role="tablist"
+            aria-label="Cross-reference status filter"
+          >
             {(
               [
                 { id: "ALL", label: "All Sharpest" },
@@ -268,7 +268,9 @@ export function SharpestOnChainXrefPanel({
                       </td>
 
                       <td>
-                        <div className={`sd-xref-status sd-xref-status--${row.status.toLowerCase()}`}>
+                        <div
+                          className={`sd-xref-status sd-xref-status--${row.status.toLowerCase()}`}
+                        >
                           {statusIcon(row.status)}
                           <span>{row.statusLabel}</span>
                         </div>
@@ -416,10 +418,7 @@ export function SharpestOnChainXrefPanel({
                       </td>
 
                       <td>
-                        <div
-                          className="sd-xref-proof-links"
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                        <div className="sd-xref-proof-links" onClick={(e) => e.stopPropagation()}>
                           {row.polymarketProfileUrl && row.walletFormatValid ? (
                             <a
                               href={row.polymarketProfileUrl}
@@ -479,9 +478,14 @@ export function ProfileOnChainXrefCard({
   xref,
   onJumpToCustomer,
 }: ProfileOnChainXrefCardProps): React.ReactElement {
-  const walletCheckOk = Boolean(xref.proxyWallet && xref.walletFormatValid && xref.walletAddressValid !== false)
+  const walletCheckOk = Boolean(
+    xref.proxyWallet && xref.walletFormatValid && xref.walletAddressValid !== false,
+  )
   const liveSyncOk = xref.dataSource === "LIVE" && !xref.lastError
-  const uniqueWalletOk = Boolean(xref.proxyWallet) && xref.sharedWithCustomerIds.length === 0 && !xref.walletSourceMismatch
+  const uniqueWalletOk =
+    Boolean(xref.proxyWallet) &&
+    xref.sharedWithCustomerIds.length === 0 &&
+    !xref.walletSourceMismatch
   const bridgeClear = xref.bridgeVerdict !== "POLY_ONLY_UP"
 
   return (
@@ -554,7 +558,9 @@ export function ProfileOnChainXrefCard({
               </>
             ) : (
               <span className="sd-xref-muted">
-                {xref.dataSource === "FIXTURE" ? "Fixture-only (untracked live)" : "Not tracked live"}
+                {xref.dataSource === "FIXTURE"
+                  ? "Fixture-only (untracked live)"
+                  : "Not tracked live"}
               </span>
             )}
           </span>
@@ -634,43 +640,44 @@ export function ProfileOnChainXrefCard({
         </div>
       )}
 
-      {xref.walletFormatValid && (xref.polymarketProfileUrl || xref.polygonscanUrl || xref.polymarketPositionsApiUrl) && (
-        <div className="sd-forensic-links-row">
-          {xref.polymarketProfileUrl && (
-            <a
-              href={xref.polymarketProfileUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="sd-forensic-ext-link"
-            >
-              <span>Polymarket Profile</span>
-              <ArrowUpRight size={11} aria-hidden="true" />
-            </a>
-          )}
-          {xref.polymarketPositionsApiUrl && (
-            <a
-              href={xref.polymarketPositionsApiUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="sd-forensic-ext-link"
-            >
-              <span>Positions API JSON</span>
-              <ArrowUpRight size={11} aria-hidden="true" />
-            </a>
-          )}
-          {xref.polygonscanUrl && (
-            <a
-              href={xref.polygonscanUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="sd-forensic-ext-link"
-            >
-              <span>Polygonscan</span>
-              <ArrowUpRight size={11} aria-hidden="true" />
-            </a>
-          )}
-        </div>
-      )}
+      {xref.walletFormatValid &&
+        (xref.polymarketProfileUrl || xref.polygonscanUrl || xref.polymarketPositionsApiUrl) && (
+          <div className="sd-forensic-links-row">
+            {xref.polymarketProfileUrl && (
+              <a
+                href={xref.polymarketProfileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="sd-forensic-ext-link"
+              >
+                <span>Polymarket Profile</span>
+                <ArrowUpRight size={11} aria-hidden="true" />
+              </a>
+            )}
+            {xref.polymarketPositionsApiUrl && (
+              <a
+                href={xref.polymarketPositionsApiUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="sd-forensic-ext-link"
+              >
+                <span>Positions API JSON</span>
+                <ArrowUpRight size={11} aria-hidden="true" />
+              </a>
+            )}
+            {xref.polygonscanUrl && (
+              <a
+                href={xref.polygonscanUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="sd-forensic-ext-link"
+              >
+                <span>Polygonscan</span>
+                <ArrowUpRight size={11} aria-hidden="true" />
+              </a>
+            )}
+          </div>
+        )}
     </section>
   )
 }

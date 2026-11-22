@@ -10,13 +10,7 @@ export const DEFAULT_RISK_EXPOSURE_WARNING_LIMIT_USD = Math.round(
   DEFAULT_RISK_EXPOSURE_LIMIT_USD * RISK_EXPOSURE_WARN_RATIO,
 )
 
-export const RISK_EXPOSURE_LIMIT_PRESETS = [
-  10_000,
-  25_000,
-  50_000,
-  100_000,
-  250_000,
-] as const
+export const RISK_EXPOSURE_LIMIT_PRESETS = [10_000, 25_000, 50_000, 100_000, 250_000] as const
 
 export type RiskThresholdStatus = "idle" | "ok" | "warn" | "breach"
 
@@ -60,7 +54,13 @@ export function clampRiskExposureWarningLimitUsd(
   const safeBreach = clampRiskExposureLimitUsd(breachLimitUsd)
   const maxWarning = Math.max(MIN_RISK_EXPOSURE_WARNING_LIMIT_USD, safeBreach - 1)
   if (!Number.isFinite(warningUsd) || warningUsd <= 0) {
-    return Math.min(maxWarning, Math.max(MIN_RISK_EXPOSURE_WARNING_LIMIT_USD, Math.round(safeBreach * RISK_EXPOSURE_WARN_RATIO)))
+    return Math.min(
+      maxWarning,
+      Math.max(
+        MIN_RISK_EXPOSURE_WARNING_LIMIT_USD,
+        Math.round(safeBreach * RISK_EXPOSURE_WARN_RATIO),
+      ),
+    )
   }
   const rounded = Math.round(warningUsd)
   if (rounded < MIN_RISK_EXPOSURE_WARNING_LIMIT_USD) return MIN_RISK_EXPOSURE_WARNING_LIMIT_USD
@@ -69,7 +69,10 @@ export function clampRiskExposureWarningLimitUsd(
 }
 
 function parseRawPositiveUsd(raw: string): number | null {
-  const cleaned = raw.trim().replace(/[$,\s_]/g, "").toLowerCase()
+  const cleaned = raw
+    .trim()
+    .replace(/[$,\s_]/g, "")
+    .toLowerCase()
   if (!cleaned) return null
 
   const match = /^(\d+(?:\.\d+)?)([km])?$/.exec(cleaned)
@@ -160,11 +163,10 @@ export function parseRiskThresholdPairInput(
   }
 }
 
-export function readStoredRiskExposureLimitUsd(
-  storage?: Pick<Storage, "getItem"> | null,
-): number {
+export function readStoredRiskExposureLimitUsd(storage?: Pick<Storage, "getItem"> | null): number {
   try {
-    const store = storage !== undefined ? storage : typeof localStorage !== "undefined" ? localStorage : null
+    const store =
+      storage !== undefined ? storage : typeof localStorage !== "undefined" ? localStorage : null
     if (!store) return DEFAULT_RISK_EXPOSURE_LIMIT_USD
     const raw = store.getItem(RISK_EXPOSURE_LIMIT_STORAGE_KEY)
     if (!raw) return DEFAULT_RISK_EXPOSURE_LIMIT_USD
@@ -182,7 +184,8 @@ export function writeStoredRiskExposureLimitUsd(
 ): number {
   const safe = clampRiskExposureLimitUsd(limitUsd)
   try {
-    const store = storage !== undefined ? storage : typeof localStorage !== "undefined" ? localStorage : null
+    const store =
+      storage !== undefined ? storage : typeof localStorage !== "undefined" ? localStorage : null
     if (store) {
       store.setItem(RISK_EXPOSURE_LIMIT_STORAGE_KEY, String(safe))
     }
@@ -197,7 +200,8 @@ export function readStoredRiskExposureThresholds(
 ): RiskExposureThresholds {
   const breachLimitUsd = readStoredRiskExposureLimitUsd(storage)
   try {
-    const store = storage !== undefined ? storage : typeof localStorage !== "undefined" ? localStorage : null
+    const store =
+      storage !== undefined ? storage : typeof localStorage !== "undefined" ? localStorage : null
     if (!store) {
       return {
         breachLimitUsd,
@@ -243,7 +247,8 @@ export function writeStoredRiskExposureThresholds(
     breachLimitUsd,
   )
   try {
-    const store = storage !== undefined ? storage : typeof localStorage !== "undefined" ? localStorage : null
+    const store =
+      storage !== undefined ? storage : typeof localStorage !== "undefined" ? localStorage : null
     if (store) {
       store.setItem(RISK_EXPOSURE_WARNING_LIMIT_STORAGE_KEY, String(warningLimitUsd))
     }

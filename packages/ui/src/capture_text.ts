@@ -1,5 +1,5 @@
 /**
- * @file capture_text.ts
+ * @file packages/ui/src/capture_text.ts
  * @description Display sanitizer for capture text fields.
  *
  * Some portal captures carry HTML in plain text: `TicketWriter` arrives as

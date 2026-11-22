@@ -1,5 +1,5 @@
-import type React from "react";
-import { useEffect, useMemo, useState } from "react";
+import type React from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   AlertCircle,
   ArrowUpRight,
@@ -17,82 +17,77 @@ import {
   Save,
   Search,
   SlidersHorizontal,
-} from "lucide-react";
+} from "lucide-react"
 import type {
   ConfigItemKind,
   ConfigStatusItem,
   ConfigStatusSnapshot,
   DashboardTabId,
-} from "../types.ts";
-import { isDashboardTabId } from "../types.ts";
-import { convertEnvTemplateToBunYaml } from "@sportsdesk-ops/contracts";
-import { KeyboardShortcutsPanel } from "./KeyboardShortcutsPanel.tsx";
-import { NpmrcSupportSection } from "./NpmrcSupportSection.tsx";
+} from "../types.ts"
+import { isDashboardTabId } from "../types.ts"
+import { convertEnvTemplateToBunYaml } from "@sportsdesk-ops/contracts"
+import { KeyboardShortcutsPanel } from "./KeyboardShortcutsPanel.tsx"
+import { NpmrcSupportSection } from "./NpmrcSupportSection.tsx"
 import {
   CopyBunTerminalAnsiButton,
   SyntaxHighlightedPre,
   SyntaxTokenLegend,
-} from "./SyntaxHighlightedPre.tsx";
-import { YamlRuntimeSection } from "./YamlRuntimeSection.tsx";
-import { BunRuntimeSurfaceSection } from "./BunRuntimeSurfaceSection.tsx";
+} from "./SyntaxHighlightedPre.tsx"
+import { YamlRuntimeSection } from "./YamlRuntimeSection.tsx"
+import { BunRuntimeSurfaceSection } from "./BunRuntimeSurfaceSection.tsx"
 
 const MONO_FONT =
-  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace';
+  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace'
 
 export type StatusDashboardViewMode =
-  | "registry"
-  | "components"
-  | "env-example"
-  | "npmrc"
-  | "yaml"
-  | "runtime-surface";
+  "registry" | "components" | "env-example" | "npmrc" | "yaml" | "runtime-surface"
 
 export interface StatusDashboardPanelProps {
-  readonly snapshot: ConfigStatusSnapshot | null;
-  readonly loading: boolean;
-  readonly error: string | null;
-  readonly saving: boolean;
+  readonly snapshot: ConfigStatusSnapshot | null
+  readonly loading: boolean
+  readonly error: string | null
+  readonly saving: boolean
   readonly saveNotice?: {
-    readonly type: "success" | "error";
-    readonly message: string;
-  } | null;
-  readonly onRefresh: () => void;
+    readonly type: "success" | "error"
+    readonly message: string
+  } | null
+  readonly onRefresh: () => void
   readonly onSaveOverrides: (
     overrides: Readonly<Record<string, string>>,
-  ) => Promise<boolean> | boolean;
-  readonly onResetOverrides: (keys?: readonly string[]) => Promise<void> | void;
-  readonly onNavigateTab?: ((tab: DashboardTabId) => void) | undefined;
+  ) => Promise<boolean> | boolean
+  readonly onResetOverrides: (keys?: readonly string[]) => Promise<void> | void
+  readonly onNavigateTab?: ((tab: DashboardTabId) => void) | undefined
 }
 
 function statusDisplayMeta(item: ConfigStatusItem): {
-  readonly label: string;
-  readonly color: string;
+  readonly label: string
+  readonly color: string
 } {
   if (item.sensitive) {
     return item.configured
       ? { label: "Secret configured", color: "#4ade80" }
-      : { label: "Secret unset", color: "#fbbf24" };
+      : { label: "Secret unset", color: "#fbbf24" }
   }
   switch (item.status) {
     case "overridden":
-      return { label: "Saved override", color: "#38bdf8" };
+      return { label: "Saved override", color: "#38bdf8" }
     case "configured":
-      return { label: "Active env", color: "#4ade80" };
+      return { label: "Active env", color: "#4ade80" }
     case "default":
-      return { label: "Default", color: "#94a3b8" };
+      return { label: "Default", color: "#94a3b8" }
     case "unset":
-      return { label: "Unset", color: "#fbbf24" };
+      return { label: "Unset", color: "#fbbf24" }
   }
 }
 
 function kindLabel(kind: ConfigItemKind): string {
   switch (kind) {
     case "env":
-      return ".env.example";
+      return ".env.example"
     case "constant":
-      return "Constant";
+      return "Constant"
     case "variable":
-      return "Runtime Var";
+      return "Runtime Var"
   }
 }
 
@@ -107,85 +102,81 @@ export function StatusDashboardPanel({
   onResetOverrides,
   onNavigateTab,
 }: StatusDashboardPanelProps): React.ReactElement {
-  const [viewMode, setViewMode] = useState<StatusDashboardViewMode>("registry");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [kindFilter, setKindFilter] = useState<"all" | ConfigItemKind>("all");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [componentFilter, setComponentFilter] = useState<string>("all");
-  const [selectedComponentName, setSelectedComponentName] = useState<string>("");
-  const [componentSearch, setComponentSearch] = useState<string>("");
-  const [draftValues, setDraftValues] = useState<Record<string, string>>({});
-  const [copiedEnv, setCopiedEnv] = useState<boolean>(false);
-  const [envPreviewFormat, setEnvPreviewFormat] = useState<"env" | "yaml">("env");
+  const [viewMode, setViewMode] = useState<StatusDashboardViewMode>("registry")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [kindFilter, setKindFilter] = useState<"all" | ConfigItemKind>("all")
+  const [categoryFilter, setCategoryFilter] = useState<string>("all")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [componentFilter, setComponentFilter] = useState<string>("all")
+  const [selectedComponentName, setSelectedComponentName] = useState<string>("")
+  const [componentSearch, setComponentSearch] = useState<string>("")
+  const [draftValues, setDraftValues] = useState<Record<string, string>>({})
+  const [copiedEnv, setCopiedEnv] = useState<boolean>(false)
+  const [envPreviewFormat, setEnvPreviewFormat] = useState<"env" | "yaml">("env")
 
   // Clear stale draft entries that match freshly saved server values
   useEffect(() => {
-    if (!snapshot) return;
+    if (!snapshot) return
     setDraftValues((prev) => {
-      const next: Record<string, string> = {};
+      const next: Record<string, string> = {}
       for (const [key, draftVal] of Object.entries(prev)) {
-        const item = snapshot.items.find((i) => i.key === key);
+        const item = snapshot.items.find((i) => i.key === key)
         if (item && item.editable && (item.value ?? "") !== draftVal) {
-          next[key] = draftVal;
+          next[key] = draftVal
         }
       }
-      return next;
-    });
-  }, [snapshot]);
+      return next
+    })
+  }, [snapshot])
 
   // Select first component automatically in traceability view
   useEffect(() => {
-    if (!snapshot || snapshot.components.length === 0) return;
+    if (!snapshot || snapshot.components.length === 0) return
     if (
       !selectedComponentName ||
       !snapshot.components.some((c) => c.component === selectedComponentName)
     ) {
-      setSelectedComponentName(snapshot.components[0]!.component);
+      setSelectedComponentName(snapshot.components[0]!.component)
     }
-  }, [snapshot, selectedComponentName]);
+  }, [snapshot, selectedComponentName])
 
   const categories = useMemo(() => {
-    if (!snapshot) return [] as string[];
-    return Array.from(new Set(snapshot.items.map((item) => item.category))).sort();
-  }, [snapshot]);
+    if (!snapshot) return [] as string[]
+    return Array.from(new Set(snapshot.items.map((item) => item.category))).sort()
+  }, [snapshot])
 
   const dirtyEntries = useMemo(() => {
-    if (!snapshot) return {} as Record<string, string>;
-    const dirty: Record<string, string> = {};
+    if (!snapshot) return {} as Record<string, string>
+    const dirty: Record<string, string> = {}
     for (const [key, val] of Object.entries(draftValues)) {
-      const item = snapshot.items.find((i) => i.key === key);
-      if (!item || !item.editable || item.sensitive) continue;
+      const item = snapshot.items.find((i) => i.key === key)
+      if (!item || !item.editable || item.sensitive) continue
       if ((item.value ?? "") !== val) {
-        dirty[key] = val;
+        dirty[key] = val
       }
     }
-    return dirty;
-  }, [draftValues, snapshot]);
+    return dirty
+  }, [draftValues, snapshot])
 
-  const dirtyCount = Object.keys(dirtyEntries).length;
+  const dirtyCount = Object.keys(dirtyEntries).length
 
   const filteredItems = useMemo(() => {
-    if (!snapshot) return [] as readonly ConfigStatusItem[];
-    const q = searchQuery.trim().toLowerCase();
+    if (!snapshot) return [] as readonly ConfigStatusItem[]
+    const q = searchQuery.trim().toLowerCase()
     return snapshot.items.filter((item) => {
-      if (kindFilter !== "all" && item.kind !== kindFilter) return false;
+      if (kindFilter !== "all" && item.kind !== kindFilter) return false
       if (categoryFilter !== "all" && item.category !== categoryFilter) {
-        return false;
+        return false
       }
-      if (statusFilter === "secrets" && !item.sensitive) return false;
-      if (
-        statusFilter !== "all" &&
-        statusFilter !== "secrets" &&
-        item.status !== statusFilter
-      ) {
-        return false;
+      if (statusFilter === "secrets" && !item.sensitive) return false
+      if (statusFilter !== "all" && statusFilter !== "secrets" && item.status !== statusFilter) {
+        return false
       }
       if (
         componentFilter !== "all" &&
         !item.consumers.some((c) => c.component === componentFilter)
       ) {
-        return false;
+        return false
       }
       if (q) {
         const hay = [
@@ -197,97 +188,88 @@ export function StatusDashboardPanel({
           ...item.consumers.map((c) => `${c.component} ${c.usage}`),
         ]
           .join(" ")
-          .toLowerCase();
-        if (!hay.includes(q)) return false;
+          .toLowerCase()
+        if (!hay.includes(q)) return false
       }
-      return true;
-    });
-  }, [
-    snapshot,
-    searchQuery,
-    kindFilter,
-    categoryFilter,
-    statusFilter,
-    componentFilter,
-  ]);
+      return true
+    })
+  }, [snapshot, searchQuery, kindFilter, categoryFilter, statusFilter, componentFilter])
 
   const filteredComponents = useMemo(() => {
-    if (!snapshot) return [];
-    const q = componentSearch.trim().toLowerCase();
-    if (!q) return snapshot.components;
+    if (!snapshot) return []
+    const q = componentSearch.trim().toLowerCase()
+    if (!q) return snapshot.components
     return snapshot.components.filter(
       (comp) =>
         comp.component.toLowerCase().includes(q) ||
         comp.layer.toLowerCase().includes(q) ||
         comp.items.some(
-          (i) =>
-            i.key.toLowerCase().includes(q) ||
-            i.usage.toLowerCase().includes(q),
+          (i) => i.key.toLowerCase().includes(q) || i.usage.toLowerCase().includes(q),
         ),
-    );
-  }, [snapshot, componentSearch]);
+    )
+  }, [snapshot, componentSearch])
 
   const activeComponent = useMemo(() => {
-    if (!snapshot) return null;
+    if (!snapshot) return null
     return (
       snapshot.components.find((c) => c.component === selectedComponentName) ??
       filteredComponents[0] ??
       null
-    );
-  }, [snapshot, selectedComponentName, filteredComponents]);
+    )
+  }, [snapshot, selectedComponentName, filteredComponents])
 
   const envAsBunYaml = useMemo(() => {
-    if (!snapshot) return null;
-    return convertEnvTemplateToBunYaml(snapshot.envExampleText);
-  }, [snapshot]);
+    if (!snapshot) return null
+    return convertEnvTemplateToBunYaml(snapshot.envExampleText)
+  }, [snapshot])
 
   const handleSave = async () => {
-    if (dirtyCount === 0 || saving) return;
-    const ok = await onSaveOverrides(dirtyEntries);
+    if (dirtyCount === 0 || saving) return
+    const ok = await onSaveOverrides(dirtyEntries)
     if (ok) {
-      setDraftValues({});
+      setDraftValues({})
     }
-  };
+  }
 
   const handleCopyEnvExample = async () => {
-    if (!snapshot) return;
+    if (!snapshot) return
     try {
-      await navigator.clipboard.writeText(snapshot.envExampleText);
-      setCopiedEnv(true);
-      setTimeout(() => setCopiedEnv(false), 1800);
+      await navigator.clipboard.writeText(snapshot.envExampleText)
+      setCopiedEnv(true)
+      setTimeout(() => setCopiedEnv(false), 1800)
     } catch {
-      setCopiedEnv(false);
+      setCopiedEnv(false)
     }
-  };
+  }
 
   const handleDownloadEnvExample = () => {
-    if (!snapshot || typeof document === "undefined") return;
+    if (!snapshot || typeof document === "undefined") return
     const blob = new Blob([snapshot.envExampleText], {
       type: "text/plain;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = ".env.example";
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    URL.revokeObjectURL(url);
-  };
+    })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement("a")
+    anchor.href = url
+    anchor.download = ".env.example"
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    URL.revokeObjectURL(url)
+  }
 
   const handleJumpToComponentTrace = (componentName: string) => {
-    setSelectedComponentName(componentName);
-    setViewMode("components");
-  };
+    setSelectedComponentName(componentName)
+    setViewMode("components")
+  }
 
   const handleJumpToKeyInRegistry = (key: string) => {
-    setSearchQuery(key);
-    setKindFilter("all");
-    setCategoryFilter("all");
-    setStatusFilter("all");
-    setComponentFilter("all");
-    setViewMode("registry");
-  };
+    setSearchQuery(key)
+    setKindFilter("all")
+    setCategoryFilter("all")
+    setStatusFilter("all")
+    setComponentFilter("all")
+    setViewMode("registry")
+  }
 
   return (
     <section
@@ -334,7 +316,8 @@ export function StatusDashboardPanel({
             }}
           >
             Inspect and edit non-secret <code style={{ fontFamily: MONO_FONT }}>.env.example</code>{" "}
-            variables, build-time constants, and runtime values, and trace every key to the components that consume it.
+            variables, build-time constants, and runtime values, and trace every key to the
+            components that consume it.
           </p>
         </div>
 
@@ -386,8 +369,7 @@ export function StatusDashboardPanel({
               borderWidth: "1px",
               borderStyle: "solid",
               borderColor: dirtyCount > 0 ? "#0284c7" : "var(--border-default, #1e293b)",
-              backgroundColor:
-                dirtyCount > 0 ? "#0284c7" : "var(--surface-panel, #0f172a)",
+              backgroundColor: dirtyCount > 0 ? "#0284c7" : "var(--surface-panel, #0f172a)",
               color: dirtyCount > 0 ? "#f8fafc" : "#64748b",
               fontSize: "12px",
               fontWeight: 600,
@@ -472,13 +454,9 @@ export function StatusDashboardPanel({
             borderWidth: "1px",
             borderStyle: "solid",
             borderColor:
-              saveNotice.type === "error"
-                ? "rgba(239, 68, 68, 0.45)"
-                : "rgba(34, 197, 94, 0.45)",
+              saveNotice.type === "error" ? "rgba(239, 68, 68, 0.45)" : "rgba(34, 197, 94, 0.45)",
             backgroundColor:
-              saveNotice.type === "error"
-                ? "rgba(239, 68, 68, 0.08)"
-                : "rgba(34, 197, 94, 0.08)",
+              saveNotice.type === "error" ? "rgba(239, 68, 68, 0.08)" : "rgba(34, 197, 94, 0.08)",
             color: saveNotice.type === "error" ? "#fca5a5" : "#86efac",
             fontSize: "12px",
           }}
@@ -823,8 +801,8 @@ export function StatusDashboardPanel({
                   },
                 ] as const
               ).map((tab) => {
-                const Icon = tab.icon;
-                const active = viewMode === tab.id;
+                const Icon = tab.icon
+                const active = viewMode === tab.id
                 return (
                   <button
                     key={tab.id}
@@ -839,9 +817,7 @@ export function StatusDashboardPanel({
                       padding: "6px 12px",
                       borderRadius: "5px",
                       border: "none",
-                      backgroundColor: active
-                        ? "rgba(56, 189, 248, 0.14)"
-                        : "transparent",
+                      backgroundColor: active ? "rgba(56, 189, 248, 0.14)" : "transparent",
                       color: active ? "#38bdf8" : "var(--text-muted, #94a3b8)",
                       fontSize: "12px",
                       fontWeight: active ? 600 : 500,
@@ -852,7 +828,7 @@ export function StatusDashboardPanel({
                     <Icon size={13} aria-hidden="true" />
                     <span>{tab.label}</span>
                   </button>
-                );
+                )
               })}
             </div>
 
@@ -954,7 +930,7 @@ export function StatusDashboardPanel({
                       ["variable", "Runtime Vars"],
                     ] as const
                   ).map(([val, lbl], idx) => {
-                    const active = kindFilter === val;
+                    const active = kindFilter === val
                     return (
                       <button
                         key={val}
@@ -969,9 +945,7 @@ export function StatusDashboardPanel({
                           borderLeftWidth: idx === 0 ? "0px" : "1px",
                           borderLeftStyle: "solid",
                           borderLeftColor: "var(--border-strong, #334155)",
-                          backgroundColor: active
-                            ? "rgba(56, 189, 248, 0.14)"
-                            : "transparent",
+                          backgroundColor: active ? "rgba(56, 189, 248, 0.14)" : "transparent",
                           color: active ? "#38bdf8" : "var(--text-muted, #94a3b8)",
                           cursor: "pointer",
                           whiteSpace: "nowrap",
@@ -979,7 +953,7 @@ export function StatusDashboardPanel({
                       >
                         {lbl}
                       </button>
-                    );
+                    )
                   })}
                 </div>
 
@@ -1067,11 +1041,11 @@ export function StatusDashboardPanel({
                   <button
                     type="button"
                     onClick={() => {
-                      setSearchQuery("");
-                      setKindFilter("all");
-                      setCategoryFilter("all");
-                      setStatusFilter("all");
-                      setComponentFilter("all");
+                      setSearchQuery("")
+                      setKindFilter("all")
+                      setCategoryFilter("all")
+                      setStatusFilter("all")
+                      setComponentFilter("all")
                     }}
                     style={{
                       marginTop: "10px",
@@ -1110,9 +1084,7 @@ export function StatusDashboardPanel({
                           fontSize: "11px",
                         }}
                       >
-                        <th style={{ padding: "9px 12px", fontWeight: 600 }}>
-                          Key & Metadata
-                        </th>
+                        <th style={{ padding: "9px 12px", fontWeight: 600 }}>Key & Metadata</th>
                         <th style={{ padding: "9px 12px", fontWeight: 600, width: "125px" }}>
                           Status
                         </th>
@@ -1126,16 +1098,12 @@ export function StatusDashboardPanel({
                     </thead>
                     <tbody>
                       {filteredItems.map((item) => {
-                        const statusMeta = statusDisplayMeta(item);
-                        const hasDraft = Object.prototype.hasOwnProperty.call(
-                          draftValues,
-                          item.key,
-                        );
+                        const statusMeta = statusDisplayMeta(item)
+                        const hasDraft = Object.prototype.hasOwnProperty.call(draftValues, item.key)
                         const currentInputVal = hasDraft
                           ? draftValues[item.key]!
-                          : (item.value ?? "");
-                        const isDirty =
-                          hasDraft && currentInputVal !== (item.value ?? "");
+                          : (item.value ?? "")
+                        const isDirty = hasDraft && currentInputVal !== (item.value ?? "")
 
                         return (
                           <tr
@@ -1145,9 +1113,7 @@ export function StatusDashboardPanel({
                               borderBottomWidth: "1px",
                               borderBottomStyle: "solid",
                               borderBottomColor: "rgba(30, 41, 59, 0.7)",
-                              backgroundColor: isDirty
-                                ? "rgba(56, 189, 248, 0.05)"
-                                : "transparent",
+                              backgroundColor: isDirty ? "rgba(56, 189, 248, 0.05)" : "transparent",
                             }}
                           >
                             {/* Key & Metadata */}
@@ -1173,9 +1139,7 @@ export function StatusDashboardPanel({
                                 <span aria-hidden="true"> · </span>
                                 <span>{item.category}</span>
                                 <span aria-hidden="true"> · </span>
-                                <span style={{ fontFamily: MONO_FONT }}>
-                                  {item.sourceFile}
-                                </span>
+                                <span style={{ fontFamily: MONO_FONT }}>{item.sourceFile}</span>
                               </div>
                               <div
                                 style={{
@@ -1207,9 +1171,7 @@ export function StatusDashboardPanel({
                                   color: statusMeta.color,
                                 }}
                               >
-                                {item.sensitive ? (
-                                  <Lock size={12} aria-hidden="true" />
-                                ) : null}
+                                {item.sensitive ? <Lock size={12} aria-hidden="true" /> : null}
                                 <span>{statusMeta.label}</span>
                               </div>
                               {isDirty ? (
@@ -1253,13 +1215,23 @@ export function StatusDashboardPanel({
                                         : "Not set on server"}
                                     </span>
                                   </div>
-                                  <div style={{ marginTop: "2px", fontSize: "10.5px", color: "#64748b" }}>
+                                  <div
+                                    style={{
+                                      marginTop: "2px",
+                                      fontSize: "10.5px",
+                                      color: "#64748b",
+                                    }}
+                                  >
                                     Manage secrets in Settings → Secrets or server env.
                                   </div>
                                 </div>
                               ) : item.editable ? (
-                                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                <div
+                                  style={{ display: "flex", flexDirection: "column", gap: "4px" }}
+                                >
+                                  <div
+                                    style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                                  >
                                     <input
                                       type="text"
                                       aria-label={`Value for ${item.key}`}
@@ -1270,11 +1242,11 @@ export function StatusDashboardPanel({
                                           : "Enter value…"
                                       }
                                       onChange={(e) => {
-                                        const val = e.target.value;
+                                        const val = e.target.value
                                         setDraftValues((prev) => ({
                                           ...prev,
                                           [item.key]: val,
-                                        }));
+                                        }))
                                       }}
                                       style={{
                                         flex: 1,
@@ -1320,7 +1292,8 @@ export function StatusDashboardPanel({
                                       fontFamily: MONO_FONT,
                                     }}
                                   >
-                                    default: {item.defaultValue || "(empty)"} · type: {item.valueType}
+                                    default: {item.defaultValue || "(empty)"} · type:{" "}
+                                    {item.valueType}
                                   </div>
                                 </div>
                               ) : (
@@ -1328,7 +1301,13 @@ export function StatusDashboardPanel({
                                   <div style={{ color: "var(--text-primary, #e2e8f0)" }}>
                                     {item.value ?? item.defaultValue}
                                   </div>
-                                  <div style={{ marginTop: "2px", fontSize: "10.5px", color: "#64748b" }}>
+                                  <div
+                                    style={{
+                                      marginTop: "2px",
+                                      fontSize: "10.5px",
+                                      color: "#64748b",
+                                    }}
+                                  >
                                     Read-only invariant
                                   </div>
                                 </div>
@@ -1376,10 +1355,7 @@ export function StatusDashboardPanel({
                                       >
                                         {consumer.component}
                                       </button>
-                                      <span style={{ color: "#64748b" }}>
-                                        {" "}
-                                        · {consumer.layer}
-                                      </span>
+                                      <span style={{ color: "#64748b" }}> · {consumer.layer}</span>
                                       <div
                                         style={{
                                           color: "var(--text-muted, #94a3b8)",
@@ -1416,7 +1392,7 @@ export function StatusDashboardPanel({
                               </div>
                             </td>
                           </tr>
-                        );
+                        )
                       })}
                     </tbody>
                   </table>
@@ -1477,7 +1453,7 @@ export function StatusDashboardPanel({
                 </div>
                 <div style={{ maxHeight: "480px", overflowY: "auto" }}>
                   {filteredComponents.map((comp, idx) => {
-                    const active = activeComponent?.component === comp.component;
+                    const active = activeComponent?.component === comp.component
                     return (
                       <button
                         key={comp.component}
@@ -1491,9 +1467,7 @@ export function StatusDashboardPanel({
                           borderTopWidth: idx === 0 ? "0px" : "1px",
                           borderTopStyle: "solid",
                           borderTopColor: "rgba(30, 41, 59, 0.7)",
-                          backgroundColor: active
-                            ? "rgba(56, 189, 248, 0.12)"
-                            : "transparent",
+                          backgroundColor: active ? "rgba(56, 189, 248, 0.12)" : "transparent",
                           cursor: "pointer",
                           display: "flex",
                           alignItems: "center",
@@ -1507,9 +1481,7 @@ export function StatusDashboardPanel({
                               fontFamily: MONO_FONT,
                               fontSize: "12px",
                               fontWeight: active ? 700 : 600,
-                              color: active
-                                ? "#38bdf8"
-                                : "var(--text-primary, #e2e8f0)",
+                              color: active ? "#38bdf8" : "var(--text-primary, #e2e8f0)",
                               overflow: "hidden",
                               textOverflow: "ellipsis",
                               whiteSpace: "nowrap",
@@ -1542,7 +1514,7 @@ export function StatusDashboardPanel({
                           {comp.itemCount}
                         </span>
                       </button>
-                    );
+                    )
                   })}
                 </div>
               </div>
@@ -1594,9 +1566,7 @@ export function StatusDashboardPanel({
                       isDashboardTabId(activeComponent.tabId) ? (
                         <button
                           type="button"
-                          onClick={() =>
-                            onNavigateTab(activeComponent.tabId as DashboardTabId)
-                          }
+                          onClick={() => onNavigateTab(activeComponent.tabId as DashboardTabId)}
                           style={{
                             display: "inline-flex",
                             alignItems: "center",
@@ -1622,8 +1592,8 @@ export function StatusDashboardPanel({
 
                     <div>
                       {activeComponent.items.map((dep, idx) => {
-                        const fullItem = snapshot.items.find((i) => i.key === dep.key);
-                        const meta = fullItem ? statusDisplayMeta(fullItem) : null;
+                        const fullItem = snapshot.items.find((i) => i.key === dep.key)
+                        const meta = fullItem ? statusDisplayMeta(fullItem) : null
                         return (
                           <div
                             key={`${activeComponent.component}-${dep.key}`}
@@ -1719,7 +1689,7 @@ export function StatusDashboardPanel({
                               </button>
                             </div>
                           </div>
-                        );
+                        )
                       })}
                     </div>
                   </>
@@ -1800,7 +1770,7 @@ export function StatusDashboardPanel({
                         { id: "yaml", label: "Bun.YAML" },
                       ] as const
                     ).map((fmt, idx) => {
-                      const active = envPreviewFormat === fmt.id;
+                      const active = envPreviewFormat === fmt.id
                       return (
                         <button
                           key={fmt.id}
@@ -1816,9 +1786,7 @@ export function StatusDashboardPanel({
                             borderLeftWidth: idx === 0 ? "0px" : "1px",
                             borderLeftStyle: "solid",
                             borderLeftColor: "var(--border-strong, #334155)",
-                            backgroundColor: active
-                              ? "rgba(56, 189, 248, 0.16)"
-                              : "transparent",
+                            backgroundColor: active ? "rgba(56, 189, 248, 0.16)" : "transparent",
                             color: active ? "#7dd3fc" : "#94a3b8",
                             cursor: "pointer",
                             whiteSpace: "nowrap",
@@ -1826,7 +1794,7 @@ export function StatusDashboardPanel({
                         >
                           {fmt.label}
                         </button>
-                      );
+                      )
                     })}
                   </div>
                   <CopyBunTerminalAnsiButton
@@ -1913,24 +1881,17 @@ export function StatusDashboardPanel({
           ) : null}
 
           {/* VIEW 4: BUN .npmrc & bunfig.toml SUPPORT */}
-          {viewMode === "npmrc" ? (
-            <NpmrcSupportSection summary={snapshot.npmrc} />
-          ) : null}
+          {viewMode === "npmrc" ? <NpmrcSupportSection summary={snapshot.npmrc} /> : null}
 
           {/* VIEW 5: BUN.YAML.PARSE & WORKSPACE YAML CONFIG */}
-          {viewMode === "yaml" ? (
-            <YamlRuntimeSection summary={snapshot.yamlConfig} />
-          ) : null}
+          {viewMode === "yaml" ? <YamlRuntimeSection summary={snapshot.yamlConfig} /> : null}
 
           {/* VIEW 6: BUN RUNTIME SURFACE (GLOBALS, BUN.* UTILITIES, CORE APIS & LIVE AUDIT) */}
           {viewMode === "runtime-surface" ? (
-            <BunRuntimeSurfaceSection
-              audit={snapshot.runtimeSurface}
-              onRefresh={onRefresh}
-            />
+            <BunRuntimeSurfaceSection audit={snapshot.runtimeSurface} onRefresh={onRefresh} />
           ) : null}
         </>
       ) : null}
     </section>
-  );
+  )
 }

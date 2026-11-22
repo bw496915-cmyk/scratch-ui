@@ -1,5 +1,5 @@
 /**
- * @file url_state.ts
+ * @file packages/ui/src/url_state.ts
  * @description Shareable dashboard URL state.
  *
  * Owns only the state that is safe to put in a link: the active tab, the build

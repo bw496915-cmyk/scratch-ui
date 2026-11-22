@@ -1,5 +1,5 @@
 /**
- * @file src/dashboard/ansi.ts
+ * @file packages/ui/src/ansi.tsx
  * @description Client-side ANSI parser & React renderer for Terminal Emulator.
  */
 

@@ -1,5 +1,5 @@
 /**
- * @file quick_jump_feed.ts
+ * @file packages/ui/src/quick_jump_feed.ts
  * @description Feed freshness for the Desk Quick-Jump ribbon.
  *
  * The ribbon prints wager counts; without an age next to them a stale snapshot

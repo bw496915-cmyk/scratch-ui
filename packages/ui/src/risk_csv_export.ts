@@ -10,9 +10,7 @@ const SAFE_SIGNED_NUMBER_RE = /^[+-]\d+(?:\.\d+)?$/
  * injection while preserving legitimate signed numeric values (such as
  * American odds "-110", "+145" or point spreads "-3.5").
  */
-export function escapeRiskCsvCell(
-  value: string | number | boolean | null | undefined,
-): string {
+export function escapeRiskCsvCell(value: string | number | boolean | null | undefined): string {
   if (value === null || value === undefined) return ""
   let str = String(value)
 
@@ -66,9 +64,7 @@ export function buildLiveWagersRiskCsv(wagers: readonly LiveWager[]): string {
     const channel = wagerChannelOf(w) ?? w.ticketWriter ?? ""
     const totalPayoutUsd = w.riskUsd + w.toWinUsd
     const capUtilizationPct =
-      w.maxRecommendedStake > 0
-        ? ((w.riskUsd / w.maxRecommendedStake) * 100).toFixed(1)
-        : ""
+      w.maxRecommendedStake > 0 ? ((w.riskUsd / w.maxRecommendedStake) * 100).toFixed(1) : ""
 
     const row: readonly (string | number | null)[] = [
       w.ticketId,
@@ -118,9 +114,7 @@ function slugToken(value: string | undefined): string | null {
   return normalized
 }
 
-export function buildLiveWagersCsvFilename(
-  options: LiveWagersCsvFilenameOptions = {},
-): string {
+export function buildLiveWagersCsvFilename(options: LiveWagersCsvFilenameOptions = {}): string {
   const isoDate = (options.date ?? new Date()).toISOString().slice(0, 10)
   const parts = ["sportsdesk", "risk-wagers"]
   const alertSlug = slugToken(options.alertFilter)
@@ -173,9 +167,7 @@ export function buildRiskOverviewAccountsCsv(
     openStatsByCustomer.set(w.customerId, existing)
   }
 
-  const lines: string[] = [
-    RISK_OVERVIEW_ACCOUNTS_CSV_HEADERS.map(escapeRiskCsvCell).join(","),
-  ]
+  const lines: string[] = [RISK_OVERVIEW_ACCOUNTS_CSV_HEADERS.map(escapeRiskCsvCell).join(",")]
 
   for (const c of customers) {
     const liveStats = openStatsByCustomer.get(c.id)

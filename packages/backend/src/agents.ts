@@ -6,6 +6,7 @@
 import { readFile } from "node:fs/promises"
 import { resolve } from "node:path"
 import type { AgentDetailApiResponse, WagerTier } from "@sportsdesk-ops/contracts"
+import type { AgentHierarchyNodeDetail } from "./agent_hierarchy.ts"
 import { BoundedStampCache, statStamp } from "./cache.ts"
 
 interface AgentTreeNode {
@@ -45,6 +46,7 @@ export interface AgentDetailServiceOptions {
   readonly getCustomers?:
     (() => Promise<readonly AgentCustomerInput[]> | readonly AgentCustomerInput[]) | undefined
   readonly getRecentWagers?: (() => Promise<ReadonlyArray<Record<string, unknown>>>) | undefined
+  readonly getHierarchyNode?: ((id: string) => AgentHierarchyNodeDetail | null) | undefined
 }
 
 export function createAgentDetailService(options: AgentDetailServiceOptions = {}) {
@@ -128,17 +130,24 @@ export function createAgentDetailService(options: AgentDetailServiceOptions = {}
         timestamp: String(w.timestamp ?? w.InsertDateTime ?? "—"),
       }))
 
+    const hierarchyNode = options.getHierarchyNode ? options.getHierarchyNode(agentId) : null
+    const mergedChildren = hierarchyNode
+      ? Array.from(new Set([...childAgents, ...hierarchyNode.childAgents])).sort()
+      : childAgents
+
     const masterAgent =
       typeof node?.p === "string" && node.p.trim() !== ""
         ? node.p.trim().toUpperCase()
-        : typeof matchedConduit?.masterAgent === "string" &&
-            matchedConduit.masterAgent.trim() !== ""
-          ? matchedConduit.masterAgent.trim().toUpperCase()
-          : null
+        : (hierarchyNode?.node.parentAgentId ??
+          (typeof matchedConduit?.masterAgent === "string" &&
+          matchedConduit.masterAgent.trim() !== ""
+            ? matchedConduit.masterAgent.trim().toUpperCase()
+            : null))
 
     const found =
       node !== undefined ||
-      childAgents.length > 0 ||
+      hierarchyNode !== null ||
+      mergedChildren.length > 0 ||
       matchedConduit !== undefined ||
       matchedCustomers.length > 0 ||
       matchedWagers.length > 0
@@ -148,9 +157,20 @@ export function createAgentDetailService(options: AgentDetailServiceOptions = {}
       agentId,
       found,
       masterAgent,
-      level: typeof node?.l === "number" ? node.l : null,
-      agentType: typeof node?.t === "string" ? node.t : null,
-      childAgents,
+      level: typeof node?.l === "number" ? node.l : (hierarchyNode?.node.level ?? null),
+      agentType: typeof node?.t === "string" ? node.t : (hierarchyNode?.node.agentType ?? null),
+      ...(hierarchyNode
+        ? {
+            seqNumber: hierarchyNode.node.seqNumber,
+            login: hierarchyNode.node.login,
+            rootMasterAgent: hierarchyNode.node.rootMasterAgent,
+            ancestors: hierarchyNode.node.ancestors,
+            rateCard: hierarchyNode.node.rateCard,
+            directoryPlayers: hierarchyNode.players,
+            directoryPlayerCount: hierarchyNode.players.length,
+          }
+        : {}),
+      childAgents: mergedChildren,
       conduit30d: matchedConduit
         ? {
             handleUsd: matchedConduit.handleUsd,

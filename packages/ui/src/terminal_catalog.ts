@@ -232,4 +232,3 @@ export const TERMINAL_WELCOME_HELP_STDOUT = [
   "Type `help` or pick a command below:",
   ...TERMINAL_COMMAND_SPECS.map((spec) => `  ${spec.usage.padEnd(44)} ${spec.description}`),
 ].join("\n")
-

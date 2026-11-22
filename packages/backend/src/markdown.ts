@@ -25,10 +25,7 @@ export const DASHBOARD_MARKDOWN_OPTIONS = {
 interface BunMarkdownRuntime {
   readonly nanoseconds?: () => number
   readonly markdown?: {
-    readonly html?: (
-      input: string,
-      options?: typeof DASHBOARD_MARKDOWN_OPTIONS,
-    ) => string
+    readonly html?: (input: string, options?: typeof DASHBOARD_MARKDOWN_OPTIONS) => string
   }
 }
 

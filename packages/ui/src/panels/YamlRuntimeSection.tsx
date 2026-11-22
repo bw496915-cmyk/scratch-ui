@@ -1,33 +1,26 @@
-import type React from "react";
-import { useMemo, useState } from "react";
-import {
-  AlertCircle,
-  Check,
-  Copy,
-  Download,
-  Search,
-  ShieldCheck,
-} from "lucide-react";
+import type React from "react"
+import { useMemo, useState } from "react"
+import { AlertCircle, Check, Copy, Download, Search, ShieldCheck } from "lucide-react"
 import {
   parseBunYamlWithMeta,
   redactYamlSensitiveValues,
   safeJsonPreview,
   stringifyBunYaml,
   type WorkspaceYamlConfigSummary,
-} from "@sportsdesk-ops/contracts";
+} from "@sportsdesk-ops/contracts"
 import {
   CopyBunTerminalAnsiButton,
   SyntaxHighlightedPre,
   SyntaxTokenLegend,
-} from "./SyntaxHighlightedPre.tsx";
+} from "./SyntaxHighlightedPre.tsx"
 
 const MONO_FONT =
-  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace';
+  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace'
 
 export interface YamlPresetItem {
-  readonly id: string;
-  readonly label: string;
-  readonly yaml: string;
+  readonly id: string
+  readonly label: string
+  readonly yaml: string
 }
 
 export const YAML_PLAYGROUND_PRESETS: readonly YamlPresetItem[] = [
@@ -108,118 +101,106 @@ explicitTypes:
   emptyField: ~
 `,
   },
-];
+]
 
 export interface YamlRuntimeSectionProps {
-  readonly summary?: WorkspaceYamlConfigSummary | null | undefined;
+  readonly summary?: WorkspaceYamlConfigSummary | null | undefined
 }
 
 function severityColor(severity: string): string {
   switch (severity.toLowerCase()) {
     case "critical":
-      return "#f87171";
+      return "#f87171"
     case "high":
-      return "#fb923c";
+      return "#fb923c"
     case "medium":
-      return "#fbbf24";
+      return "#fbbf24"
     case "low":
-      return "#38bdf8";
+      return "#38bdf8"
     default:
-      return "#94a3b8";
+      return "#94a3b8"
   }
 }
 
 export function YamlRuntimeSection({
   summary = null,
 }: YamlRuntimeSectionProps): React.ReactElement {
-  const [ruleStatusFilter, setRuleStatusFilter] = useState<
-    "all" | "enabled" | "disabled"
-  >("all");
-  const [ruleSearch, setRuleSearch] = useState<string>("");
+  const [ruleStatusFilter, setRuleStatusFilter] = useState<"all" | "enabled" | "disabled">("all")
+  const [ruleSearch, setRuleSearch] = useState<string>("")
 
-  const [activePresetId, setActivePresetId] = useState<string>(
-    YAML_PLAYGROUND_PRESETS[0]!.id,
-  );
-  const [yamlText, setYamlText] = useState<string>(
-    YAML_PLAYGROUND_PRESETS[0]!.yaml,
-  );
-  const [stringifyMode, setStringifyMode] = useState<"block" | "flow">("block");
-  const [copiedOutput, setCopiedOutput] = useState<boolean>(false);
+  const [activePresetId, setActivePresetId] = useState<string>(YAML_PLAYGROUND_PRESETS[0]!.id)
+  const [yamlText, setYamlText] = useState<string>(YAML_PLAYGROUND_PRESETS[0]!.yaml)
+  const [stringifyMode, setStringifyMode] = useState<"block" | "flow">("block")
+  const [copiedOutput, setCopiedOutput] = useState<boolean>(false)
 
   const filteredRules = useMemo(() => {
-    if (!summary) return [];
-    const q = ruleSearch.trim().toLowerCase();
+    if (!summary) return []
+    const q = ruleSearch.trim().toLowerCase()
     return summary.rules.filter((rule) => {
-      if (ruleStatusFilter === "enabled" && !rule.enabled) return false;
-      if (ruleStatusFilter === "disabled" && rule.enabled) return false;
+      if (ruleStatusFilter === "enabled" && !rule.enabled) return false
+      if (ruleStatusFilter === "disabled" && rule.enabled) return false
       if (q) {
-        const hay = [
-          rule.id,
-          rule.title,
-          rule.severity,
-          rule.aggregateGroupBy ?? "",
-          ...rule.tags,
-        ]
+        const hay = [rule.id, rule.title, rule.severity, rule.aggregateGroupBy ?? "", ...rule.tags]
           .join(" ")
-          .toLowerCase();
-        if (!hay.includes(q)) return false;
+          .toLowerCase()
+        if (!hay.includes(q)) return false
       }
-      return true;
-    });
-  }, [summary, ruleStatusFilter, ruleSearch]);
+      return true
+    })
+  }, [summary, ruleStatusFilter, ruleSearch])
 
   const playgroundEvaluation = useMemo(() => {
     try {
-      const parsed = parseBunYamlWithMeta(yamlText);
-      const redacted = redactYamlSensitiveValues(parsed.value);
-      const jsonPreview = safeJsonPreview(redacted, 2);
+      const parsed = parseBunYamlWithMeta(yamlText)
+      const redacted = redactYamlSensitiveValues(parsed.value)
+      const jsonPreview = safeJsonPreview(redacted, 2)
       const roundTripYaml = stringifyBunYaml(redacted, {
         space: stringifyMode === "block" ? 2 : undefined,
-      });
+      })
       return {
         ok: true as const,
         parsed,
         jsonPreview,
         roundTripYaml,
-      };
+      }
     } catch (err) {
       return {
         ok: false as const,
         error: err instanceof Error ? err.message : String(err),
-      };
+      }
     }
-  }, [yamlText, stringifyMode]);
+  }, [yamlText, stringifyMode])
 
   const handleSelectPreset = (preset: YamlPresetItem) => {
-    setActivePresetId(preset.id);
-    setYamlText(preset.yaml);
-  };
+    setActivePresetId(preset.id)
+    setYamlText(preset.yaml)
+  }
 
   const handleCopyYaml = async () => {
-    if (!playgroundEvaluation.ok) return;
+    if (!playgroundEvaluation.ok) return
     try {
-      await navigator.clipboard.writeText(playgroundEvaluation.roundTripYaml);
-      setCopiedOutput(true);
-      setTimeout(() => setCopiedOutput(false), 1800);
+      await navigator.clipboard.writeText(playgroundEvaluation.roundTripYaml)
+      setCopiedOutput(true)
+      setTimeout(() => setCopiedOutput(false), 1800)
     } catch {
-      setCopiedOutput(false);
+      setCopiedOutput(false)
     }
-  };
+  }
 
   const handleDownloadYaml = () => {
-    if (!playgroundEvaluation.ok || typeof document === "undefined") return;
+    if (!playgroundEvaluation.ok || typeof document === "undefined") return
     const blob = new Blob([`${playgroundEvaluation.roundTripYaml}\n`], {
       type: "text/yaml;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "parsed-config.yaml";
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 10_000);
-  };
+    })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement("a")
+    anchor.href = url
+    anchor.download = "parsed-config.yaml"
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 10_000)
+  }
 
   return (
     <div
@@ -273,8 +254,8 @@ export function YamlRuntimeSection({
                   color: "var(--text-muted, #94a3b8)",
                 }}
               >
-                Parsed on server via <code style={{ fontFamily: MONO_FONT }}>Bun.YAML.parse</code>{" "}
-                ({summary.engine === "bun-native" ? "native Rust engine" : "YAML 1.2 TS fallback"}) ·{" "}
+                Parsed on server via <code style={{ fontFamily: MONO_FONT }}>Bun.YAML.parse</code> (
+                {summary.engine === "bun-native" ? "native Rust engine" : "YAML 1.2 TS fallback"}) ·{" "}
                 <span style={{ fontFamily: MONO_FONT, fontVariantNumeric: "tabular-nums" }}>
                   {summary.byteLength.toLocaleString()} bytes
                 </span>
@@ -328,10 +309,7 @@ export function YamlRuntimeSection({
                 {[
                   {
                     label: "Schema Version",
-                    value:
-                      summary.schemaVersion !== null
-                        ? `v${summary.schemaVersion}`
-                        : "—",
+                    value: summary.schemaVersion !== null ? `v${summary.schemaVersion}` : "—",
                     sub: summary.filePath,
                   },
                   {
@@ -351,10 +329,7 @@ export function YamlRuntimeSection({
                   },
                   {
                     label: "Parser Engine",
-                    value:
-                      summary.engine === "bun-native"
-                        ? "Bun.YAML.parse"
-                        : "ts-fallback",
+                    value: summary.engine === "bun-native" ? "Bun.YAML.parse" : "ts-fallback",
                     sub: "YAML 1.2 Core Schema",
                   },
                 ].map((kpi) => (
@@ -437,7 +412,7 @@ export function YamlRuntimeSection({
                       },
                     ] as const
                   ).map((opt) => {
-                    const active = ruleStatusFilter === opt.id;
+                    const active = ruleStatusFilter === opt.id
                     return (
                       <button
                         key={opt.id}
@@ -447,12 +422,8 @@ export function YamlRuntimeSection({
                           padding: "4px 9px",
                           borderRadius: "4px",
                           border: "none",
-                          backgroundColor: active
-                            ? "rgba(56, 189, 248, 0.14)"
-                            : "transparent",
-                          color: active
-                            ? "#38bdf8"
-                            : "var(--text-muted, #94a3b8)",
+                          backgroundColor: active ? "rgba(56, 189, 248, 0.14)" : "transparent",
+                          color: active ? "#38bdf8" : "var(--text-muted, #94a3b8)",
                           fontSize: "11px",
                           fontWeight: active ? 600 : 500,
                           cursor: "pointer",
@@ -461,7 +432,7 @@ export function YamlRuntimeSection({
                       >
                         {opt.label}
                       </button>
-                    );
+                    )
                   })}
                 </div>
 
@@ -573,9 +544,7 @@ export function YamlRuntimeSection({
                         {rule.id}
                       </span>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ color: "var(--text-primary, #e2e8f0)" }}>
-                          {rule.title}
-                        </div>
+                        <div style={{ color: "var(--text-primary, #e2e8f0)" }}>{rule.title}</div>
                         {rule.hasAggregate ? (
                           <div
                             style={{
@@ -697,7 +666,7 @@ export function YamlRuntimeSection({
               }}
             >
               {(["block", "flow"] as const).map((mode) => {
-                const active = stringifyMode === mode;
+                const active = stringifyMode === mode
                 return (
                   <button
                     key={mode}
@@ -707,9 +676,7 @@ export function YamlRuntimeSection({
                       padding: "4px 9px",
                       borderRadius: "4px",
                       border: "none",
-                      backgroundColor: active
-                        ? "rgba(56, 189, 248, 0.14)"
-                        : "transparent",
+                      backgroundColor: active ? "rgba(56, 189, 248, 0.14)" : "transparent",
                       color: active ? "#38bdf8" : "var(--text-muted, #94a3b8)",
                       fontSize: "11px",
                       fontWeight: active ? 600 : 500,
@@ -719,7 +686,7 @@ export function YamlRuntimeSection({
                   >
                     {mode === "block" ? "Block (space: 2)" : "Flow (compact)"}
                   </button>
-                );
+                )
               })}
             </div>
 
@@ -735,13 +702,9 @@ export function YamlRuntimeSection({
                 borderRadius: "6px",
                 borderWidth: "1px",
                 borderStyle: "solid",
-                borderColor: copiedOutput
-                  ? "#4ade80"
-                  : "var(--border-strong, #334155)",
+                borderColor: copiedOutput ? "#4ade80" : "var(--border-strong, #334155)",
                 backgroundColor: "transparent",
-                color: copiedOutput
-                  ? "#4ade80"
-                  : "var(--text-primary, #e2e8f0)",
+                color: copiedOutput ? "#4ade80" : "var(--text-primary, #e2e8f0)",
                 fontSize: "11.5px",
                 fontWeight: 600,
                 cursor: playgroundEvaluation.ok ? "pointer" : "not-allowed",
@@ -806,7 +769,7 @@ export function YamlRuntimeSection({
             Samples:
           </span>
           {YAML_PLAYGROUND_PRESETS.map((preset) => {
-            const active = activePresetId === preset.id;
+            const active = activePresetId === preset.id
             return (
               <button
                 key={preset.id}
@@ -817,12 +780,8 @@ export function YamlRuntimeSection({
                   borderRadius: "5px",
                   borderWidth: "1px",
                   borderStyle: "solid",
-                  borderColor: active
-                    ? "#38bdf8"
-                    : "var(--border-strong, #334155)",
-                  backgroundColor: active
-                    ? "rgba(56, 189, 248, 0.12)"
-                    : "transparent",
+                  borderColor: active ? "#38bdf8" : "var(--border-strong, #334155)",
+                  backgroundColor: active ? "rgba(56, 189, 248, 0.12)" : "transparent",
                   color: active ? "#38bdf8" : "var(--text-primary, #e2e8f0)",
                   fontSize: "11px",
                   fontWeight: active ? 600 : 500,
@@ -832,7 +791,7 @@ export function YamlRuntimeSection({
               >
                 {preset.label}
               </button>
-            );
+            )
           })}
         </div>
 
@@ -934,12 +893,8 @@ export function YamlRuntimeSection({
                   >
                     {playgroundEvaluation.parsed.documentCount} doc
                     {playgroundEvaluation.parsed.documentCount === 1 ? "" : "s"}
-                    {playgroundEvaluation.parsed.isMultiDocument
-                      ? " (array)"
-                      : ""}
-                    {playgroundEvaluation.parsed.hasCircularRefs
-                      ? " · circular safe"
-                      : ""}
+                    {playgroundEvaluation.parsed.isMultiDocument ? " (array)" : ""}
+                    {playgroundEvaluation.parsed.hasCircularRefs ? " · circular safe" : ""}
                   </span>
                 </div>
               ) : null}
@@ -1036,5 +991,5 @@ export function YamlRuntimeSection({
         </div>
       </div>
     </div>
-  );
+  )
 }

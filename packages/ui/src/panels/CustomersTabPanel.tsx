@@ -38,10 +38,7 @@ import {
 } from "./CustomerForensicDossierSection.tsx"
 import { ProfilesInspectSection } from "./ProfilesInspectSection.tsx"
 import { ReverseDnsForensicsCard } from "./ReverseDnsForensicsCard.tsx"
-import {
-  ProfileOnChainXrefCard,
-  SharpestOnChainXrefPanel,
-} from "./SharpestOnChainXrefPanel.tsx"
+import { ProfileOnChainXrefCard, SharpestOnChainXrefPanel } from "./SharpestOnChainXrefPanel.tsx"
 import { WsSyncStatusIndicator } from "./WsSyncStatusIndicator.tsx"
 import { SkeletonBlock, SkeletonSplitWorkspace } from "./PanelSkeleton.tsx"
 import { SharpnessDecomposition } from "../viz/SharpnessDecomposition.tsx"
@@ -701,7 +698,9 @@ export function CustomersTabPanel({
               <span style={{ color: "#fca5a5" }}>⚠️ {telemetryRefresh.error}</span>
             )}
           </div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+          <div
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}
+          >
             <WsSyncStatusIndicator
               wsConnected={telemetryRefresh.wsConnected}
               lastHeartbeatAt={telemetryRefresh.wsLastHeartbeatAt}
@@ -1601,7 +1600,11 @@ export function CustomersTabPanel({
             </div>
 
             {/* Right Column: Structured Profile Drilldown Inspector */}
-            <div className="detail-panel" style={styles.inspectorPanel} data-profile-drilldown="true">
+            <div
+              className="detail-panel"
+              style={styles.inspectorPanel}
+              data-profile-drilldown="true"
+            >
               {selectedCustomer?.source === "book" &&
               selectedCustomer.unknown?.includes("sharpness") &&
               selectedCustomer.unknown?.includes("holdPct") ? (
@@ -1654,7 +1657,14 @@ export function CustomersTabPanel({
                         )}
                       </div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        flexWrap: "wrap",
+                      }}
+                    >
                       <button
                         type="button"
                         disabled={!canStepPrev}
@@ -2410,7 +2420,8 @@ export function CustomersTabPanel({
                                 ${selectedLiveActivity.totalRiskUsd.toLocaleString()}
                               </span>
                               <span className="sd-drilldown-kpi-sub">
-                                Max ticket ${selectedLiveActivity.maxSingleStakeUsd.toLocaleString()}
+                                Max ticket $
+                                {selectedLiveActivity.maxSingleStakeUsd.toLocaleString()}
                               </span>
                             </div>
                             <div className="sd-drilldown-kpi-cell">
@@ -2769,9 +2780,7 @@ export function CustomersTabPanel({
 
                           <div style={{ ...styles.detailGrid, marginBottom: "10px" }}>
                             <div className="sd-drilldown-kv-list">
-                              <div className="sd-drilldown-kv-section">
-                                Credit-Line Identity
-                              </div>
+                              <div className="sd-drilldown-kv-section">Credit-Line Identity</div>
                               <div className="sd-drilldown-kv-row">
                                 <span>Credit Limit</span>
                                 <b>
@@ -2853,7 +2862,10 @@ export function CustomersTabPanel({
                                 </b>
                               </div>
                               <div className="sd-drilldown-kv-row">
-                                <span>31d Net ({selectedCustomer.portalReconciliation.winDays31d}W-{selectedCustomer.portalReconciliation.lossDays31d}L)</span>
+                                <span>
+                                  31d Net ({selectedCustomer.portalReconciliation.winDays31d}W-
+                                  {selectedCustomer.portalReconciliation.lossDays31d}L)
+                                </span>
                                 <b style={{ color: "#f87171" }}>
                                   +$
                                   {selectedCustomer.portalReconciliation.net31dUsd.toLocaleString()}

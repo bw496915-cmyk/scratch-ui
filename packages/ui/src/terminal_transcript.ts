@@ -1,5 +1,5 @@
 /**
- * @file terminal_transcript.ts
+ * @file packages/ui/src/terminal_transcript.ts
  * @description Pure helpers behind the Operator Terminal's history filter, run
  * statistics and session export.
  *

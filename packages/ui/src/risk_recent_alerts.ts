@@ -147,8 +147,11 @@ export function buildRecentRiskAlerts(input: BuildRecentRiskAlertsInput): Recent
   )
 
   const wagerById = new Map<string, LiveWager>()
-  const parsedWagers: Array<{ readonly wager: LiveWager; readonly tsMs: number; readonly riskUsd: number }> =
-    []
+  const parsedWagers: Array<{
+    readonly wager: LiveWager
+    readonly tsMs: number
+    readonly riskUsd: number
+  }> = []
   let maxParsedTs = -Infinity
 
   for (const wager of input.wagers) {
@@ -166,7 +169,8 @@ export function buildRecentRiskAlerts(input: BuildRecentRiskAlertsInput): Recent
     }
   }
 
-  const parsedAlertRecords: Array<{ readonly rec: DashboardAlertRecord; readonly tsMs: number }> = []
+  const parsedAlertRecords: Array<{ readonly rec: DashboardAlertRecord; readonly tsMs: number }> =
+    []
   for (const rec of input.alertRecords ?? []) {
     const tsMs = parseIsoMs(rec.createdAt || rec.updatedAt, nowMs)
     if (tsMs === null) continue
@@ -279,7 +283,11 @@ export function buildRecentRiskAlerts(input: BuildRecentRiskAlertsInput): Recent
     }
 
     // 2. First crossing into 60-minute aggregate Warning zone (>= warningLimitUsd, <= breachLimitUsd)
-    if (!crossedWarning && cumulativeRiskUsd >= warningLimitUsd && cumulativeRiskUsd <= breachLimitUsd) {
+    if (
+      !crossedWarning &&
+      cumulativeRiskUsd >= warningLimitUsd &&
+      cumulativeRiskUsd <= breachLimitUsd
+    ) {
       crossedWarning = true
       warningCrossedMs = tsMs
       const pct = Math.round((cumulativeRiskUsd / breachLimitUsd) * 100)
@@ -356,8 +364,10 @@ export function buildRecentRiskAlerts(input: BuildRecentRiskAlertsInput): Recent
     const severity: RecentRiskAlertSeverity =
       rec.tier === "CRITICAL" || rec.status === "dead" ? "BREACH" : "WARN"
     const sport = rec.payload.sport || linkedWager?.sport || "LIVE"
-    const selection = rec.payload.selection || linkedWager?.selection || rec.payload.event || "Alert Ticket"
-    const directive = rec.payload.directive || linkedWager?.operatorDirective || rec.status.toUpperCase()
+    const selection =
+      rec.payload.selection || linkedWager?.selection || rec.payload.event || "Alert Ticket"
+    const directive =
+      rec.payload.directive || linkedWager?.operatorDirective || rec.status.toUpperCase()
 
     if (key) representedTickets.add(key)
     alerts.push({
@@ -545,7 +555,12 @@ export function buildRecentAlertFrequencyBuckets(
     if (score > maxSeverityScore) {
       maxSeverityScore = score
     }
-    if (tot > 0 && (peakBucketIndex === null || tot > peakBucketTotal || (tot === peakBucketTotal && b > (breaches[peakBucketIndex] ?? 0)))) {
+    if (
+      tot > 0 &&
+      (peakBucketIndex === null ||
+        tot > peakBucketTotal ||
+        (tot === peakBucketTotal && b > (breaches[peakBucketIndex] ?? 0)))
+    ) {
       peakBucketIndex = i
       peakBucketTotal = tot
     }
@@ -756,11 +771,7 @@ function resolveCleanChannelLabel(wager: LiveWager | null): string {
   return writerText || channel
 }
 
-function buildEffectiveLine(
-  selection: string,
-  lineDisplay: string,
-  oddsAmerican: string,
-): string {
+function buildEffectiveLine(selection: string, lineDisplay: string, oddsAmerican: string): string {
   const hasLine = lineDisplay.length > 0
   const hasOdds = oddsAmerican.length > 0
 
@@ -820,7 +831,10 @@ export function resolveAlertWagerContext(item: RecentRiskAlertItem): AlertWagerC
 
   const riskUsd = safePositiveUsd(wager?.riskUsd ?? item.riskUsd)
   const hasDirectToWin =
-    wager !== null && typeof wager.toWinUsd === "number" && Number.isFinite(wager.toWinUsd) && wager.toWinUsd > 0
+    wager !== null &&
+    typeof wager.toWinUsd === "number" &&
+    Number.isFinite(wager.toWinUsd) &&
+    wager.toWinUsd > 0
 
   let toWinUsd: number | null = null
   let payoutEstimatedFromOdds = false
@@ -839,9 +853,7 @@ export function resolveAlertWagerContext(item: RecentRiskAlertItem): AlertWagerC
 
   const mult = riskUsd > 0 && toWinUsd !== null ? payoutMultiple(riskUsd, toWinUsd) : null
   const totalReturnMultiple =
-    riskUsd > 0 && totalPayoutUsd !== null
-      ? Number((totalPayoutUsd / riskUsd).toFixed(2))
-      : null
+    riskUsd > 0 && totalPayoutUsd !== null ? Number((totalPayoutUsd / riskUsd).toFixed(2)) : null
 
   const impliedProbability = oddsAmerican ? formatImpliedProbability(oddsAmerican) : "—"
   const quotedHoldPct =

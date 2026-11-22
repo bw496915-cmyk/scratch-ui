@@ -1,5 +1,5 @@
 /**
- * @file wager_display.ts
+ * @file packages/ui/src/wager_display.ts
  * @description One way to render a wager's selection, line and price.
  *
  * Hydrated F402 rows can carry the whole short description in both `selection`

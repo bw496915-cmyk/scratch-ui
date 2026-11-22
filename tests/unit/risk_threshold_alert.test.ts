@@ -281,7 +281,9 @@ describe("Customer profile drilldown summaries", () => {
   })
 
   test("computes VaR-to-cap headroom and respects unknown fields", () => {
-    const overCap = computeProfileRiskHeadroom(makeCustomer({ var95Usd: 14500, recommendedLimitUsd: 10000 }))
+    const overCap = computeProfileRiskHeadroom(
+      makeCustomer({ var95Usd: 14500, recommendedLimitUsd: 10000 }),
+    )
     expect(overCap.varToCapPct).toBe(145)
     expect(overCap.isVarOverCap).toBe(true)
 

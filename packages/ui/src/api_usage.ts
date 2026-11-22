@@ -1,5 +1,5 @@
 /**
- * @file api_usage.ts
+ * @file packages/ui/src/api_usage.ts
  * @description Session-scoped API usage & header-alignment meter for the dashboard.
  *
  * Every dashboard request goes through `trackedFetch`, which injects aligned

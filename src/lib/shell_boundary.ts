@@ -147,6 +147,8 @@ export const ALLOWED_TERMINAL_COMMAND_HEADS = new Set<string>([
   "keyshelp",
   "cron",
   "cr",
+  "agent-tree",
+  "hierarchy",
 ])
 
 /**
@@ -201,6 +203,8 @@ export const ALLOWED_TERMINAL_FLAGS = new Set<string>([
   "--json",
   "--wagers",
   "--weblogs",
+  "--root",
+  "--level",
   "--help",
   "-h",
 ])

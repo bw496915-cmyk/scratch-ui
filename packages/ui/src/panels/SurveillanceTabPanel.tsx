@@ -1,8 +1,8 @@
-import { extractMarkdownTelemetry } from "@sportsdesk-ops/contracts";
-import type React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { DASHBOARD_PANELS } from "../config/dashboard.ts";
-import { styles } from "../dashboard_styles.ts";
+import { extractMarkdownTelemetry } from "@sportsdesk-ops/contracts"
+import type React from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { DASHBOARD_PANELS } from "../config/dashboard.ts"
+import { styles } from "../dashboard_styles.ts"
 import {
   buildSurveillanceEndpointUrls,
   buildSurveillanceMarkdownBlob,
@@ -11,61 +11,58 @@ import {
   downloadSurveillanceBlob,
   inspectSurveillanceRuntimeGlobals,
   type SurveillanceHeaderSyncRecord,
-} from "../surveillance_api.ts";
-import type { DashboardData, DnsData } from "../types.ts";
-import type { ReverseDnsForensicsView } from "../../../../lib/reverse_dns_forensics.ts";
-import { ApiUsageCard } from "./ApiUsageCard.tsx";
-import { ReverseDnsForensicsCard } from "./ReverseDnsForensicsCard.tsx";
-import { ThresholdsPanel } from "./ThresholdsPanel.tsx";
-import { SkeletonBlock, SkeletonSurveillanceBrief } from "./PanelSkeleton.tsx";
+} from "../surveillance_api.ts"
+import type { DashboardData, DnsData } from "../types.ts"
+import type { ReverseDnsForensicsView } from "../../../../lib/reverse_dns_forensics.ts"
+import { ApiUsageCard } from "./ApiUsageCard.tsx"
+import { ReverseDnsForensicsCard } from "./ReverseDnsForensicsCard.tsx"
+import { ThresholdsPanel } from "./ThresholdsPanel.tsx"
+import { SkeletonBlock, SkeletonSurveillanceBrief } from "./PanelSkeleton.tsx"
 import {
   CopyBunTerminalAnsiButton,
   SyntaxHighlightedPre,
   SyntaxTokenLegend,
-} from "./SyntaxHighlightedPre.tsx";
-import { VIZ_COLORS } from "../viz/perceptual.ts";
+} from "./SyntaxHighlightedPre.tsx"
+import { VIZ_COLORS } from "../viz/perceptual.ts"
 
-const DNS_CACHE_CAPACITY = DASHBOARD_PANELS.dns_cache_capacity;
+const DNS_CACHE_CAPACITY = DASHBOARD_PANELS.dns_cache_capacity
 
 export interface SurveillanceTabPanelProps {
-  readonly dnsData: DnsData | null;
-  readonly dnsRefreshing?: boolean;
-  readonly dnsError?: string | null;
-  readonly onRefreshDns?: (() => void) | undefined;
-  readonly benchHost?: string | undefined;
-  readonly onBenchHostChange?: ((value: string) => void) | undefined;
-  readonly benchLoading: boolean;
-  readonly benchResult: string | null;
-  readonly onRunBenchmark: () => void;
-  readonly reverseIp: string;
-  readonly onReverseIpChange: (value: string) => void;
-  readonly reverseForensics?: ReverseDnsForensicsView | null | undefined;
-  readonly onRunReverseLookup: () => void;
-  readonly viewMode: "interactive" | "raw";
-  readonly onViewModeChange: (mode: "interactive" | "raw") => void;
-  readonly data: DashboardData | null;
-  readonly headerSync?: SurveillanceHeaderSyncRecord | null | undefined;
-  readonly onSelectAgent?: ((agentId: string) => void) | undefined;
+  readonly dnsData: DnsData | null
+  readonly dnsRefreshing?: boolean
+  readonly dnsError?: string | null
+  readonly onRefreshDns?: (() => void) | undefined
+  readonly benchHost?: string | undefined
+  readonly onBenchHostChange?: ((value: string) => void) | undefined
+  readonly benchLoading: boolean
+  readonly benchResult: string | null
+  readonly onRunBenchmark: () => void
+  readonly reverseIp: string
+  readonly onReverseIpChange: (value: string) => void
+  readonly reverseForensics?: ReverseDnsForensicsView | null | undefined
+  readonly onRunReverseLookup: () => void
+  readonly viewMode: "interactive" | "raw"
+  readonly onViewModeChange: (mode: "interactive" | "raw") => void
+  readonly data: DashboardData | null
+  readonly headerSync?: SurveillanceHeaderSyncRecord | null | undefined
+  readonly onSelectAgent?: ((agentId: string) => void) | undefined
 }
 
 interface DnsHealthBadge {
-  readonly label: string;
-  readonly color: string;
-  readonly bg: string;
-  readonly border: string;
+  readonly label: string
+  readonly color: string
+  readonly bg: string
+  readonly border: string
 }
 
-function resolveDnsBadge(
-  hitRatePercent: number,
-  errors: number,
-): DnsHealthBadge {
+function resolveDnsBadge(hitRatePercent: number, errors: number): DnsHealthBadge {
   if (errors > 0) {
     return {
       label: `${errors} ERR`,
       color: "#fca5a5",
       bg: "rgba(239, 68, 68, 0.16)",
       border: "rgba(248, 113, 113, 0.45)",
-    };
+    }
   }
   if (hitRatePercent >= DASHBOARD_PANELS.dns_warm_hit_rate_pct) {
     return {
@@ -73,7 +70,7 @@ function resolveDnsBadge(
       color: "#34d399",
       bg: "rgba(16, 185, 129, 0.14)",
       border: "rgba(52, 211, 153, 0.4)",
-    };
+    }
   }
   if (hitRatePercent >= DASHBOARD_PANELS.dns_active_hit_rate_pct) {
     return {
@@ -81,40 +78,35 @@ function resolveDnsBadge(
       color: "#38bdf8",
       bg: "rgba(56, 189, 248, 0.14)",
       border: "rgba(56, 189, 248, 0.4)",
-    };
+    }
   }
   return {
     label: "COLD",
     color: "#fbbf24",
     bg: "rgba(245, 158, 11, 0.16)",
     border: "rgba(251, 191, 36, 0.4)",
-  };
+  }
 }
 
 function formatUtcClock(iso: string | undefined): string | null {
-  if (!iso) return null;
-  const parsed = Date.parse(iso);
-  if (Number.isNaN(parsed)) return null;
-  return `${new Date(parsed).toISOString().slice(11, 19)} UTC`;
+  if (!iso) return null
+  const parsed = Date.parse(iso)
+  if (Number.isNaN(parsed)) return null
+  return `${new Date(parsed).toISOString().slice(11, 19)} UTC`
 }
 
 function computeDnsSummary(dnsData: DnsData) {
-  const { telemetry } = dnsData;
+  const { telemetry } = dnsData
   const capacityPct = Math.min(
     100,
     Math.max(0, Math.round((telemetry.size / DNS_CACHE_CAPACITY) * 1000) / 10),
-  );
-  const totalHits = telemetry.cacheHitsCompleted + telemetry.cacheHitsInflight;
-  const totalLookups =
-    telemetry.totalCount ?? totalHits + telemetry.cacheMisses;
+  )
+  const totalHits = telemetry.cacheHitsCompleted + telemetry.cacheHitsInflight
+  const totalLookups = telemetry.totalCount ?? totalHits + telemetry.cacheMisses
   const inflightSharePct =
-    totalHits > 0
-      ? Math.round((telemetry.cacheHitsInflight / totalHits) * 100)
-      : 0;
-  const errors = telemetry.errors ?? 0;
-  const targets = dnsData.coreHosts?.length
-    ? dnsData.coreHosts
-    : (dnsData.hosts ?? []);
+    totalHits > 0 ? Math.round((telemetry.cacheHitsInflight / totalHits) * 100) : 0
+  const errors = telemetry.errors ?? 0
+  const targets = dnsData.coreHosts?.length ? dnsData.coreHosts : (dnsData.hosts ?? [])
 
   return {
     capacityPct,
@@ -125,14 +117,10 @@ function computeDnsSummary(dnsData: DnsData) {
     badge: resolveDnsBadge(telemetry.hitRatePercent, errors),
     targets,
     observedUtc: formatUtcClock(dnsData.generatedAt ?? dnsData.updatedAt),
-  };
+  }
 }
 
-const pillStyle = (
-  color: string,
-  bg: string,
-  border: string,
-): React.CSSProperties => ({
+const pillStyle = (color: string, bg: string, border: string): React.CSSProperties => ({
   display: "inline-flex",
   alignItems: "center",
   gap: "4px",
@@ -144,7 +132,7 @@ const pillStyle = (
   backgroundColor: bg,
   border: `1px solid ${border}`,
   whiteSpace: "nowrap",
-});
+})
 
 export function SurveillanceTabPanel({
   dnsData,
@@ -166,34 +154,32 @@ export function SurveillanceTabPanel({
   headerSync = null,
   onSelectAgent,
 }: SurveillanceTabPanelProps): React.ReactElement {
-  const [hostsExpanded, setHostsExpanded] = useState(false);
-  const [routingExpanded, setRoutingExpanded] = useState(false);
-  const [outlineExpanded, setOutlineExpanded] = useState(false);
-  const [rawAnsiMode, setRawAnsiMode] = useState(false);
-  const [copiedMarkdown, setCopiedMarkdown] = useState(false);
-  const [exportedBlobNotice, setExportedBlobNotice] = useState<string | null>(
-    null,
-  );
-  const markdownRef = useRef<HTMLDivElement | null>(null);
-  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const exportTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [hostsExpanded, setHostsExpanded] = useState(false)
+  const [routingExpanded, setRoutingExpanded] = useState(false)
+  const [outlineExpanded, setOutlineExpanded] = useState(false)
+  const [rawAnsiMode, setRawAnsiMode] = useState(false)
+  const [copiedMarkdown, setCopiedMarkdown] = useState(false)
+  const [exportedBlobNotice, setExportedBlobNotice] = useState<string | null>(null)
+  const markdownRef = useRef<HTMLDivElement | null>(null)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const exportTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     return () => {
       if (copyTimerRef.current !== null) {
-        clearTimeout(copyTimerRef.current);
+        clearTimeout(copyTimerRef.current)
       }
       if (exportTimerRef.current !== null) {
-        clearTimeout(exportTimerRef.current);
+        clearTimeout(exportTimerRef.current)
       }
-    };
-  }, []);
+    }
+  }, [])
 
-  const dnsSummary = dnsData ? computeDnsSummary(dnsData) : null;
+  const dnsSummary = dnsData ? computeDnsSummary(dnsData) : null
   const endpointUrls = useMemo(
     () => buildSurveillanceEndpointUrls({ host: benchHost, ip: reverseIp }),
     [benchHost, reverseIp],
-  );
+  )
   const windowStateUrl = useMemo(
     () =>
       buildSurveillanceWindowUrl({
@@ -202,8 +188,8 @@ export function SurveillanceTabPanel({
         benchHost,
       }),
     [viewMode, reverseIp, benchHost],
-  );
-  const runtimeGlobals = useMemo(() => inspectSurveillanceRuntimeGlobals(), []);
+  )
+  const runtimeGlobals = useMemo(() => inspectSurveillanceRuntimeGlobals(), [])
   const snapshotBlob = useMemo(
     () =>
       buildSurveillanceSnapshotBlob({
@@ -216,101 +202,86 @@ export function SurveillanceTabPanel({
         briefData: data,
         headerSync,
       }),
-    [
-      viewMode,
-      benchHost,
-      benchResult,
-      reverseIp,
-      reverseForensics,
-      dnsData,
-      data,
-      headerSync,
-    ],
-  );
+    [viewMode, benchHost, benchResult, reverseIp, reverseForensics, dnsData, data, headerSync],
+  )
   const briefSummary = useMemo(() => {
-    if (!data) return null;
+    if (!data) return null
     return {
       ...extractMarkdownTelemetry(data.markdown, data.html, {
-        ...(data.markdownBytes !== undefined
-          ? { markdownBytes: data.markdownBytes }
-          : {}),
+        ...(data.markdownBytes !== undefined ? { markdownBytes: data.markdownBytes } : {}),
         ...(data.htmlBytes !== undefined ? { htmlBytes: data.htmlBytes } : {}),
-        ...(data.nonAsciiChars !== undefined
-          ? { nonAsciiChars: data.nonAsciiChars }
-          : {}),
+        ...(data.nonAsciiChars !== undefined ? { nonAsciiChars: data.nonAsciiChars } : {}),
       }),
       updatedUtc: formatUtcClock(data.updatedAt),
-    };
-  }, [data]);
+    }
+  }, [data])
 
   const handleCopyMarkdown = () => {
     if (!data || typeof navigator === "undefined" || !navigator.clipboard) {
-      return;
+      return
     }
     void navigator.clipboard.writeText(data.markdown).then(
       () => {
-        setCopiedMarkdown(true);
+        setCopiedMarkdown(true)
         if (copyTimerRef.current !== null) {
-          clearTimeout(copyTimerRef.current);
+          clearTimeout(copyTimerRef.current)
         }
         copyTimerRef.current = setTimeout(() => {
-          setCopiedMarkdown(false);
-        }, 1500);
+          setCopiedMarkdown(false)
+        }, 1500)
       },
       () => {},
-    );
-  };
+    )
+  }
 
   const handleExportSnapshotBlob = () => {
-    const filename = `surveillance-snapshot-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
-    const ok = downloadSurveillanceBlob(snapshotBlob, filename);
+    const filename = `surveillance-snapshot-${new Date().toISOString().replace(/[:.]/g, "-")}.json`
+    const ok = downloadSurveillanceBlob(snapshotBlob, filename)
     setExportedBlobNotice(
       ok
         ? `Exported ${filename} (${snapshotBlob.size.toLocaleString("en-US")} B)`
         : "Blob download unavailable in this environment",
-    );
+    )
     if (exportTimerRef.current !== null) {
-      clearTimeout(exportTimerRef.current);
+      clearTimeout(exportTimerRef.current)
     }
     exportTimerRef.current = setTimeout(() => {
-      setExportedBlobNotice(null);
-    }, 3000);
-  };
+      setExportedBlobNotice(null)
+    }, 3000)
+  }
 
   const handleDownloadBriefBlob = () => {
-    if (!data) return;
-    const blob = buildSurveillanceMarkdownBlob(data.markdown);
-    const filename = "surveillance-brief.md";
-    const ok = downloadSurveillanceBlob(blob, filename);
+    if (!data) return
+    const blob = buildSurveillanceMarkdownBlob(data.markdown)
+    const filename = "surveillance-brief.md"
+    const ok = downloadSurveillanceBlob(blob, filename)
     setExportedBlobNotice(
       ok
         ? `Exported ${filename} (${blob.size.toLocaleString("en-US")} B)`
         : "Blob download unavailable in this environment",
-    );
+    )
     if (exportTimerRef.current !== null) {
-      clearTimeout(exportTimerRef.current);
+      clearTimeout(exportTimerRef.current)
     }
     exportTimerRef.current = setTimeout(() => {
-      setExportedBlobNotice(null);
-    }, 3000);
-  };
+      setExportedBlobNotice(null)
+    }, 3000)
+  }
 
   const scrollToSection = (sectionIndex: number, sectionId: string | null) => {
-    const container = markdownRef.current;
-    if (!container) return;
+    const container = markdownRef.current
+    if (!container) return
     const byId =
-      sectionId &&
-      typeof CSS !== "undefined" &&
-      typeof CSS.escape === "function"
+      sectionId && typeof CSS !== "undefined" && typeof CSS.escape === "function"
         ? container.querySelector(`#${CSS.escape(sectionId)}`)
         : sectionId
           ? container.querySelector(`[id="${sectionId}"]`)
-          : null;
-    const target = byId ?? container.querySelectorAll("h2")?.[sectionIndex];
+          : null
+    const target = byId ?? container.querySelectorAll("h2")?.[sectionIndex]
     if (target) {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      target.scrollIntoView({ behavior: "smooth", block: "start" })
     }
-  };
+  }
 
   return (
     <div aria-busy={!data || (!dnsData && dnsRefreshing) ? "true" : undefined}>
@@ -406,9 +377,7 @@ export function SurveillanceTabPanel({
                     width: `${Math.min(100, Math.max(0, dnsSummary.capacityPct))}%`,
                     height: "100%",
                     backgroundColor:
-                      dnsSummary.capacityPct >= 85
-                        ? VIZ_COLORS.accent
-                        : VIZ_COLORS.context,
+                      dnsSummary.capacityPct >= 85 ? VIZ_COLORS.accent : VIZ_COLORS.context,
                   }}
                 />
               </span>
@@ -419,9 +388,7 @@ export function SurveillanceTabPanel({
 
             <span>
               Hit Rate:{" "}
-              <b style={{ color: dnsSummary.badge.color }}>
-                {dnsData.telemetry.hitRatePercent}%
-              </b>
+              <b style={{ color: dnsSummary.badge.color }}>{dnsData.telemetry.hitRatePercent}%</b>
             </span>
             <span>
               Hits (Completed): <b>{dnsData.telemetry.cacheHitsCompleted}</b>
@@ -497,8 +464,7 @@ export function SurveillanceTabPanel({
                     cursor: "pointer",
                   }}
                 >
-                  {hostsExpanded ? "▴" : "▾"} Prefetched Hosts (
-                  {dnsSummary.targets.length})
+                  {hostsExpanded ? "▴" : "▾"} Prefetched Hosts ({dnsSummary.targets.length})
                 </button>
               )}
               {onRefreshDns && (
@@ -535,9 +501,7 @@ export function SurveillanceTabPanel({
               }}
             >
               {dnsSummary.targets.map((target) => {
-                const endpoint = target.port
-                  ? `${target.hostname}:${target.port}`
-                  : target.hostname;
+                const endpoint = target.port ? `${target.hostname}:${target.port}` : target.hostname
                 return (
                   <span
                     key={endpoint}
@@ -555,12 +519,10 @@ export function SurveillanceTabPanel({
                   >
                     <code style={{ color: "#e2e8f0" }}>{endpoint}</code>
                     {target.serviceName && (
-                      <span style={{ color: "#64748b" }}>
-                        {target.serviceName}
-                      </span>
+                      <span style={{ color: "#64748b" }}>{target.serviceName}</span>
                     )}
                   </span>
-                );
+                )
               })}
             </div>
           )}
@@ -586,8 +548,7 @@ export function SurveillanceTabPanel({
         >
           <span style={styles.dnsLabel}>API URL &amp; Header Alignment:</span>
           <span style={{ color: "#cbd5e1", fontSize: "12px", fontVariantNumeric: "tabular-nums" }}>
-            Base{" "}
-            <code style={{ color: "#7dd3fc" }}>{endpointUrls.baseUrl.origin}</code>
+            Base <code style={{ color: "#7dd3fc" }}>{endpointUrls.baseUrl.origin}</code>
             {" · "}
             {endpointUrls.baseSource}
           </span>
@@ -686,16 +647,11 @@ export function SurveillanceTabPanel({
             }}
           >
             <div>
-              Brief URL:{" "}
-              <code style={{ color: "#e2e8f0" }}>
-                {endpointUrls.brief.pathname}
-              </code>
+              Brief URL: <code style={{ color: "#e2e8f0" }}>{endpointUrls.brief.pathname}</code>
             </div>
             <div>
               DNS Telemetry URL:{" "}
-              <code style={{ color: "#e2e8f0" }}>
-                {endpointUrls.dns.pathname}
-              </code>
+              <code style={{ color: "#e2e8f0" }}>{endpointUrls.dns.pathname}</code>
             </div>
             <div>
               Benchmark URL:{" "}
@@ -716,10 +672,7 @@ export function SurveillanceTabPanel({
               </code>
             </div>
             <div>
-              Request ID:{" "}
-              <code style={{ color: "#cbd5e1" }}>
-                {headerSync?.requestId ?? "—"}
-              </code>
+              Request ID: <code style={{ color: "#cbd5e1" }}>{headerSync?.requestId ?? "—"}</code>
             </div>
           </div>
         )}
@@ -733,7 +686,7 @@ export function SurveillanceTabPanel({
             value={benchHost}
             onChange={(e) => onBenchHostChange?.(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") onRunBenchmark();
+              if (e.key === "Enter") onRunBenchmark()
             }}
             placeholder="Host (e.g. fantasy402.com)"
           />
@@ -764,7 +717,7 @@ export function SurveillanceTabPanel({
               value={reverseIp}
               onChange={(e) => onReverseIpChange(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") onRunReverseLookup();
+                if (e.key === "Enter") onRunReverseLookup()
               }}
               placeholder="IP (e.g. 1.1.1.1)"
             />
@@ -776,9 +729,7 @@ export function SurveillanceTabPanel({
               🔍 Reverse DNS &amp; Forensics
             </button>
           </div>
-          {reverseForensics ? (
-            <ReverseDnsForensicsCard view={reverseForensics} />
-          ) : null}
+          {reverseForensics ? <ReverseDnsForensicsCard view={reverseForensics} /> : null}
         </div>
         <div style={styles.viewToggleGroup}>
           <button
@@ -827,15 +778,9 @@ export function SurveillanceTabPanel({
                 gap: "8px",
               }}
             >
-              <span style={{ fontWeight: 700, color: "#f1f5f9" }}>
-                📝 Surveillance Brief
-              </span>
+              <span style={{ fontWeight: 700, color: "#f1f5f9" }}>📝 Surveillance Brief</span>
               <span
-                style={pillStyle(
-                  "#38bdf8",
-                  "rgba(56, 189, 248, 0.14)",
-                  "rgba(56, 189, 248, 0.4)",
-                )}
+                style={pillStyle("#38bdf8", "rgba(56, 189, 248, 0.14)", "rgba(56, 189, 248, 0.4)")}
                 title="Rendered server-side by the native Markdown renderer (GFM tables, strikethrough, tasklists, autolinks, heading IDs, tagFilter)"
               >
                 native markdown
@@ -876,8 +821,7 @@ export function SurveillanceTabPanel({
               Lines: <b>{briefSummary.lineCount}</b>
             </span>
             <span title="UTF-8 byte payload before and after the native render">
-              Payload:{" "}
-              <b>{(briefSummary.markdownBytes / 1024).toFixed(1)} KB</b> →{" "}
+              Payload: <b>{(briefSummary.markdownBytes / 1024).toFixed(1)} KB</b> →{" "}
               <b>{(briefSummary.htmlBytes / 1024).toFixed(1)} KB</b>
             </span>
             <span title="Multibyte Unicode / emoji & typographic glyphs in Markdown input">
@@ -885,10 +829,7 @@ export function SurveillanceTabPanel({
             </span>
             {data.renderDurationMs !== undefined && (
               <span title="Measured native Markdown parse and render duration">
-                Render:{" "}
-                <b style={{ color: "#34d399" }}>
-                  {data.renderDurationMs.toFixed(2)} ms
-                </b>
+                Render: <b style={{ color: "#34d399" }}>{data.renderDurationMs.toFixed(2)} ms</b>
               </span>
             )}
 
@@ -913,26 +854,24 @@ export function SurveillanceTabPanel({
                   {briefSummary.updatedUtc}
                 </span>
               )}
-              {viewMode === "interactive" &&
-                briefSummary.sections.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setOutlineExpanded((prev) => !prev)}
-                    style={{
-                      padding: "3px 8px",
-                      borderRadius: "4px",
-                      backgroundColor: "rgba(56, 189, 248, 0.1)",
-                      color: "#7dd3fc",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      border: "1px solid rgba(56, 189, 248, 0.3)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {outlineExpanded ? "▴" : "▾"} Outline (
-                    {briefSummary.sections.length})
-                  </button>
-                )}
+              {viewMode === "interactive" && briefSummary.sections.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setOutlineExpanded((prev) => !prev)}
+                  style={{
+                    padding: "3px 8px",
+                    borderRadius: "4px",
+                    backgroundColor: "rgba(56, 189, 248, 0.1)",
+                    color: "#7dd3fc",
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    border: "1px solid rgba(56, 189, 248, 0.3)",
+                    cursor: "pointer",
+                  }}
+                >
+                  {outlineExpanded ? "▴" : "▾"} Outline ({briefSummary.sections.length})
+                </button>
+              )}
               {viewMode === "raw" && (
                 <>
                   <SyntaxTokenLegend compact />
@@ -947,12 +886,8 @@ export function SurveillanceTabPanel({
                       borderRadius: "5px",
                       borderWidth: "1px",
                       borderStyle: "solid",
-                      borderColor: rawAnsiMode
-                        ? "rgba(56, 189, 248, 0.55)"
-                        : "#334155",
-                      backgroundColor: rawAnsiMode
-                        ? "rgba(56, 189, 248, 0.16)"
-                        : "#0f172a",
+                      borderColor: rawAnsiMode ? "rgba(56, 189, 248, 0.55)" : "#334155",
+                      backgroundColor: rawAnsiMode ? "rgba(56, 189, 248, 0.16)" : "#0f172a",
                       color: rawAnsiMode ? "#7dd3fc" : "#cbd5e1",
                       fontSize: "11px",
                       fontWeight: 600,
@@ -962,11 +897,7 @@ export function SurveillanceTabPanel({
                   >
                     {rawAnsiMode ? "ANSI PTY: On" : "ANSI PTY"}
                   </button>
-                  <CopyBunTerminalAnsiButton
-                    text={data.markdown}
-                    format="markdown"
-                    compact
-                  />
+                  <CopyBunTerminalAnsiButton text={data.markdown} format="markdown" compact />
                 </>
               )}
               <button
@@ -996,64 +927,62 @@ export function SurveillanceTabPanel({
             </div>
           </div>
 
-          {viewMode === "interactive" &&
-            outlineExpanded &&
-            briefSummary.sections.length > 0 && (
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "6px",
-                  padding: "8px 16px",
-                  borderBottom: "1px solid #1e293b",
-                  backgroundColor: "rgba(9, 16, 32, 0.7)",
-                }}
-              >
-                {briefSummary.sections.map((section) =>
-                  section.id ? (
-                    <a
-                      key={`${section.index}-${section.id}`}
-                      href={`#${section.id}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        scrollToSection(section.index, section.id);
-                      }}
-                      style={{
-                        padding: "3px 9px",
-                        borderRadius: "999px",
-                        backgroundColor: "#0d1527",
-                        border: "1px solid #1e293b",
-                        color: "#cbd5e1",
-                        fontSize: "11px",
-                        fontWeight: 600,
-                        textDecoration: "none",
-                        cursor: "pointer",
-                      }}
-                    >
-                      {section.text}
-                    </a>
-                  ) : (
-                    <button
-                      key={`${section.index}-${section.text}`}
-                      type="button"
-                      onClick={() => scrollToSection(section.index, null)}
-                      style={{
-                        padding: "3px 9px",
-                        borderRadius: "999px",
-                        backgroundColor: "#0d1527",
-                        border: "1px solid #1e293b",
-                        color: "#cbd5e1",
-                        fontSize: "11px",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {section.text}
-                    </button>
-                  ),
-                )}
-              </div>
-            )}
+          {viewMode === "interactive" && outlineExpanded && briefSummary.sections.length > 0 && (
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "6px",
+                padding: "8px 16px",
+                borderBottom: "1px solid #1e293b",
+                backgroundColor: "rgba(9, 16, 32, 0.7)",
+              }}
+            >
+              {briefSummary.sections.map((section) =>
+                section.id ? (
+                  <a
+                    key={`${section.index}-${section.id}`}
+                    href={`#${section.id}`}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      scrollToSection(section.index, section.id)
+                    }}
+                    style={{
+                      padding: "3px 9px",
+                      borderRadius: "999px",
+                      backgroundColor: "#0d1527",
+                      border: "1px solid #1e293b",
+                      color: "#cbd5e1",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      textDecoration: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {section.text}
+                  </a>
+                ) : (
+                  <button
+                    key={`${section.index}-${section.text}`}
+                    type="button"
+                    onClick={() => scrollToSection(section.index, null)}
+                    style={{
+                      padding: "3px 9px",
+                      borderRadius: "999px",
+                      backgroundColor: "#0d1527",
+                      border: "1px solid #1e293b",
+                      color: "#cbd5e1",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {section.text}
+                  </button>
+                ),
+              )}
+            </div>
+          )}
 
           {viewMode === "interactive" ? (
             <div
@@ -1065,25 +994,20 @@ export function SurveillanceTabPanel({
                 borderRadius: 0,
               }}
               onClick={(e) => {
-                const target = e.target as HTMLElement | null;
-                const anchor = target?.closest?.("a");
-                if (!anchor) return;
-                const href = anchor.getAttribute("href") ?? "";
+                const target = e.target as HTMLElement | null
+                const anchor = target?.closest?.("a")
+                if (!anchor) return
+                const href = anchor.getAttribute("href") ?? ""
                 if (href.startsWith("#") && href.length > 1) {
-                  e.preventDefault();
-                  scrollToSection(0, href.slice(1));
-                  return;
+                  e.preventDefault()
+                  scrollToSection(0, href.slice(1))
+                  return
                 }
-                if (!onSelectAgent) return;
-                const agentMatch = /^\/agent\/([^/?#]+)/i.exec(href);
-                if (
-                  agentMatch?.[1] &&
-                  !e.metaKey &&
-                  !e.ctrlKey &&
-                  e.button === 0
-                ) {
-                  e.preventDefault();
-                  onSelectAgent(decodeURIComponent(agentMatch[1]));
+                if (!onSelectAgent) return
+                const agentMatch = /^\/agent\/([^/?#]+)/i.exec(href)
+                if (agentMatch?.[1] && !e.metaKey && !e.ctrlKey && e.button === 0) {
+                  e.preventDefault()
+                  onSelectAgent(decodeURIComponent(agentMatch[1]))
                 }
               }}
               dangerouslySetInnerHTML={{ __html: data.html }}
@@ -1108,5 +1032,5 @@ export function SurveillanceTabPanel({
         <SkeletonSurveillanceBrief />
       )}
     </div>
-  );
+  )
 }

@@ -23,7 +23,12 @@ import type { LiveWager } from "../types.ts"
 
 const HEAT_BAND_STYLES: Record<
   1 | 2 | 3 | 4,
-  { readonly fill: string; readonly fillOpacity: number; readonly swatch: string; readonly label: string }
+  {
+    readonly fill: string
+    readonly fillOpacity: number
+    readonly swatch: string
+    readonly label: string
+  }
 > = {
   1: { fill: "#38bdf8", fillOpacity: 0.07, swatch: "rgba(56, 189, 248, 0.28)", label: "Light" },
   2: { fill: "#facc15", fillOpacity: 0.13, swatch: "rgba(250, 204, 21, 0.48)", label: "Moderate" },
@@ -453,8 +458,7 @@ export function RiskExposureChart({
         ? "1m Risk Flow"
         : "60m Cumulative Risk"
 
-  const secondaryLabel =
-    mode === "cumulative" ? "60m Payout Liability" : "Critical / Steam Risk"
+  const secondaryLabel = mode === "cumulative" ? "60m Payout Liability" : "Critical / Steam Risk"
 
   const secondaryStroke = mode === "cumulative" ? "#f59e0b" : "#f87171"
 
@@ -827,14 +831,8 @@ export function RiskExposureChart({
                 dataKey="bucketIndex"
                 type="number"
                 domain={[-0.5, Math.max(0, series.points.length - 1) + 0.5]}
-                ticks={
-                  series.points.length >= 60
-                    ? [0, 10, 20, 30, 40, 50, 59]
-                    : undefined
-                }
-                tickFormatter={(idx: number) =>
-                  series.points[Math.round(idx)]?.label ?? ""
-                }
+                ticks={series.points.length >= 60 ? [0, 10, 20, 30, 40, 50, 59] : undefined}
+                tickFormatter={(idx: number) => series.points[Math.round(idx)]?.label ?? ""}
                 tick={{ fill: "#94a3b8", fontSize: 11 }}
                 axisLine={{ stroke: "#1e293b" }}
                 tickLine={false}

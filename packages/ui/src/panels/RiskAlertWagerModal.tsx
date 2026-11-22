@@ -265,10 +265,7 @@ export function RiskAlertWagerModal({
 
           <div className="sd-alert-wager-modal-kpi" data-alert-modal-field="effective-line">
             <span className="sd-alert-wager-modal-kpi-label">Effective Line</span>
-            <span
-              className="sd-alert-wager-modal-kpi-val"
-              title={ctx.effectiveLine}
-            >
+            <span className="sd-alert-wager-modal-kpi-val" title={ctx.effectiveLine}>
               {ctx.effectiveLine}
             </span>
             <span className="sd-alert-wager-modal-kpi-sub">
@@ -326,7 +323,9 @@ export function RiskAlertWagerModal({
                 <dt>Odds / Return</dt>
                 <dd className="sd-alert-wager-modal-mono">
                   {ctx.oddsAmerican ?? "—"}
-                  {ctx.totalReturnMultiple !== null ? ` · ${ctx.totalReturnMultiple.toFixed(2)}x gross` : ""}
+                  {ctx.totalReturnMultiple !== null
+                    ? ` · ${ctx.totalReturnMultiple.toFixed(2)}x gross`
+                    : ""}
                   {ctx.quotedHoldPct !== null ? ` · ${ctx.quotedHoldPct.toFixed(1)}% hold` : ""}
                 </dd>
               </div>
@@ -372,7 +371,9 @@ export function RiskAlertWagerModal({
                 <dd className="sd-alert-wager-modal-mono">
                   {ctx.maxRecommendedStake !== null
                     ? `${formatUsdFull(ctx.maxRecommendedStake)}${
-                        ctx.capUtilizationPct !== null ? ` (${ctx.capUtilizationPct.toFixed(1)}%)` : ""
+                        ctx.capUtilizationPct !== null
+                          ? ` (${ctx.capUtilizationPct.toFixed(1)}%)`
+                          : ""
                       }`
                     : "—"}
                 </dd>
@@ -411,7 +412,11 @@ export function RiskAlertWagerModal({
             onClick={handleCopyBrief}
             data-alert-modal-copy="true"
           >
-            {copied ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+            {copied ? (
+              <Check size={13} aria-hidden="true" />
+            ) : (
+              <Copy size={13} aria-hidden="true" />
+            )}
             <span>{copied ? "Brief Copied" : "Copy Wager Brief"}</span>
           </button>
 
@@ -428,11 +433,7 @@ export function RiskAlertWagerModal({
               </button>
             ) : null}
 
-            <button
-              type="button"
-              className="sd-alert-wager-modal-secondary-btn"
-              onClick={onClose}
-            >
+            <button type="button" className="sd-alert-wager-modal-secondary-btn" onClick={onClose}>
               Close
             </button>
 

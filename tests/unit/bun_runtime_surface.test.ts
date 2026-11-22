@@ -103,11 +103,11 @@ describe("Bun Runtime Surface catalog & live audit engine", () => {
 
     const markdownExport = audit.exports.find((e) => e.key === "markdown")
     expect(markdownExport?.kind).toBe("namespace")
-    expect((markdownExport?.memberCount ?? 0)).toBeGreaterThanOrEqual(4)
+    expect(markdownExport?.memberCount ?? 0).toBeGreaterThanOrEqual(4)
 
     const s3ClassExport = audit.exports.find((e) => e.key === "S3Client")
     expect(s3ClassExport?.kind).toBe("class")
-    expect((s3ClassExport?.prototypeMethodCount ?? 0)).toBeGreaterThan(3)
+    expect(s3ClassExport?.prototypeMethodCount ?? 0).toBeGreaterThan(3)
 
     // Exports are sorted alphabetically by key
     const keys = audit.exports.map((e) => e.key)

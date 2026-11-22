@@ -1,5 +1,5 @@
 /**
- * @file sport_taxonomy.ts
+ * @file lib/sport_taxonomy.ts
  * @description The portal's top-level sport taxonomy, plus a mapping from the wire values the
  * reports actually carry (`SportType`, `SportSubType`) onto it.
  *

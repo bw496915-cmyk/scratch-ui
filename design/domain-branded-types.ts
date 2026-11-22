@@ -1,5 +1,5 @@
 /**
- * @file domain-branded-types.ts
+ * @file design/domain-branded-types.ts
  * @description Specification-Grade Domain Branded Primitives & Identity Guardrails (Bun v1.4+).
  *
  * Implements the 16 core Domain-Specific Branded Types for SportsDesk Operations and Fantasy402,

@@ -3,10 +3,7 @@ import { ChevronRight, CornerLeftUp, Home } from "lucide-react"
 import { DASHBOARD_TAB_SPECS, type DashboardTabId } from "../types.ts"
 
 export type DashboardSectionId =
-  | "risk-exposure"
-  | "bettor-intelligence"
-  | "operations-telemetry"
-  | "platform-infrastructure"
+  "risk-exposure" | "bettor-intelligence" | "operations-telemetry" | "platform-infrastructure"
 
 export interface DashboardSectionMeta {
   readonly id: DashboardSectionId
@@ -233,9 +230,7 @@ export function buildDashboardBreadcrumbs(
  * Resolves the immediate navigable parent crumb above the current location,
  * or `null` when already at the root dashboard landing.
  */
-export function resolveParentBreadcrumb(
-  items: readonly BreadcrumbItem[],
-): BreadcrumbItem | null {
+export function resolveParentBreadcrumb(items: readonly BreadcrumbItem[]): BreadcrumbItem | null {
   for (let i = items.length - 2; i >= 0; i -= 1) {
     const candidate = items[i]
     if (candidate && candidate.action) {
@@ -276,22 +271,14 @@ export function DashboardBreadcrumbs({
   const tabSpec = DASHBOARD_TAB_SPECS[activeTab]
 
   return (
-    <nav
-      aria-label="Breadcrumb"
-      data-dashboard-breadcrumbs="true"
-      className="sd-breadcrumbs"
-    >
+    <nav aria-label="Breadcrumb" data-dashboard-breadcrumbs="true" className="sd-breadcrumbs">
       <ol className="sd-breadcrumb-list">
         {items.map((item, idx) => {
           const isClickable = !item.isCurrent && Boolean(item.action)
           return (
             <li key={item.id} className="sd-breadcrumb-item">
               {idx > 0 ? (
-                <ChevronRight
-                  size={13}
-                  aria-hidden="true"
-                  className="sd-breadcrumb-sep"
-                />
+                <ChevronRight size={13} aria-hidden="true" className="sd-breadcrumb-sep" />
               ) : null}
               {item.isCurrent ? (
                 <span aria-current="page" className="sd-breadcrumb-current">

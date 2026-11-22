@@ -412,7 +412,8 @@ export function buildRolling60MinRiskSeries(
     heatBands.push(activeBand)
   }
 
-  const currentRollingRiskUsd = points.length > 0 ? (points[points.length - 1]?.rollingRiskUsd ?? 0) : 0
+  const currentRollingRiskUsd =
+    points.length > 0 ? (points[points.length - 1]?.rollingRiskUsd ?? 0) : 0
   const meanRollingRiskUsd =
     windowMinutes > 0 ? Math.round((sumRollingRisk / windowMinutes) * 100) / 100 : 0
   const rollingDeltaPct =

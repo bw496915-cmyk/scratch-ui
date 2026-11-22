@@ -1,13 +1,6 @@
-import type React from "react";
-import { useMemo, useState } from "react";
-import {
-  AlertCircle,
-  Check,
-  Copy,
-  Download,
-  Lock,
-  ShieldCheck,
-} from "lucide-react";
+import type React from "react"
+import { useMemo, useState } from "react"
+import { AlertCircle, Check, Copy, Download, Lock, ShieldCheck } from "lucide-react"
 import {
   auditRegistryCredentialMatch,
   convertNpmrcToBunfigToml,
@@ -15,15 +8,15 @@ import {
   resolveBunPackageConfig,
   type MatchRegistryCredentialsRequest,
   type RedactedNpmrcStatusSummary,
-} from "@sportsdesk-ops/contracts";
+} from "@sportsdesk-ops/contracts"
 import {
   CopyBunTerminalAnsiButton,
   SyntaxHighlightedPre,
   SyntaxTokenLegend,
-} from "./SyntaxHighlightedPre.tsx";
+} from "./SyntaxHighlightedPre.tsx"
 
 const MONO_FONT =
-  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace';
+  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace'
 
 export const DEFAULT_NPMRC_PLAYGROUND_SNIPPET = `# Bun .npmrc sample — evaluated locally (never sent over the network)
 registry=https://registry.npmjs.org/
@@ -42,29 +35,23 @@ node-linker=isolated
 public-hoist-pattern[]=*eslint*
 public-hoist-pattern[]=*prettier*
 omit[]=optional
-`;
+`
 
 export interface NpmrcSupportSectionProps {
-  readonly summary?: RedactedNpmrcStatusSummary | null | undefined;
+  readonly summary?: RedactedNpmrcStatusSummary | null | undefined
 }
 
-type SimulatorKind =
-  | "registry"
-  | "tarball-project"
-  | "tarball-transitive"
-  | "publishConfig";
+type SimulatorKind = "registry" | "tarball-project" | "tarball-transitive" | "publishConfig"
 
 export function NpmrcSupportSection({
   summary = null,
 }: NpmrcSupportSectionProps): React.ReactElement {
-  const [npmrcText, setNpmrcText] = useState<string>(
-    DEFAULT_NPMRC_PLAYGROUND_SNIPPET,
-  );
+  const [npmrcText, setNpmrcText] = useState<string>(DEFAULT_NPMRC_PLAYGROUND_SNIPPET)
   const [probeUrl, setProbeUrl] = useState<string>(
     "https://npm.example.com/team/a/@myorg/sdk/-/sdk-1.0.0.tgz",
-  );
-  const [probeKind, setProbeKind] = useState<SimulatorKind>("tarball-project");
-  const [copiedToml, setCopiedToml] = useState<boolean>(false);
+  )
+  const [probeKind, setProbeKind] = useState<SimulatorKind>("tarball-project")
+  const [copiedToml, setCopiedToml] = useState<boolean>(false)
 
   const playgroundEvaluation = useMemo(() => {
     try {
@@ -76,76 +63,76 @@ export function NpmrcSupportSection({
           NPM_TOKEN: "__SIMULATED_ENV_TOKEN__",
           NPM_PASSWORD: "c2ltdWxhdGVkLXBhc3N3b3Jk",
         },
-      });
-      const resolved = resolveBunPackageConfig({ projectNpmrc: parsed });
-      const bunfigToml = convertNpmrcToBunfigToml(resolved);
+      })
+      const resolved = resolveBunPackageConfig({ projectNpmrc: parsed })
+      const bunfigToml = convertNpmrcToBunfigToml(resolved)
 
-      let matchRequest: MatchRegistryCredentialsRequest;
+      let matchRequest: MatchRegistryCredentialsRequest
       if (probeKind === "tarball-project") {
         matchRequest = {
           kind: "tarball",
           targetUrl: probeUrl,
           namedBy: "project",
-        };
+        }
       } else if (probeKind === "tarball-transitive") {
         matchRequest = {
           kind: "tarball",
           targetUrl: probeUrl,
           namedBy: "transitive",
-        };
+        }
       } else if (probeKind === "publishConfig") {
         matchRequest = {
           kind: "publishConfig",
           targetUrl: probeUrl,
-        };
+        }
       } else {
         matchRequest = {
           kind: "registry",
           targetUrl: probeUrl,
-        };
+        }
       }
 
-      const matchAudit = auditRegistryCredentialMatch(resolved, matchRequest);
+      const matchAudit = auditRegistryCredentialMatch(resolved, matchRequest)
       return {
         ok: true as const,
         parsed,
         resolved,
         bunfigToml,
         matchAudit,
-      };
+      }
     } catch (err) {
       return {
         ok: false as const,
         error: err instanceof Error ? err.message : String(err),
-      };
+      }
     }
-  }, [npmrcText, probeUrl, probeKind]);
+  }, [npmrcText, probeUrl, probeKind])
 
   const handleCopyBunfig = async () => {
-    if (!playgroundEvaluation.ok) return;
+    if (!playgroundEvaluation.ok) return
     try {
-      await navigator.clipboard.writeText(playgroundEvaluation.bunfigToml);
-      setCopiedToml(true);
-      setTimeout(() => setCopiedToml(false), 1800);
+      await navigator.clipboard.writeText(playgroundEvaluation.bunfigToml)
+      setCopiedToml(true)
+      setTimeout(() => setCopiedToml(false), 1800)
     } catch {
-      setCopiedToml(false);
+      setCopiedToml(false)
     }
-  };
+  }
 
   const handleDownloadBunfig = () => {
-    if (!playgroundEvaluation.ok || typeof document === "undefined") return;
+    if (!playgroundEvaluation.ok || typeof document === "undefined") return
     const blob = new Blob([playgroundEvaluation.bunfigToml], {
       type: "text/plain;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "bunfig.toml";
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 10_000);
-  };
+    })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement("a")
+    anchor.href = url
+    anchor.download = "bunfig.toml"
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 10_000)
+  }
 
   return (
     <div
@@ -379,7 +366,7 @@ export function NpmrcSupportSection({
                   label: "Cache & Global Store",
                   value: summary.options.cacheDisabled
                     ? "cache disabled"
-                    : summary.options.cacheDir ?? "default cache",
+                    : (summary.options.cacheDir ?? "default cache"),
                   sub: `disableManifest=${String(summary.options.cacheDisableManifest)} · globalStore=${String(summary.options.globalStore)}`,
                 },
                 {
@@ -470,14 +457,12 @@ export function NpmrcSupportSection({
                       fontSize: "11.5px",
                     }}
                   >
-                    <span style={{ color: "#38bdf8", fontWeight: 600 }}>
-                      {sc.scope}:registry
-                    </span>
-                    <span style={{ color: "var(--text-primary, #e2e8f0)" }}>
-                      {sc.registryUrl}
-                    </span>
+                    <span style={{ color: "#38bdf8", fontWeight: 600 }}>{sc.scope}:registry</span>
+                    <span style={{ color: "var(--text-primary, #e2e8f0)" }}>{sc.registryUrl}</span>
                     <span style={{ color: sc.hasAuth ? "#4ade80" : "#64748b" }}>
-                      {sc.hasAuth ? `${sc.authScheme} (${sc.matchedPrefix ?? sc.source})` : "No auth"}
+                      {sc.hasAuth
+                        ? `${sc.authScheme} (${sc.matchedPrefix ?? sc.source})`
+                        : "No auth"}
                     </span>
                   </div>
                 ))}
@@ -684,9 +669,7 @@ export function NpmrcSupportSection({
                   <span style={{ color: "var(--text-primary, #f1f5f9)", fontWeight: 600 }}>
                     {ws.name}
                     {ws.version ? (
-                      <span style={{ color: "#64748b", fontWeight: 400 }}>
-                        {" "}@{ws.version}
-                      </span>
+                      <span style={{ color: "#64748b", fontWeight: 400 }}> @{ws.version}</span>
                     ) : null}
                   </span>
                   <span style={{ color: "#94a3b8" }}>{ws.path}</span>
@@ -745,7 +728,9 @@ export function NpmrcSupportSection({
                 color: "var(--text-muted, #94a3b8)",
               }}
             >
-              Evaluates <code style={{ fontFamily: MONO_FONT }}>.npmrc</code> locally in memory (never transmitted) and emits secret-safe <code style={{ fontFamily: MONO_FONT }}>bunfig.toml</code>.
+              Evaluates <code style={{ fontFamily: MONO_FONT }}>.npmrc</code> locally in memory
+              (never transmitted) and emits secret-safe{" "}
+              <code style={{ fontFamily: MONO_FONT }}>bunfig.toml</code>.
             </div>
           </div>
 
@@ -762,13 +747,9 @@ export function NpmrcSupportSection({
                 borderRadius: "6px",
                 borderWidth: "1px",
                 borderStyle: "solid",
-                borderColor: copiedToml
-                  ? "#4ade80"
-                  : "var(--border-strong, #334155)",
+                borderColor: copiedToml ? "#4ade80" : "var(--border-strong, #334155)",
                 backgroundColor: "transparent",
-                color: copiedToml
-                  ? "#4ade80"
-                  : "var(--text-primary, #e2e8f0)",
+                color: copiedToml ? "#4ade80" : "var(--text-primary, #e2e8f0)",
                 fontSize: "11.5px",
                 fontWeight: 600,
                 cursor: playgroundEvaluation.ok ? "pointer" : "not-allowed",
@@ -1086,13 +1067,12 @@ export function NpmrcSupportSection({
                     : "NO CREDENTIALS SENT"}
               </span>
               <span style={{ color: "var(--text-muted, #cbd5e1)" }}>
-                {playgroundEvaluation.matchAudit.error ??
-                  playgroundEvaluation.matchAudit.reason}
+                {playgroundEvaluation.matchAudit.error ?? playgroundEvaluation.matchAudit.reason}
               </span>
             </div>
           ) : null}
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -1,5 +1,5 @@
 /**
- * @file live_wagers.ts
+ * @file lib/live_wagers.ts
  * @description The live wager list (`{LIST: [...]}`) — the bet-ticker shape, which is a
  * different feed from `Report/Pending`.
  *

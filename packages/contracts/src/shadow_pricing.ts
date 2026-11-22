@@ -1,5 +1,5 @@
 /**
- * @file types/shadow_pricing.ts
+ * @file packages/contracts/src/shadow_pricing.ts
  * @description Shared browser-safe & server-safe contracts for Hierarchical Taxonomy Cube
  * (Sport -> SubSport -> Period per SubSport -> Market) & Shadow-Pricing Elasticity (#135).
  */

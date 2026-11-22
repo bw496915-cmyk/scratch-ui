@@ -1,6 +1,6 @@
-import type React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Terminal } from "lucide-react";
+import type React from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { Check, Terminal } from "lucide-react"
 import {
   SYNTAX_TOKEN_PALETTE,
   bunColorCss,
@@ -8,17 +8,19 @@ import {
   tokenizeSyntax,
   type SyntaxFormat,
   type SyntaxTokenType,
-} from "@sportsdesk-ops/contracts";
-import { renderAnsiReact } from "../ansi.tsx";
-import { copyText } from "../clipboard.ts";
+} from "@sportsdesk-ops/contracts"
+import { renderAnsiReact } from "../ansi.tsx"
+import { copyText } from "../clipboard.ts"
 
 const MONO_FONT =
-  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace';
+  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace'
 
-export interface SyntaxHighlightedPreProps
-  extends Omit<React.HTMLAttributes<HTMLPreElement>, "children"> {
-  readonly text: string;
-  readonly format: SyntaxFormat;
+export interface SyntaxHighlightedPreProps extends Omit<
+  React.HTMLAttributes<HTMLPreElement>,
+  "children"
+> {
+  readonly text: string
+  readonly format: SyntaxFormat
   /**
    * - `"tokens"` (default): renders semantic React `<span data-syntax-token="...">`
    *   styled with `Bun.color`-resolved hex tokens.
@@ -26,15 +28,10 @@ export interface SyntaxHighlightedPreProps
    *   `formatSyntaxAsBunTerminalAnsi()` through `renderAnsiReact()` for exact
    *   `Bun.Terminal` PTY visual parity.
    */
-  readonly renderMode?: "tokens" | "ansi" | undefined;
+  readonly renderMode?: "tokens" | "ansi" | undefined
 }
 
-const LEGEND_ORDER: readonly SyntaxTokenType[] = [
-  "key",
-  "string",
-  "number",
-  "boolean",
-];
+const LEGEND_ORDER: readonly SyntaxTokenType[] = ["key", "string", "number", "boolean"]
 
 /**
  * Compact inline token legend showing Keys, Strings, Numbers, and Booleans
@@ -43,7 +40,7 @@ const LEGEND_ORDER: readonly SyntaxTokenType[] = [
 export function SyntaxTokenLegend({
   compact = false,
 }: {
-  readonly compact?: boolean | undefined;
+  readonly compact?: boolean | undefined
 }): React.ReactElement {
   return (
     <span
@@ -60,8 +57,8 @@ export function SyntaxTokenLegend({
       }}
     >
       {LEGEND_ORDER.map((tokenType) => {
-        const spec = SYNTAX_TOKEN_PALETTE[tokenType];
-        const color = bunColorCss(spec.hex);
+        const spec = SYNTAX_TOKEN_PALETTE[tokenType]
+        const color = bunColorCss(spec.hex)
         return (
           <span
             key={tokenType}
@@ -84,14 +81,12 @@ export function SyntaxTokenLegend({
                 flexShrink: 0,
               }}
             />
-            <span style={{ color, fontWeight: spec.bold ? 600 : 500 }}>
-              {spec.label}
-            </span>
+            <span style={{ color, fontWeight: spec.bold ? 600 : 500 }}>{spec.label}</span>
           </span>
-        );
+        )
       })}
     </span>
-  );
+  )
 }
 
 /**
@@ -103,28 +98,28 @@ export function CopyBunTerminalAnsiButton({
   format,
   compact = false,
 }: {
-  readonly text: string;
-  readonly format: SyntaxFormat;
-  readonly compact?: boolean | undefined;
+  readonly text: string
+  readonly format: SyntaxFormat
+  readonly compact?: boolean | undefined
 }): React.ReactElement {
-  const [copied, setCopied] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [copied, setCopied] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     return () => {
-      if (timerRef.current !== null) clearTimeout(timerRef.current);
-    };
-  }, []);
+      if (timerRef.current !== null) clearTimeout(timerRef.current)
+    }
+  }, [])
 
   const handleCopy = () => {
-    const ansi = formatSyntaxAsBunTerminalAnsi(text, format);
+    const ansi = formatSyntaxAsBunTerminalAnsi(text, format)
     void copyText(ansi).then((res) => {
-      if (!res.ok) return;
-      setCopied(true);
-      if (timerRef.current !== null) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => setCopied(false), 1800);
-    });
-  };
+      if (!res.ok) return
+      setCopied(true)
+      if (timerRef.current !== null) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => setCopied(false), 1800)
+    })
+  }
 
   return (
     <button
@@ -140,12 +135,8 @@ export function CopyBunTerminalAnsiButton({
         borderRadius: "5px",
         borderWidth: "1px",
         borderStyle: "solid",
-        borderColor: copied
-          ? "rgba(74, 222, 128, 0.55)"
-          : "var(--border-strong, #334155)",
-        backgroundColor: copied
-          ? "rgba(34, 197, 94, 0.12)"
-          : "rgba(15, 23, 42, 0.7)",
+        borderColor: copied ? "rgba(74, 222, 128, 0.55)" : "var(--border-strong, #334155)",
+        backgroundColor: copied ? "rgba(34, 197, 94, 0.12)" : "rgba(15, 23, 42, 0.7)",
         color: copied ? "#86efac" : "#cbd5e1",
         fontSize: compact ? "11px" : "11.5px",
         fontWeight: 600,
@@ -153,14 +144,10 @@ export function CopyBunTerminalAnsiButton({
         whiteSpace: "nowrap",
       }}
     >
-      {copied ? (
-        <Check size={11} aria-hidden="true" />
-      ) : (
-        <Terminal size={11} aria-hidden="true" />
-      )}
+      {copied ? <Check size={11} aria-hidden="true" /> : <Terminal size={11} aria-hidden="true" />}
       <span>{copied ? "ANSI Copied" : "Copy ANSI (Bun.Terminal)"}</span>
     </button>
-  );
+  )
 }
 
 /**
@@ -177,27 +164,27 @@ export function SyntaxHighlightedPre({
 }: SyntaxHighlightedPreProps): React.ReactElement {
   const renderedContent = useMemo<React.ReactNode>(() => {
     if (renderMode === "ansi") {
-      return renderAnsiReact(formatSyntaxAsBunTerminalAnsi(text, format));
+      return renderAnsiReact(formatSyntaxAsBunTerminalAnsi(text, format))
     }
-    const tokens = tokenizeSyntax(text, format);
+    const tokens = tokenizeSyntax(text, format)
     return tokens.map((tok, idx) => {
       if (tok.type === "plain") {
-        return <span key={idx}>{tok.value}</span>;
+        return <span key={idx}>{tok.value}</span>
       }
-      const spec = SYNTAX_TOKEN_PALETTE[tok.type];
+      const spec = SYNTAX_TOKEN_PALETTE[tok.type]
       const tokenStyle: React.CSSProperties = {
         color: bunColorCss(spec.hex),
-      };
-      if (spec.bold) tokenStyle.fontWeight = 600;
-      if (spec.italic) tokenStyle.fontStyle = "italic";
-      if (spec.tabularNums) tokenStyle.fontVariantNumeric = "tabular-nums";
+      }
+      if (spec.bold) tokenStyle.fontWeight = 600
+      if (spec.italic) tokenStyle.fontStyle = "italic"
+      if (spec.tabularNums) tokenStyle.fontVariantNumeric = "tabular-nums"
       return (
         <span key={idx} data-syntax-token={tok.type} style={tokenStyle}>
           {tok.value}
         </span>
-      );
-    });
-  }, [text, format, renderMode]);
+      )
+    })
+  }, [text, format, renderMode])
 
   return (
     <pre
@@ -213,5 +200,5 @@ export function SyntaxHighlightedPre({
     >
       {renderedContent}
     </pre>
-  );
+  )
 }

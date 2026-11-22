@@ -1,52 +1,53 @@
-import type React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Copy, ExternalLink, GitBranch, TrendingUp } from "lucide-react";
-import { copyText } from "../clipboard.ts";
-import { styles } from "../dashboard_styles.ts";
-import type { NormalizedRankingsResult } from "../hydration.ts";
-import { getLocalAgentHref } from "../links.ts";
-import type { AgentDetailApiResponse } from "../types.ts";
-import { trackedFetch } from "../api_usage.ts";
+import type React from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { Check, Copy, ExternalLink, GitBranch, TrendingUp } from "lucide-react"
+import { getActiveRateEntries } from "@sportsdesk-ops/contracts"
+import { copyText } from "../clipboard.ts"
+import { styles } from "../dashboard_styles.ts"
+import type { NormalizedRankingsResult } from "../hydration.ts"
+import { getLocalAgentHref } from "../links.ts"
+import type { AgentDetailApiResponse } from "../types.ts"
+import { trackedFetch } from "../api_usage.ts"
 import {
   HandleTrendIndicator,
   buildDownlineForests,
   type DownlineSubAgentNode,
-} from "./RankingsTabPanel.tsx";
+} from "./RankingsTabPanel.tsx"
 
 const TABULAR_NUMS: React.CSSProperties = {
   fontVariantNumeric: "tabular-nums",
-};
+}
 
 export interface AgentSubConduitRow {
-  readonly agentId: string;
-  readonly masterAgent: string;
-  readonly handleUsd: number;
-  readonly wagers: number;
-  readonly customerCount: number;
-  readonly topCust: string;
-  readonly concPct: number;
-  readonly isProxyConduit: boolean;
-  readonly handleDelta24hPct: number | null;
-  readonly shareOfParentPct: number;
-  readonly isCurrentAgent: boolean;
+  readonly agentId: string
+  readonly masterAgent: string
+  readonly handleUsd: number
+  readonly wagers: number
+  readonly customerCount: number
+  readonly topCust: string
+  readonly concPct: number
+  readonly isProxyConduit: boolean
+  readonly handleDelta24hPct: number | null
+  readonly shareOfParentPct: number
+  readonly isCurrentAgent: boolean
 }
 
 export interface AgentInspectorTelemetry {
-  readonly agentId: string;
-  readonly role: "master" | "sub-agent" | "conduit";
-  readonly masterAgent: string;
-  readonly handleUsd: number;
-  readonly wagers: number;
-  readonly deskHandleSharePct: number;
-  readonly handleDelta24hPct: number | null;
-  readonly concentrationPct: number | null;
-  readonly isProxyConduit: boolean;
-  readonly topCustomer: string | null;
-  readonly customerCount: number;
-  readonly totalNetUsd: number | null;
-  readonly windowLabel: string;
-  readonly subConduitsHeading: string;
-  readonly subConduits: readonly AgentSubConduitRow[];
+  readonly agentId: string
+  readonly role: "master" | "sub-agent" | "conduit"
+  readonly masterAgent: string
+  readonly handleUsd: number
+  readonly wagers: number
+  readonly deskHandleSharePct: number
+  readonly handleDelta24hPct: number | null
+  readonly concentrationPct: number | null
+  readonly isProxyConduit: boolean
+  readonly topCustomer: string | null
+  readonly customerCount: number
+  readonly totalNetUsd: number | null
+  readonly windowLabel: string
+  readonly subConduitsHeading: string
+  readonly subConduits: readonly AgentSubConduitRow[]
 }
 
 /**
@@ -57,23 +58,19 @@ export function buildAgentInspectorTelemetry(
   agentId: string,
   rankings: NormalizedRankingsResult | null | undefined,
 ): AgentInspectorTelemetry | null {
-  if (!rankings) return null;
-  const target = agentId.trim().toUpperCase();
-  if (!target) return null;
+  if (!rankings) return null
+  const target = agentId.trim().toUpperCase()
+  if (!target) return null
 
-  const forests = buildDownlineForests(
-    rankings.players,
-    rankings.subAgents,
-    rankings.masterAgents,
-  );
+  const forests = buildDownlineForests(rankings.players, rankings.subAgents, rankings.masterAgents)
   const totalDeskHandle =
     rankings.summary.totalHandleUsd > 0
       ? rankings.summary.totalHandleUsd
-      : forests.reduce((sum, f) => sum + f.handleUsd, 0);
+      : forests.reduce((sum, f) => sum + f.handleUsd, 0)
   const windowLabel =
     rankings.summary.windowStart && rankings.summary.windowEnd
       ? `${rankings.summary.windowStart} – ${rankings.summary.windowEnd}`
-      : "30d window";
+      : "30d window"
 
   const toSubConduitRows = (
     nodes: readonly DownlineSubAgentNode[],
@@ -89,20 +86,17 @@ export function buildAgentInspectorTelemetry(
       concPct: sa.concPct,
       isProxyConduit: sa.isProxyConduit,
       handleDelta24hPct: sa.handleDelta24hPct,
-      shareOfParentPct:
-        parentHandleUsd > 0 ? (sa.handleUsd / parentHandleUsd) * 100 : 0,
+      shareOfParentPct: parentHandleUsd > 0 ? (sa.handleUsd / parentHandleUsd) * 100 : 0,
       isCurrentAgent: sa.agentId.trim().toUpperCase() === target,
-    }));
+    }))
 
   // 1. Check if the inspected ID matches a Master Forest
-  const matchedForest = forests.find(
-    (f) => f.masterAgent.trim().toUpperCase() === target,
-  );
+  const matchedForest = forests.find((f) => f.masterAgent.trim().toUpperCase() === target)
   if (matchedForest) {
-    const topSub = matchedForest.subAgents[0] ?? null;
+    const topSub = matchedForest.subAgents[0] ?? null
     const totalNet = matchedForest.subAgents.some((s) => s.totalNetUsd !== null)
       ? matchedForest.subAgents.reduce((acc, s) => acc + (s.totalNetUsd ?? 0), 0)
-      : null;
+      : null
     return {
       agentId: matchedForest.masterAgent,
       role: "master",
@@ -110,9 +104,7 @@ export function buildAgentInspectorTelemetry(
       handleUsd: matchedForest.handleUsd,
       wagers: matchedForest.wagers,
       deskHandleSharePct:
-        totalDeskHandle > 0
-          ? (matchedForest.handleUsd / totalDeskHandle) * 100
-          : 0,
+        totalDeskHandle > 0 ? (matchedForest.handleUsd / totalDeskHandle) * 100 : 0,
       handleDelta24hPct: matchedForest.handleDelta24hPct,
       concentrationPct: topSub ? topSub.concPct : null,
       isProxyConduit: matchedForest.conduitCount > 0,
@@ -121,18 +113,13 @@ export function buildAgentInspectorTelemetry(
       totalNetUsd: totalNet,
       windowLabel,
       subConduitsHeading: `Sub-Conduits under ${matchedForest.masterAgent}`,
-      subConduits: toSubConduitRows(
-        matchedForest.subAgents,
-        matchedForest.handleUsd,
-      ),
-    };
+      subConduits: toSubConduitRows(matchedForest.subAgents, matchedForest.handleUsd),
+    }
   }
 
   // 2. Check if the inspected ID matches a Sub-Agent in any Master Forest
   for (const forest of forests) {
-    const matchedSub = forest.subAgents.find(
-      (sa) => sa.agentId.trim().toUpperCase() === target,
-    );
+    const matchedSub = forest.subAgents.find((sa) => sa.agentId.trim().toUpperCase() === target)
     if (matchedSub) {
       return {
         agentId: matchedSub.agentId,
@@ -141,9 +128,7 @@ export function buildAgentInspectorTelemetry(
         handleUsd: matchedSub.handleUsd,
         wagers: matchedSub.wagers,
         deskHandleSharePct:
-          totalDeskHandle > 0
-            ? (matchedSub.handleUsd / totalDeskHandle) * 100
-            : 0,
+          totalDeskHandle > 0 ? (matchedSub.handleUsd / totalDeskHandle) * 100 : 0,
         handleDelta24hPct: matchedSub.handleDelta24hPct,
         concentrationPct: matchedSub.concPct,
         isProxyConduit: matchedSub.isProxyConduit,
@@ -153,21 +138,17 @@ export function buildAgentInspectorTelemetry(
         windowLabel,
         subConduitsHeading: `Sub-Conduits in ${forest.masterAgent} Forest`,
         subConduits: toSubConduitRows(forest.subAgents, forest.handleUsd),
-      };
+      }
     }
   }
 
   // 3. Fallback to flat proxy conduits list if not already present in forests
-  const matchedConduit = rankings.conduits.find(
-    (c) => c.agentId.trim().toUpperCase() === target,
-  );
+  const matchedConduit = rankings.conduits.find((c) => c.agentId.trim().toUpperCase() === target)
   if (matchedConduit) {
     const peerConduits = rankings.conduits.filter(
-      (c) =>
-        c.masterAgent.trim().toUpperCase() ===
-        matchedConduit.masterAgent.trim().toUpperCase(),
-    );
-    const parentHandle = peerConduits.reduce((s, c) => s + c.handleUsd, 0);
+      (c) => c.masterAgent.trim().toUpperCase() === matchedConduit.masterAgent.trim().toUpperCase(),
+    )
+    const parentHandle = peerConduits.reduce((s, c) => s + c.handleUsd, 0)
     return {
       agentId: matchedConduit.agentId,
       role: "conduit",
@@ -175,9 +156,7 @@ export function buildAgentInspectorTelemetry(
       handleUsd: matchedConduit.handleUsd,
       wagers: matchedConduit.wagers,
       deskHandleSharePct:
-        totalDeskHandle > 0
-          ? (matchedConduit.handleUsd / totalDeskHandle) * 100
-          : 0,
+        totalDeskHandle > 0 ? (matchedConduit.handleUsd / totalDeskHandle) * 100 : 0,
       handleDelta24hPct: matchedConduit.handleDelta24hPct ?? null,
       concentrationPct: matchedConduit.concPct,
       isProxyConduit: true,
@@ -196,40 +175,39 @@ export function buildAgentInspectorTelemetry(
         concPct: c.concPct,
         isProxyConduit: true,
         handleDelta24hPct: c.handleDelta24hPct ?? null,
-        shareOfParentPct:
-          parentHandle > 0 ? (c.handleUsd / parentHandle) * 100 : 100,
+        shareOfParentPct: parentHandle > 0 ? (c.handleUsd / parentHandle) * 100 : 100,
         isCurrentAgent: c.agentId.trim().toUpperCase() === target,
       })),
-    };
+    }
   }
 
-  return null;
+  return null
 }
 
 export interface AgentHandleTrendPoint {
-  readonly label: string;
-  readonly handleUsd: number;
+  readonly label: string
+  readonly handleUsd: number
 }
 
 export interface AgentHandleTrendSeries {
-  readonly points: readonly AgentHandleTrendPoint[];
-  readonly dailyAvgUsd: number;
-  readonly prior24hUsd: number;
-  readonly latest24hUsd: number;
-  readonly minUsd: number;
-  readonly maxUsd: number;
-  readonly delta24hPct: number;
-  readonly direction: "up" | "down" | "flat";
+  readonly points: readonly AgentHandleTrendPoint[]
+  readonly dailyAvgUsd: number
+  readonly prior24hUsd: number
+  readonly latest24hUsd: number
+  readonly minUsd: number
+  readonly maxUsd: number
+  readonly delta24hPct: number
+  readonly direction: "up" | "down" | "flat"
 }
 
 function deterministicAgentSeed(agentId: string): number {
-  let hash = 2166136261;
-  const upper = agentId.trim().toUpperCase();
+  let hash = 2166136261
+  const upper = agentId.trim().toUpperCase()
   for (let i = 0; i < upper.length; i += 1) {
-    hash ^= upper.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
+    hash ^= upper.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
   }
-  return hash >>> 0;
+  return hash >>> 0
 }
 
 /**
@@ -242,40 +220,37 @@ export function buildAgentHandleTrendSeries(
   agentId: string,
 ): AgentHandleTrendSeries | null {
   if (typeof handleUsd !== "number" || !Number.isFinite(handleUsd) || handleUsd <= 0) {
-    return null;
+    return null
   }
   const deltaPct =
     typeof handleDelta24hPct === "number" && Number.isFinite(handleDelta24hPct)
       ? Number(handleDelta24hPct.toFixed(1))
-      : 0;
-  const dailyAvgUsd = Math.round(handleUsd / 30);
-  const seed = deterministicAgentSeed(agentId || "AGENT");
-  const phase = ((seed % 360) * Math.PI) / 180;
-  const labels = ["D-6", "D-5", "D-4", "D-3", "D-2", "Prior 24h", "Latest 24h"];
+      : 0
+  const dailyAvgUsd = Math.round(handleUsd / 30)
+  const seed = deterministicAgentSeed(agentId || "AGENT")
+  const phase = ((seed % 360) * Math.PI) / 180
+  const labels = ["D-6", "D-5", "D-4", "D-3", "D-2", "Prior 24h", "Latest 24h"]
 
-  const priorFactor = 1 + Math.sin(phase + 2.2) * 0.06;
-  const prior24hUsd = Math.max(1, Math.round(dailyAvgUsd * priorFactor));
-  const latest24hUsd = Math.max(
-    0,
-    Math.round(prior24hUsd * (1 + deltaPct / 100)),
-  );
+  const priorFactor = 1 + Math.sin(phase + 2.2) * 0.06
+  const prior24hUsd = Math.max(1, Math.round(dailyAvgUsd * priorFactor))
+  const latest24hUsd = Math.max(0, Math.round(prior24hUsd * (1 + deltaPct / 100)))
 
-  const driftBias = Math.max(-0.14, Math.min(0.14, deltaPct / 180));
+  const driftBias = Math.max(-0.14, Math.min(0.14, deltaPct / 180))
   const points: AgentHandleTrendPoint[] = labels.map((label, idx) => {
-    if (idx === 5) return { label, handleUsd: prior24hUsd };
-    if (idx === 6) return { label, handleUsd: latest24hUsd };
-    const progress = idx / 5;
-    const cadence = Math.sin(phase + idx * 1.15) * 0.085;
-    const ramp = (progress - 0.5) * driftBias;
-    const value = Math.max(0, Math.round(dailyAvgUsd * (1 + cadence + ramp)));
-    return { label, handleUsd: value };
-  });
+    if (idx === 5) return { label, handleUsd: prior24hUsd }
+    if (idx === 6) return { label, handleUsd: latest24hUsd }
+    const progress = idx / 5
+    const cadence = Math.sin(phase + idx * 1.15) * 0.085
+    const ramp = (progress - 0.5) * driftBias
+    const value = Math.max(0, Math.round(dailyAvgUsd * (1 + cadence + ramp)))
+    return { label, handleUsd: value }
+  })
 
-  const values = points.map((pt) => pt.handleUsd);
-  const minUsd = Math.min(...values);
-  const maxUsd = Math.max(...values);
+  const values = points.map((pt) => pt.handleUsd)
+  const minUsd = Math.min(...values)
+  const maxUsd = Math.max(...values)
   const direction: "up" | "down" | "flat" =
-    deltaPct > 0.05 ? "up" : deltaPct < -0.05 ? "down" : "flat";
+    deltaPct > 0.05 ? "up" : deltaPct < -0.05 ? "down" : "flat"
 
   return {
     points,
@@ -286,72 +261,61 @@ export function buildAgentHandleTrendSeries(
     maxUsd,
     delta24hPct: deltaPct,
     direction,
-  };
+  }
 }
 
 function formatCompactUsd(usd: number): string {
-  const abs = Math.abs(usd);
-  const sign = usd < 0 ? "-" : "";
-  if (abs >= 1_000_000) return `${sign}$${(abs / 1_000_000).toFixed(2)}M`;
-  if (abs >= 1_000) return `${sign}$${(abs / 1_000).toFixed(1)}K`;
-  return `${sign}$${Math.round(abs).toLocaleString()}`;
+  const abs = Math.abs(usd)
+  const sign = usd < 0 ? "-" : ""
+  if (abs >= 1_000_000) return `${sign}$${(abs / 1_000_000).toFixed(2)}M`
+  if (abs >= 1_000) return `${sign}$${(abs / 1_000).toFixed(1)}K`
+  return `${sign}$${Math.round(abs).toLocaleString()}`
 }
 
 function AgentHandleTrendSparkline({
   series,
   agentId,
 }: {
-  readonly series: AgentHandleTrendSeries;
-  readonly agentId: string;
+  readonly series: AgentHandleTrendSeries
+  readonly agentId: string
 }): React.ReactElement {
-  const width = 320;
-  const height = 56;
-  const padX = 8;
-  const padY = 8;
-  const plotW = width - padX * 2;
-  const plotH = height - padY * 2;
-  const range = Math.max(1, series.maxUsd - series.minUsd);
+  const width = 320
+  const height = 56
+  const padX = 8
+  const padY = 8
+  const plotW = width - padX * 2
+  const plotH = height - padY * 2
+  const range = Math.max(1, series.maxUsd - series.minUsd)
   const strokeColor =
-    series.direction === "up"
-      ? "#4ade80"
-      : series.direction === "down"
-        ? "#f87171"
-        : "#38bdf8";
+    series.direction === "up" ? "#4ade80" : series.direction === "down" ? "#f87171" : "#38bdf8"
   const fillColor =
     series.direction === "up"
       ? "rgba(74, 222, 128, 0.14)"
       : series.direction === "down"
         ? "rgba(248, 113, 113, 0.14)"
-        : "rgba(56, 189, 248, 0.14)";
+        : "rgba(56, 189, 248, 0.14)"
 
   const coords = series.points.map((pt, idx) => {
     const x =
-      series.points.length > 1
-        ? padX + (idx / (series.points.length - 1)) * plotW
-        : width / 2;
-    const norm =
-      series.maxUsd === series.minUsd
-        ? 0.5
-        : (pt.handleUsd - series.minUsd) / range;
-    const y = padY + (1 - norm) * plotH;
-    return { x, y, ...pt };
-  });
+      series.points.length > 1 ? padX + (idx / (series.points.length - 1)) * plotW : width / 2
+    const norm = series.maxUsd === series.minUsd ? 0.5 : (pt.handleUsd - series.minUsd) / range
+    const y = padY + (1 - norm) * plotH
+    return { x, y, ...pt }
+  })
 
-  const polylinePoints = coords
-    .map((c) => `${c.x.toFixed(1)},${c.y.toFixed(1)}`)
-    .join(" ");
+  const polylinePoints = coords.map((c) => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(" ")
   const areaPath =
     coords.length > 0
       ? `M ${coords[0]!.x.toFixed(1)} ${(height - padY).toFixed(1)} ` +
         coords.map((c) => `L ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(" ") +
         ` L ${coords[coords.length - 1]!.x.toFixed(1)} ${(height - padY).toFixed(1)} Z`
-      : "";
+      : ""
   const avgNorm =
     series.maxUsd === series.minUsd
       ? 0.5
-      : Math.max(0, Math.min(1, (series.dailyAvgUsd - series.minUsd) / range));
-  const avgY = padY + (1 - avgNorm) * plotH;
-  const latestCoord = coords[coords.length - 1]!;
+      : Math.max(0, Math.min(1, (series.dailyAvgUsd - series.minUsd) / range))
+  const avgY = padY + (1 - avgNorm) * plotH
+  const latestCoord = coords[coords.length - 1]!
 
   return (
     <div
@@ -474,172 +438,178 @@ function AgentHandleTrendSparkline({
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 export interface AgentInspectorModalProps {
-  readonly agentId: string;
-  readonly rankings?: NormalizedRankingsResult | null | undefined;
-  readonly onClose: () => void;
-  readonly onSelectAgent: (agentId: string) => void;
-  readonly onSelectCustomerById: (customerId: string) => void;
-  readonly onInspectPty: (targetId: string) => void;
+  readonly agentId: string
+  readonly rankings?: NormalizedRankingsResult | null | undefined
+  readonly initialDetail?: AgentDetailApiResponse | null | undefined
+  readonly onClose: () => void
+  readonly onSelectAgent: (agentId: string) => void
+  readonly onSelectCustomerById: (customerId: string) => void
+  readonly onInspectPty: (targetId: string) => void
 }
 
 function formatSignedUsd(value: number): string {
-  const abs = Math.abs(Math.round(value)).toLocaleString();
-  if (value > 0) return `+$${abs}`;
-  if (value < 0) return `-$${abs}`;
-  return "$0";
+  const abs = Math.abs(Math.round(value)).toLocaleString()
+  if (value > 0) return `+$${abs}`
+  if (value < 0) return `-$${abs}`
+  return "$0"
 }
 
 export function AgentInspectorModal({
   agentId,
   rankings = null,
+  initialDetail = null,
   onClose,
   onSelectAgent,
   onSelectCustomerById,
   onInspectPty,
 }: AgentInspectorModalProps): React.ReactElement {
-  const [detail, setDetail] = useState<AgentDetailApiResponse | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [detail, setDetail] = useState<AgentDetailApiResponse | null>(initialDetail)
+  const [loading, setLoading] = useState<boolean>(!initialDetail)
+  const [error, setError] = useState<string | null>(null)
   const [linkMenu, setLinkMenu] = useState<{
-    readonly x: number;
-    readonly y: number;
-  } | null>(null);
-  const [linkCopied, setLinkCopied] = useState<boolean>(false);
-  const linkMenuRef = useRef<HTMLDivElement | null>(null);
-  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    readonly x: number
+    readonly y: number
+  } | null>(null)
+  const [linkCopied, setLinkCopied] = useState<boolean>(false)
+  const linkMenuRef = useRef<HTMLDivElement | null>(null)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const standaloneHref = getLocalAgentHref(agentId);
+  const standaloneHref = getLocalAgentHref(agentId)
 
   const telemetry = useMemo(
     () => buildAgentInspectorTelemetry(agentId, rankings),
     [agentId, rankings],
-  );
+  )
 
   useEffect(() => {
     return () => {
       if (copyTimerRef.current !== null) {
-        clearTimeout(copyTimerRef.current);
+        clearTimeout(copyTimerRef.current)
       }
-    };
-  }, []);
+    }
+  }, [])
 
   // Dismiss modal on Escape when context menu is not open
   useEffect(() => {
     const handleModalKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         if (linkMenu) {
-          setLinkMenu(null);
+          setLinkMenu(null)
         } else {
-          onClose();
+          onClose()
         }
       }
-    };
-    window.addEventListener("keydown", handleModalKeyDown);
-    return () => window.removeEventListener("keydown", handleModalKeyDown);
-  }, [linkMenu, onClose]);
+    }
+    window.addEventListener("keydown", handleModalKeyDown)
+    return () => window.removeEventListener("keydown", handleModalKeyDown)
+  }, [linkMenu, onClose])
 
   useEffect(() => {
-    if (!linkMenu) return;
+    if (!linkMenu) return
     const handlePointerDown = (event: MouseEvent) => {
       if (
         linkMenuRef.current &&
         event.target instanceof Node &&
         linkMenuRef.current.contains(event.target)
       ) {
-        return;
+        return
       }
-      setLinkMenu(null);
-    };
-    const handleDismiss = () => setLinkMenu(null);
-    window.addEventListener("mousedown", handlePointerDown);
-    window.addEventListener("scroll", handleDismiss, true);
-    window.addEventListener("resize", handleDismiss);
+      setLinkMenu(null)
+    }
+    const handleDismiss = () => setLinkMenu(null)
+    window.addEventListener("mousedown", handlePointerDown)
+    window.addEventListener("scroll", handleDismiss, true)
+    window.addEventListener("resize", handleDismiss)
     return () => {
-      window.removeEventListener("mousedown", handlePointerDown);
-      window.removeEventListener("scroll", handleDismiss, true);
-      window.removeEventListener("resize", handleDismiss);
-    };
-  }, [linkMenu]);
+      window.removeEventListener("mousedown", handlePointerDown)
+      window.removeEventListener("scroll", handleDismiss, true)
+      window.removeEventListener("resize", handleDismiss)
+    }
+  }, [linkMenu])
 
   const handleLinkContextMenu = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const menuWidth = 224;
-    const menuHeight = 112;
-    const margin = 10;
+    e.preventDefault()
+    e.stopPropagation()
+    const menuWidth = 224
+    const menuHeight = 112
+    const margin = 10
     const maxX =
       typeof window !== "undefined"
         ? Math.max(margin, window.innerWidth - menuWidth - margin)
-        : e.clientX;
+        : e.clientX
     const maxY =
       typeof window !== "undefined"
         ? Math.max(margin, window.innerHeight - menuHeight - margin)
-        : e.clientY;
+        : e.clientY
     setLinkMenu({
       x: Math.min(Math.max(margin, e.clientX), maxX),
       y: Math.min(Math.max(margin, e.clientY), maxY),
-    });
-  };
+    })
+  }
 
   const handleCopyLink = () => {
     const absoluteUrl =
       typeof window !== "undefined"
         ? new URL(standaloneHref, window.location.origin).toString()
-        : standaloneHref;
-    void copyText(absoluteUrl);
-    setLinkCopied(true);
-    setLinkMenu(null);
+        : standaloneHref
+    void copyText(absoluteUrl)
+    setLinkCopied(true)
+    setLinkMenu(null)
     if (copyTimerRef.current !== null) {
-      clearTimeout(copyTimerRef.current);
+      clearTimeout(copyTimerRef.current)
     }
     copyTimerRef.current = setTimeout(() => {
-      setLinkCopied(false);
-    }, 1800);
-  };
+      setLinkCopied(false)
+    }, 1800)
+  }
 
   useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError(null);
+    if (
+      initialDetail &&
+      initialDetail.agentId.trim().toUpperCase() === agentId.trim().toUpperCase()
+    ) {
+      setDetail(initialDetail)
+      setLoading(false)
+      setError(null)
+      return
+    }
+    let active = true
+    setLoading(true)
+    setError(null)
     trackedFetch(`/api/agent/${encodeURIComponent(agentId)}`)
       .then(async (res) => {
         if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
+          throw new Error(`HTTP ${res.status}`)
         }
-        return (await res.json()) as AgentDetailApiResponse;
+        return (await res.json()) as AgentDetailApiResponse
       })
       .then((json) => {
-        if (active) setDetail(json);
+        if (active) setDetail(json)
       })
       .catch((err) => {
         if (active) {
-          setError(err instanceof Error ? err.message : String(err));
+          setError(err instanceof Error ? err.message : String(err))
         }
       })
       .finally(() => {
-        if (active) setLoading(false);
-      });
+        if (active) setLoading(false)
+      })
     return () => {
-      active = false;
-    };
-  }, [agentId]);
+      active = false
+    }
+  }, [agentId, initialDetail])
 
-  const effectiveHandleUsd =
-    telemetry?.handleUsd ?? detail?.conduit30d?.handleUsd ?? null;
-  const effectiveWagers =
-    telemetry?.wagers ?? detail?.conduit30d?.wagers ?? null;
+  const effectiveHandleUsd = telemetry?.handleUsd ?? detail?.conduit30d?.handleUsd ?? null
+  const effectiveWagers = telemetry?.wagers ?? detail?.conduit30d?.wagers ?? null
   const effectiveConcPct =
-    telemetry?.concentrationPct ?? detail?.conduit30d?.concentrationPct ?? null;
-  const effectiveTopCustomer =
-    telemetry?.topCustomer ?? detail?.conduit30d?.topCustomer ?? null;
-  const effectiveIsProxy =
-    telemetry?.isProxyConduit ?? detail?.conduit30d?.isProxyConduit ?? false;
-  const effectiveMaster =
-    detail?.masterAgent ?? telemetry?.masterAgent ?? "—";
+    telemetry?.concentrationPct ?? detail?.conduit30d?.concentrationPct ?? null
+  const effectiveTopCustomer = telemetry?.topCustomer ?? detail?.conduit30d?.topCustomer ?? null
+  const effectiveIsProxy = telemetry?.isProxyConduit ?? detail?.conduit30d?.isProxyConduit ?? false
+  const effectiveMaster = detail?.masterAgent ?? telemetry?.masterAgent ?? "—"
   const trendSeries = useMemo(
     () =>
       buildAgentHandleTrendSeries(
@@ -648,34 +618,34 @@ export function AgentInspectorModal({
         agentId,
       ),
     [effectiveHandleUsd, telemetry?.handleDelta24hPct, agentId],
-  );
+  )
 
   const handleSubConduitRowClick = (
     event: React.MouseEvent<HTMLTableRowElement>,
     targetAgentId: string,
   ) => {
-    if (event.metaKey || event.ctrlKey || event.button !== 0) return;
-    const target = event.target as Element | null;
+    if (event.metaKey || event.ctrlKey || event.button !== 0) return
+    const target = event.target as Element | null
     if (
       target &&
       typeof target.closest === "function" &&
       target.closest('button, a, input, select, textarea, [role="button"]')
     ) {
-      return;
+      return
     }
-    onSelectAgent(targetAgentId);
-  };
+    onSelectAgent(targetAgentId)
+  }
 
   const handleSubConduitRowKeyDown = (
     event: React.KeyboardEvent<HTMLTableRowElement>,
     targetAgentId: string,
   ) => {
-    if (event.target !== event.currentTarget) return;
+    if (event.target !== event.currentTarget) return
     if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      onSelectAgent(targetAgentId);
+      event.preventDefault()
+      onSelectAgent(targetAgentId)
     }
-  };
+  }
 
   return (
     <div
@@ -746,12 +716,10 @@ export function AgentInspectorModal({
                 />
               )}
             </div>
-            <div
-              style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}
-            >
+            <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "2px" }}>
               Master Trunk: <b>{effectiveMaster}</b> · Level:{" "}
-              <b>{detail?.level ?? (telemetry?.role === "master" ? "Master" : "Sub-Agent")}</b>{" "}
-              · Type: <b>{detail?.agentType ?? (effectiveIsProxy ? "Proxy Conduit" : "Standard")}</b>{" "}
+              <b>{detail?.level ?? (telemetry?.role === "master" ? "Master" : "Sub-Agent")}</b> ·
+              Type: <b>{detail?.agentType ?? (effectiveIsProxy ? "Proxy Conduit" : "Standard")}</b>{" "}
               · autoExecute: false
             </div>
           </div>
@@ -810,8 +778,7 @@ export function AgentInspectorModal({
                     borderBottomWidth: "1px",
                     borderBottomStyle: "solid",
                     borderBottomColor: "rgba(30, 41, 59, 0.9)",
-                    fontFamily:
-                      "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
                     fontSize: "10px",
                     fontWeight: 700,
                     letterSpacing: "0.04em",
@@ -884,8 +851,8 @@ export function AgentInspectorModal({
               type="button"
               style={styles.actionBtn}
               onClick={() => {
-                onClose();
-                onInspectPty(agentId.toUpperCase());
+                onClose()
+                onInspectPty(agentId.toUpperCase())
               }}
             >
               Inspect in PTY
@@ -914,18 +881,14 @@ export function AgentInspectorModal({
               padding: "12px 14px",
               borderRadius: "8px",
               backgroundColor: "rgba(30, 41, 59, 0.85)",
-              border: effectiveIsProxy
-                ? "1px solid rgba(245, 158, 11, 0.6)"
-                : "1px solid #334155",
+              border: effectiveIsProxy ? "1px solid rgba(245, 158, 11, 0.6)" : "1px solid #334155",
               ...TABULAR_NUMS,
             }}
           >
             <div>
               <div style={styles.kpiLabel}>30d Handle</div>
               <div style={{ fontWeight: 700, fontSize: "16px", marginTop: "2px" }}>
-                {effectiveHandleUsd !== null
-                  ? `$${effectiveHandleUsd.toLocaleString()}`
-                  : "—"}
+                {effectiveHandleUsd !== null ? `$${effectiveHandleUsd.toLocaleString()}` : "—"}
               </div>
               <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>
                 {telemetry
@@ -985,9 +948,7 @@ export function AgentInspectorModal({
                   color: effectiveIsProxy ? "#fbbf24" : "#4ade80",
                 }}
               >
-                {effectiveConcPct !== null
-                  ? `${effectiveConcPct.toFixed(1)}%`
-                  : "—"}
+                {effectiveConcPct !== null ? `${effectiveConcPct.toFixed(1)}%` : "—"}
               </div>
               <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>
                 {effectiveTopCustomer ? `Top: ${effectiveTopCustomer}` : "No single concentration"}
@@ -995,9 +956,7 @@ export function AgentInspectorModal({
               </div>
             </div>
 
-            {trendSeries && (
-              <AgentHandleTrendSparkline series={trendSeries} agentId={agentId} />
-            )}
+            {trendSeries && <AgentHandleTrendSparkline series={trendSeries} agentId={agentId} />}
           </div>
         )}
 
@@ -1029,8 +988,7 @@ export function AgentInspectorModal({
                 </span>
               </h4>
               {telemetry.role !== "master" &&
-                telemetry.masterAgent.trim().toUpperCase() !==
-                  agentId.trim().toUpperCase() && (
+                telemetry.masterAgent.trim().toUpperCase() !== agentId.trim().toUpperCase() && (
                   <button
                     type="button"
                     onClick={() => onSelectAgent(telemetry.masterAgent)}
@@ -1071,9 +1029,7 @@ export function AgentInspectorModal({
                         tabIndex={0}
                         title={`Click row to inspect sub-conduit ${sc.agentId}`}
                         onClick={(e) => handleSubConduitRowClick(e, sc.agentId)}
-                        onKeyDown={(e) =>
-                          handleSubConduitRowKeyDown(e, sc.agentId)
-                        }
+                        onKeyDown={(e) => handleSubConduitRowKeyDown(e, sc.agentId)}
                         style={
                           sc.isCurrentAgent
                             ? { backgroundColor: "rgba(56, 189, 248, 0.1)" }
@@ -1135,9 +1091,7 @@ export function AgentInspectorModal({
                                 style={{
                                   width: `${Math.min(100, sc.shareOfParentPct).toFixed(0)}%`,
                                   height: "100%",
-                                  backgroundColor: sc.isCurrentAgent
-                                    ? "#38bdf8"
-                                    : "#64748b",
+                                  backgroundColor: sc.isCurrentAgent ? "#38bdf8" : "#64748b",
                                 }}
                               />
                             </div>
@@ -1156,8 +1110,8 @@ export function AgentInspectorModal({
                             <button
                               type="button"
                               onClick={() => {
-                                onClose();
-                                onSelectCustomerById(sc.topCust);
+                                onClose()
+                                onSelectCustomerById(sc.topCust)
                               }}
                               style={{
                                 background: "none",
@@ -1187,8 +1141,7 @@ export function AgentInspectorModal({
                                 : "#4ade80",
                           }}
                         >
-                          {sc.concPct.toFixed(1)}%
-                          {sc.isProxyConduit ? " · Proxy" : ""}
+                          {sc.concPct.toFixed(1)}%{sc.isProxyConduit ? " · Proxy" : ""}
                         </td>
                       </tr>
                     ))}
@@ -1197,10 +1150,136 @@ export function AgentInspectorModal({
               </div>
             ) : (
               <div style={{ fontSize: "12px", color: "#64748b" }}>
-                No sub-conduits found for {agentId.toUpperCase()} in the current
-                30d rankings window.
+                No sub-conduits found for {agentId.toUpperCase()} in the current 30d rankings
+                window.
               </div>
             )}
+          </div>
+        )}
+
+        {detail &&
+          (detail.rootMasterAgent ||
+            (detail.ancestors && detail.ancestors.length > 0) ||
+            detail.seqNumber !== undefined ||
+            detail.login) && (
+            <div
+              data-agent-hierarchy-meta="true"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                padding: "12px 14px",
+                borderRadius: "8px",
+                backgroundColor: "rgba(15, 23, 42, 0.9)",
+                border: "1px solid #334155",
+                fontSize: "12px",
+              }}
+            >
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "14px", color: "#cbd5e1" }}>
+                <span>
+                  Root Master: <b>{detail.rootMasterAgent ?? "—"}</b>
+                </span>
+                <span>
+                  Parent Agent: <b>{detail.masterAgent ?? "—"}</b>
+                </span>
+                <span>
+                  Seq#: <b style={TABULAR_NUMS}>{detail.seqNumber ?? "—"}</b>
+                </span>
+                <span>
+                  Login: <b>{detail.login ?? "—"}</b>
+                </span>
+              </div>
+              {detail.ancestors && detail.ancestors.length > 0 && (
+                <div style={{ color: "#94a3b8", fontSize: "11.5px" }}>
+                  Lineage: {[...detail.ancestors, detail.agentId.toUpperCase()].join(" → ")}
+                </div>
+              )}
+            </div>
+          )}
+
+        {detail?.rateCard && (
+          <div
+            data-agent-rate-card="true"
+            style={{
+              padding: "12px 14px",
+              borderRadius: "8px",
+              backgroundColor: "rgba(15, 23, 42, 0.85)",
+              border: "1px solid #334155",
+            }}
+          >
+            <div
+              style={{ fontSize: "12px", fontWeight: 700, color: "#cbd5e1", marginBottom: "8px" }}
+            >
+              Fantasy402 Agent Rate Card ({detail.rateCard.activeRateCount} active · $
+              {detail.rateCard.totalMonthlyRateUsd.toLocaleString()}/mo)
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", fontSize: "11.5px" }}>
+              {getActiveRateEntries(detail.rateCard).map((entry) => (
+                <span
+                  key={entry.key}
+                  style={{
+                    padding: "4px 8px",
+                    borderRadius: "6px",
+                    backgroundColor: "rgba(56, 189, 248, 0.12)",
+                    border: "1px solid rgba(56, 189, 248, 0.25)",
+                    color: "#e2e8f0",
+                    ...TABULAR_NUMS,
+                  }}
+                >
+                  {`${entry.label}: $${entry.value}`}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {detail && detail.directoryPlayers && detail.directoryPlayers.length > 0 && (
+          <div data-agent-directory-players="true">
+            <h4
+              style={{
+                margin: "0 0 8px 0",
+                fontSize: "13px",
+                color: "#cbd5e1",
+              }}
+            >
+              Assigned Players ({detail.directoryPlayerCount ?? detail.directoryPlayers.length})
+            </h4>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Customer ID</th>
+                  <th style={styles.th}>Login</th>
+                  <th style={styles.th}>Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detail.directoryPlayers.slice(0, 25).map((player) => (
+                  <tr key={`${player.agentId}:${player.customerId}`}>
+                    <td style={styles.td}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose()
+                          onSelectCustomerById(player.customerId)
+                        }}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#38bdf8",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          padding: 0,
+                        }}
+                      >
+                        {player.customerId}
+                      </button>
+                    </td>
+                    <td style={styles.td}>{player.login}</td>
+                    <td style={styles.td}>{player.nameFirst || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
 
@@ -1272,8 +1351,8 @@ export function AgentInspectorModal({
                           <button
                             type="button"
                             onClick={() => {
-                              onClose();
-                              onSelectCustomerById(c.id);
+                              onClose()
+                              onSelectCustomerById(c.id)
                             }}
                             style={{
                               background: "none",
@@ -1288,23 +1367,18 @@ export function AgentInspectorModal({
                           </button>
                         </td>
                         <td style={styles.td}>{c.tier}</td>
-                        <td style={{ ...styles.td, ...TABULAR_NUMS }}>
-                          {c.score.toFixed(1)}/10
-                        </td>
+                        <td style={{ ...styles.td, ...TABULAR_NUMS }}>{c.score.toFixed(1)}/10</td>
                         <td style={{ ...styles.td, ...TABULAR_NUMS }}>
                           ${c.recommendedLimitUsd.toLocaleString()}
                         </td>
-                        <td style={{ ...styles.td, ...TABULAR_NUMS }}>
-                          {c.holdPct.toFixed(1)}%
-                        </td>
+                        <td style={{ ...styles.td, ...TABULAR_NUMS }}>{c.holdPct.toFixed(1)}%</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               ) : (
                 <div style={{ fontSize: "12px", color: "#64748b" }}>
-                  No sharp watchlist customer rows linked directly to{" "}
-                  {agentId.toUpperCase()}.
+                  No sharp watchlist customer rows linked directly to {agentId.toUpperCase()}.
                 </div>
               )}
             </div>
@@ -1333,9 +1407,7 @@ export function AgentInspectorModal({
                   <tbody>
                     {detail.recentWagers.slice(0, 15).map((w) => (
                       <tr key={w.ticketId}>
-                        <td style={{ ...styles.td, ...TABULAR_NUMS }}>
-                          #{w.ticketId}
-                        </td>
+                        <td style={{ ...styles.td, ...TABULAR_NUMS }}>#{w.ticketId}</td>
                         <td style={styles.td}>{w.customerId}</td>
                         <td style={styles.td}>{w.writer}</td>
                         <td style={styles.td}>
@@ -1350,8 +1422,7 @@ export function AgentInspectorModal({
                 </table>
               ) : (
                 <div style={{ fontSize: "12px", color: "#64748b" }}>
-                  No recent wagers for {agentId.toUpperCase()} in the current
-                  Bet-Ticker window.
+                  No recent wagers for {agentId.toUpperCase()} in the current Bet-Ticker window.
                 </div>
               )}
             </div>
@@ -1359,5 +1430,5 @@ export function AgentInspectorModal({
         )}
       </div>
     </div>
-  );
+  )
 }

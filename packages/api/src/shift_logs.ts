@@ -1,5 +1,5 @@
 /**
- * @file shift_logs.ts
+ * @file packages/api/src/shift_logs.ts
  * @description Server-side ring-buffered shift session log store powering
  * `GET/POST /api/shift/logs` for the Operator Shift Handoff modal.
  *

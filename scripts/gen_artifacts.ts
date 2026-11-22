@@ -752,38 +752,88 @@ export function auditMarkdownDocs(
   return { docs, issues }
 }
 
+function formatAlignedMarkdownTable(
+  headers: readonly string[],
+  alignments: readonly ("left" | "right")[],
+  rows: readonly (readonly string[])[],
+): string {
+  const widths = headers.map((h, i) =>
+    Math.max(h.length, alignments[i] === "right" ? 4 : 3, ...rows.map((r) => (r[i] ?? "").length)),
+  )
+  const formatRow = (cells: readonly string[], rowAligns?: readonly ("left" | "right")[]) =>
+    `| ${cells
+      .map((cell, i) => {
+        const w = widths[i]!
+        return rowAligns?.[i] === "right" ? cell.padStart(w, " ") : cell.padEnd(w, " ")
+      })
+      .join(" | ")} |`
+  const sepRow = `| ${alignments
+    .map((align, i) => {
+      const w = widths[i]!
+      return align === "right" ? `${"-".repeat(w - 1)}:` : `:${"-".repeat(w - 1)}`
+    })
+    .join(" | ")} |`
+  return [
+    formatRow(headers, alignments),
+    sepRow,
+    ...rows.map((r) => formatRow(r, alignments)),
+  ].join("\n")
+}
+
 /**
  * Renders deterministic `docs/generated/ARTIFACTS_AND_CLI.md` from the manifest.
  */
 export function emitArtifactsAndCliMarkdown(manifest: ArtifactsManifest): string {
-  const artifactRows = manifest.generatedArtifacts
-    .map(
-      (a) =>
-        `| \`${a.path}\` | ${a.role} | \`${a.source}\` | ${a.bytes.toLocaleString("en-US")} B | \`${a.sha256.slice(0, 12)}\` |`,
-    )
-    .join("\n")
+  const cliTable = formatAlignedMarkdownTable(
+    ["Command", "Purpose"],
+    ["left", "left"],
+    manifest.cliCommands.map((c) => [`\`${c.command.replace(/\|/g, "\\|")}\``, c.description]),
+  )
 
-  const diagramRows = manifest.pipelineDiagrams.entries
-    .map(
-      (d) =>
-        `| \`${d.id}\` | \`${d.slug}\` | \`${d.svgSha256.slice(0, 12)}\` | \`${d.pngSha256.slice(0, 12)}\` | \`${d.webpSha256.slice(0, 12)}\` |`,
-    )
-    .join("\n")
+  const artifactTable = formatAlignedMarkdownTable(
+    ["Artifact Path", "Role", "Source", "Size", "SHA-256 (12)"],
+    ["left", "left", "left", "right", "left"],
+    manifest.generatedArtifacts.map((a) => [
+      `\`${a.path}\``,
+      a.role,
+      `\`${a.source}\``,
+      `${a.bytes.toLocaleString("en-US")} B`,
+      `\`${a.sha256.slice(0, 12)}\``,
+    ]),
+  )
 
-  const docRows = manifest.markdownDocs
-    .map(
-      (d) =>
-        `| [\`${d.path}\`](../../${d.path}) | ${d.title.replace(/\|/g, "\\|")} | ${d.lines} | ${d.localLinksChecked} | \`${d.sha256.slice(0, 12)}\` |`,
-    )
-    .join("\n")
+  const diagramTable = formatAlignedMarkdownTable(
+    ["Artifact ID", "Slug", "SVG SHA-256", "PNG SHA-256", "WebP SHA-256"],
+    ["left", "left", "left", "left", "left"],
+    manifest.pipelineDiagrams.entries.map((d) => [
+      `\`${d.id}\``,
+      `\`${d.slug}\``,
+      `\`${d.svgSha256.slice(0, 12)}\``,
+      `\`${d.pngSha256.slice(0, 12)}\``,
+      `\`${d.webpSha256.slice(0, 12)}\``,
+    ]),
+  )
 
-  const cliRows = manifest.cliCommands
-    .map((c) => `| \`${c.command}\` | ${c.description} |`)
-    .join("\n")
+  const docTable = formatAlignedMarkdownTable(
+    ["Document", "Title", "Lines", "Local Links", "SHA-256 (12)"],
+    ["left", "left", "right", "right", "left"],
+    manifest.markdownDocs.map((d) => [
+      `[\`${d.path}\`](../../${d.path})`,
+      d.title.replace(/\|/g, "\\|"),
+      String(d.lines),
+      String(d.localLinksChecked),
+      `\`${d.sha256.slice(0, 12)}\``,
+    ]),
+  )
 
-  const scriptRows = Object.entries(manifest.packageScripts)
-    .map(([name, cmd]) => `| \`bun run ${name}\` | \`${cmd.replace(/\|/g, "\\|")}\` |`)
-    .join("\n")
+  const scriptTable = formatAlignedMarkdownTable(
+    ["Script", "Command"],
+    ["left", "left"],
+    Object.entries(manifest.packageScripts).map(([name, cmd]) => [
+      `\`bun run ${name}\``,
+      `\`${cmd.replace(/\|/g, "\\|")}\``,
+    ]),
+  )
 
   return `# SportsDesk Ops — Generated Artifacts & Unified Bun CLI
 
@@ -793,37 +843,27 @@ export function emitArtifactsAndCliMarkdown(manifest: ArtifactsManifest): string
 
 ## Unified Bun CLI (\`${manifest.cliEntrypoint}\`)
 
-| Command | Purpose |
-| :------ | :------ |
-${cliRows}
+${cliTable}
 
 ## Generated & Managed Artifacts
 
-| Artifact Path | Role | Source | Size | SHA-256 (12) |
-| :------------ | :--- | :----- | ---: | :----------- |
-${artifactRows}
+${artifactTable}
 
 ## Pipeline Diagram Integrity (\`${manifest.pipelineDiagrams.catalogPath}\`)
 
 Verified **${manifest.pipelineDiagrams.verifiedFiles}** raster/vector assets across **${manifest.pipelineDiagrams.totalArtifacts}** pipeline diagrams:
 
-| Artifact ID | Slug | SVG SHA-256 | PNG SHA-256 | WebP SHA-256 |
-| :---------- | :--- | :---------- | :---------- | :----------- |
-${diagramRows}
+${diagramTable}
 
 ## Verified Markdown Documentation Inventory
 
 Every local link across all **${manifest.markdownDocs.length}** tracked Markdown documents is checked by \`bun run docs:check\`:
 
-| Document | Title | Lines | Local Links | SHA-256 (12) |
-| :------- | :---- | ----: | ----------: | :----------- |
-${docRows}
+${docTable}
 
 ## Unified \`package.json\` Scripts
 
-| Script | Command |
-| :----- | :------ |
-${scriptRows}
+${scriptTable}
 `
 }
 

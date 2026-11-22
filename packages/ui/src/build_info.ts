@@ -1,5 +1,5 @@
 /**
- * @file build_info.ts
+ * @file packages/ui/src/build_info.ts
  * @description Build-time metadata injected by `Bun.build({ define })` in
  * `scripts/build_dashboard.ts`.
  *

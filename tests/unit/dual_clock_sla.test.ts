@@ -130,27 +130,27 @@ describe("DualClock SLA Evaluator — MonotonicClock & WallClock transitions", (
     )
 
     // Half-window publish age (20s >= 15s warn, <= 30s stale)
-    expect(evaluator.tickScalars(30, 0, 1, 0, 5, 31, wallMs - 20_000, wallMs - 5_000, 0, 10_000_000)).toBe(
-      SLA_STATE_WARN,
-    )
+    expect(
+      evaluator.tickScalars(30, 0, 1, 0, 5, 31, wallMs - 20_000, wallMs - 5_000, 0, 10_000_000),
+    ).toBe(SLA_STATE_WARN)
     expect((evaluator.reasonMask & SLA_REASON_PUBLISH_WARN) !== 0).toBe(true)
 
     // BLK_R2_PUBLISH_STALE (35s > 30s)
-    expect(evaluator.tickScalars(30, 0, 1, 0, 5, 31, wallMs - 35_000, wallMs - 5_000, 0, 10_000_000)).toBe(
-      SLA_STATE_STALE,
-    )
+    expect(
+      evaluator.tickScalars(30, 0, 1, 0, 5, 31, wallMs - 35_000, wallMs - 5_000, 0, 10_000_000),
+    ).toBe(SLA_STATE_STALE)
     expect((evaluator.reasonMask & SLA_REASON_PUBLISH_STALE) !== 0).toBe(true)
 
     // Half-window upstream data lag (40s >= 30s warn)
-    expect(evaluator.tickScalars(30, 0, 1, 0, 5, 31, wallMs - 2_000, wallMs - 40_000, 0, 10_000_000)).toBe(
-      SLA_STATE_WARN,
-    )
+    expect(
+      evaluator.tickScalars(30, 0, 1, 0, 5, 31, wallMs - 2_000, wallMs - 40_000, 0, 10_000_000),
+    ).toBe(SLA_STATE_WARN)
     expect((evaluator.reasonMask & SLA_REASON_WINDOW_LAG_WARN) !== 0).toBe(true)
 
     // BLK_R2_WINDOW_LAG_STALE (65s > 60s)
-    expect(evaluator.tickScalars(30, 0, 1, 0, 5, 31, wallMs - 2_000, wallMs - 65_000, 0, 10_000_000)).toBe(
-      SLA_STATE_STALE,
-    )
+    expect(
+      evaluator.tickScalars(30, 0, 1, 0, 5, 31, wallMs - 2_000, wallMs - 65_000, 0, 10_000_000),
+    ).toBe(SLA_STATE_STALE)
     expect((evaluator.reasonMask & SLA_REASON_WINDOW_LAG_STALE) !== 0).toBe(true)
 
     // Future wall-clock skew (> 5s in the future) latches SLA_POISON

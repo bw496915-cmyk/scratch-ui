@@ -7,8 +7,8 @@
  * AND server-side on ingest. Plaintext passwords are never transmitted or stored.
  */
 
-import type React from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import type React from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import {
   ChevronDown,
   ChevronRight,
@@ -18,27 +18,27 @@ import {
   ShieldCheck,
   Upload,
   Users,
-} from "lucide-react";
+} from "lucide-react"
 import {
   getActiveRateEntries,
   sanitizeFantasy402RawTextBeforeUpload,
   type AgentHierarchyDirectoryResponse,
   type AgentHierarchyIngestResponse,
   type AgentHierarchyNodeRecord,
-} from "@sportsdesk-ops/contracts";
-import { getDevCsrfToken, trackedFetch } from "../api_usage.ts";
-import { styles } from "../dashboard_styles.ts";
-import { SkeletonTableRows } from "./PanelSkeleton.tsx";
+} from "@sportsdesk-ops/contracts"
+import { getDevCsrfToken, trackedFetch } from "../api_usage.ts"
+import { styles } from "../dashboard_styles.ts"
+import { SkeletonTableRows } from "./PanelSkeleton.tsx"
 
 export interface AgentHierarchyPanelProps {
-  readonly onSelectAgent?: ((agentId: string) => void) | undefined;
-  readonly onSelectCustomerById?: ((customerId: string) => void) | undefined;
-  readonly initialDirectory?: AgentHierarchyDirectoryResponse | null | undefined;
+  readonly onSelectAgent?: ((agentId: string) => void) | undefined
+  readonly onSelectCustomerById?: ((customerId: string) => void) | undefined
+  readonly initialDirectory?: AgentHierarchyDirectoryResponse | null | undefined
 }
 
 const TABULAR_NUMS: React.CSSProperties = {
   fontVariantNumeric: "tabular-nums",
-};
+}
 
 /**
  * Representative synthetic Fantasy402 hierarchy fixture for quick one-click testing.
@@ -155,17 +155,17 @@ export const SAMPLE_FANTASY402_HIERARCHY_JSON = JSON.stringify(
   },
   null,
   2,
-);
+)
 
 function formatRateSummary(node: AgentHierarchyNodeRecord): string {
-  if (!node.rateCard) return "—";
-  const active = getActiveRateEntries(node.rateCard);
-  if (active.length === 0) return "$0";
+  if (!node.rateCard) return "—"
+  const active = getActiveRateEntries(node.rateCard)
+  if (active.length === 0) return "$0"
   const topTwo = active
     .slice(0, 2)
     .map((r) => `${r.label.split(" ")[0]} $${r.value}`)
-    .join(" · ");
-  return active.length > 2 ? `${topTwo} (+${active.length - 2})` : topTwo;
+    .join(" · ")
+  return active.length > 2 ? `${topTwo} (+${active.length - 2})` : topTwo
 }
 
 export function AgentHierarchyPanel({
@@ -173,74 +173,79 @@ export function AgentHierarchyPanel({
   onSelectCustomerById,
   initialDirectory = null,
 }: AgentHierarchyPanelProps): React.ReactElement {
-  const [directory, setDirectory] =
-    useState<AgentHierarchyDirectoryResponse | null>(initialDirectory);
-  const [loading, setLoading] = useState<boolean>(initialDirectory === null);
-  const [error, setError] = useState<string | null>(null);
+  const [directory, setDirectory] = useState<AgentHierarchyDirectoryResponse | null>(
+    initialDirectory,
+  )
+  const [loading, setLoading] = useState<boolean>(initialDirectory === null)
+  const [error, setError] = useState<string | null>(null)
 
-  const [query, setQuery] = useState<string>("");
-  const [rootFilter, setRootFilter] = useState<string>("ALL");
-  const [agentTypeFilter, setAgentTypeFilter] = useState<"ALL" | "M" | "A">(
-    "ALL",
-  );
-  const [levelFilter, setLevelFilter] = useState<string>("ALL");
-  const [pageOffset, setPageOffset] = useState<number>(0);
-  const [showPlayersTable, setShowPlayersTable] = useState<boolean>(false);
+  const [query, setQuery] = useState<string>("")
+  const [rootFilter, setRootFilter] = useState<string>("ALL")
+  const [agentTypeFilter, setAgentTypeFilter] = useState<"ALL" | "M" | "A">("ALL")
+  const [levelFilter, setLevelFilter] = useState<string>("ALL")
+  const [pageOffset, setPageOffset] = useState<number>(0)
+  const [showPlayersTable, setShowPlayersTable] = useState<boolean>(false)
 
-  const [ingestOpen, setIngestOpen] = useState<boolean>(false);
-  const [ingestText, setIngestText] = useState<string>("");
-  const [ingestBusy, setIngestBusy] = useState<boolean>(false);
+  const [ingestOpen, setIngestOpen] = useState<boolean>(false)
+  const [ingestText, setIngestText] = useState<string>("")
+  const [ingestBusy, setIngestBusy] = useState<boolean>(false)
   const [ingestMessage, setIngestMessage] = useState<{
-    readonly tone: "ok" | "error";
-    readonly text: string;
-  } | null>(null);
+    readonly tone: "ok" | "error"
+    readonly text: string
+  } | null>(null)
 
-  const pageSize = 50;
+  const pageSize = 50
 
   const fetchDirectory = useCallback(
     async (opts: {
-      readonly q: string;
-      readonly root: string;
-      readonly agentType: "ALL" | "M" | "A";
-      readonly level: string;
-      readonly offset: number;
+      readonly q: string
+      readonly root: string
+      readonly agentType: "ALL" | "M" | "A"
+      readonly level: string
+      readonly offset: number
     }) => {
-      setLoading(true);
-      setError(null);
+      setLoading(true)
+      setError(null)
       try {
-        const params = new URLSearchParams();
-        if (opts.q.trim()) params.set("q", opts.q.trim());
-        if (opts.root !== "ALL") params.set("root", opts.root);
-        if (opts.agentType !== "ALL") params.set("agentType", opts.agentType);
-        if (opts.level !== "ALL") params.set("level", opts.level);
-        params.set("limit", String(pageSize));
-        params.set("offset", String(opts.offset));
+        const params = new URLSearchParams()
+        if (opts.q.trim()) params.set("q", opts.q.trim())
+        if (opts.root !== "ALL") params.set("root", opts.root)
+        if (opts.agentType !== "ALL") params.set("agentType", opts.agentType)
+        if (opts.level !== "ALL") params.set("level", opts.level)
+        params.set("limit", String(pageSize))
+        params.set("offset", String(opts.offset))
 
-        const res = await trackedFetch(
-          `/api/agent-tree/directory?${params.toString()}`,
-          { credentials: "include" },
-        );
+        const res = await trackedFetch(`/api/agent-tree/directory?${params.toString()}`, {
+          credentials: "include",
+        })
         if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
+          throw new Error(`HTTP ${res.status}`)
         }
-        const data = (await res.json()) as AgentHierarchyDirectoryResponse;
-        setDirectory(data);
+        const data = (await res.json()) as AgentHierarchyDirectoryResponse
+        setDirectory(data)
       } catch (err) {
         setError(
           err instanceof Error
             ? err.message
             : "Failed to load Fantasy402 agent hierarchy directory",
-        );
+        )
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
     },
     [],
-  );
+  )
 
   useEffect(() => {
-    if (initialDirectory !== null && !query && rootFilter === "ALL" && agentTypeFilter === "ALL" && levelFilter === "ALL" && pageOffset === 0) {
-      return;
+    if (
+      initialDirectory !== null &&
+      !query &&
+      rootFilter === "ALL" &&
+      agentTypeFilter === "ALL" &&
+      levelFilter === "ALL" &&
+      pageOffset === 0
+    ) {
+      return
     }
     const timer = setTimeout(() => {
       void fetchDirectory({
@@ -249,9 +254,9 @@ export function AgentHierarchyPanel({
         agentType: agentTypeFilter,
         level: levelFilter,
         offset: pageOffset,
-      });
-    }, 120);
-    return () => clearTimeout(timer);
+      })
+    }, 120)
+    return () => clearTimeout(timer)
   }, [
     fetchDirectory,
     initialDirectory,
@@ -260,53 +265,49 @@ export function AgentHierarchyPanel({
     agentTypeFilter,
     levelFilter,
     pageOffset,
-  ]);
+  ])
 
   const handleIngestSubmit = async () => {
-    const trimmed = ingestText.trim();
+    const trimmed = ingestText.trim()
     if (!trimmed) {
       setIngestMessage({
         tone: "error",
         text: 'Paste a Fantasy402 JSON payload ({ "EXTRA": false, "GENERAL": [...], "PLAYERS": [...] }) before ingesting.',
-      });
-      return;
+      })
+      return
     }
 
-    setIngestBusy(true);
-    setIngestMessage(null);
+    setIngestBusy(true)
+    setIngestMessage(null)
     try {
       // Defense-in-depth: strip any PLAYERS[].Password fields in the browser BEFORE POSTing
-      const preflight = sanitizeFantasy402RawTextBeforeUpload(trimmed);
-      const csrf = getDevCsrfToken();
+      const preflight = sanitizeFantasy402RawTextBeforeUpload(trimmed)
+      const csrf = getDevCsrfToken()
       const headers: Record<string, string> = {
-        "Content-Type": preflight.parsedAsJson
-          ? "application/json"
-          : "text/plain",
-      };
-      if (csrf) headers["x-csrf-token"] = csrf;
+        "Content-Type": preflight.parsedAsJson ? "application/json" : "text/plain",
+      }
+      if (csrf) headers["x-csrf-token"] = csrf
 
       const res = await trackedFetch("/api/agent-tree/ingest", {
         method: "POST",
         credentials: "include",
         headers,
         body: preflight.sanitizedText,
-      });
+      })
 
       const body = (await res.json()) as
-        | AgentHierarchyIngestResponse
-        | { readonly ok?: false; readonly error?: string };
+        AgentHierarchyIngestResponse | { readonly ok?: false; readonly error?: string }
 
       if (!res.ok || !("ok" in body) || !body.ok) {
         const errMsg =
           "error" in body && typeof body.error === "string"
             ? body.error
-            : `Ingest failed (HTTP ${res.status})`;
-        setIngestMessage({ tone: "error", text: errMsg });
-        return;
+            : `Ingest failed (HTTP ${res.status})`
+        setIngestMessage({ tone: "error", text: errMsg })
+        return
       }
 
-      const totalStripped =
-        preflight.passwordsStripped + body.passwordsStripped;
+      const totalStripped = preflight.passwordsStripped + body.passwordsStripped
       setIngestMessage({
         tone: "ok",
         text: `Ingested ${body.ingestedAgents.toLocaleString()} agents & ${body.ingestedPlayers.toLocaleString()} players.${
@@ -314,10 +315,10 @@ export function AgentHierarchyPanel({
             ? ` Stripped ${totalStripped.toLocaleString()} password field(s) before storage.`
             : " Zero passwords retained."
         }`,
-      });
-      setPageOffset(0);
+      })
+      setPageOffset(0)
       if (body.ingestedPlayers > 0) {
-        setShowPlayersTable(true);
+        setShowPlayersTable(true)
       }
       await fetchDirectory({
         q: query,
@@ -325,93 +326,85 @@ export function AgentHierarchyPanel({
         agentType: agentTypeFilter,
         level: levelFilter,
         offset: 0,
-      });
+      })
     } catch (err) {
       setIngestMessage({
         tone: "error",
         text: err instanceof Error ? err.message : "Failed to ingest hierarchy payload",
-      });
+      })
     } finally {
-      setIngestBusy(false);
+      setIngestBusy(false)
     }
-  };
+  }
 
   const handleResetToBaseline = async () => {
-    setIngestBusy(true);
-    setIngestMessage(null);
+    setIngestBusy(true)
+    setIngestMessage(null)
     try {
-      const csrf = getDevCsrfToken();
-      const headers: Record<string, string> = {};
-      if (csrf) headers["x-csrf-token"] = csrf;
+      const csrf = getDevCsrfToken()
+      const headers: Record<string, string> = {}
+      if (csrf) headers["x-csrf-token"] = csrf
       const res = await trackedFetch("/api/agent-tree/reset", {
         method: "POST",
         credentials: "include",
         headers,
-      });
+      })
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(
-          body.error ?? `Admin role required to reset hierarchy (HTTP ${res.status})`,
-        );
+        const body = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new Error(body.error ?? `Admin role required to reset hierarchy (HTTP ${res.status})`)
       }
-      setIngestText("");
-      setShowPlayersTable(false);
-      setPageOffset(0);
+      setIngestText("")
+      setShowPlayersTable(false)
+      setPageOffset(0)
       setIngestMessage({
         tone: "ok",
         text: "Restored disk baseline agent hierarchy (data/agent-tree.json).",
-      });
+      })
       await fetchDirectory({
         q: query,
         root: rootFilter,
         agentType: agentTypeFilter,
         level: levelFilter,
         offset: 0,
-      });
+      })
     } catch (err) {
       setIngestMessage({
         tone: "error",
         text: err instanceof Error ? err.message : "Failed to reset hierarchy",
-      });
+      })
     } finally {
-      setIngestBusy(false);
+      setIngestBusy(false)
     }
-  };
+  }
 
-  const summary = directory?.summary ?? null;
+  const summary = directory?.summary ?? null
   const levelOptions = useMemo(() => {
-    if (!summary) return [];
+    if (!summary) return []
     return Object.entries(summary.levelCounts)
       .map(([lvl, count]) => ({ level: Number(lvl), count }))
       .filter((x) => Number.isFinite(x.level))
-      .sort((a, b) => a.level - b.level);
-  }, [summary]);
+      .sort((a, b) => a.level - b.level)
+  }, [summary])
 
-  const handleRowClick = (
-    e: React.MouseEvent<HTMLTableRowElement>,
-    agentId: string,
-  ) => {
-    if (!onSelectAgent) return;
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    const target = e.target as HTMLElement | null;
-    if (target?.closest("button, a, input, select")) return;
-    onSelectAgent(agentId);
-  };
+  const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>, agentId: string) => {
+    if (!onSelectAgent) return
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+    const target = e.target as HTMLElement | null
+    if (target?.closest("button, a, input, select")) return
+    onSelectAgent(agentId)
+  }
 
-  const handleRowKeyDown = (
-    e: React.KeyboardEvent<HTMLTableRowElement>,
-    agentId: string,
-  ) => {
-    if (!onSelectAgent) return;
-    if (e.key !== "Enter" && e.key !== " ") return;
-    if (e.target !== e.currentTarget) return;
-    e.preventDefault();
-    onSelectAgent(agentId);
-  };
+  const handleRowKeyDown = (e: React.KeyboardEvent<HTMLTableRowElement>, agentId: string) => {
+    if (!onSelectAgent) return
+    if (e.key !== "Enter" && e.key !== " ") return
+    if (e.target !== e.currentTarget) return
+    e.preventDefault()
+    onSelectAgent(agentId)
+  }
 
-  const totalMatchedNodes = directory?.totalMatchedNodes ?? 0;
-  const pageStart = totalMatchedNodes === 0 ? 0 : pageOffset + 1;
-  const pageEnd = Math.min(pageOffset + pageSize, totalMatchedNodes);
+  const totalMatchedNodes = directory?.totalMatchedNodes ?? 0
+  const pageStart = totalMatchedNodes === 0 ? 0 : pageOffset + 1
+  const pageEnd = Math.min(pageOffset + pageSize, totalMatchedNodes)
 
   return (
     <section
@@ -509,9 +502,7 @@ export function AgentHierarchyPanel({
               gap: "6px",
               whiteSpace: "nowrap",
               borderColor: ingestOpen ? "#38bdf8" : undefined,
-              backgroundColor: ingestOpen
-                ? "rgba(56, 189, 248, 0.16)"
-                : undefined,
+              backgroundColor: ingestOpen ? "rgba(56, 189, 248, 0.16)" : undefined,
             }}
           >
             <Upload size={13} aria-hidden="true" />
@@ -579,7 +570,11 @@ export function AgentHierarchyPanel({
                 gap: "6px",
               }}
             >
-              <ShieldCheck size={14} style={{ color: "#4ade80", flexShrink: 0 }} aria-hidden="true" />
+              <ShieldCheck
+                size={14}
+                style={{ color: "#4ade80", flexShrink: 0 }}
+                aria-hidden="true"
+              />
               <span>
                 Paste Fantasy402 <code>getListAgenstByAgent</code> JSON (
                 <code>{"{ EXTRA, GENERAL, PLAYERS }"}</code>).{" "}
@@ -592,8 +587,8 @@ export function AgentHierarchyPanel({
               type="button"
               data-hierarchy-load-sample="true"
               onClick={() => {
-                setIngestText(SAMPLE_FANTASY402_HIERARCHY_JSON);
-                setIngestMessage(null);
+                setIngestText(SAMPLE_FANTASY402_HIERARCHY_JSON)
+                setIngestMessage(null)
               }}
               style={{
                 ...styles.actionBtn,
@@ -640,16 +635,15 @@ export function AgentHierarchyPanel({
             }}
           >
             <div style={{ fontSize: "11.5px", color: "#94a3b8" }}>
-              Tip: In Chrome DevTools, right-click the API response object and
-              choose <em>Copy object</em> so arrays are not truncated as{" "}
-              <code>[100 … 199]</code>.
+              Tip: In Chrome DevTools, right-click the API response object and choose{" "}
+              <em>Copy object</em> so arrays are not truncated as <code>[100 … 199]</code>.
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <button
                 type="button"
                 onClick={() => {
-                  setIngestText("");
-                  setIngestMessage(null);
+                  setIngestText("")
+                  setIngestMessage(null)
                 }}
                 style={{
                   ...styles.actionBtn,
@@ -737,8 +731,8 @@ export function AgentHierarchyPanel({
               style={styles.searchInput}
               value={query}
               onChange={(e) => {
-                setQuery(e.target.value);
-                setPageOffset(0);
+                setQuery(e.target.value)
+                setPageOffset(0)
               }}
               placeholder="Search AgentID, Seq#, Parent, or Player ID / Name..."
               aria-label="Search Fantasy402 agent tree and players"
@@ -771,8 +765,8 @@ export function AgentHierarchyPanel({
                 type="button"
                 data-hierarchy-type-filter={opt.id}
                 onClick={() => {
-                  setAgentTypeFilter(opt.id);
-                  setPageOffset(0);
+                  setAgentTypeFilter(opt.id)
+                  setPageOffset(0)
                 }}
                 style={{
                   padding: "4px 9px",
@@ -783,9 +777,7 @@ export function AgentHierarchyPanel({
                   cursor: "pointer",
                   whiteSpace: "nowrap",
                   backgroundColor:
-                    agentTypeFilter === opt.id
-                      ? "rgba(56, 189, 248, 0.2)"
-                      : "transparent",
+                    agentTypeFilter === opt.id ? "rgba(56, 189, 248, 0.2)" : "transparent",
                   color: agentTypeFilter === opt.id ? "#38bdf8" : "#94a3b8",
                 }}
               >
@@ -800,8 +792,8 @@ export function AgentHierarchyPanel({
             data-hierarchy-root-select="true"
             value={rootFilter}
             onChange={(e) => {
-              setRootFilter(e.target.value);
-              setPageOffset(0);
+              setRootFilter(e.target.value)
+              setPageOffset(0)
             }}
             style={{
               backgroundColor: "#0f172a",
@@ -812,9 +804,7 @@ export function AgentHierarchyPanel({
               fontSize: "12px",
             }}
           >
-            <option value="ALL">
-              All Root Trunks ({summary?.rootCount ?? 0})
-            </option>
+            <option value="ALL">All Root Trunks ({summary?.rootCount ?? 0})</option>
             {(summary?.roots ?? []).slice(0, 40).map((root) => (
               <option key={root} value={root}>
                 Root: {root}
@@ -828,8 +818,8 @@ export function AgentHierarchyPanel({
             data-hierarchy-level-select="true"
             value={levelFilter}
             onChange={(e) => {
-              setLevelFilter(e.target.value);
-              setPageOffset(0);
+              setLevelFilter(e.target.value)
+              setPageOffset(0)
             }}
             style={{
               backgroundColor: "#0f172a",
@@ -864,9 +854,7 @@ export function AgentHierarchyPanel({
               gap: "6px",
               whiteSpace: "nowrap",
               borderColor: showPlayersTable ? "#38bdf8" : undefined,
-              backgroundColor: showPlayersTable
-                ? "rgba(56, 189, 248, 0.16)"
-                : undefined,
+              backgroundColor: showPlayersTable ? "rgba(56, 189, 248, 0.16)" : undefined,
             }}
           >
             <Users size={12} aria-hidden="true" />
@@ -913,27 +901,16 @@ export function AgentHierarchyPanel({
             {loading && !directory ? (
               <SkeletonTableRows
                 rowCount={5}
-                columnWidths={[
-                  "78%",
-                  "64%",
-                  "54%",
-                  "68%",
-                  "66%",
-                  "52%",
-                  "72%",
-                  "48%",
-                ]}
+                columnWidths={["78%", "64%", "54%", "68%", "66%", "52%", "72%", "48%"]}
                 skeletonId="agent-hierarchy-rows"
               />
             ) : directory && directory.nodes.length > 0 ? (
               directory.nodes.map((node) => {
-                const indentPx = Math.min(6, Math.max(0, node.level - 1)) * 14;
+                const indentPx = Math.min(6, Math.max(0, node.level - 1)) * 14
                 return (
                   <tr
                     key={node.agentId}
-                    className={
-                      onSelectAgent ? "sd-rankings-clickable-row" : undefined
-                    }
+                    className={onSelectAgent ? "sd-rankings-clickable-row" : undefined}
                     data-hierarchy-row-agent={node.agentId}
                     tabIndex={onSelectAgent ? 0 : undefined}
                     title={
@@ -969,8 +946,7 @@ export function AgentHierarchyPanel({
                             background: "none",
                             border: "none",
                             padding: 0,
-                            color:
-                              node.agentType === "M" ? "#38bdf8" : "#e2e8f0",
+                            color: node.agentType === "M" ? "#38bdf8" : "#e2e8f0",
                             fontWeight: node.agentType === "M" ? 700 : 600,
                             cursor: onSelectAgent ? "pointer" : "default",
                             fontSize: "12.5px",
@@ -1026,9 +1002,7 @@ export function AgentHierarchyPanel({
                           {node.parentAgentId}
                         </button>
                       ) : (
-                        <span style={{ color: "#64748b", fontSize: "12px" }}>
-                          Root
-                        </span>
+                        <span style={{ color: "#64748b", fontSize: "12px" }}>Root</span>
                       )}
                     </td>
                     <td style={{ ...styles.td, color: "#94a3b8", fontSize: "12px" }}>
@@ -1071,7 +1045,7 @@ export function AgentHierarchyPanel({
                       {node.playerCount.toLocaleString()}
                     </td>
                   </tr>
-                );
+                )
               })
             ) : (
               <tr>
@@ -1108,8 +1082,7 @@ export function AgentHierarchyPanel({
         >
           <span>
             Showing {pageStart.toLocaleString()}–{pageEnd.toLocaleString()} of{" "}
-            {totalMatchedNodes.toLocaleString()} matched agents · Source:{" "}
-            {summary?.sourceLabel}
+            {totalMatchedNodes.toLocaleString()} matched agents · Source: {summary?.sourceLabel}
           </span>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
             <button
@@ -1133,8 +1106,7 @@ export function AgentHierarchyPanel({
                 ...styles.actionBtn,
                 padding: "4px 10px",
                 fontSize: "11.5px",
-                opacity:
-                  pageOffset + pageSize >= totalMatchedNodes ? 0.45 : 1,
+                opacity: pageOffset + pageSize >= totalMatchedNodes ? 0.45 : 1,
               }}
             >
               Next
@@ -1168,8 +1140,8 @@ export function AgentHierarchyPanel({
             }}
           >
             <span>
-              Sanitized Player Roster ({directory.players.length.toLocaleString()}{" "}
-              of {directory.totalMatchedPlayers.toLocaleString()})
+              Sanitized Player Roster ({directory.players.length.toLocaleString()} of{" "}
+              {directory.totalMatchedPlayers.toLocaleString()})
             </span>
             <span style={{ fontSize: "11.5px", color: "#86efac", fontWeight: 500 }}>
               Passwords stripped · customerID / Login / NameFirst / Agent only
@@ -1206,12 +1178,8 @@ export function AgentHierarchyPanel({
                         {p.customerId}
                       </button>
                     </td>
-                    <td style={{ ...styles.td, ...TABULAR_NUMS, color: "#cbd5e1" }}>
-                      {p.login}
-                    </td>
-                    <td style={{ ...styles.td, color: "#94a3b8" }}>
-                      {p.nameFirst || "—"}
-                    </td>
+                    <td style={{ ...styles.td, ...TABULAR_NUMS, color: "#cbd5e1" }}>{p.login}</td>
+                    <td style={{ ...styles.td, color: "#94a3b8" }}>{p.nameFirst || "—"}</td>
                     <td style={styles.td}>
                       <button
                         type="button"
@@ -1240,5 +1208,5 @@ export function AgentHierarchyPanel({
         </div>
       )}
     </section>
-  );
+  )
 }

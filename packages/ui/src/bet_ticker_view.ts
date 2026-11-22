@@ -1,5 +1,5 @@
 /**
- * @file bet_ticker_view.ts
+ * @file packages/ui/src/bet_ticker_view.ts
  * @description Pure view helpers for the Bet-Ticker panel: deterministic row
  * sorting and a TSV export of the filtered stream.
  *

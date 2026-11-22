@@ -1,5 +1,5 @@
-import type React from "react";
-import { useEffect, useMemo, useState } from "react";
+import type React from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   ArrowDown,
   ArrowUp,
@@ -17,30 +17,27 @@ import {
   Terminal,
   Users,
   X,
-} from "lucide-react";
-import { copyText } from "../clipboard.ts";
-import { styles } from "../dashboard_styles.ts";
-import { getFantasy402PortalLinkProps } from "../portal_link.ts";
-import {
-  type NormalizedRankingsResult,
-  RANKINGS_ENDPOINT,
-} from "../hydration.ts";
-import { getLocalAgentHref, getLocalCustomerHref } from "../links.ts";
+} from "lucide-react"
+import { copyText } from "../clipboard.ts"
+import { styles } from "../dashboard_styles.ts"
+import { getFantasy402PortalLinkProps } from "../portal_link.ts"
+import { type NormalizedRankingsResult, RANKINGS_ENDPOINT } from "../hydration.ts"
+import { getLocalAgentHref, getLocalCustomerHref } from "../links.ts"
 import type {
   MasterAgentDownline30d,
   ProxyConduit30d,
   RankedPlayer30d,
   RankingsFilter,
   SubAgentDownline30d,
-} from "../types.ts";
+} from "../types.ts"
 import {
   type AgentFilterOption,
   AgentMultiSelectFilter,
   buildF402TransactionHistoryParams,
   normalizeAgentIdList,
-} from "./AgentMultiSelectFilter.tsx";
-import { SkeletonBlock, SkeletonTableRows } from "./PanelSkeleton.tsx";
-import { PopulationStrip } from "./PopulationStrip.tsx";
+} from "./AgentMultiSelectFilter.tsx"
+import { SkeletonBlock, SkeletonTableRows } from "./PanelSkeleton.tsx"
+import { PopulationStrip } from "./PopulationStrip.tsx"
 import {
   HEAT_BUCKETS,
   RANKINGS_HEATMAP_STORAGE_KEY,
@@ -52,71 +49,63 @@ import {
   parseStoredRankingsHeatMapValue,
   readStoredRankingsHeatMap,
   writeStoredRankingsHeatMap,
-} from "./rankings_heatmap.ts";
+} from "./rankings_heatmap.ts"
 
-export type RankingsSourceStatus = "pending" | "ready" | "unavailable";
+export type RankingsSourceStatus = "pending" | "ready" | "unavailable"
 
-export type DownlinesViewMode = "ALL" | "TREE" | "PLAYERS" | "CONDUITS";
+export type DownlinesViewMode = "ALL" | "TREE" | "PLAYERS" | "CONDUITS"
 
-export type DownlinesSortField =
-  | "rank"
-  | "handleUsd"
-  | "wagers"
-  | "gini"
-  | "alertRate"
-  | "score";
+export type DownlinesSortField = "rank" | "handleUsd" | "wagers" | "gini" | "alertRate" | "score"
 
 export interface DownlineSubAgentNode {
-  readonly agentId: string;
-  readonly masterAgent: string;
-  readonly handleUsd: number;
-  readonly wagers: number;
-  readonly customerCount: number;
-  readonly topCust: string;
-  readonly concPct: number;
-  readonly isProxyConduit: boolean;
-  readonly avgScore: number | null;
-  readonly totalNetUsd: number | null;
-  readonly handleDelta24hPct: number | null;
-  readonly players: readonly RankedPlayer30d[];
+  readonly agentId: string
+  readonly masterAgent: string
+  readonly handleUsd: number
+  readonly wagers: number
+  readonly customerCount: number
+  readonly topCust: string
+  readonly concPct: number
+  readonly isProxyConduit: boolean
+  readonly avgScore: number | null
+  readonly totalNetUsd: number | null
+  readonly handleDelta24hPct: number | null
+  readonly players: readonly RankedPlayer30d[]
 }
 
 export interface DownlineMasterForestNode {
-  readonly masterAgent: string;
-  readonly subAgentCount: number;
-  readonly customerCount: number;
-  readonly conduitCount: number;
-  readonly handleUsd: number;
-  readonly wagers: number;
-  readonly handleDelta24hPct: number | null;
-  readonly subAgents: readonly DownlineSubAgentNode[];
+  readonly masterAgent: string
+  readonly subAgentCount: number
+  readonly customerCount: number
+  readonly conduitCount: number
+  readonly handleUsd: number
+  readonly wagers: number
+  readonly handleDelta24hPct: number | null
+  readonly subAgents: readonly DownlineSubAgentNode[]
 }
 
 export interface RankingsTabPanelProps {
-  readonly rankingsSearch: string;
-  readonly onRankingsSearchChange: (value: string) => void;
-  readonly rankingsFilter: RankingsFilter;
-  readonly onRankingsFilterChange: (filter: RankingsFilter) => void;
-  readonly onInspectPty: (customerId: string) => void;
-  readonly onSelectAgent?: ((agentId: string) => void) | undefined;
-  readonly onSelectCustomerById?: ((customerId: string) => void) | undefined;
-  readonly focusedCustomerId?: string | null | undefined;
-  readonly onFocusCustomer?: ((customerId: string) => void) | undefined;
-  readonly onClearFocusedCustomer?: (() => void) | undefined;
-  readonly selectedAgentIds?: readonly string[] | undefined;
-  readonly onSelectedAgentIdsChange?:
-    | ((agentIds: readonly string[]) => void)
-    | undefined;
-  readonly heatMapEnabled?: boolean | undefined;
-  readonly onHeatMapEnabledChange?: ((enabled: boolean) => void) | undefined;
-  readonly rankings?: NormalizedRankingsResult | null | undefined;
-  readonly rankingsStatus?: RankingsSourceStatus | undefined;
-  readonly rankingsError?: string | null | undefined;
+  readonly rankingsSearch: string
+  readonly onRankingsSearchChange: (value: string) => void
+  readonly rankingsFilter: RankingsFilter
+  readonly onRankingsFilterChange: (filter: RankingsFilter) => void
+  readonly onInspectPty: (customerId: string) => void
+  readonly onSelectAgent?: ((agentId: string) => void) | undefined
+  readonly onSelectCustomerById?: ((customerId: string) => void) | undefined
+  readonly focusedCustomerId?: string | null | undefined
+  readonly onFocusCustomer?: ((customerId: string) => void) | undefined
+  readonly onClearFocusedCustomer?: (() => void) | undefined
+  readonly selectedAgentIds?: readonly string[] | undefined
+  readonly onSelectedAgentIdsChange?: ((agentIds: readonly string[]) => void) | undefined
+  readonly heatMapEnabled?: boolean | undefined
+  readonly onHeatMapEnabledChange?: ((enabled: boolean) => void) | undefined
+  readonly rankings?: NormalizedRankingsResult | null | undefined
+  readonly rankingsStatus?: RankingsSourceStatus | undefined
+  readonly rankingsError?: string | null | undefined
 }
 
 const TABULAR_NUMS: React.CSSProperties = {
   fontVariantNumeric: "tabular-nums",
-};
+}
 
 function rankingsFilterControls(
   conduitCount: number | null,
@@ -129,30 +118,30 @@ function rankingsFilterControls(
     },
     { id: "TIER3", label: "Tier 3 Sharps" },
     { id: "WHALES", label: "Whales (≥$1M)" },
-  ];
+  ]
 }
 
 function formatUsdCompact(usd: number): string {
-  const abs = Math.abs(usd);
-  const sign = usd < 0 ? "-" : "";
-  if (abs >= 1_000_000) return `${sign}$${(abs / 1_000_000).toFixed(1)}M`;
-  if (abs >= 1_000) return `${sign}$${(abs / 1_000).toFixed(1)}K`;
-  return `${sign}$${abs.toLocaleString()}`;
+  const abs = Math.abs(usd)
+  const sign = usd < 0 ? "-" : ""
+  if (abs >= 1_000_000) return `${sign}$${(abs / 1_000_000).toFixed(1)}M`
+  if (abs >= 1_000) return `${sign}$${(abs / 1_000).toFixed(1)}K`
+  return `${sign}$${abs.toLocaleString()}`
 }
 
 function formatSignedUsd(usd: number): string {
-  if (usd === 0) return "$0";
-  const sign = usd > 0 ? "+" : "-";
-  return `${sign}$${Math.abs(usd).toLocaleString()}`;
+  if (usd === 0) return "$0"
+  const sign = usd > 0 ? "+" : "-"
+  return `${sign}$${Math.abs(usd).toLocaleString()}`
 }
 
-export type HandleTrendDirection = "up" | "down" | "flat";
+export type HandleTrendDirection = "up" | "down" | "flat"
 
 export interface HandleTrendSummary {
-  readonly direction: HandleTrendDirection;
-  readonly formatted: string;
-  readonly color: string;
-  readonly deltaPct: number;
+  readonly direction: HandleTrendDirection
+  readonly formatted: string
+  readonly color: string
+  readonly deltaPct: number
 }
 
 /**
@@ -163,16 +152,16 @@ export function resolveHandleTrend24h(
   deltaPct: number | null | undefined,
 ): HandleTrendSummary | null {
   if (typeof deltaPct !== "number" || !Number.isFinite(deltaPct)) {
-    return null;
+    return null
   }
-  const rounded = Number(deltaPct.toFixed(1));
+  const rounded = Number(deltaPct.toFixed(1))
   if (rounded > 0.05) {
     return {
       direction: "up",
       formatted: `+${rounded.toFixed(1)}%`,
       color: "#4ade80",
       deltaPct: rounded,
-    };
+    }
   }
   if (rounded < -0.05) {
     return {
@@ -180,14 +169,14 @@ export function resolveHandleTrend24h(
       formatted: `${rounded.toFixed(1)}%`,
       color: "#f87171",
       deltaPct: rounded,
-    };
+    }
   }
   return {
     direction: "flat",
     formatted: "0.0%",
     color: "#94a3b8",
     deltaPct: 0,
-  };
+  }
 }
 
 export function HandleTrendIndicator({
@@ -195,20 +184,15 @@ export function HandleTrendIndicator({
   label = "24h performance shift",
   compact = false,
 }: {
-  readonly deltaPct: number | null | undefined;
-  readonly label?: string | undefined;
-  readonly compact?: boolean | undefined;
+  readonly deltaPct: number | null | undefined
+  readonly label?: string | undefined
+  readonly compact?: boolean | undefined
 }): React.ReactElement | null {
-  const trend = resolveHandleTrend24h(deltaPct);
-  if (!trend) return null;
+  const trend = resolveHandleTrend24h(deltaPct)
+  if (!trend) return null
 
-  const iconSize = compact ? 11 : 12;
-  const dirWord =
-    trend.direction === "up"
-      ? "up"
-      : trend.direction === "down"
-        ? "down"
-        : "flat";
+  const iconSize = compact ? 11 : 12
+  const dirWord = trend.direction === "up" ? "up" : trend.direction === "down" ? "down" : "flat"
 
   return (
     <span
@@ -251,7 +235,7 @@ export function HandleTrendIndicator({
       )}
       <span>{trend.formatted}</span>
     </span>
-  );
+  )
 }
 
 /**
@@ -264,21 +248,21 @@ export function buildDownlineForests(
   subAgentsInput: readonly SubAgentDownline30d[] = [],
   masterAgentsInput: readonly MasterAgentDownline30d[] = [],
 ): readonly DownlineMasterForestNode[] {
-  const playersByAgent = new Map<string, RankedPlayer30d[]>();
+  const playersByAgent = new Map<string, RankedPlayer30d[]>()
   for (const p of players) {
-    const key = (p.agentId || "UNASSIGNED").trim().toUpperCase();
-    const list = playersByAgent.get(key) ?? [];
-    list.push(p);
-    playersByAgent.set(key, list);
+    const key = (p.agentId || "UNASSIGNED").trim().toUpperCase()
+    const list = playersByAgent.get(key) ?? []
+    list.push(p)
+    playersByAgent.set(key, list)
   }
   for (const list of playersByAgent.values()) {
-    list.sort((a, b) => b.handleUsd - a.handleUsd || b.score - a.score);
+    list.sort((a, b) => b.handleUsd - a.handleUsd || b.score - a.score)
   }
 
-  const subMap = new Map<string, DownlineSubAgentNode>();
+  const subMap = new Map<string, DownlineSubAgentNode>()
   for (const sa of subAgentsInput) {
-    const key = sa.agentId.trim().toUpperCase();
-    const members = playersByAgent.get(key) ?? [];
+    const key = sa.agentId.trim().toUpperCase()
+    const members = playersByAgent.get(key) ?? []
     subMap.set(key, {
       agentId: sa.agentId,
       masterAgent: sa.masterAgent || members[0]?.masterAgent || "UNASSIGNED",
@@ -291,11 +275,7 @@ export function buildDownlineForests(
       avgScore:
         sa.avgScore ??
         (members.length > 0
-          ? Number(
-              (
-                members.reduce((s, m) => s + m.score, 0) / members.length
-              ).toFixed(2),
-            )
+          ? Number((members.reduce((s, m) => s + m.score, 0) / members.length).toFixed(2))
           : null),
       totalNetUsd:
         sa.totalNetUsd ??
@@ -308,30 +288,28 @@ export function buildDownlineForests(
           ? Number(
               (
                 members.reduce(
-                  (s, m) =>
-                    s + (m.handleDelta24hPct ?? 0) * Math.max(1, m.handleUsd),
+                  (s, m) => s + (m.handleDelta24hPct ?? 0) * Math.max(1, m.handleUsd),
                   0,
-                ) /
-                members.reduce((s, m) => s + Math.max(1, m.handleUsd), 0)
+                ) / members.reduce((s, m) => s + Math.max(1, m.handleUsd), 0)
               ).toFixed(1),
             )
           : null),
       players: members,
-    });
+    })
   }
 
   // Include any agents seen on player rows that weren't in topSubAgents
   for (const [agentKey, members] of playersByAgent.entries()) {
-    if (subMap.has(agentKey)) continue;
-    const totalHandle = members.reduce((s, m) => s + m.handleUsd, 0);
-    const totalWagers = members.reduce((s, m) => s + m.wagers, 0);
-    const top = members[0];
+    if (subMap.has(agentKey)) continue
+    const totalHandle = members.reduce((s, m) => s + m.handleUsd, 0)
+    const totalWagers = members.reduce((s, m) => s + m.wagers, 0)
+    const top = members[0]
     const concPct =
       totalHandle > 0 && top
         ? Number(((top.handleUsd / totalHandle) * 100).toFixed(1))
         : members.length === 1
           ? 100
-          : 0;
+          : 0
     subMap.set(agentKey, {
       agentId: top?.agentId || agentKey,
       masterAgent: top?.masterAgent || "UNASSIGNED",
@@ -343,11 +321,7 @@ export function buildDownlineForests(
       isProxyConduit: concPct >= 80 && members.length <= 3,
       avgScore:
         members.length > 0
-          ? Number(
-              (
-                members.reduce((s, m) => s + m.score, 0) / members.length
-              ).toFixed(2),
-            )
+          ? Number((members.reduce((s, m) => s + m.score, 0) / members.length).toFixed(2))
           : null,
       totalNetUsd: members.some((m) => m.netUsd !== undefined)
         ? members.reduce((s, m) => s + (m.netUsd ?? 0), 0)
@@ -356,53 +330,46 @@ export function buildDownlineForests(
         ? Number(
             (
               members.reduce(
-                (s, m) =>
-                  s + (m.handleDelta24hPct ?? 0) * Math.max(1, m.handleUsd),
+                (s, m) => s + (m.handleDelta24hPct ?? 0) * Math.max(1, m.handleUsd),
                 0,
               ) / members.reduce((s, m) => s + Math.max(1, m.handleUsd), 0)
             ).toFixed(1),
           )
         : null,
       players: members,
-    });
+    })
   }
 
-  const subsByMaster = new Map<string, DownlineSubAgentNode[]>();
+  const subsByMaster = new Map<string, DownlineSubAgentNode[]>()
   for (const sa of subMap.values()) {
-    const masterKey = (sa.masterAgent || "UNASSIGNED").trim().toUpperCase();
-    const list = subsByMaster.get(masterKey) ?? [];
-    list.push(sa);
-    subsByMaster.set(masterKey, list);
+    const masterKey = (sa.masterAgent || "UNASSIGNED").trim().toUpperCase()
+    const list = subsByMaster.get(masterKey) ?? []
+    list.push(sa)
+    subsByMaster.set(masterKey, list)
   }
   for (const list of subsByMaster.values()) {
-    list.sort((a, b) => b.handleUsd - a.handleUsd || b.wagers - a.wagers);
+    list.sort((a, b) => b.handleUsd - a.handleUsd || b.wagers - a.wagers)
   }
 
-  const masterMeta = new Map<string, MasterAgentDownline30d>();
+  const masterMeta = new Map<string, MasterAgentDownline30d>()
   for (const ma of masterAgentsInput) {
-    masterMeta.set(ma.masterAgent.trim().toUpperCase(), ma);
+    masterMeta.set(ma.masterAgent.trim().toUpperCase(), ma)
   }
 
-  const allMasterKeys = new Set<string>([
-    ...subsByMaster.keys(),
-    ...masterMeta.keys(),
-  ]);
+  const allMasterKeys = new Set<string>([...subsByMaster.keys(), ...masterMeta.keys()])
 
-  const forests: DownlineMasterForestNode[] = [];
+  const forests: DownlineMasterForestNode[] = []
   for (const key of allMasterKeys) {
-    const subs = subsByMaster.get(key) ?? [];
-    const meta = masterMeta.get(key);
+    const subs = subsByMaster.get(key) ?? []
+    const meta = masterMeta.get(key)
     const derivedMasterDelta = subs.some((x) => x.handleDelta24hPct !== null)
       ? Number(
           (
-            subs.reduce(
-              (s, x) =>
-                s + (x.handleDelta24hPct ?? 0) * Math.max(1, x.handleUsd),
-              0,
-            ) / subs.reduce((s, x) => s + Math.max(1, x.handleUsd), 0)
+            subs.reduce((s, x) => s + (x.handleDelta24hPct ?? 0) * Math.max(1, x.handleUsd), 0) /
+            subs.reduce((s, x) => s + Math.max(1, x.handleUsd), 0)
           ).toFixed(1),
         )
-      : null;
+      : null
     forests.push({
       masterAgent: meta?.masterAgent ?? subs[0]?.masterAgent ?? key,
       subAgentCount: Math.max(meta?.subAgentCount ?? 0, subs.length),
@@ -410,42 +377,34 @@ export function buildDownlineForests(
         meta?.customerCount ?? 0,
         subs.reduce((s, x) => s + x.customerCount, 0),
       ),
-      conduitCount: Math.max(
-        meta?.conduitCount ?? 0,
-        subs.filter((x) => x.isProxyConduit).length,
-      ),
-      handleUsd:
-        meta?.handleUsd ?? subs.reduce((s, x) => s + x.handleUsd, 0),
+      conduitCount: Math.max(meta?.conduitCount ?? 0, subs.filter((x) => x.isProxyConduit).length),
+      handleUsd: meta?.handleUsd ?? subs.reduce((s, x) => s + x.handleUsd, 0),
       wagers: meta?.wagers ?? subs.reduce((s, x) => s + x.wagers, 0),
       handleDelta24hPct: meta?.handleDelta24hPct ?? derivedMasterDelta,
       subAgents: subs,
-    });
+    })
   }
 
-  return forests.sort(
-    (a, b) => b.handleUsd - a.handleUsd || b.customerCount - a.customerCount,
-  );
+  return forests.sort((a, b) => b.handleUsd - a.handleUsd || b.customerCount - a.customerCount)
 }
 
-function escapeCsvCell(
-  val: string | number | boolean | null | undefined,
-): string {
-  if (val === undefined || val === null) return "";
+function escapeCsvCell(val: string | number | boolean | null | undefined): string {
+  if (val === undefined || val === null) return ""
   if (typeof val === "number") {
-    return Number.isFinite(val) ? String(val) : "";
+    return Number.isFinite(val) ? String(val) : ""
   }
   if (typeof val === "boolean") {
-    return val ? "true" : "false";
+    return val ? "true" : "false"
   }
-  const str = String(val);
+  const str = String(val)
   // Prevent CSV spreadsheet formula injection on untrusted string cells
-  const safe = /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
-  return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+  const safe = /^[=+\-@\t\r]/.test(str) ? `'${str}` : str
+  return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
 }
 
 export interface BuildDownlinesCsvOptions {
-  readonly totalDeskHandle?: number | undefined;
-  readonly heatByKey?: ReadonlyMap<string, HandleHeatCellMetrics> | undefined;
+  readonly totalDeskHandle?: number | undefined
+  readonly heatByKey?: ReadonlyMap<string, HandleHeatCellMetrics> | undefined
 }
 
 /**
@@ -455,8 +414,8 @@ export function buildDownlinesCsv(
   players: readonly RankedPlayer30d[],
   options: BuildDownlinesCsvOptions = {},
 ): string {
-  const totalDeskHandle = options.totalDeskHandle ?? 0;
-  const heatByKey = options.heatByKey;
+  const totalDeskHandle = options.totalDeskHandle ?? 0
+  const heatByKey = options.heatByKey
   const header = [
     "rank",
     "customer_id",
@@ -477,14 +436,12 @@ export function buildDownlinesCsv(
     "desk_handle_share_pct",
     "heat_bucket",
     "visible_handle_percentile",
-  ];
-  const lines = [header.join(",")];
+  ]
+  const lines = [header.join(",")]
   for (const p of players) {
-    const heat = heatByKey?.get(p.id.trim().toUpperCase());
+    const heat = heatByKey?.get(p.id.trim().toUpperCase())
     const deskSharePct =
-      totalDeskHandle > 0
-        ? Number(((p.handleUsd / totalDeskHandle) * 100).toFixed(2))
-        : "";
+      totalDeskHandle > 0 ? Number(((p.handleUsd / totalDeskHandle) * 100).toFixed(2)) : ""
     lines.push(
       [
         p.rank,
@@ -502,18 +459,16 @@ export function buildDownlinesCsv(
         p.limitUsd,
         p.netUsd ?? "",
         p.clvBps ?? "",
-        p.handleDelta24hPct !== undefined
-          ? Number(p.handleDelta24hPct.toFixed(1))
-          : "",
+        p.handleDelta24hPct !== undefined ? Number(p.handleDelta24hPct.toFixed(1)) : "",
         deskSharePct,
         heat ? heat.bucket : "",
         heat ? (heat.isInactive ? 0 : heat.percentileRank) : "",
       ]
         .map(escapeCsvCell)
         .join(","),
-    );
+    )
   }
-  return lines.join("\r\n");
+  return lines.join("\r\n")
 }
 
 /**
@@ -534,10 +489,10 @@ export function buildConduitsCsv(
     "handle_delta_24h_pct",
     "heat_bucket",
     "visible_handle_percentile",
-  ];
-  const lines = [header.join(",")];
+  ]
+  const lines = [header.join(",")]
   for (const c of conduits) {
-    const heat = heatByKey?.get(c.agentId.trim().toUpperCase());
+    const heat = heatByKey?.get(c.agentId.trim().toUpperCase())
     lines.push(
       [
         c.agentId,
@@ -546,17 +501,15 @@ export function buildConduitsCsv(
         c.wagers,
         c.topCust,
         Number(c.concPct.toFixed(1)),
-        c.handleDelta24hPct !== undefined
-          ? Number(c.handleDelta24hPct.toFixed(1))
-          : "",
+        c.handleDelta24hPct !== undefined ? Number(c.handleDelta24hPct.toFixed(1)) : "",
         heat ? heat.bucket : "",
         heat ? (heat.isInactive ? 0 : heat.percentileRank) : "",
       ]
         .map(escapeCsvCell)
         .join(","),
-    );
+    )
   }
-  return lines.join("\r\n");
+  return lines.join("\r\n")
 }
 
 /**
@@ -567,8 +520,8 @@ export function buildSubAgentsCsv(
   subAgents: readonly DownlineSubAgentNode[],
   options: BuildDownlinesCsvOptions = {},
 ): string {
-  const totalDeskHandle = options.totalDeskHandle ?? 0;
-  const heatByKey = options.heatByKey;
+  const totalDeskHandle = options.totalDeskHandle ?? 0
+  const heatByKey = options.heatByKey
   const header = [
     "sub_agent_id",
     "master_forest",
@@ -584,14 +537,12 @@ export function buildSubAgentsCsv(
     "desk_handle_share_pct",
     "heat_bucket",
     "visible_handle_percentile",
-  ];
-  const lines = [header.join(",")];
+  ]
+  const lines = [header.join(",")]
   for (const sa of subAgents) {
-    const heat = heatByKey?.get(sa.agentId.trim().toUpperCase());
+    const heat = heatByKey?.get(sa.agentId.trim().toUpperCase())
     const deskSharePct =
-      totalDeskHandle > 0
-        ? Number(((sa.handleUsd / totalDeskHandle) * 100).toFixed(2))
-        : "";
+      totalDeskHandle > 0 ? Number(((sa.handleUsd / totalDeskHandle) * 100).toFixed(2)) : ""
     lines.push(
       [
         sa.agentId,
@@ -604,26 +555,24 @@ export function buildSubAgentsCsv(
         sa.isProxyConduit ? "PROXY" : "STANDARD",
         sa.avgScore !== null ? Number(sa.avgScore.toFixed(2)) : "",
         sa.totalNetUsd ?? "",
-        sa.handleDelta24hPct !== null
-          ? Number(sa.handleDelta24hPct.toFixed(1))
-          : "",
+        sa.handleDelta24hPct !== null ? Number(sa.handleDelta24hPct.toFixed(1)) : "",
         deskSharePct,
         heat ? heat.bucket : "",
         heat ? (heat.isInactive ? 0 : heat.percentileRank) : "",
       ]
         .map(escapeCsvCell)
         .join(","),
-    );
+    )
   }
-  return lines.join("\r\n");
+  return lines.join("\r\n")
 }
 
 export function buildRankingsCsvFilename(options: {
-  readonly viewMode: DownlinesViewMode;
-  readonly filter: RankingsFilter;
-  readonly selectedAgentIds?: readonly string[] | undefined;
-  readonly masterForest?: string | undefined;
-  readonly dateIso?: string | undefined;
+  readonly viewMode: DownlinesViewMode
+  readonly filter: RankingsFilter
+  readonly selectedAgentIds?: readonly string[] | undefined
+  readonly masterForest?: string | undefined
+  readonly dateIso?: string | undefined
 }): string {
   const slug = (raw: string): string =>
     raw
@@ -631,51 +580,47 @@ export function buildRankingsCsvFilename(options: {
       .toLowerCase()
       .replace(/[^a-z0-9_-]+/g, "-")
       .replace(/^-+|-+$/g, "")
-      .slice(0, 32);
+      .slice(0, 32)
 
-  const parts = ["sportsdesk-rankings"];
+  const parts = ["sportsdesk-rankings"]
   if (options.viewMode === "CONDUITS") {
-    parts.push("conduits");
+    parts.push("conduits")
   } else if (options.viewMode === "TREE") {
-    parts.push("hierarchy");
+    parts.push("hierarchy")
   } else if (options.filter !== "ALL") {
-    parts.push(slug(options.filter));
+    parts.push(slug(options.filter))
   }
-  if (
-    options.masterForest &&
-    options.masterForest.trim().toUpperCase() !== "ALL"
-  ) {
-    parts.push(slug(options.masterForest));
+  if (options.masterForest && options.masterForest.trim().toUpperCase() !== "ALL") {
+    parts.push(slug(options.masterForest))
   }
   if (options.selectedAgentIds && options.selectedAgentIds.length > 0) {
     const agentPart =
       options.selectedAgentIds.length === 1
         ? slug(options.selectedAgentIds[0]!)
-        : `${options.selectedAgentIds.length}-agents`;
-    if (agentPart) parts.push(agentPart);
+        : `${options.selectedAgentIds.length}-agents`
+    if (agentPart) parts.push(agentPart)
   }
-  const dateStamp =
-    (options.dateIso ?? new Date().toISOString()).slice(0, 10) || "export";
-  parts.push(dateStamp);
-  return `${parts.filter(Boolean).join("-")}.csv`;
+  const dateStamp = (options.dateIso ?? new Date().toISOString()).slice(0, 10) || "export"
+  parts.push(dateStamp)
+  return `${parts.filter(Boolean).join("-")}.csv`
 }
 
 export interface CsvDownloadEnvironment {
   readonly document?: {
     createElement(tag: "a"): {
-      href: string;
-      download: string;
-      style: { display: string };
-      click(): void;
-      remove?(): void;
-    };
+      href: string
+      download: string
+      style: { display: string }
+      click(): void
+      remove?(): void
+    }
     body?: {
-      appendChild(node: unknown): void;
-      removeChild?(node: unknown): void;
-    } | null;
-  };
-  readonly createObjectURL?: ((blob: Blob) => string) | undefined;
-  readonly revokeObjectURL?: ((url: string) => void) | undefined;
+      appendChild(node: unknown): void
+      removeChild?(node: unknown): void
+    } | null
+  }
+  readonly createObjectURL?: ((blob: Blob) => string) | undefined
+  readonly revokeObjectURL?: ((url: string) => void) | undefined
 }
 
 /**
@@ -691,41 +636,41 @@ export function downloadRankingsCsvBlob(
     env?.document ??
     (typeof document !== "undefined"
       ? (document as unknown as CsvDownloadEnvironment["document"])
-      : undefined);
+      : undefined)
   const createUrl =
     env?.createObjectURL ??
     (typeof URL !== "undefined" && typeof URL.createObjectURL === "function"
       ? (b: Blob) => URL.createObjectURL(b)
-      : undefined);
+      : undefined)
   const revokeUrl =
     env?.revokeObjectURL ??
     (typeof URL !== "undefined" && typeof URL.revokeObjectURL === "function"
       ? (u: string) => URL.revokeObjectURL(u)
-      : undefined);
+      : undefined)
 
   if (!doc || !doc.body || !createUrl || typeof Blob === "undefined") {
-    return false;
+    return false
   }
 
   const blob = new Blob([`\uFEFF${csvContent}`], {
     type: "text/csv;charset=utf-8;",
-  });
-  const objectUrl = createUrl(blob);
-  const anchor = doc.createElement("a");
-  anchor.href = objectUrl;
-  anchor.download = filename;
-  anchor.style.display = "none";
-  doc.body.appendChild(anchor);
-  anchor.click();
+  })
+  const objectUrl = createUrl(blob)
+  const anchor = doc.createElement("a")
+  anchor.href = objectUrl
+  anchor.download = filename
+  anchor.style.display = "none"
+  doc.body.appendChild(anchor)
+  anchor.click()
   if (typeof anchor.remove === "function") {
-    anchor.remove();
+    anchor.remove()
   } else if (typeof doc.body.removeChild === "function") {
-    doc.body.removeChild(anchor);
+    doc.body.removeChild(anchor)
   }
   if (revokeUrl) {
-    setTimeout(() => revokeUrl(objectUrl), 10_000);
+    setTimeout(() => revokeUrl(objectUrl), 10_000)
   }
-  return true;
+  return true
 }
 
 function RankingsSourceNotice({
@@ -733,18 +678,18 @@ function RankingsSourceNotice({
   error,
   rejectedRows,
 }: {
-  readonly status: RankingsSourceStatus;
-  readonly error: string | null;
-  readonly rejectedRows: number;
+  readonly status: RankingsSourceStatus
+  readonly error: string | null
+  readonly rejectedRows: number
 }): React.ReactElement | null {
-  if (status === "ready" && rejectedRows === 0) return null;
-  const unavailable = status === "unavailable";
+  if (status === "ready" && rejectedRows === 0) return null
+  const unavailable = status === "unavailable"
   const message =
     status === "pending"
       ? `Waiting for GET ${RANKINGS_ENDPOINT}…`
       : unavailable
         ? `Rankings unavailable — GET ${RANKINGS_ENDPOINT}: ${error ?? "no response"}`
-        : `${rejectedRows} ranking row(s) from GET ${RANKINGS_ENDPOINT} were rejected (missing or non-numeric fields) and are not shown.`;
+        : `${rejectedRows} ranking row(s) from GET ${RANKINGS_ENDPOINT} were rejected (missing or non-numeric fields) and are not shown.`
   return (
     <div
       role={unavailable ? "alert" : "status"}
@@ -752,9 +697,7 @@ function RankingsSourceNotice({
       style={{
         padding: "10px 14px",
         borderRadius: "8px",
-        backgroundColor: unavailable
-          ? "rgba(239, 68, 68, 0.14)"
-          : "rgba(56, 189, 248, 0.12)",
+        backgroundColor: unavailable ? "rgba(239, 68, 68, 0.14)" : "rgba(56, 189, 248, 0.12)",
         border: unavailable
           ? "1px solid rgba(239, 68, 68, 0.4)"
           : "1px solid rgba(56, 189, 248, 0.35)",
@@ -764,7 +707,7 @@ function RankingsSourceNotice({
     >
       {message}
     </div>
-  );
+  )
 }
 
 const HEAT_BUCKET_LABELS: readonly string[] = [
@@ -774,16 +717,16 @@ const HEAT_BUCKET_LABELS: readonly string[] = [
   "Median (B3)",
   "High (B4)",
   "P95+ (B5)",
-];
+]
 
 function HandleHeatTooltip({
   metrics,
   entityLabel,
   placement = "right",
 }: {
-  readonly metrics: HandleHeatCellMetrics;
-  readonly entityLabel: string;
-  readonly placement?: "left" | "right" | undefined;
+  readonly metrics: HandleHeatCellMetrics
+  readonly entityLabel: string
+  readonly placement?: "left" | "right" | undefined
 }): React.ReactElement {
   return (
     <div
@@ -793,15 +736,11 @@ function HandleHeatTooltip({
     >
       <div className="sd-heat-tooltip-header">
         <span>{entityLabel}</span>
-        <span>
-          {metrics.isInactive ? "Inactive" : `Intensity ${metrics.bucket}/5`}
-        </span>
+        <span>{metrics.isInactive ? "Inactive" : `Intensity ${metrics.bucket}/5`}</span>
       </div>
       <div className="sd-heat-tooltip-row">
         <span className="sd-heat-tooltip-label">Exact Handle</span>
-        <span className="sd-heat-tooltip-value">
-          {metrics.exactHandleLabel}
-        </span>
+        <span className="sd-heat-tooltip-value">{metrics.exactHandleLabel}</span>
       </div>
       <div className="sd-heat-tooltip-row">
         <span className="sd-heat-tooltip-label">% Visible Handle</span>
@@ -812,24 +751,20 @@ function HandleHeatTooltip({
         <span className="sd-heat-tooltip-value">{metrics.percentileLabel}</span>
       </div>
     </div>
-  );
+  )
 }
 
 export function RankingsHeatMapLegend({
   scale,
   scopeLabel,
 }: {
-  readonly scale: HandleHeatScale;
-  readonly scopeLabel: string;
+  readonly scale: HandleHeatScale
+  readonly scopeLabel: string
 }): React.ReactElement {
-  const hasPositive = scale.positiveCount > 0;
-  const minText = hasPositive ? formatHeatCurrencyCompact(scale.min) : "—";
-  const medianText = hasPositive
-    ? formatHeatCurrencyCompact(scale.median)
-    : "—";
-  const p95Text = hasPositive
-    ? `${formatHeatCurrencyCompact(scale.p95)}+`
-    : "—";
+  const hasPositive = scale.positiveCount > 0
+  const minText = hasPositive ? formatHeatCurrencyCompact(scale.min) : "—"
+  const medianText = hasPositive ? formatHeatCurrencyCompact(scale.median) : "—"
+  const p95Text = hasPositive ? `${formatHeatCurrencyCompact(scale.p95)}+` : "—"
 
   return (
     <div
@@ -877,9 +812,7 @@ export function RankingsHeatMapLegend({
             title={HEAT_BUCKET_LABELS[0]}
             aria-hidden="true"
           />
-          <span style={{ color: "#94a3b8", whiteSpace: "nowrap" }}>
-            0 / Inactive
-          </span>
+          <span style={{ color: "#94a3b8", whiteSpace: "nowrap" }}>0 / Inactive</span>
         </div>
 
         <div
@@ -930,11 +863,9 @@ export function RankingsHeatMapLegend({
         </div>
       </div>
 
-      <span style={{ color: "#64748b", whiteSpace: "nowrap" }}>
-        log10 · P5–P95 clamped
-      </span>
+      <span style={{ color: "#64748b", whiteSpace: "nowrap" }}>log10 · P5–P95 clamped</span>
     </div>
-  );
+  )
 }
 
 export function RankingsTabPanel({
@@ -956,99 +887,90 @@ export function RankingsTabPanel({
   rankingsStatus = rankings ? "ready" : "pending",
   rankingsError = null,
 }: RankingsTabPanelProps): React.ReactElement {
-  const summary = rankings?.summary ?? null;
-  const players = rankings?.players ?? [];
-  const conduits = rankings?.conduits ?? [];
-  const subAgentsRaw = rankings?.subAgents ?? [];
-  const masterAgentsRaw = rankings?.masterAgents ?? [];
+  const summary = rankings?.summary ?? null
+  const players = rankings?.players ?? []
+  const conduits = rankings?.conduits ?? []
+  const subAgentsRaw = rankings?.subAgents ?? []
+  const masterAgentsRaw = rankings?.masterAgents ?? []
 
-  const [viewMode, setViewMode] = useState<DownlinesViewMode>("ALL");
-  const [selectedMasterForest, setSelectedMasterForest] =
-    useState<string>("ALL");
-  const [internalAgentIds, setInternalAgentIds] = useState<readonly string[]>(
-    [],
-  );
+  const [viewMode, setViewMode] = useState<DownlinesViewMode>("ALL")
+  const [selectedMasterForest, setSelectedMasterForest] = useState<string>("ALL")
+  const [internalAgentIds, setInternalAgentIds] = useState<readonly string[]>([])
   const [internalHeatMapEnabled, setInternalHeatMapEnabled] = useState<boolean>(
     () => readStoredRankingsHeatMap() ?? true,
-  );
-  const [copiedTxAgentId, setCopiedTxAgentId] = useState<string | null>(null);
-  const [exportedCsvCount, setExportedCsvCount] = useState<number | null>(null);
-  const [isolateFocusedLineage, setIsolateFocusedLineage] =
-    useState<boolean>(false);
-  const [sortField, setSortField] = useState<DownlinesSortField>("rank");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const [collapsedMasters, setCollapsedMasters] = useState<
-    Readonly<Record<string, boolean>>
-  >({});
+  )
+  const [copiedTxAgentId, setCopiedTxAgentId] = useState<string | null>(null)
+  const [exportedCsvCount, setExportedCsvCount] = useState<number | null>(null)
+  const [isolateFocusedLineage, setIsolateFocusedLineage] = useState<boolean>(false)
+  const [sortField, setSortField] = useState<DownlinesSortField>("rank")
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
+  const [collapsedMasters, setCollapsedMasters] = useState<Readonly<Record<string, boolean>>>({})
 
-  const effectiveHeatMapEnabled = heatMapEnabled ?? internalHeatMapEnabled;
+  const effectiveHeatMapEnabled = heatMapEnabled ?? internalHeatMapEnabled
 
   useEffect(() => {
-    if (typeof window === "undefined" || heatMapEnabled !== undefined) return;
+    if (typeof window === "undefined" || heatMapEnabled !== undefined) return
     const onStorage = (event: StorageEvent) => {
-      if (event.key !== RANKINGS_HEATMAP_STORAGE_KEY) return;
-      const parsed = parseStoredRankingsHeatMapValue(event.newValue);
+      if (event.key !== RANKINGS_HEATMAP_STORAGE_KEY) return
+      const parsed = parseStoredRankingsHeatMapValue(event.newValue)
       if (parsed !== null) {
-        setInternalHeatMapEnabled(parsed);
+        setInternalHeatMapEnabled(parsed)
       }
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, [heatMapEnabled]);
+    }
+    window.addEventListener("storage", onStorage)
+    return () => window.removeEventListener("storage", onStorage)
+  }, [heatMapEnabled])
 
   const handleToggleHeatMap = () => {
-    const next = !effectiveHeatMapEnabled;
-    writeStoredRankingsHeatMap(next);
+    const next = !effectiveHeatMapEnabled
+    writeStoredRankingsHeatMap(next)
     if (onHeatMapEnabledChange) {
-      onHeatMapEnabledChange(next);
+      onHeatMapEnabledChange(next)
     } else {
-      setInternalHeatMapEnabled(next);
+      setInternalHeatMapEnabled(next)
     }
-  };
+  }
 
-  const normalizedFocusId = focusedCustomerId?.trim().toUpperCase() || null;
+  const normalizedFocusId = focusedCustomerId?.trim().toUpperCase() || null
 
   const effectiveAgentIds = useMemo(
     () => normalizeAgentIdList(selectedAgentIds ?? internalAgentIds),
     [selectedAgentIds, internalAgentIds],
-  );
-  const effectiveAgentIdSet = useMemo(
-    () => new Set(effectiveAgentIds),
-    [effectiveAgentIds],
-  );
+  )
+  const effectiveAgentIdSet = useMemo(() => new Set(effectiveAgentIds), [effectiveAgentIds])
 
   const updateSelectedAgentIds = (nextIds: readonly string[]) => {
-    const normalized = normalizeAgentIdList(nextIds);
+    const normalized = normalizeAgentIdList(nextIds)
     if (onSelectedAgentIdsChange) {
-      onSelectedAgentIdsChange(normalized);
+      onSelectedAgentIdsChange(normalized)
     } else {
-      setInternalAgentIds(normalized);
+      setInternalAgentIds(normalized)
     }
-  };
+  }
 
   const toggleSelectedAgentId = (agentId: string) => {
-    const upper = agentId.trim().toUpperCase();
+    const upper = agentId.trim().toUpperCase()
     if (effectiveAgentIdSet.has(upper)) {
-      updateSelectedAgentIds(effectiveAgentIds.filter((id) => id !== upper));
+      updateSelectedAgentIds(effectiveAgentIds.filter((id) => id !== upper))
     } else {
-      updateSelectedAgentIds([...effectiveAgentIds, upper]);
+      updateSelectedAgentIds([...effectiveAgentIds, upper])
     }
-  };
+  }
 
   const allForests = useMemo(
     () => buildDownlineForests(players, subAgentsRaw, masterAgentsRaw),
     [players, subAgentsRaw, masterAgentsRaw],
-  );
+  )
 
   const agentFilterOptions = useMemo<readonly AgentFilterOption[]>(() => {
-    const seen = new Set<string>();
-    const options: AgentFilterOption[] = [];
+    const seen = new Set<string>()
+    const options: AgentFilterOption[] = []
 
     for (const forest of allForests) {
       for (const sa of forest.subAgents) {
-        const key = sa.agentId.trim().toUpperCase();
-        if (key === "" || seen.has(key)) continue;
-        seen.add(key);
+        const key = sa.agentId.trim().toUpperCase()
+        if (key === "" || seen.has(key)) continue
+        seen.add(key)
         options.push({
           agentId: sa.agentId,
           masterAgent: sa.masterAgent,
@@ -1058,14 +980,14 @@ export function RankingsTabPanel({
           concPct: sa.concPct,
           isProxyConduit: sa.isProxyConduit,
           handleDelta24hPct: sa.handleDelta24hPct,
-        });
+        })
       }
     }
 
     for (const forest of allForests) {
-      const key = forest.masterAgent.trim().toUpperCase();
-      if (key === "" || seen.has(key)) continue;
-      seen.add(key);
+      const key = forest.masterAgent.trim().toUpperCase()
+      if (key === "" || seen.has(key)) continue
+      seen.add(key)
       options.push({
         agentId: forest.masterAgent,
         masterAgent: forest.masterAgent,
@@ -1075,12 +997,12 @@ export function RankingsTabPanel({
         concPct: null,
         isProxyConduit: false,
         handleDelta24hPct: forest.handleDelta24hPct,
-      });
+      })
     }
 
     for (const selectedId of effectiveAgentIds) {
-      if (seen.has(selectedId)) continue;
-      seen.add(selectedId);
+      if (seen.has(selectedId)) continue
+      seen.add(selectedId)
       options.push({
         agentId: selectedId,
         masterAgent: selectedId,
@@ -1089,74 +1011,68 @@ export function RankingsTabPanel({
         customerCount: 0,
         concPct: null,
         isProxyConduit: false,
-      });
+      })
     }
 
     return options.sort((a, b) => {
       if (a.role !== b.role) {
-        return a.role === "sub-agent" ? -1 : 1;
+        return a.role === "sub-agent" ? -1 : 1
       }
-      return b.handleUsd - a.handleUsd || a.agentId.localeCompare(b.agentId);
-    });
-  }, [allForests, effectiveAgentIds]);
+      return b.handleUsd - a.handleUsd || a.agentId.localeCompare(b.agentId)
+    })
+  }, [allForests, effectiveAgentIds])
 
   const focusedPlayer = useMemo(
     () =>
       normalizedFocusId
-        ? players.find((p) => p.id.toUpperCase() === normalizedFocusId) ?? null
+        ? (players.find((p) => p.id.toUpperCase() === normalizedFocusId) ?? null)
         : null,
     [normalizedFocusId, players],
-  );
+  )
 
   const focusedSubAgent = useMemo(() => {
-    if (!focusedPlayer) return null;
+    if (!focusedPlayer) return null
     for (const f of allForests) {
       for (const sa of f.subAgents) {
-        if (
-          sa.agentId.toUpperCase() === focusedPlayer.agentId.toUpperCase()
-        ) {
-          return sa;
+        if (sa.agentId.toUpperCase() === focusedPlayer.agentId.toUpperCase()) {
+          return sa
         }
       }
     }
-    return null;
-  }, [focusedPlayer, allForests]);
+    return null
+  }, [focusedPlayer, allForests])
 
   const focusedSharePct = useMemo(() => {
-    if (!focusedPlayer || !focusedSubAgent) return null;
+    if (!focusedPlayer || !focusedSubAgent) return null
     if (focusedSubAgent.handleUsd <= 0) {
-      return focusedSubAgent.customerCount === 1 ? 100 : 0;
+      return focusedSubAgent.customerCount === 1 ? 100 : 0
     }
-    return Number(
-      ((focusedPlayer.handleUsd / focusedSubAgent.handleUsd) * 100).toFixed(1),
-    );
-  }, [focusedPlayer, focusedSubAgent]);
+    return Number(((focusedPlayer.handleUsd / focusedSubAgent.handleUsd) * 100).toFixed(1))
+  }, [focusedPlayer, focusedSubAgent])
 
   const filteredPlayersUnsorted = useMemo(() => {
-    const q = rankingsSearch.trim().toLowerCase();
+    const q = rankingsSearch.trim().toLowerCase()
     return players.filter((p) => {
       if (
         selectedMasterForest !== "ALL" &&
         p.masterAgent.toUpperCase() !== selectedMasterForest.toUpperCase()
       ) {
-        return false;
+        return false
       }
       if (
         effectiveAgentIdSet.size > 0 &&
         !effectiveAgentIdSet.has(p.agentId.toUpperCase()) &&
         !effectiveAgentIdSet.has(p.masterAgent.toUpperCase())
       ) {
-        return false;
+        return false
       }
       if (isolateFocusedLineage && normalizedFocusId) {
         if (focusedPlayer) {
-          if (
-            p.agentId.toUpperCase() !== focusedPlayer.agentId.toUpperCase()
-          ) {
-            return false;
+          if (p.agentId.toUpperCase() !== focusedPlayer.agentId.toUpperCase()) {
+            return false
           }
         } else if (p.id.toUpperCase() !== normalizedFocusId) {
-          return false;
+          return false
         }
       }
       const matchesSearch =
@@ -1164,13 +1080,13 @@ export function RankingsTabPanel({
         p.id.toLowerCase().includes(q) ||
         p.agentId.toLowerCase().includes(q) ||
         p.masterAgent.toLowerCase().includes(q) ||
-        p.dominantSport.toLowerCase().includes(q);
-      if (!matchesSearch) return false;
-      if (rankingsFilter === "CONDUITS") return p.isProxy;
-      if (rankingsFilter === "TIER3") return p.tier.startsWith("TIER_3");
-      if (rankingsFilter === "WHALES") return p.handleUsd >= 1_000_000;
-      return true;
-    });
+        p.dominantSport.toLowerCase().includes(q)
+      if (!matchesSearch) return false
+      if (rankingsFilter === "CONDUITS") return p.isProxy
+      if (rankingsFilter === "TIER3") return p.tier.startsWith("TIER_3")
+      if (rankingsFilter === "WHALES") return p.handleUsd >= 1_000_000
+      return true
+    })
   }, [
     players,
     rankingsSearch,
@@ -1180,75 +1096,66 @@ export function RankingsTabPanel({
     isolateFocusedLineage,
     normalizedFocusId,
     focusedPlayer,
-  ]);
+  ])
 
   const filteredPlayers = useMemo(() => {
-    const dirMul = sortDir === "asc" ? 1 : -1;
+    const dirMul = sortDir === "asc" ? 1 : -1
     return [...filteredPlayersUnsorted].sort((a, b) => {
-      const delta = a[sortField] - b[sortField];
-      if (delta !== 0) return delta * dirMul;
-      return a.rank - b.rank;
-    });
-  }, [filteredPlayersUnsorted, sortField, sortDir]);
+      const delta = a[sortField] - b[sortField]
+      if (delta !== 0) return delta * dirMul
+      return a.rank - b.rank
+    })
+  }, [filteredPlayersUnsorted, sortField, sortDir])
 
   const visibleForests = useMemo(() => {
-    const q = rankingsSearch.trim().toLowerCase();
+    const q = rankingsSearch.trim().toLowerCase()
     return allForests
       .filter((f) => {
         if (
           selectedMasterForest !== "ALL" &&
           f.masterAgent.toUpperCase() !== selectedMasterForest.toUpperCase()
         ) {
-          return false;
+          return false
         }
         if (effectiveAgentIdSet.size > 0) {
-          const masterSelected = effectiveAgentIdSet.has(
-            f.masterAgent.toUpperCase(),
-          );
+          const masterSelected = effectiveAgentIdSet.has(f.masterAgent.toUpperCase())
           const hasSelectedSub = f.subAgents.some((sa) =>
             effectiveAgentIdSet.has(sa.agentId.toUpperCase()),
-          );
-          if (!masterSelected && !hasSelectedSub) return false;
+          )
+          if (!masterSelected && !hasSelectedSub) return false
         }
         if (isolateFocusedLineage && focusedPlayer) {
-          return (
-            f.masterAgent.toUpperCase() ===
-            focusedPlayer.masterAgent.toUpperCase()
-          );
+          return f.masterAgent.toUpperCase() === focusedPlayer.masterAgent.toUpperCase()
         }
-        return true;
+        return true
       })
       .map((f) => {
-        const masterSelected = effectiveAgentIdSet.has(
-          f.masterAgent.toUpperCase(),
-        );
+        const masterSelected = effectiveAgentIdSet.has(f.masterAgent.toUpperCase())
         const subAgents = f.subAgents.filter((sa) => {
           if (
             effectiveAgentIdSet.size > 0 &&
             !masterSelected &&
             !effectiveAgentIdSet.has(sa.agentId.toUpperCase())
           ) {
-            return false;
+            return false
           }
           if (isolateFocusedLineage && focusedPlayer) {
-            if (
-              sa.agentId.toUpperCase() !== focusedPlayer.agentId.toUpperCase()
-            ) {
-              return false;
+            if (sa.agentId.toUpperCase() !== focusedPlayer.agentId.toUpperCase()) {
+              return false
             }
           }
           if (rankingsFilter === "CONDUITS" && !sa.isProxyConduit) {
-            return false;
+            return false
           }
-          if (!q) return true;
+          if (!q) return true
           return (
             f.masterAgent.toLowerCase().includes(q) ||
             sa.agentId.toLowerCase().includes(q) ||
             sa.topCust.toLowerCase().includes(q) ||
             sa.players.some((p) => p.id.toLowerCase().includes(q))
-          );
-        });
-        return { ...f, subAgents };
+          )
+        })
+        return { ...f, subAgents }
       })
       .filter(
         (f) =>
@@ -1256,7 +1163,7 @@ export function RankingsTabPanel({
           (!q &&
             (effectiveAgentIdSet.size === 0 ||
               effectiveAgentIdSet.has(f.masterAgent.toUpperCase()))),
-      );
+      )
   }, [
     allForests,
     selectedMasterForest,
@@ -1265,65 +1172,59 @@ export function RankingsTabPanel({
     focusedPlayer,
     rankingsFilter,
     rankingsSearch,
-  ]);
+  ])
 
   const visibleSubAgents = useMemo(() => {
-    const q = rankingsSearch.trim().toLowerCase();
-    const flat = allForests.flatMap((f) => f.subAgents);
+    const q = rankingsSearch.trim().toLowerCase()
+    const flat = allForests.flatMap((f) => f.subAgents)
     return flat.filter((sa) => {
       if (
         selectedMasterForest !== "ALL" &&
         sa.masterAgent.toUpperCase() !== selectedMasterForest.toUpperCase()
       ) {
-        return false;
+        return false
       }
       if (
         effectiveAgentIdSet.size > 0 &&
         !effectiveAgentIdSet.has(sa.agentId.toUpperCase()) &&
         !effectiveAgentIdSet.has(sa.masterAgent.toUpperCase())
       ) {
-        return false;
+        return false
       }
-      if (rankingsFilter === "CONDUITS" && !sa.isProxyConduit) return false;
-      if (!q) return true;
+      if (rankingsFilter === "CONDUITS" && !sa.isProxyConduit) return false
+      if (!q) return true
       return (
         sa.agentId.toLowerCase().includes(q) ||
         sa.masterAgent.toLowerCase().includes(q) ||
         sa.topCust.toLowerCase().includes(q)
-      );
-    });
-  }, [
-    allForests,
-    selectedMasterForest,
-    effectiveAgentIdSet,
-    rankingsFilter,
-    rankingsSearch,
-  ]);
+      )
+    })
+  }, [allForests, selectedMasterForest, effectiveAgentIdSet, rankingsFilter, rankingsSearch])
 
   const filteredConduits = useMemo(() => {
-    const q = rankingsSearch.trim().toLowerCase();
+    const q = rankingsSearch.trim().toLowerCase()
     return conduits.filter((c) => {
       if (
         selectedMasterForest !== "ALL" &&
         c.masterAgent.toUpperCase() !== selectedMasterForest.toUpperCase()
       ) {
-        return false;
+        return false
       }
       if (
         effectiveAgentIdSet.size > 0 &&
         !effectiveAgentIdSet.has(c.agentId.toUpperCase()) &&
         !effectiveAgentIdSet.has(c.masterAgent.toUpperCase())
       ) {
-        return false;
+        return false
       }
-      if (!q) return true;
+      if (!q) return true
       return (
         c.agentId.toLowerCase().includes(q) ||
         c.masterAgent.toLowerCase().includes(q) ||
         c.topCust.toLowerCase().includes(q)
-      );
-    });
-  }, [conduits, selectedMasterForest, effectiveAgentIdSet, rankingsSearch]);
+      )
+    })
+  }, [conduits, selectedMasterForest, effectiveAgentIdSet, rankingsSearch])
 
   // Precompute heat-map scales & bucket lookups strictly when visible filtered datasets change.
   const subAgentHeat = useMemo(
@@ -1334,7 +1235,7 @@ export function RankingsTabPanel({
         (sa) => sa.handleUsd,
       ),
     [visibleSubAgents],
-  );
+  )
 
   const masterForestHeat = useMemo(
     () =>
@@ -1344,7 +1245,7 @@ export function RankingsTabPanel({
         (f) => f.handleUsd,
       ),
     [visibleForests],
-  );
+  )
 
   const playerHeat = useMemo(
     () =>
@@ -1354,7 +1255,7 @@ export function RankingsTabPanel({
         (p) => p.handleUsd,
       ),
     [filteredPlayersUnsorted],
-  );
+  )
 
   const conduitHeat = useMemo(
     () =>
@@ -1364,59 +1265,58 @@ export function RankingsTabPanel({
         (c) => c.handleUsd,
       ),
     [filteredConduits],
-  );
+  )
 
   const activeLegendHeat = useMemo(() => {
     if (viewMode === "PLAYERS") {
-      return { scopeLabel: "Filtered Accounts", scale: playerHeat.scale };
+      return { scopeLabel: "Filtered Accounts", scale: playerHeat.scale }
     }
     if (viewMode === "CONDUITS") {
-      return { scopeLabel: "Filtered Conduits", scale: conduitHeat.scale };
+      return { scopeLabel: "Filtered Conduits", scale: conduitHeat.scale }
     }
     if (subAgentHeat.scale.totalCount > 0) {
-      return { scopeLabel: "Filtered Sub-Agents", scale: subAgentHeat.scale };
+      return { scopeLabel: "Filtered Sub-Agents", scale: subAgentHeat.scale }
     }
     if (conduitHeat.scale.totalCount > 0) {
-      return { scopeLabel: "Filtered Conduits", scale: conduitHeat.scale };
+      return { scopeLabel: "Filtered Conduits", scale: conduitHeat.scale }
     }
-    return { scopeLabel: "Filtered Accounts", scale: playerHeat.scale };
-  }, [viewMode, subAgentHeat.scale, conduitHeat.scale, playerHeat.scale]);
+    return { scopeLabel: "Filtered Accounts", scale: playerHeat.scale }
+  }, [viewMode, subAgentHeat.scale, conduitHeat.scale, playerHeat.scale])
 
   const handleCopyF402TxQuery = (agentId: string) => {
     const matchedOpt = agentFilterOptions.find(
       (o) => o.agentId.toUpperCase() === agentId.toUpperCase(),
-    );
-    const agentOwner =
-      matchedOpt?.role === "sub-agent" ? matchedOpt.masterAgent : agentId;
+    )
+    const agentOwner = matchedOpt?.role === "sub-agent" ? matchedOpt.masterAgent : agentId
     const params = buildF402TransactionHistoryParams({
       agentId,
       agentOwner,
       customerId: normalizedFocusId ?? "",
       startDate: summary?.windowStart,
       endDate: summary?.windowEnd,
-    });
+    })
     void copyText(params.toString()).then((res) => {
-      if (!res.ok) return;
-      setCopiedTxAgentId(agentId);
+      if (!res.ok) return
+      setCopiedTxAgentId(agentId)
       setTimeout(() => {
-        setCopiedTxAgentId((prev) => (prev === agentId ? null : prev));
-      }, 1_800);
-    });
-  };
+        setCopiedTxAgentId((prev) => (prev === agentId ? null : prev))
+      }, 1_800)
+    })
+  }
 
   const toggleSort = (field: DownlinesSortField) => {
     if (sortField === field) {
-      setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+      setSortDir((prev) => (prev === "asc" ? "desc" : "asc"))
     } else {
-      setSortField(field);
-      setSortDir(field === "rank" ? "asc" : "desc");
+      setSortField(field)
+      setSortDir(field === "rank" ? "asc" : "desc")
     }
-  };
+  }
 
   const sortIndicator = (field: DownlinesSortField): string => {
-    if (sortField !== field) return "";
-    return sortDir === "asc" ? " ↑" : " ↓";
-  };
+    if (sortField !== field) return ""
+    return sortDir === "asc" ? " ↑" : " ↓"
+  }
 
   const exportMode: "CONDUITS" | "SUB_AGENTS" | "PLAYERS" =
     viewMode === "CONDUITS"
@@ -1427,51 +1327,45 @@ export function RankingsTabPanel({
           ? "PLAYERS"
           : visibleSubAgents.length > 0
             ? "SUB_AGENTS"
-            : "PLAYERS";
+            : "PLAYERS"
 
   const exportRowCount =
     exportMode === "CONDUITS"
       ? filteredConduits.length
       : exportMode === "SUB_AGENTS"
         ? visibleSubAgents.length
-        : filteredPlayers.length;
+        : filteredPlayers.length
 
   const shouldIgnoreRowClick = (target: EventTarget | null): boolean => {
     if (!target || typeof (target as { closest?: unknown }).closest !== "function") {
-      return false;
+      return false
     }
     return Boolean(
       (target as Element).closest(
         'button, a, input, select, textarea, [role="button"], [role="menuitem"]',
       ),
-    );
-  };
+    )
+  }
 
-  const handleAgentRowClick = (
-    event: React.MouseEvent<HTMLElement>,
-    agentId: string,
-  ) => {
+  const handleAgentRowClick = (event: React.MouseEvent<HTMLElement>, agentId: string) => {
     if (!onSelectAgent || event.metaKey || event.ctrlKey || event.button !== 0) {
-      return;
+      return
     }
-    if (shouldIgnoreRowClick(event.target)) return;
-    onSelectAgent(agentId);
-  };
+    if (shouldIgnoreRowClick(event.target)) return
+    onSelectAgent(agentId)
+  }
 
-  const handleAgentRowKeyDown = (
-    event: React.KeyboardEvent<HTMLElement>,
-    agentId: string,
-  ) => {
-    if (!onSelectAgent) return;
-    if (event.target !== event.currentTarget) return;
+  const handleAgentRowKeyDown = (event: React.KeyboardEvent<HTMLElement>, agentId: string) => {
+    if (!onSelectAgent) return
+    if (event.target !== event.currentTarget) return
     if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      onSelectAgent(agentId);
+      event.preventDefault()
+      onSelectAgent(agentId)
     }
-  };
+  }
 
   const handleDownloadCsv = () => {
-    if (exportRowCount === 0) return;
+    if (exportRowCount === 0) return
     const csv =
       exportMode === "CONDUITS"
         ? buildConduitsCsv(filteredConduits, conduitHeat.byKey)
@@ -1483,39 +1377,39 @@ export function RankingsTabPanel({
           : buildDownlinesCsv(filteredPlayers, {
               totalDeskHandle,
               heatByKey: playerHeat.byKey,
-            });
+            })
     const filename = buildRankingsCsvFilename({
       viewMode,
       filter: rankingsFilter,
       selectedAgentIds: effectiveAgentIds,
       masterForest: selectedMasterForest,
-    });
-    const downloaded = downloadRankingsCsvBlob(csv, filename);
+    })
+    const downloaded = downloadRankingsCsvBlob(csv, filename)
     if (downloaded) {
-      setExportedCsvCount(exportRowCount);
+      setExportedCsvCount(exportRowCount)
       setTimeout(() => {
-        setExportedCsvCount((prev) => (prev === exportRowCount ? null : prev));
-      }, 2_000);
+        setExportedCsvCount((prev) => (prev === exportRowCount ? null : prev))
+      }, 2_000)
     }
-  };
+  }
 
   const handleResetFilters = () => {
-    onRankingsSearchChange("");
-    onRankingsFilterChange("ALL");
-    setSelectedMasterForest("ALL");
-    updateSelectedAgentIds([]);
-    setIsolateFocusedLineage(false);
-    setSortField("rank");
-    setSortDir("asc");
+    onRankingsSearchChange("")
+    onRankingsFilterChange("ALL")
+    setSelectedMasterForest("ALL")
+    updateSelectedAgentIds([])
+    setIsolateFocusedLineage(false)
+    setSortField("rank")
+    setSortDir("asc")
     if (onClearFocusedCustomer) {
-      onClearFocusedCustomer();
+      onClearFocusedCustomer()
     }
-  };
+  }
 
   const totalDeskHandle =
     summary?.totalHandleUsd && summary.totalHandleUsd > 0
       ? summary.totalHandleUsd
-      : players.reduce((sum, p) => sum + p.handleUsd, 0);
+      : players.reduce((sum, p) => sum + p.handleUsd, 0)
 
   const hasActiveFilters =
     rankingsSearch.trim() !== "" ||
@@ -1523,13 +1417,13 @@ export function RankingsTabPanel({
     selectedMasterForest !== "ALL" ||
     effectiveAgentIds.length > 0 ||
     isolateFocusedLineage ||
-    normalizedFocusId !== null;
+    normalizedFocusId !== null
 
-  const unmeasured = "—";
-  const isPending = rankingsStatus === "pending" && players.length === 0;
-  const showTree = viewMode === "ALL" || viewMode === "TREE";
-  const showPlayers = viewMode === "ALL" || viewMode === "PLAYERS";
-  const showConduits = viewMode === "ALL" || viewMode === "CONDUITS";
+  const unmeasured = "—"
+  const isPending = rankingsStatus === "pending" && players.length === 0
+  const showTree = viewMode === "ALL" || viewMode === "TREE"
+  const showPlayers = viewMode === "ALL" || viewMode === "PLAYERS"
+  const showConduits = viewMode === "ALL" || viewMode === "CONDUITS"
 
   return (
     <div
@@ -1577,16 +1471,12 @@ export function RankingsTabPanel({
               }}
             >
               <GitBranch size={14} style={{ color: "#38bdf8" }} aria-hidden="true" />
-              <span style={{ color: "#94a3b8", fontWeight: 500 }}>
-                Focused Customer Lineage:
-              </span>
+              <span style={{ color: "#94a3b8", fontWeight: 500 }}>Focused Customer Lineage:</span>
               {focusedPlayer ? (
                 <>
                   <button
                     type="button"
-                    onClick={() =>
-                      setSelectedMasterForest(focusedPlayer.masterAgent)
-                    }
+                    onClick={() => setSelectedMasterForest(focusedPlayer.masterAgent)}
                     style={{
                       background: "none",
                       border: "none",
@@ -1622,9 +1512,7 @@ export function RankingsTabPanel({
                   <span style={{ color: "#64748b" }} aria-hidden="true">
                     /
                   </span>
-                  <strong style={{ color: "#f8fafc", ...TABULAR_NUMS }}>
-                    {focusedPlayer.id}
-                  </strong>
+                  <strong style={{ color: "#f8fafc", ...TABULAR_NUMS }}>{focusedPlayer.id}</strong>
                 </>
               ) : (
                 <strong style={{ color: "#f8fafc" }}>{normalizedFocusId}</strong>
@@ -1642,9 +1530,7 @@ export function RankingsTabPanel({
             >
               {focusedPlayer ? (
                 <>
-                  <span>
-                    Handle: ${focusedPlayer.handleUsd.toLocaleString()}
-                  </span>
+                  <span>Handle: ${focusedPlayer.handleUsd.toLocaleString()}</span>
                   <span aria-hidden="true">·</span>
                   <span
                     style={{
@@ -1654,8 +1540,7 @@ export function RankingsTabPanel({
                     }}
                   >
                     <span>
-                      Sub-Agent Share:{" "}
-                      {focusedSharePct !== null ? `${focusedSharePct}%` : "—"}
+                      Sub-Agent Share: {focusedSharePct !== null ? `${focusedSharePct}%` : "—"}
                     </span>
                     <HandleTrendIndicator
                       deltaPct={focusedPlayer.handleDelta24hPct}
@@ -1666,10 +1551,7 @@ export function RankingsTabPanel({
                   <span aria-hidden="true">·</span>
                   <span>Score: {focusedPlayer.score.toFixed(2)}</span>
                   <span aria-hidden="true">·</span>
-                  <span>
-                    Downline Peers:{" "}
-                    {focusedSubAgent ? focusedSubAgent.customerCount : 1}
-                  </span>
+                  <span>Downline Peers: {focusedSubAgent ? focusedSubAgent.customerCount : 1}</span>
                   {focusedPlayer.clvBps !== undefined && (
                     <>
                       <span aria-hidden="true">·</span>
@@ -1682,8 +1564,8 @@ export function RankingsTabPanel({
                 </>
               ) : (
                 <span>
-                  {normalizedFocusId} is not in the current 30d top-rankings
-                  slice — full downlines remain visible below.
+                  {normalizedFocusId} is not in the current 30d top-rankings slice — full downlines
+                  remain visible below.
                 </span>
               )}
             </div>
@@ -1707,15 +1589,11 @@ export function RankingsTabPanel({
                   padding: "5px 10px",
                   fontSize: "12px",
                   whiteSpace: "nowrap",
-                  backgroundColor: isolateFocusedLineage
-                    ? "rgba(56, 189, 248, 0.2)"
-                    : undefined,
+                  backgroundColor: isolateFocusedLineage ? "rgba(56, 189, 248, 0.2)" : undefined,
                   borderColor: isolateFocusedLineage ? "#38bdf8" : undefined,
                 }}
               >
-                {isolateFocusedLineage
-                  ? "Showing Lineage Only"
-                  : "Isolate Lineage"}
+                {isolateFocusedLineage ? "Showing Lineage Only" : "Isolate Lineage"}
               </button>
             )}
             {onSelectCustomerById && (
@@ -1753,8 +1631,8 @@ export function RankingsTabPanel({
                 type="button"
                 data-downline-clear-focus="true"
                 onClick={() => {
-                  setIsolateFocusedLineage(false);
-                  onClearFocusedCustomer();
+                  setIsolateFocusedLineage(false)
+                  onClearFocusedCustomer()
                 }}
                 style={{
                   ...styles.actionBtn,
@@ -1899,21 +1777,19 @@ export function RankingsTabPanel({
           />
 
           <div style={styles.tierFilterGroup}>
-            {rankingsFilterControls(summary?.conduitSubAgentCount ?? null).map(
-              (item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  style={{
-                    ...styles.filterPill(rankingsFilter === item.id),
-                    whiteSpace: "nowrap",
-                  }}
-                  onClick={() => onRankingsFilterChange(item.id)}
-                >
-                  {item.label}
-                </button>
-              ),
-            )}
+            {rankingsFilterControls(summary?.conduitSubAgentCount ?? null).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                style={{
+                  ...styles.filterPill(rankingsFilter === item.id),
+                  whiteSpace: "nowrap",
+                }}
+                onClick={() => onRankingsFilterChange(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -1960,10 +1836,7 @@ export function RankingsTabPanel({
                   fontWeight: 600,
                   cursor: "pointer",
                   whiteSpace: "nowrap",
-                  backgroundColor:
-                    viewMode === mode.id
-                      ? "rgba(56, 189, 248, 0.2)"
-                      : "transparent",
+                  backgroundColor: viewMode === mode.id ? "rgba(56, 189, 248, 0.2)" : "transparent",
                   color: viewMode === mode.id ? "#38bdf8" : "#94a3b8",
                 }}
               >
@@ -2225,16 +2098,12 @@ export function RankingsTabPanel({
             All ({allForests.length})
           </button>
           {allForests.map((forest) => {
-            const active =
-              selectedMasterForest.toUpperCase() ===
-              forest.masterAgent.toUpperCase();
+            const active = selectedMasterForest.toUpperCase() === forest.masterAgent.toUpperCase()
             return (
               <button
                 key={forest.masterAgent}
                 type="button"
-                onClick={() =>
-                  setSelectedMasterForest(active ? "ALL" : forest.masterAgent)
-                }
+                onClick={() => setSelectedMasterForest(active ? "ALL" : forest.masterAgent)}
                 style={{
                   ...styles.filterPill(active),
                   padding: "4px 10px",
@@ -2246,7 +2115,7 @@ export function RankingsTabPanel({
                 {forest.masterAgent} · {forest.subAgentCount} ag ·{" "}
                 {formatUsdCompact(forest.handleUsd)}
               </button>
-            );
+            )
           })}
         </div>
       )}
@@ -2268,7 +2137,9 @@ export function RankingsTabPanel({
             </span>
           </div>
 
-          <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div
+            style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: "12px" }}
+          >
             {visibleForests.length === 0 ? (
               <div
                 style={{
@@ -2284,11 +2155,11 @@ export function RankingsTabPanel({
               </div>
             ) : (
               visibleForests.map((forest) => {
-                const isCollapsed = Boolean(collapsedMasters[forest.masterAgent]);
+                const isCollapsed = Boolean(collapsedMasters[forest.masterAgent])
                 const deskSharePct =
                   totalDeskHandle > 0
                     ? Math.min(100, (forest.handleUsd / totalDeskHandle) * 100)
-                    : 0;
+                    : 0
                 return (
                   <div
                     key={forest.masterAgent}
@@ -2301,9 +2172,7 @@ export function RankingsTabPanel({
                   >
                     {/* Master Forest Row */}
                     <div
-                      className={
-                        onSelectAgent ? "sd-rankings-clickable-row" : undefined
-                      }
+                      className={onSelectAgent ? "sd-rankings-clickable-row" : undefined}
                       data-downline-master-row={forest.masterAgent}
                       data-rankings-row-agent={forest.masterAgent}
                       tabIndex={onSelectAgent ? 0 : undefined}
@@ -2313,9 +2182,7 @@ export function RankingsTabPanel({
                           : undefined
                       }
                       onClick={(e) => handleAgentRowClick(e, forest.masterAgent)}
-                      onKeyDown={(e) =>
-                        handleAgentRowKeyDown(e, forest.masterAgent)
-                      }
+                      onKeyDown={(e) => handleAgentRowKeyDown(e, forest.masterAgent)}
                       style={{
                         display: "flex",
                         flexWrap: "wrap",
@@ -2324,9 +2191,7 @@ export function RankingsTabPanel({
                         gap: "12px",
                         padding: "10px 14px",
                         backgroundColor: "rgba(15, 23, 42, 0.7)",
-                        borderBottom: isCollapsed
-                          ? "none"
-                          : "1px solid #1e293b",
+                        borderBottom: isCollapsed ? "none" : "1px solid #1e293b",
                       }}
                     >
                       <div
@@ -2357,11 +2222,7 @@ export function RankingsTabPanel({
                             alignItems: "center",
                           }}
                         >
-                          {isCollapsed ? (
-                            <ChevronRight size={15} />
-                          ) : (
-                            <ChevronDown size={15} />
-                          )}
+                          {isCollapsed ? <ChevronRight size={15} /> : <ChevronDown size={15} />}
                         </button>
                         <button
                           type="button"
@@ -2387,8 +2248,7 @@ export function RankingsTabPanel({
                           }}
                         >
                           {forest.subAgentCount} sub-agent
-                          {forest.subAgentCount === 1 ? "" : "s"} ·{" "}
-                          {forest.customerCount} account
+                          {forest.subAgentCount === 1 ? "" : "s"} · {forest.customerCount} account
                           {forest.customerCount === 1 ? "" : "s"}
                           {forest.conduitCount > 0
                             ? ` · ${forest.conduitCount} proxy conduit${forest.conduitCount === 1 ? "" : "s"}`
@@ -2447,15 +2307,10 @@ export function RankingsTabPanel({
                           </span>
                         </div>
                         {(() => {
-                          const masterKey = forest.masterAgent
-                            .trim()
-                            .toUpperCase();
+                          const masterKey = forest.masterAgent.trim().toUpperCase()
                           const forestHeat =
                             masterForestHeat.byKey.get(masterKey) ??
-                            evaluateHandleHeatCell(
-                              masterForestHeat.scale,
-                              forest.handleUsd,
-                            );
+                            evaluateHandleHeatCell(masterForestHeat.scale, forest.handleUsd)
                           return (
                             <span
                               className="sd-heat-cell sd-heat-cell--inline"
@@ -2472,7 +2327,7 @@ export function RankingsTabPanel({
                                 placement="left"
                               />
                             </span>
-                          );
+                          )
                         })()}
                       </div>
                     </div>
@@ -2485,28 +2340,23 @@ export function RankingsTabPanel({
                             ? "#ef4444"
                             : sa.concPct >= 60
                               ? "#f59e0b"
-                              : "#4ade80";
+                              : "#4ade80"
                           const concStatus = sa.isProxyConduit
                             ? "PROXY CONDUIT"
                             : sa.concPct >= 60
                               ? "CONCENTRATED"
-                              : "DIVERSIFIED";
+                              : "DIVERSIFIED"
                           return (
                             <div
                               key={sa.agentId}
                               data-downline-agent={sa.agentId}
                               style={{
-                                borderTop:
-                                  saIdx === 0 ? "none" : "1px solid #1e293b",
+                                borderTop: saIdx === 0 ? "none" : "1px solid #1e293b",
                                 padding: "10px 14px 10px 30px",
                               }}
                             >
                               <div
-                                className={
-                                  onSelectAgent
-                                    ? "sd-rankings-clickable-row"
-                                    : undefined
-                                }
+                                className={onSelectAgent ? "sd-rankings-clickable-row" : undefined}
                                 data-downline-agent-row={sa.agentId}
                                 data-rankings-row-agent={sa.agentId}
                                 tabIndex={onSelectAgent ? 0 : undefined}
@@ -2515,12 +2365,8 @@ export function RankingsTabPanel({
                                     ? `Click row to inspect agent ${sa.agentId}`
                                     : undefined
                                 }
-                                onClick={(e) =>
-                                  handleAgentRowClick(e, sa.agentId)
-                                }
-                                onKeyDown={(e) =>
-                                  handleAgentRowKeyDown(e, sa.agentId)
-                                }
+                                onClick={(e) => handleAgentRowClick(e, sa.agentId)}
+                                onKeyDown={(e) => handleAgentRowKeyDown(e, sa.agentId)}
                                 style={{
                                   display: "flex",
                                   flexWrap: "wrap",
@@ -2530,8 +2376,7 @@ export function RankingsTabPanel({
                                   padding: "4px 6px",
                                   margin: "-4px -6px",
                                   borderRadius: "6px",
-                                  marginBottom:
-                                    sa.players.length > 0 ? "8px" : 0,
+                                  marginBottom: sa.players.length > 0 ? "8px" : 0,
                                 }}
                               >
                                 <div
@@ -2556,8 +2401,8 @@ export function RankingsTabPanel({
                                         !e.ctrlKey &&
                                         e.button === 0
                                       ) {
-                                        e.preventDefault();
-                                        onSelectAgent(sa.agentId);
+                                        e.preventDefault()
+                                        onSelectAgent(sa.agentId)
                                       }
                                     }}
                                     style={{
@@ -2615,19 +2460,14 @@ export function RankingsTabPanel({
                                   }}
                                 >
                                   {(() => {
-                                    const saKey = sa.agentId
-                                      .trim()
-                                      .toUpperCase();
+                                    const saKey = sa.agentId.trim().toUpperCase()
                                     const saHeat =
                                       subAgentHeat.byKey.get(saKey) ??
-                                      evaluateHandleHeatCell(
-                                        subAgentHeat.scale,
-                                        sa.handleUsd,
-                                      );
+                                      evaluateHandleHeatCell(subAgentHeat.scale, sa.handleUsd)
                                     const saForestSharePct =
                                       forest.handleUsd > 0
                                         ? (sa.handleUsd / forest.handleUsd) * 100
-                                        : 0;
+                                        : 0
                                     return (
                                       <span
                                         className="sd-heat-cell sd-heat-cell--inline"
@@ -2640,9 +2480,7 @@ export function RankingsTabPanel({
                                           ...TABULAR_NUMS,
                                         }}
                                       >
-                                        <span>
-                                          ${sa.handleUsd.toLocaleString()}
-                                        </span>
+                                        <span>${sa.handleUsd.toLocaleString()}</span>
                                         <span
                                           className="sd-heat-subtext"
                                           style={{
@@ -2664,7 +2502,7 @@ export function RankingsTabPanel({
                                           placement="left"
                                         />
                                       </span>
-                                    );
+                                    )
                                   })()}
                                   {sa.totalNetUsd !== null && (
                                     <span
@@ -2682,17 +2520,13 @@ export function RankingsTabPanel({
                                   )}
                                   <button
                                     type="button"
-                                    onClick={() =>
-                                      toggleSelectedAgentId(sa.agentId)
-                                    }
+                                    onClick={() => toggleSelectedAgentId(sa.agentId)}
                                     style={{
                                       ...styles.actionBtn,
                                       padding: "3px 8px",
                                       fontSize: "11px",
                                       whiteSpace: "nowrap",
-                                      borderColor: effectiveAgentIdSet.has(
-                                        sa.agentId.toUpperCase(),
-                                      )
+                                      borderColor: effectiveAgentIdSet.has(sa.agentId.toUpperCase())
                                         ? "#38bdf8"
                                         : undefined,
                                       backgroundColor: effectiveAgentIdSet.has(
@@ -2702,9 +2536,7 @@ export function RankingsTabPanel({
                                         : undefined,
                                     }}
                                   >
-                                    {effectiveAgentIdSet.has(
-                                      sa.agentId.toUpperCase(),
-                                    )
+                                    {effectiveAgentIdSet.has(sa.agentId.toUpperCase())
                                       ? "Filtered"
                                       : "Filter Agent"}
                                   </button>
@@ -2729,17 +2561,13 @@ export function RankingsTabPanel({
                                         ? (p.handleUsd / sa.handleUsd) * 100
                                         : sa.players.length === 1
                                           ? 100
-                                          : 0;
-                                    const isFocused =
-                                      normalizedFocusId ===
-                                      p.id.toUpperCase();
+                                          : 0
+                                    const isFocused = normalizedFocusId === p.id.toUpperCase()
                                     return (
                                       <div
                                         key={p.id}
                                         className={
-                                          onSelectAgent
-                                            ? "sd-rankings-clickable-row"
-                                            : undefined
+                                          onSelectAgent ? "sd-rankings-clickable-row" : undefined
                                         }
                                         data-downline-customer-row={p.id}
                                         data-rankings-row-agent={p.agentId}
@@ -2749,12 +2577,8 @@ export function RankingsTabPanel({
                                             ? `Click row to inspect agent ${p.agentId}`
                                             : undefined
                                         }
-                                        onClick={(e) =>
-                                          handleAgentRowClick(e, p.agentId)
-                                        }
-                                        onKeyDown={(e) =>
-                                          handleAgentRowKeyDown(e, p.agentId)
-                                        }
+                                        onClick={(e) => handleAgentRowClick(e, p.agentId)}
+                                        onKeyDown={(e) => handleAgentRowKeyDown(e, p.agentId)}
                                         style={{
                                           display: "grid",
                                           gridTemplateColumns:
@@ -2790,8 +2614,8 @@ export function RankingsTabPanel({
                                                 !e.ctrlKey &&
                                                 e.button === 0
                                               ) {
-                                                e.preventDefault();
-                                                onSelectCustomerById(p.id);
+                                                e.preventDefault()
+                                                onSelectCustomerById(p.id)
                                               }
                                             }}
                                             style={{
@@ -2830,8 +2654,7 @@ export function RankingsTabPanel({
                                               width: "48px",
                                               height: "5px",
                                               borderRadius: "3px",
-                                              backgroundColor:
-                                                "rgba(51, 65, 85, 0.7)",
+                                              backgroundColor: "rgba(51, 65, 85, 0.7)",
                                               overflow: "hidden",
                                               flexShrink: 0,
                                             }}
@@ -2841,9 +2664,7 @@ export function RankingsTabPanel({
                                                 width: `${Math.min(100, share).toFixed(0)}%`,
                                                 height: "100%",
                                                 backgroundColor:
-                                                  share >= 80
-                                                    ? "#f87171"
-                                                    : "#38bdf8",
+                                                  share >= 80 ? "#f87171" : "#38bdf8",
                                               }}
                                             />
                                           </div>
@@ -2864,15 +2685,10 @@ export function RankingsTabPanel({
                                             />
                                           </span>
                                           {(() => {
-                                            const pKey = p.id
-                                              .trim()
-                                              .toUpperCase();
+                                            const pKey = p.id.trim().toUpperCase()
                                             const custHeat =
                                               playerHeat.byKey.get(pKey) ??
-                                              evaluateHandleHeatCell(
-                                                playerHeat.scale,
-                                                p.handleUsd,
-                                              );
+                                              evaluateHandleHeatCell(playerHeat.scale, p.handleUsd)
                                             return (
                                               <span
                                                 className="sd-heat-cell sd-heat-cell--inline"
@@ -2885,16 +2701,14 @@ export function RankingsTabPanel({
                                                   ...TABULAR_NUMS,
                                                 }}
                                               >
-                                                <span>
-                                                  ${p.handleUsd.toLocaleString()}
-                                                </span>
+                                                <span>${p.handleUsd.toLocaleString()}</span>
                                                 <HandleHeatTooltip
                                                   metrics={custHeat}
                                                   entityLabel={p.id}
                                                   placement="left"
                                                 />
                                               </span>
-                                            );
+                                            )
                                           })()}
                                         </div>
 
@@ -2902,10 +2716,7 @@ export function RankingsTabPanel({
                                           Score{" "}
                                           <strong
                                             style={{
-                                              color:
-                                                p.score >= 7.5
-                                                  ? "#f59e0b"
-                                                  : "#38bdf8",
+                                              color: p.score >= 7.5 ? "#f59e0b" : "#38bdf8",
                                             }}
                                           >
                                             {p.score.toFixed(2)}
@@ -2929,8 +2740,7 @@ export function RankingsTabPanel({
                                             <button
                                               type="button"
                                               onClick={() =>
-                                                isFocused &&
-                                                onClearFocusedCustomer
+                                                isFocused && onClearFocusedCustomer
                                                   ? onClearFocusedCustomer()
                                                   : onFocusCustomer(p.id)
                                               }
@@ -2939,9 +2749,7 @@ export function RankingsTabPanel({
                                                 padding: "3px 7px",
                                                 fontSize: "11px",
                                                 whiteSpace: "nowrap",
-                                                borderColor: isFocused
-                                                  ? "#38bdf8"
-                                                  : undefined,
+                                                borderColor: isFocused ? "#38bdf8" : undefined,
                                               }}
                                             >
                                               {isFocused ? "Focused" : "Focus"}
@@ -2961,17 +2769,17 @@ export function RankingsTabPanel({
                                           </button>
                                         </div>
                                       </div>
-                                    );
+                                    )
                                   })}
                                 </div>
                               )}
                             </div>
-                          );
+                          )
                         })}
                       </div>
                     )}
                   </div>
-                );
+                )
               })
             )}
           </div>
@@ -2982,12 +2790,10 @@ export function RankingsTabPanel({
       {showPlayers && (
         <div style={styles.tableCard}>
           <div style={styles.tableHeader}>
-            <h3 style={styles.tableTitle}>
-              30-Day Sharp Bettor Rankings & Downline Profiling
-            </h3>
+            <h3 style={styles.tableTitle}>30-Day Sharp Bettor Rankings & Downline Profiling</h3>
             <span style={{ fontSize: "11px", color: "#64748b", ...TABULAR_NUMS }}>
-              Showing {filteredPlayers.length} of {players.length} accounts ·
-              Click any row to inspect agent · Click headers to sort · autoExecute: false
+              Showing {filteredPlayers.length} of {players.length} accounts · Click any row to
+              inspect agent · Click headers to sort · autoExecute: false
             </span>
           </div>
 
@@ -3168,32 +2974,20 @@ export function RankingsTabPanel({
                   </tr>
                 ) : null}
                 {filteredPlayers.map((p) => {
-                  const isFocused = normalizedFocusId === p.id.toUpperCase();
+                  const isFocused = normalizedFocusId === p.id.toUpperCase()
                   return (
                     <tr
                       key={p.id}
-                      className={
-                        onSelectAgent ? "sd-rankings-clickable-row" : undefined
-                      }
+                      className={onSelectAgent ? "sd-rankings-clickable-row" : undefined}
                       data-rankings-row-agent={p.agentId}
                       tabIndex={onSelectAgent ? 0 : undefined}
-                      title={
-                        onSelectAgent
-                          ? `Click row to inspect agent ${p.agentId}`
-                          : undefined
-                      }
+                      title={onSelectAgent ? `Click row to inspect agent ${p.agentId}` : undefined}
                       onClick={(e) => handleAgentRowClick(e, p.agentId)}
                       onKeyDown={(e) => handleAgentRowKeyDown(e, p.agentId)}
-                      style={
-                        isFocused
-                          ? { backgroundColor: "rgba(56, 189, 248, 0.1)" }
-                          : undefined
-                      }
+                      style={isFocused ? { backgroundColor: "rgba(56, 189, 248, 0.1)" } : undefined}
                     >
                       <td style={{ ...styles.td, ...TABULAR_NUMS }}>
-                        <span style={{ fontWeight: 700, color: "#38bdf8" }}>
-                          #{p.rank}
-                        </span>
+                        <span style={{ fontWeight: 700, color: "#38bdf8" }}>#{p.rank}</span>
                       </td>
                       <td style={styles.td}>
                         <div
@@ -3212,8 +3006,8 @@ export function RankingsTabPanel({
                                 !e.ctrlKey &&
                                 e.button === 0
                               ) {
-                                e.preventDefault();
-                                onSelectCustomerById(p.id);
+                                e.preventDefault()
+                                onSelectCustomerById(p.id)
                               }
                             }}
                             style={{
@@ -3261,14 +3055,9 @@ export function RankingsTabPanel({
                           <a
                             href={getLocalAgentHref(p.agentId)}
                             onClick={(e) => {
-                              if (
-                                onSelectAgent &&
-                                !e.metaKey &&
-                                !e.ctrlKey &&
-                                e.button === 0
-                              ) {
-                                e.preventDefault();
-                                onSelectAgent(p.agentId);
+                              if (onSelectAgent && !e.metaKey && !e.ctrlKey && e.button === 0) {
+                                e.preventDefault()
+                                onSelectAgent(p.agentId)
                               }
                             }}
                             style={{
@@ -3284,9 +3073,7 @@ export function RankingsTabPanel({
                           Master:{" "}
                           <button
                             type="button"
-                            onClick={() =>
-                              setSelectedMasterForest(p.masterAgent)
-                            }
+                            onClick={() => setSelectedMasterForest(p.masterAgent)}
                             style={{
                               background: "none",
                               border: "none",
@@ -3302,10 +3089,10 @@ export function RankingsTabPanel({
                         </div>
                       </td>
                       {(() => {
-                        const pKey = p.id.trim().toUpperCase();
+                        const pKey = p.id.trim().toUpperCase()
                         const rowHeat =
                           playerHeat.byKey.get(pKey) ??
-                          evaluateHandleHeatCell(playerHeat.scale, p.handleUsd);
+                          evaluateHandleHeatCell(playerHeat.scale, p.handleUsd)
                         return (
                           <td
                             className="sd-heat-cell"
@@ -3333,11 +3120,7 @@ export function RankingsTabPanel({
                                     color: "#cbd5e1",
                                   }}
                                 >
-                                  {(
-                                    (p.handleUsd / totalDeskHandle) *
-                                    100
-                                  ).toFixed(1)}
-                                  %
+                                  {((p.handleUsd / totalDeskHandle) * 100).toFixed(1)}%
                                 </span>
                               )}
                               <HandleTrendIndicator
@@ -3360,7 +3143,7 @@ export function RankingsTabPanel({
                               placement="right"
                             />
                           </td>
-                        );
+                        )
                       })()}
                       <td style={{ ...styles.td, ...TABULAR_NUMS }}>
                         <div>{p.wagers.toLocaleString()}</div>
@@ -3400,9 +3183,7 @@ export function RankingsTabPanel({
                         </span>
                       </td>
                       <td style={styles.td}>
-                        <span style={styles.tierBadge(p.tier)}>
-                          {p.tierLabel}
-                        </span>
+                        <span style={styles.tierBadge(p.tier)}>{p.tierLabel}</span>
                       </td>
                       <td style={{ ...styles.td, ...TABULAR_NUMS }}>
                         <div style={{ fontSize: "11px", color: "#f87171" }}>
@@ -3454,7 +3235,7 @@ export function RankingsTabPanel({
                         </div>
                       </td>
                     </tr>
-                  );
+                  )
                 })}
               </tbody>
             </table>
@@ -3516,218 +3297,193 @@ export function RankingsTabPanel({
                         color: "#94a3b8",
                       }}
                     >
-                      No proxy conduits match the active Agent ID or search
-                      filter.
+                      No proxy conduits match the active Agent ID or search filter.
                     </td>
                   </tr>
                 ) : null}
                 {filteredConduits.map((c) => (
-                    <tr
-                      key={c.agentId}
-                      className={
-                        onSelectAgent ? "sd-rankings-clickable-row" : undefined
-                      }
-                      data-rankings-row-agent={c.agentId}
-                      tabIndex={onSelectAgent ? 0 : undefined}
-                      title={
-                        onSelectAgent
-                          ? `Click row to inspect agent ${c.agentId}`
-                          : undefined
-                      }
-                      onClick={(e) => handleAgentRowClick(e, c.agentId)}
-                      onKeyDown={(e) => handleAgentRowKeyDown(e, c.agentId)}
-                    >
-                      <td style={styles.td}>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <span style={{ fontWeight: 700, color: "#f59e0b" }}>
-                            <a
-                              href={getLocalAgentHref(c.agentId)}
-                              onClick={(e) => {
-                                if (
-                                  onSelectAgent &&
-                                  !e.metaKey &&
-                                  !e.ctrlKey &&
-                                  e.button === 0
-                                ) {
-                                  e.preventDefault();
-                                  onSelectAgent(c.agentId);
-                                }
-                              }}
-                              style={{
-                                color: "#f59e0b",
-                                textDecoration: "none",
-                              }}
-                              title="Open SportsDesk Agent Inspector"
-                            >
-                              {c.agentId} ↗
-                            </a>
-                          </span>
-                          <button
-                            type="button"
-                            data-conduit-filter-toggle={c.agentId}
-                            onClick={() => toggleSelectedAgentId(c.agentId)}
-                            style={{
-                              ...styles.actionBtn,
-                              padding: "2px 7px",
-                              fontSize: "10px",
-                              whiteSpace: "nowrap",
-                              borderColor: effectiveAgentIdSet.has(
-                                c.agentId.toUpperCase(),
-                              )
-                                ? "#38bdf8"
-                                : undefined,
-                              backgroundColor: effectiveAgentIdSet.has(
-                                c.agentId.toUpperCase(),
-                              )
-                                ? "rgba(56, 189, 248, 0.16)"
-                                : undefined,
-                            }}
-                          >
-                            {effectiveAgentIdSet.has(c.agentId.toUpperCase())
-                              ? "Filtered"
-                              : "Filter"}
-                          </button>
-                        </div>
-                      </td>
-                      <td style={styles.td}>
-                        <span>{c.masterAgent}</span>
-                      </td>
-                      {(() => {
-                        const cKey = c.agentId.trim().toUpperCase();
-                        const cHeat =
-                          conduitHeat.byKey.get(cKey) ??
-                          evaluateHandleHeatCell(
-                            conduitHeat.scale,
-                            c.handleUsd,
-                          );
-                        return (
-                          <td
-                            className="sd-heat-cell"
-                            data-heat-cell="true"
-                            data-heat-bucket={cHeat.bucket}
-                            tabIndex={0}
-                            title={cHeat.summaryTitle}
-                            style={{ ...styles.td, ...TABULAR_NUMS }}
-                          >
-                            <span style={{ fontWeight: 600 }}>
-                              ${c.handleUsd.toLocaleString()}
-                            </span>
-                            <HandleHeatTooltip
-                              metrics={cHeat}
-                              entityLabel={`Conduit ${c.agentId}`}
-                              placement="right"
-                            />
-                          </td>
-                        );
-                      })()}
-                      <td style={{ ...styles.td, ...TABULAR_NUMS }}>
-                        <span>{c.wagers.toLocaleString()}</span>
-                      </td>
-                      <td style={styles.td}>
-                        <span style={{ fontWeight: 700, color: "#38bdf8" }}>
+                  <tr
+                    key={c.agentId}
+                    className={onSelectAgent ? "sd-rankings-clickable-row" : undefined}
+                    data-rankings-row-agent={c.agentId}
+                    tabIndex={onSelectAgent ? 0 : undefined}
+                    title={onSelectAgent ? `Click row to inspect agent ${c.agentId}` : undefined}
+                    onClick={(e) => handleAgentRowClick(e, c.agentId)}
+                    onKeyDown={(e) => handleAgentRowKeyDown(e, c.agentId)}
+                  >
+                    <td style={styles.td}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <span style={{ fontWeight: 700, color: "#f59e0b" }}>
                           <a
-                            href={getLocalCustomerHref(c.topCust)}
+                            href={getLocalAgentHref(c.agentId)}
                             onClick={(e) => {
-                              if (
-                                onSelectCustomerById &&
-                                !e.metaKey &&
-                                !e.ctrlKey &&
-                                e.button === 0
-                              ) {
-                                e.preventDefault();
-                                onSelectCustomerById(c.topCust);
+                              if (onSelectAgent && !e.metaKey && !e.ctrlKey && e.button === 0) {
+                                e.preventDefault()
+                                onSelectAgent(c.agentId)
                               }
                             }}
                             style={{
-                              color: "#38bdf8",
+                              color: "#f59e0b",
                               textDecoration: "none",
                             }}
-                            title="Inspect Customer in SportsDesk Profiles"
+                            title="Open SportsDesk Agent Inspector"
                           >
-                            {c.topCust}
-                          </a>{" "}
-                          <a
-                            {...getFantasy402PortalLinkProps(c.topCust)}
-                            style={{
-                              color: "#64748b",
-                              textDecoration: "none",
-                              fontSize: "11px",
-                            }}
-                            title="Open in active Fantasy402 Manager session tab"
-                          >
-                            ↗
+                            {c.agentId} ↗
                           </a>
                         </span>
-                      </td>
-                      <td style={{ ...styles.td, ...TABULAR_NUMS }}>
+                        <button
+                          type="button"
+                          data-conduit-filter-toggle={c.agentId}
+                          onClick={() => toggleSelectedAgentId(c.agentId)}
+                          style={{
+                            ...styles.actionBtn,
+                            padding: "2px 7px",
+                            fontSize: "10px",
+                            whiteSpace: "nowrap",
+                            borderColor: effectiveAgentIdSet.has(c.agentId.toUpperCase())
+                              ? "#38bdf8"
+                              : undefined,
+                            backgroundColor: effectiveAgentIdSet.has(c.agentId.toUpperCase())
+                              ? "rgba(56, 189, 248, 0.16)"
+                              : undefined,
+                          }}
+                        >
+                          {effectiveAgentIdSet.has(c.agentId.toUpperCase()) ? "Filtered" : "Filter"}
+                        </button>
+                      </div>
+                    </td>
+                    <td style={styles.td}>
+                      <span>{c.masterAgent}</span>
+                    </td>
+                    {(() => {
+                      const cKey = c.agentId.trim().toUpperCase()
+                      const cHeat =
+                        conduitHeat.byKey.get(cKey) ??
+                        evaluateHandleHeatCell(conduitHeat.scale, c.handleUsd)
+                      return (
+                        <td
+                          className="sd-heat-cell"
+                          data-heat-cell="true"
+                          data-heat-bucket={cHeat.bucket}
+                          tabIndex={0}
+                          title={cHeat.summaryTitle}
+                          style={{ ...styles.td, ...TABULAR_NUMS }}
+                        >
+                          <span style={{ fontWeight: 600 }}>${c.handleUsd.toLocaleString()}</span>
+                          <HandleHeatTooltip
+                            metrics={cHeat}
+                            entityLabel={`Conduit ${c.agentId}`}
+                            placement="right"
+                          />
+                        </td>
+                      )
+                    })()}
+                    <td style={{ ...styles.td, ...TABULAR_NUMS }}>
+                      <span>{c.wagers.toLocaleString()}</span>
+                    </td>
+                    <td style={styles.td}>
+                      <span style={{ fontWeight: 700, color: "#38bdf8" }}>
+                        <a
+                          href={getLocalCustomerHref(c.topCust)}
+                          onClick={(e) => {
+                            if (
+                              onSelectCustomerById &&
+                              !e.metaKey &&
+                              !e.ctrlKey &&
+                              e.button === 0
+                            ) {
+                              e.preventDefault()
+                              onSelectCustomerById(c.topCust)
+                            }
+                          }}
+                          style={{
+                            color: "#38bdf8",
+                            textDecoration: "none",
+                          }}
+                          title="Inspect Customer in SportsDesk Profiles"
+                        >
+                          {c.topCust}
+                        </a>{" "}
+                        <a
+                          {...getFantasy402PortalLinkProps(c.topCust)}
+                          style={{
+                            color: "#64748b",
+                            textDecoration: "none",
+                            fontSize: "11px",
+                          }}
+                          title="Open in active Fantasy402 Manager session tab"
+                        >
+                          ↗
+                        </a>
+                      </span>
+                    </td>
+                    <td style={{ ...styles.td, ...TABULAR_NUMS }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
                         <div
                           style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
+                            width: "52px",
+                            height: "6px",
+                            borderRadius: "3px",
+                            backgroundColor: "rgba(51, 65, 85, 0.7)",
+                            overflow: "hidden",
                           }}
                         >
                           <div
                             style={{
-                              width: "52px",
-                              height: "6px",
-                              borderRadius: "3px",
-                              backgroundColor: "rgba(51, 65, 85, 0.7)",
-                              overflow: "hidden",
+                              width: `${Math.min(100, c.concPct)}%`,
+                              height: "100%",
+                              backgroundColor: c.concPct >= 95 ? "#ef4444" : "#f59e0b",
                             }}
-                          >
-                            <div
-                              style={{
-                                width: `${Math.min(100, c.concPct)}%`,
-                                height: "100%",
-                                backgroundColor:
-                                  c.concPct >= 95 ? "#ef4444" : "#f59e0b",
-                              }}
-                            />
-                          </div>
-                          <span
-                            style={{
-                              fontWeight: 700,
-                              color: c.concPct >= 95 ? "#ef4444" : "#f59e0b",
-                            }}
-                          >
-                            {c.concPct.toFixed(1)}%
-                          </span>
-                          <HandleTrendIndicator
-                            deltaPct={c.handleDelta24hPct}
-                            label={`${c.agentId} 24h conduit shift`}
                           />
                         </div>
-                      </td>
-                      <td style={styles.td}>
-                        <div
+                        <span
                           style={{
-                            color: "#ef4444",
-                            fontWeight: 600,
-                            fontSize: "12px",
+                            fontWeight: 700,
+                            color: c.concPct >= 95 ? "#ef4444" : "#f59e0b",
                           }}
                         >
-                          SINGLE BETTOR PROXY CONDUIT
-                        </div>
-                        <div style={styles.custSub}>
-                          Cap sub-agent total exposure to prevent account
-                          rotation
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                          {c.concPct.toFixed(1)}%
+                        </span>
+                        <HandleTrendIndicator
+                          deltaPct={c.handleDelta24hPct}
+                          label={`${c.agentId} 24h conduit shift`}
+                        />
+                      </div>
+                    </td>
+                    <td style={styles.td}>
+                      <div
+                        style={{
+                          color: "#ef4444",
+                          fontWeight: 600,
+                          fontSize: "12px",
+                        }}
+                      >
+                        SINGLE BETTOR PROXY CONDUIT
+                      </div>
+                      <div style={styles.custSub}>
+                        Cap sub-agent total exposure to prevent account rotation
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         </div>
       )}
     </div>
-  );
+  )
 }

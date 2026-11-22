@@ -8,10 +8,7 @@ import type { CustomerFlaggedTicketForensics, ShowcaseCustomer } from "./types.t
 type JsonRecord = Readonly<Record<string, unknown>>
 
 export type OnChainXrefStatus =
-  | "DIVERGENCE_ALERT"
-  | "VERIFIED_LIVE"
-  | "QUARANTINED_WALLET"
-  | "UNLINKED_SHARP"
+  "DIVERGENCE_ALERT" | "VERIFIED_LIVE" | "QUARANTINED_WALLET" | "UNLINKED_SHARP"
 
 export type OnChainXrefCheckFlag =
   | "LIVE_ONCHAIN_VERIFIED"
@@ -402,14 +399,22 @@ export function buildSharpestOnChainXrefReport(
     const backtestWallet = cust.forensicDossier?.parlayBacktest?.proxyWallet ?? null
     const telemetryWallet = cust.forensicDossier?.telemetryOverview?.polymarketWallet ?? null
 
-    const candidateWallets = [track?.proxyWallet, bridgeLead?.wallet, backtestWallet, telemetryWallet]
+    const candidateWallets = [
+      track?.proxyWallet,
+      bridgeLead?.wallet,
+      backtestWallet,
+      telemetryWallet,
+    ]
       .filter((w): w is string => Boolean(w && w.trim().length > 0))
       .map((w) => w.trim())
     const uniqueNormalizedWallets = new Set(candidateWallets.map((w) => w.toLowerCase()))
     const walletSourceMismatch = uniqueNormalizedWallets.size > 1
 
     const proxyWallet = candidateWallets[0] ?? null
-    const shortWallet = track?.shortWallet ?? cust.forensicDossier?.parlayBacktest?.shortWallet ?? shortenWallet(proxyWallet)
+    const shortWallet =
+      track?.shortWallet ??
+      cust.forensicDossier?.parlayBacktest?.shortWallet ??
+      shortenWallet(proxyWallet)
     const walletFormatValid = isValidEvmAddress(proxyWallet)
     const walletAddressValid =
       track !== null
@@ -441,7 +446,10 @@ export function buildSharpestOnChainXrefReport(
     if (!proxyWallet) {
       flags.push("NO_ONCHAIN_ATTRIBUTION")
     }
-    if (proxyWallet && (!walletFormatValid || walletAddressValid === false || Boolean(track?.lastError))) {
+    if (
+      proxyWallet &&
+      (!walletFormatValid || walletAddressValid === false || Boolean(track?.lastError))
+    ) {
       flags.push("WALLET_ADDRESS_INVALID")
     }
     if (walletSourceMismatch) {
@@ -487,7 +495,11 @@ export function buildSharpestOnChainXrefReport(
     if (proxyWallet && walletFormatValid && walletAddressValid !== false) checksPassed += 1
     if (proxyWallet && !walletSourceMismatch) checksPassed += 1
     if (dataSource === "LIVE" && !track?.lastError) checksPassed += 1
-    if (proxyWallet && !flags.includes("POLY_ONLY_UP_DIVERGENCE") && sharedWithCustomerIds.length === 0) {
+    if (
+      proxyWallet &&
+      !flags.includes("POLY_ONLY_UP_DIVERGENCE") &&
+      sharedWithCustomerIds.length === 0
+    ) {
       checksPassed += 1
     }
 
@@ -570,7 +582,8 @@ export function buildSharpestOnChainXrefReport(
   sharpRows.sort((a, b) => {
     const priDiff = STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status]
     if (priDiff !== 0) return priDiff
-    if (b.bridgePriorityUsd !== a.bridgePriorityUsd) return b.bridgePriorityUsd - a.bridgePriorityUsd
+    if (b.bridgePriorityUsd !== a.bridgePriorityUsd)
+      return b.bridgePriorityUsd - a.bridgePriorityUsd
     return b.sharpScore - a.sharpScore
   })
 

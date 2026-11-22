@@ -4,6 +4,7 @@
  * hydration payloads, and WebSocket topic frame parsing.
  */
 
+import type { Fantasy402RateCard, SanitizedFantasy402Player } from "./agent_hierarchy.ts"
 import type { WagerTier } from "./wager_tokens.ts"
 
 export const DASHBOARD_WS_TOPICS = [
@@ -669,6 +670,13 @@ export interface AgentDetailApiResponse {
   readonly masterAgent: string | null
   readonly level: number | null
   readonly agentType: string | null
+  readonly seqNumber?: number | null | undefined
+  readonly login?: string | null | undefined
+  readonly rootMasterAgent?: string | null | undefined
+  readonly ancestors?: readonly string[] | undefined
+  readonly rateCard?: Fantasy402RateCard | null | undefined
+  readonly directoryPlayers?: readonly SanitizedFantasy402Player[] | undefined
+  readonly directoryPlayerCount?: number | undefined
   readonly childAgents: readonly string[]
   readonly conduit30d: {
     readonly handleUsd: number

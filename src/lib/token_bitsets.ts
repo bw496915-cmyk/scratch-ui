@@ -65,38 +65,38 @@ export const CHANNEL_MASK = Object.freeze({
 /** Precomputed ingestion composite masks aligned to `design/tokens.toml`. */
 export const CHANNEL_GROUP_MASK = Object.freeze({
   DROPPED: (CHANNEL_MASK.NON_SPORTS | CHANNEL_MASK.BLOCKED) >>> 0,
-  ACTIVE: (
-    CHANNEL_MASK.INTERNET |
-    CHANNEL_MASK.GATEWAY |
-    CHANNEL_MASK.LIVEBETTINGCWS |
-    CHANNEL_MASK.PHONE |
-    CHANNEL_MASK.HOUSE
-  ) >>> 0,
+  ACTIVE:
+    (CHANNEL_MASK.INTERNET |
+      CHANNEL_MASK.GATEWAY |
+      CHANNEL_MASK.LIVEBETTINGCWS |
+      CHANNEL_MASK.PHONE |
+      CHANNEL_MASK.HOUSE) >>>
+    0,
   ALERT_OR_CRITICAL: (CHANNEL_MASK.ALERT | CHANNEL_MASK.GSLIVE) >>> 0,
   STEERABLE_OR_SUPPRESSED: (CHANNEL_MASK.GSBUILDER | CHANNEL_MASK.CSLEVEL2) >>> 0,
   INPLAY: (CHANNEL_MASK.GSLIVE | CHANNEL_MASK.LIVEBETTINGCWS) >>> 0,
   PARTNER_118_BRIDGE: (CHANNEL_MASK.GSBUILDER | CHANNEL_MASK.GSLIVE) >>> 0,
-  FANTASY_402_BRIDGE: (
-    CHANNEL_MASK.INTERNET |
-    CHANNEL_MASK.BLOCKED |
-    CHANNEL_MASK.GATEWAY |
-    CHANNEL_MASK.ALERT |
-    CHANNEL_MASK.CSLEVEL2 |
-    CHANNEL_MASK.LIVEBETTINGCWS |
-    CHANNEL_MASK.PHONE |
-    CHANNEL_MASK.HOUSE
-  ) >>> 0,
-  LATENCY_GATED: (
-    CHANNEL_MASK.INTERNET |
-    CHANNEL_MASK.GATEWAY |
-    CHANNEL_MASK.ALERT |
-    CHANNEL_MASK.GSBUILDER |
-    CHANNEL_MASK.GSLIVE |
-    CHANNEL_MASK.CSLEVEL2 |
-    CHANNEL_MASK.LIVEBETTINGCWS |
-    CHANNEL_MASK.PHONE |
-    CHANNEL_MASK.HOUSE
-  ) >>> 0,
+  FANTASY_402_BRIDGE:
+    (CHANNEL_MASK.INTERNET |
+      CHANNEL_MASK.BLOCKED |
+      CHANNEL_MASK.GATEWAY |
+      CHANNEL_MASK.ALERT |
+      CHANNEL_MASK.CSLEVEL2 |
+      CHANNEL_MASK.LIVEBETTINGCWS |
+      CHANNEL_MASK.PHONE |
+      CHANNEL_MASK.HOUSE) >>>
+    0,
+  LATENCY_GATED:
+    (CHANNEL_MASK.INTERNET |
+      CHANNEL_MASK.GATEWAY |
+      CHANNEL_MASK.ALERT |
+      CHANNEL_MASK.GSBUILDER |
+      CHANNEL_MASK.GSLIVE |
+      CHANNEL_MASK.CSLEVEL2 |
+      CHANNEL_MASK.LIVEBETTINGCWS |
+      CHANNEL_MASK.PHONE |
+      CHANNEL_MASK.HOUSE) >>>
+    0,
   ALL: ((1 << 11) - 1) >>> 0,
 } as const)
 
@@ -126,13 +126,13 @@ export const SURFACE_MASK = Object.freeze({
 
 export const SURFACE_GROUP_MASK = Object.freeze({
   BASE_CANVAS: (SURFACE_MASK.DOM | SURFACE_MASK.CLI) >>> 0,
-  UI_CHROME: (
-    SURFACE_MASK.CARD |
-    SURFACE_MASK.ELEVATED |
-    SURFACE_MASK.HOVER |
-    SURFACE_MASK.RAISED |
-    SURFACE_MASK.SELECTED
-  ) >>> 0,
+  UI_CHROME:
+    (SURFACE_MASK.CARD |
+      SURFACE_MASK.ELEVATED |
+      SURFACE_MASK.HOVER |
+      SURFACE_MASK.RAISED |
+      SURFACE_MASK.SELECTED) >>>
+    0,
   INTERACTIVE_STATES: (SURFACE_MASK.HOVER | SURFACE_MASK.SELECTED) >>> 0,
   ALL: ((1 << 7) - 1) >>> 0,
 } as const)
@@ -507,7 +507,9 @@ export function compileTokenBitsetsFromToml(
     if (!orderedSurfaces.includes(name)) orderedSurfaces.push(name)
   }
   if (orderedSurfaces.length > 31) {
-    throw new RangeError(`Surface count ${orderedSurfaces.length} exceeds BitSet32 bit-30 invariant`)
+    throw new RangeError(
+      `Surface count ${orderedSurfaces.length} exceeds BitSet32 bit-30 invariant`,
+    )
   }
 
   const surfaceMasks = new Uint32Array(orderedSurfaces.length)
@@ -784,10 +786,10 @@ export class TokenBitsetBuffer {
   containsAll(requiredWords: Uint32Array): boolean {
     const w = this.words
     return (
-      (w[0]! & (requiredWords[0] ?? 0)) === ((requiredWords[0] ?? 0) >>> 0) &&
-      (w[1]! & (requiredWords[1] ?? 0)) === ((requiredWords[1] ?? 0) >>> 0) &&
-      (w[2]! & (requiredWords[2] ?? 0)) === ((requiredWords[2] ?? 0) >>> 0) &&
-      (w[3]! & (requiredWords[3] ?? 0)) === ((requiredWords[3] ?? 0) >>> 0)
+      (w[0]! & (requiredWords[0] ?? 0)) === (requiredWords[0] ?? 0) >>> 0 &&
+      (w[1]! & (requiredWords[1] ?? 0)) === (requiredWords[1] ?? 0) >>> 0 &&
+      (w[2]! & (requiredWords[2] ?? 0)) === (requiredWords[2] ?? 0) >>> 0 &&
+      (w[3]! & (requiredWords[3] ?? 0)) === (requiredWords[3] ?? 0) >>> 0
     )
   }
 

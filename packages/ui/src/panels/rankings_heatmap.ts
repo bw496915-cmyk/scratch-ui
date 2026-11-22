@@ -1,5 +1,5 @@
 /**
- * @file rankings_heatmap.ts
+ * @file packages/ui/src/panels/rankings_heatmap.ts
  * @description Pure scaling, outlier clamping, and bucket-evaluation logic for
  * the Rankings tab handle-volume heat-map overlay.
  *

@@ -1,5 +1,5 @@
 /**
- * @file lib/wager_tokens.ts
+ * @file packages/contracts/src/wager_tokens.ts
  * @description Design tokens, TrueColor ANSI encoders, and precomputed styles for Wager Tiers.
  *
  * Provides a single source of truth for:

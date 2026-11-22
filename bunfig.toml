@@ -19,4 +19,4 @@ preload = ["./tests/preload/snapshot_serializers.ts"]
 [fmt]
 printWidth = 100
 semi = false
-ignorePatterns = ["bun.lock", "bun.lockb", "vendor/", "**/*.gen.ts"]
+ignorePatterns = ["bun.lock", "bun.lockb", "vendor/", "**/*.gen.ts", ".aistudio/"]
