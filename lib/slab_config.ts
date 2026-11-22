@@ -20,9 +20,9 @@
 
 import { existsSync, readFileSync } from "node:fs"
 import { dirname, isAbsolute, posix, resolve } from "node:path"
-import { fileURLToPath } from "node:url"
 
 import { parseToml } from "./bun_toml.ts"
+import { bunFileURLToPath } from "./bun_url_gzip.ts"
 
 export const SLAB_SCHEMA = "sportsdesk-slab/v1" as const
 /** 64 MiB: a window larger than this is a configuration error, not a budget. */
@@ -167,7 +167,7 @@ export function parseServerSlab(text: string): ServerSlab {
 }
 
 function resolveSlabTomlPath(): string {
-  const baseDir = dirname(fileURLToPath(import.meta.url))
+  const baseDir = dirname(bunFileURLToPath(import.meta.url))
   const candidates = [
     resolve(baseDir, "../config/slab.toml"),
     resolve(baseDir, "config/slab.toml"),

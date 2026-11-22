@@ -5,13 +5,13 @@
 
 import { existsSync, readFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
-import { fileURLToPath } from "node:url"
 
 import { parseToml } from "../../lib/bun_toml.ts"
+import { bunFileURLToPath } from "../../lib/bun_url_gzip.ts"
 import type { Tier, WagerTiersConfig } from "./wagerTiers.types.ts"
 
 function resolveRepoFile(relPath: string): string {
-  const baseDir = dirname(fileURLToPath(import.meta.url))
+  const baseDir = dirname(bunFileURLToPath(import.meta.url))
   const candidates = [
     resolve(baseDir, "../..", relPath),
     resolve(baseDir, "..", relPath),

@@ -377,7 +377,9 @@ export const BUN_UTILITIES_CATALOG: readonly BunUtilitySpec[] = [
     category: "paths-inspection",
     categoryLabel: "Paths, Inspection & Comparison",
     signature: "Bun.fileURLToPath(url) / Bun.pathToFileURL(path)",
-    purpose: "Fast file:// URL conversion",
+    purpose: "Converts between file:// URLs and absolute filesystem paths",
+    runtimeNotes:
+      "Backed by lib/bun_url_gzip.ts across config loaders (slab_config, wagerTiers, wagers_tab_policy, wagers_wire_contract).",
     probeKeys: ["fileURLToPath", "pathToFileURL"],
   },
   {
@@ -468,8 +470,11 @@ export const BUN_UTILITIES_CATALOG: readonly BunUtilitySpec[] = [
     id: "gzipSync",
     category: "compression-buffers",
     categoryLabel: "Compression & Buffer/Stream Conversion",
-    signature: "Bun.gzipSync / Bun.gunzipSync",
-    purpose: "Sync zlib gzip compression/decompression",
+    signature: "Bun.gzipSync(buf, opts?) / Bun.gunzipSync(buf)",
+    purpose:
+      "Sync zlib GZIP compression/decompression with ZlibCompressionOptions (level, memLevel, windowBits, strategy)",
+    runtimeNotes:
+      "level -1..9, memLevel 1..9 (default 8), windowBits -15..-9 | 9..15 | 25..31 (zeroed gzip header mtime/CRC), strategy Z_DEFAULT_STRATEGY..Z_FIXED via lib/bun_url_gzip.ts.",
     probeKeys: ["gzipSync", "gunzipSync"],
   },
   {

@@ -19,11 +19,11 @@
 import { existsSync } from "node:fs"
 import { readFile, stat } from "node:fs/promises"
 import { dirname, resolve } from "node:path"
-import { fileURLToPath } from "node:url"
 
 import { parseToml } from "./bun_toml.ts"
+import { bunFileURLToPath } from "./bun_url_gzip.ts"
 
-const BASE_DIR = dirname(fileURLToPath(import.meta.url))
+const BASE_DIR = dirname(bunFileURLToPath(import.meta.url))
 const DEFAULT_POLICY_PATH =
   [
     resolve(BASE_DIR, "../packages/ui/src/config/wagers.toml"),

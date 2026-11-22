@@ -18,13 +18,13 @@
 import { existsSync } from "node:fs"
 import { readFile, stat } from "node:fs/promises"
 import { basename, dirname, resolve, sep } from "node:path"
-import { fileURLToPath } from "node:url"
 
 import type { WagersWireContractSummary, WagersWireViolation } from "@sportsdesk-ops/contracts"
 
+import { bunFileURLToPath } from "./bun_url_gzip.ts"
 import { assertRelativePath, SLAB_SERVER } from "./slab_config.ts"
 
-const MODULE_DIR = dirname(fileURLToPath(import.meta.url))
+const MODULE_DIR = dirname(bunFileURLToPath(import.meta.url))
 const REPO_ROOT = existsSync(resolve(MODULE_DIR, "package.json"))
   ? MODULE_DIR
   : existsSync(resolve(MODULE_DIR, "..", "package.json"))
