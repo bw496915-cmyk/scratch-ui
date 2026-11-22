@@ -37,7 +37,7 @@ if (!serverSrc.includes('app.disable("x-powered-by")')) {
   violations.push('server.ts missing `app.disable("x-powered-by")`')
 }
 const apiGuardIdx = serverSrc.indexOf('app.use("/api",')
-const firstDirectApiIdx = serverSrc.search(/app\.get\(telemetry\.declareRoute\(/)
+const firstDirectApiIdx = serverSrc.search(/app\.(?:get|post|put|patch|delete)\(\s*["'`]\/api\//)
 if (apiGuardIdx < 0 || firstDirectApiIdx < 0 || apiGuardIdx > firstDirectApiIdx) {
   violations.push(
     'server.ts must mount centralized `app.use("/api", ...)` auth gate BEFORE direct Express /api/* routes',

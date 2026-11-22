@@ -1,45 +1,46 @@
-# @sportsdesk-ops/contracts
+# `@sportsdesk-ops/contracts`
 
-Shared contracts for the SportsDesk operator workspace: wager token vocabulary,
-slice metrics and registries, shadow pricing, feature flags, and dashboard
-hydration.
-
-## Install
-
-```sh
-bun add @sportsdesk-ops/contracts
-# or
-npm install @sportsdesk-ops/contracts
-```
+Private Bun workspace package (`packages/contracts`) providing shared browser- and runtime-safe TypeScript contracts across `@sportsdesk-ops/api`, `@sportsdesk-ops/backend`, `@sportsdesk-ops/ui`, and the unified Bun CLI (`scripts/sportsdesk_cli.ts`).
 
 ## Usage
 
 ```ts
-import { CONTRACTS_PACKAGE } from "@sportsdesk-ops/contracts"
+import { CONTRACTS_PACKAGE, runBunSurfaceAudit } from "@sportsdesk-ops/contracts"
 import { FEATURES } from "@sportsdesk-ops/contracts/features"
 import { parseWagerToken } from "@sportsdesk-ops/contracts/wager-tokens"
 ```
 
-## Module resolution
+All entrypoints resolve directly to TypeScript sources under `src/` via Bun and Vite workspace resolution.
 
-The package publishes conditional exports:
+## Subpath Exports (`package.json`)
 
-- `types` / `bun` — the TypeScript source in `src/` (fast local resolution under Bun)
-- `default` — ESM JavaScript in `dist/` (Node and bundlers)
+| Export Path             | Source Module                     | Purpose                                                             |
+| :---------------------- | :-------------------------------- | :------------------------------------------------------------------ |
+| `.`                     | `src/index.ts`                    | Aggregate surface (`CONTRACTS_PACKAGE` and all contract modules)    |
+| `./wager-tokens`        | `src/wager_tokens.ts`             | Wager token vocabulary and parsing                                  |
+| `./slice-metrics`       | `src/slice_metrics.ts`            | Slice metric definitions                                            |
+| `./slice-registry`      | `src/slice_registry.ts`           | Slice registry contracts                                            |
+| `./slice-data-table`    | `src/slice_data_table.ts`         | Data-table contracts                                                |
+| `./slice-diff-view`     | `src/slice_diff_view.ts`          | Diff-view contracts                                                 |
+| `./shadow-pricing`      | `src/shadow_pricing.ts`           | Shadow pricing contracts                                            |
+| `./features`            | `src/features.ts`                 | Feature flags and build targets                                     |
+| `./dashboard-hydration` | `src/dashboard_hydration.ts`      | Dashboard hydration types                                           |
 
-`dist/` is built by `scripts/build.ts` during `prepack`, so it is present in the
-tarball but not in the repository. Node consumers need Node 18 or newer.
+## Additional Modules Exported from `.` (`src/index.ts`)
 
-## Exports
-
-| Path                    | Purpose                                                             |
-| ----------------------- | ------------------------------------------------------------------- |
-| `.`                     | aggregate surface (`CONTRACTS_PACKAGE` and the re-exported modules) |
-| `./wager-tokens`        | wager token vocabulary and parsing                                  |
-| `./slice-metrics`       | slice metric definitions                                            |
-| `./slice-registry`      | slice registry contracts                                            |
-| `./slice-data-table`    | data-table contracts                                                |
-| `./slice-diff-view`     | diff-view contracts                                                 |
-| `./shadow-pricing`      | shadow pricing contracts                                            |
-| `./features`            | feature flags and build targets                                     |
-| `./dashboard-hydration` | dashboard hydration types                                           |
+| Source Module                 | Purpose                                                                           |
+| :---------------------------- | :-------------------------------------------------------------------------------- |
+| `src/bun_runtime_surface.ts`  | Bun 1.4.4 globals, utilities, core APIs, deep `bun:*`/class/kind audit, and `Bun.markdown.render` / `AnsiTheme` studio |
+| `src/bun_syntax_highlight.ts` | Cross-runtime `Bun.color`, `Bun.stringWidth`, `Bun.stripANSI`, `Bun.escapeHTML`   |
+| `src/bun_yaml.ts`             | Cross-runtime `Bun.YAML` parse/stringify helpers                                  |
+| `src/bun_lockfile.ts`         | `bun.lock` parser & supply-chain metadata contracts                               |
+| `src/npmrc.ts`                | `.npmrc` scoped registry config parser                                            |
+| `src/markdown_telemetry.ts`   | Markdown brief telemetry types                                                    |
+| `src/wager_channels.ts`       | Wager channel provenance and SLA tokens                                           |
+| `src/agent_hierarchy.ts`      | Downline agent tree contracts                                                     |
+| `src/api_telemetry.ts`        | HTTP & WebSocket API telemetry contracts                                          |
+| `src/customer_history.ts`     | Retained customer wager history contracts                                         |
+| `src/parlay_comparison.ts`    | Parlay leg and ticker comparison contracts                                        |
+| `src/terminal_commands.ts`    | Allowed operator terminal command grammar                                         |
+| `src/weblog_operation.ts`     | Parsed weblog operation family taxonomy                                           |
+| `src/weblog_severity.ts`      | Weblog IP/login severity scoring rules                                            |

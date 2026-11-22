@@ -1,352 +1,124 @@
-# SportsDesk & Fantasy402 Operations Suite
+# SportsDesk Ops Dashboard
 
-Production intelligence, downline risk surveillance, 10-Mode Forensic/Risk/Cross-Market/Reconciliation engine, Cloudflare R2 edge portal, Qwen3.5-4B neuron token taxonomy, and automated reporting pipeline built on the **Bun runtime (v1.4.4)** for SportsDesk and Fantasy402 books.
+Real-time sportsbook operations dashboard, sharp-bettor surveillance, downline agent hierarchy, Cloudflare R2 pipeline telemetry, WebLogs & Profile Radar forensics, and **Bun 1.4.4** runtime surface inspector.
 
-Repository: [bw496915-cmyk/Sports-desk-ops](https://github.com/bw496915-cmyk/Sports-desk-ops)
+## Pinned Runtime & Quick Start
 
-**Engineering:** [Signal honesty ADR](docs/architecture/signal-honesty.md) — errors must name cause, missing ≠ zero, cron/CLI surfaces must match reality (see also [AGENTS.md](AGENTS.md)).
+`.bun-version`, `packageManager`, and `engines.bun` pin **Bun 1.4.4**. All CLI commands, artifact generators, formatting, tests, and integrity gates are unified under the Bun CLI (`bun run cli`).
 
-## 🚀 Day-1 Operator Onboarding & 60-Second Triage Guide
-
-If you are opening this repository for the first time or starting a desk shift, read the **[Operator Quickstart, Data Cleaning Pipeline & 10-Mode Action Runbook](docs/OPERATOR_QUICKSTART_AND_10_MODE_RUNBOOK.md)** and open the **[Live 6-Tab Surveillance, ROT Bet-Ticker & 10-Mode Forensic Portal (`graph.html`)](https://pub-d061f943df0e4477ba7ff200721eddb1.r2.dev/graph.html)**.
-
-Always use **`./bin/dx`** as your primary entrypoint—it configures sandbox/host `$HOME/.gitconfig`, links your dotfiles checkout (`$DX_DOTFILES_DIR`, else `~/dotfiles`; never overwriting a real file), loads Cloudflare Pages credentials, and runs its tooling through Bun (`v1.4.4`). Run `./bin/dx help` for every command and `./bin/dx scripts` for the grouped `package.json` scripts:
-
-```bash
-# 1. Verify environment, Git config, staged dist/ assets, and live Cloudflare R2 gateway
-./bin/dx status
-
-# 2. Run the 10-Mode Forensic, Risk, Cross-Market & Data Integrity Matrix (all 10 modes or a single mode 1..10)
-./bin/dx modes
-./bin/dx modes 6    # Mode 6: Activity Overlap (Confirmed Session Overlap vs Nearby Point Events)
-./bin/dx modes 9    # Mode 9: Pending Exposure (Stake vs Potential Payout vs Defined Liability)
-./bin/dx modes 10   # Mode 10: Reconciliation (Report Totals vs Settled Tickets vs Ledger, Gap = $0.00)
-
-# 3. Audit all Per-Office (type="B" customerID=<Office>) & Cross-Office (customerID="0") IP-Tracker Clusters
-./bin/dx iptracker
-
-# 4. Run the 4-Week Full-Customer CFB & NBA Parlay/Combo Backtest
-./bin/dx backtest
-
-# 5. Poll configured Polymarket wallets (valid 0x addresses), stage the 6-Tab Portal and publish to R2
-#    Add SPORTSDESK_LIVE_INGEST=1 (Polymarket) and/or SPORTSDESK_LIVE_F402=1 (F402 probe)
-SPORTSDESK_LIVE_INGEST=1 ./bin/dx deploy
-```
-
-> Without `SPORTSDESK_LIVE_INGEST=1`, `stage`/`deploy` poll in **fixture mode** and would publish
-> placeholder rows. The poller now warns loudly (naming the prior mode it replaces), and
-> `./bin/dx poll --help` prints usage without polling.
-
-**Operator tools:**
-
-- `./bin/dx status` — measured, not asserted: git, R2 S3 and Pages credentials, and a 3-second HEAD probe of the R2 portal (`DX_STATUS_OFFLINE=1` skips the probe). Each line says what it checked.
-- `./bin/dx setup [--replace]` — reports any real file (for example `~/.zshrc`) that `dx` declined to replace with a dotfiles symlink; `--replace` moves it to `<path>.dx-backup-<epoch>` and links.
-- `./bin/dx scripts [substring]` — the `package.json` scripts grouped by prefix; a substring lists the matching commands.
-- `./bin/dx gslive <LOGIN>` — GSLive Partner 118 links for one account: the 7-parameter `#/reports/users` deep link (`bot=true`, desk-day ISO window, `text=player_<LOGIN>`) and the `#/events/bet-history` sidecar (`calcTime` / `betTime`, epoch `from`/`to`, raw `partnerUserId`).
-- `bun run wagers:review <LOGIN>` — one customer's wager review: open exposure and its single-winner scenarios, the settled record by structure (2-leg/3-leg/5-leg/free play), a reconstructed combination card (57 slots, booked vs omitted, inferred winners/losers, full-card counterfactual), and measured findings (stake escalation, reprice, free-play conversion) with the evidence gaps that remain. Joins the pending capture, ticker, graded exports, newest users report containing the login, roster and suspected-bot ledger; `--deep` adds ledger-tenure peers, platform context and corpus card-booking norms, `--json` for the agent, `--root` for fixtures. Exit codes: 0 reviewed, 2 usage, 3 the login is in no wager source.
-- `./bin/dx docs` / `./bin/dx docs gslive` — deployed docs portal URLs, or the GSLive surface section.
-- `./bin/dx stale -i <export>` — stale-line cohort over a bet-log export (CSV/JSON/JSONL); seeds on operator stale notes or graded-then-cancelled tickets, then clusters other customers on the same market and window.
-- `./bin/dx shot <url>` — Bun.WebView screenshot (webkit on macOS, chrome elsewhere); `--f402-login` captures the manager after an opt-in login. Output goes to `scratch/shots/`. `--profile <dir>` reuses a saved WebView profile and reports `signedOutMarkers` (empty = no signed-out page seen).
-- `./bin/dx session [status|login]` — the portal session file the replay transport reads. `status` (the default) is read-only; `login` needs `F402_LIVE_LOGIN=1`. A WebView profile alone gives the transport no cookies.
-- `./bin/dx profile <0x|username>` — Polymarket address profile: PnL, win rate, open positions, category mix, activity summary and strategy pattern from public APIs.
-- `./bin/dx combo legs|price|wallet|uniqueness` — CFB combo legs, product-of-legs pricing, wallet combo positions and per-game unique combo/wallet counts.
-- `./bin/dx combo backtest` — realized combo PnL by day/game from public activity (open combos excluded).
-- `./bin/dx bridge coverage|value|match` — cross-domain join between our customer book and Polymarket wallets: attribution health, fee-aware cross-venue PnL, and leg-level mirror/opposite matching.
-- `bun run sportsdesk rank-all` — 30-day batched sharp bettor rankings ($269.5M handle, 9,141 accounts, Gini stake inequality, tiering).
-- `bun run sportsdesk quarantine` — sliding-window syndicate steam burst quarantine engine (`autoExecute: false`).
-- `bun run sportsdesk conduits` — audit 21 single-bettor proxy sub-agents (concentration $\ge 80\%$).
-- `bun run dev` — real-time dev server (:4022) with native WebSockets topic rooms (`live-bets`, `syndicate-alerts`, `proxy-conduits`, `terminal-logs`) and PTY terminal.
-
-## Schema registry & prod dump parity
-
-- Operations: [docs/schema-dump-operations.md](docs/schema-dump-operations.md) (`schema:dump-prod`, `schema:sync-prod-dump`, fixture allowlist, `captured_at`)
-- Failure modes: [docs/schema-sqlite-failure-mode-matrix.md](docs/schema-sqlite-failure-mode-matrix.md) (parity exit **2** / **3**, `bun:sqlite` strict + safe integers)
-- CLI: `bun run schema --help` (sources in `cli/sportsdesk_schema_cli.ts`)
-- CI gate: `bun run schema:gate` · lag metric: `bun run schema:dump-lag`
-- After registry edits: `bun run schema:sync-prod-dump` then commit `tests/fixtures/prod-schema.json` (see [schema-dump-operations.md](docs/schema-dump-operations.md))
-- Index: [docs/README.md](docs/README.md) · diagram: [docs/assets/ARCH-Guide.jpg](docs/assets/ARCH-Guide.jpg)
-
-## Quick Start
-
-```bash
-git clone https://github.com/bw496915-cmyk/Sports-desk-ops.git
-cd Sports-desk-ops
-
-# Verify Bun 1.4.4, then install the locked dependencies
+```sh
+# Verify pinned Bun version and install locked dependencies
 bun --version
 bun install --frozen-lockfile
 
-# 1. Inspect nominal branded types & domain invariants
-bun run cli -b
+# Unified Bun CLI help & command catalog
+bun run cli help
 
-# 2. Inspect Qwen3.5-4B (Layers 18-28) neuron token registry with TrueColor ANSI swatches
-bun run cli -N
+# Start the development server (Express + Vite on :3000)
+bun run dev
 
-# 3. Verify design tokens, CIEDE2000 color distance, and WCAG contrast
-bun test tests/verify_tokens.test.ts
+# Build production SPA + server bundle (dist/ + server.mjs)
+bun run build
 
-# 4. Compile tokens across TypeScript, Webview, and TMA dashboards (Zero-Drift SSOT)
-bun run gen:tokens
-
-# 5. Run every test: tests/ (what CI runs) plus the suites colocated in lib/ and scripts/ (CI does not)
-bun test
-
-# 6. Run 24h sniper surveillance
-bun run cli winners -p 24h --limit 25
-
-# 7. Generate the auditable surveillance report bundle (reports/<timestamp>/MANIFEST.md)
-bun run reports -- --format table
-
-# 8. Run 52-week bettor churn simulation
-bun run sim
+# Run the built production server locally under Bun (no implicit .env bleed)
+DOTENV_CONFIG_PATH=.local/local-runtime.env bun --no-env-file run start:local
 ```
 
-Repository lint uses native `bun lint`, which ships on the canary (1.4.5+) but
-not on the pinned Bun 1.4.4. `bun run lint:check` is the read-only gate and
-`bun run lint` applies safe fixes; both resolve a canary binary (`BUN_LINT_BIN`,
-`bun-canary`, or `~/.bun/bin/bun-canary*`) and exit 2 when none is installed.
-CI's lint gate is the required `lint-native` job; `bun run verify:fast` fails
-when it cannot lint changed files (`--no-lint` is an explicit opt-out).
+## Unified Bun CLI (`bun run cli`)
 
-Run `bun run format` to format the repository or `bun run format:check` for a
-read-only check. `bunfig.toml` preserves the existing 80-column, two-space,
-double-quote style with semicolons. Run `bun run typecheck` for Bun's native
-strict, no-emit checker; `tsconfig.json` makes the previous inferred compiler
-defaults explicit and includes the repository's source, tests, and declarations.
-CI runs formatting and type checking before lint. Bun remains pinned to 1.4.4
-in CI and declared in `package.json` (`packageManager` and `engines`), with
-matching `@types/bun`; no Prettier or oxfmt package is required. These manifest
-fields document the required version; CI explicitly selects it. The canonical
-local checkout on this machine is `~/code/sportsdesk-ops`; the dotfiles symlink
-is only a convenience pointer.
-
-## Pinned Bun compatibility tests
-
-Tests distinguish Fetch-spec requirements from behavior observed on Bun 1.4.4.
-The pinned `Request` constructor retains GET/HEAD bodies and accepts spec-forbidden
-methods. It also maps mixed-case `Delete` to `GET` and uppercases custom verbs.
-These are compatibility differences, not application guarantees: use explicit
-uppercase methods. `fetch` rejects nonempty GET/HEAD bodies before transmission.
-
-String request bodies have no inferred Content-Type on this binary, and JSON
-Blobs acquire `charset=utf-8`. Wire tests check explicit Content-Type headers
-separately so application behavior does not depend on those inferences.
-
-Subprocess fixtures await output writes and exit naturally while the parent
-drains stdout and stderr concurrently. They assert complete byte content rather
-than assuming unread pipes always deadlock or enforcing machine-speed thresholds.
-
-## Runtime Architecture & Server Policies
-
-### Server Port & Hostname Binding Policy
-
-Server binding in `sportsdesk_webview_server.ts` adheres to Bun's native port resolution cascade:
-
-1. `BUN_PORT`
-2. `PORT`
-3. `NODE_PORT`
-4. Default fallback: `3000`
-
-**SportsDesk Operational Policy**: Rather than overriding Bun's cascade in code, SportsDesk relies directly on native resolution. Production deployments configure `PORT=4020` inside `.env`, which Bun loads automatically at process initialization. When `startServer(options)` is called programmatically, `{ port, hostname, unix, development }` options allow explicit test or proxy overrides; when omitted, Bun resolves port and hostname natively (defaulting hostname to `0.0.0.0`).
-
-### Static File Serving & Zero-Copy Policy
-
-Static HTML surfaces under `static/` (`customer-churn-simulation-dashboard.html` and `telegram-miniapp-dashboard.html`) are served via native `new Response(Bun.file(path))` lazy handles.
-
-- **Zero-Copy Specification & Boundary Conditions**: Official Bun runtime documentation specifies kernel zero-copy transfer (`sendfile(2)` on Linux, `copyfile` on macOS) specifically for outbound client file uploads (`fetch(url, { method: "POST", body: Bun.file(...) })`). This optimization activates exclusively under four strict preconditions:
-  1. Payload size strictly exceeds 32 KB (under 32 KB, direct in-memory buffer reads outperform kernel syscall setup).
-  2. Unencrypted HTTP transport (no TLS encryption).
-  3. Direct TCP connection (no intermediate HTTP/HTTPS proxy).
-  4. Uncompressed transmission (no gzip/brotli transfer encoding).
-- **Server Response Path Distinction**: On the server response path (`new Response(Bun.file(path))`), Bun constructs a lazy file handle pointer in user space without eagerly reading file bytes into memory buffers. Handle allocation takes ~0.38 µs (compared to 45.9 µs for `readFileSync`). However, whether the subsequent socket transmission leverages `sendfile(2)` or `writev`/`pread` is unproven in Bun's published documentation. SportsDesk avoids conflating upload zero-copy claims with response streaming.
-- **Nginx Reverse Proxy & Unix Domain Socket Offloading**: In production, Nginx terminates public TLS 1.3 at port 443 and proxies traffic to Bun over an unencrypted local Unix domain socket (`/run/sportsdesk/webview.sock`) or loopback HTTP (`127.0.0.1:4020`). This topology eliminates TLS encryption overhead and TCP port exposure on the host.
-
-### Outbound Fetch Hardening & Network Isolation
-
-Outbound network operations across Telegram alerts, Cloudflare R2 backup, and Fantasy402 feeds are hardened against proxy hijacking, hanging connections, and transport vulnerabilities:
-
-- **Bounded Execution Windows (`AbortSignal.timeout`)**: All outbound requests enforce strict timeouts via `signal: AbortSignal.timeout(timeoutMs)` (e.g., 5,000 ms for Telegram dispatch, 10,000 ms for R2 verification). Unbounded `fetch` awaits are eliminated.
-- **Loopback Proxy Isolation (`NO_PROXY` / `proxy: false`)**: Bun resolves `HTTP_PROXY`, `HTTPS_PROXY`, and `ALL_PROXY` on a per-request basis (`ALL_PROXY` acts as scheme-agnostic fallback). Ambient corporate or CI proxies trap loopback calls unless bypassed. SportsDesk configures `NO_PROXY=127.0.0.1,localhost,::1` across `.env`, `.env.example`, and `deploy_to_vps.sh`. In addition, internal services pass `{ proxy: false }` for guaranteed direct socket connections, explicit proxy objects respect `NO_PROXY` by default (overridable via `respectNoProxy: false`), and tunnel failures reject with `ERR_PROXY_TUNNEL` (verified by `tests/fetch_proxy_isolation.test.ts`).
-- **HTTP Connection Pool Bounds (`BUN_CONFIG_MAX_HTTP_REQUESTS`)**: Set to `256` to align Bun's shared connection pool with peak alert burst throughput, preventing resource starvation.
-- **Dedicated `Bun.FetchSession` & Pre-Warming**: `SportsDeskTelegramService` initializes a dedicated `Bun.FetchSession` with `tls: { rejectUnauthorized: true }`, isolating session credentials and connection reuse. Outbound connections are pre-warmed at boot via `fetch.preconnect("https://api.telegram.org")` to eliminate initial TLS handshake latency.
-- **Zero Embedded Credentials & Insecure TLS Protection**: Validated by `tests/fetch_url_credentials.test.ts`, ensuring 0 plaintext `http(s)://user:pass@` strings in source code and 0 occurrences of `rejectUnauthorized: false`.
-
-### Environment Variable Precedence & Type Merging
-
-Bun automatically loads environment files at startup in strict order of increasing precedence:
-
-1. `.env` (base configuration)
-2. `.env.production`, `.env.development`, `.env.test` (evaluated based on `NODE_ENV`)
-3. `.env.local` (**Exception**: strictly skipped when `NODE_ENV=test` to ensure deterministic test isolation)
-4. `.env.production.local`, `.env.development.local`, `.env.test.local` (mode-specific local overrides)
-
-TypeScript declaration merging in `types/env.d.ts` extends both `Bun.Env` and `NodeJS.ProcessEnv` with strict typing for all SportsDesk credentials (`PORT`, `BUN_SOCKET`, `NO_PROXY`, `BUN_CONFIG_MAX_HTTP_REQUESTS`, `F402_*`, `CLOUDFLARE_*`, `R2_*`, `TELEGRAM_*`), verified via `tests/env_types.test-d.ts`.
-
-### Security Headers & Telegram Mini App Embedding
-
-To ensure seamless embedding inside Telegram Web (`https://web.telegram.org`), Telegram mobile apps, and desktop clients without frame hijacking vulnerabilities:
-
-- `X-Frame-Options` is **strictly absent** from all server response headers (the deprecated `ALLOWALL` directive is never sent).
-- Embedding is governed exclusively by modern standards: `Content-Security-Policy: frame-ancestors 'self' https://web.telegram.org https://*.telegram.org telegram:;`.
-
-### Telegram Bot Seeding
-
-Every Telegram variable the bot reads is in one `--with telegram` group, so the daemon can be launched with the five values injected from the OS keychain (`com.bookdeskops.sportsdesk`) without writing them to a file or the shell. See [`docs/runbooks/telegram_seeding.md`](docs/runbooks/telegram_seeding.md) for the full flow; the one-line summary:
+The repository entrypoint is [`scripts/sportsdesk_cli.ts`](scripts/sportsdesk_cli.ts), backed by the deterministic artifact generator [`scripts/gen_artifacts.ts`](scripts/gen_artifacts.ts) and startup `--env-file` preflight guard [`src/cli/preflight_guard.ts`](src/cli/preflight_guard.ts).
 
 ```sh
-# Store each secret (values on stdin, never argv; keychain service com.bookdeskops.sportsdesk):
-printf %s "$BOT_TOKEN"       | bun run secrets:env set TELEGRAM_BOT_TOKEN
-printf %s "$WEBHOOK_SECRET"  | bun run secrets:env set TELEGRAM_WEBHOOK_SECRET
-printf %s "$CHAT_ID"         | bun run secrets:env set TELEGRAM_CHAT_ID
-printf %s "$WEBHOOK_URL"     | bun run secrets:env set TELEGRAM_WEBHOOK_URL
-printf %s "$MINIAPP_URL"     | bun run secrets:env set TELEGRAM_MINIAPP_URL
+# Regenerate all managed artifacts (design tokens + manifest + CLI/artifact docs)
+bun run cli artifacts generate
 
-bun run secrets:env status --with telegram          # every row should read "keychain"
-bun run secrets:env exec    --with telegram -- bun run serve
-curl -s http://127.0.0.1:4020/api/telegram/status -H "Authorization: Bearer $ADMIN" | jq '.seeding'
+# Fail-closed drift gate (tokens, pipeline SHA-256 checksums, manifest, docs)
+bun run cli artifacts check
+
+# Audit all Markdown files for broken local links and stale references
+bun run cli docs check
+
+# Render any Markdown file in the terminal via Bun.markdown.render() / AnsiTheme
+bun run cli docs render dashboard.md --mode render --preset obsidian-desk --columns 88
+bun run cli docs render dashboard.md --mode ansi --light --columns 80
+
+# Live read-only Bun Runtime Surface audit (Bun.* kinds, bun:* modules, classes)
+bun run cli surface --kinds
+bun run cli surface --deep
+
+# Run repository verification gates under Bun
+bun run cli check all
+bun run cli scripts
 ```
 
-Mini App launches carry a signed `initData` payload. Server-side verification uses `verifyTelegramInitData` from [`lib/telegram_initdata.ts`](lib/telegram_initdata.ts), which performs the documented `HMAC_SHA256(key=SHA256(bot_token), data=sorted_data_check_string)` check with `crypto.timingSafeEqual` and a 5-minute `auth_date` window. The helper takes no I/O and never logs the token.
+For the full generated artifact inventory, checksums, and script matrix, see the auto-generated reference [`docs/generated/ARTIFACTS_AND_CLI.md`](docs/generated/ARTIFACTS_AND_CLI.md) and machine-readable [`docs/generated/artifacts-manifest.json`](docs/generated/artifacts-manifest.json).
 
-## Performance Telemetry & Micro-Benchmarks
+## Workspace Architecture
 
-Empirical measurements on Bun v1.4.4 (macOS arm64, Apple Silicon). Benchmarks reflect streaming production wager corpora (`f402-bets.jsonl`, 468.8 MB / 934,246 rows) alongside lazy server handles:
-
-| Operation / Workload                  | Legacy / Baseline       | Native Bun 1.4 Path        | Benchmark / Speedup                    |
-| :------------------------------------ | :---------------------- | :------------------------- | :------------------------------------- |
-| **JSONL Stream** (468MB, 934k rows)   | `readline` (1,966 ms)   | `Bun.JSONL.parseChunk`     | **636.9 ms (676.8 MB/s, 3.1x faster)** |
-| **Burst Arena** (627k wagers, 30d)    | Unbounded collections   | `SyndicateBurstGuardArena` | **1,202 ms** (bounded sliding window)  |
-| **Response Handle** (154 KB payload)  | Eager `file.text()`     | `new Response(Bun.file())` | **0.67 µs** (292x faster lazy handle)  |
-| **Socket Transfer** (1 MB payload)    | `fetch` socket transfer | Loopback kernel sendfile   | **0.489 ms/req** loopback transfer     |
-| **JSON Serialization** (25 accts)     | `JSON.stringify` + hdr  | `Response.json(data)`      | **1.12 µs** (1.09x faster)             |
-| **DNS Resolution** (`fantasy402.com`) | System `getaddrinfo`    | `Bun.dns.lookup` (c-ares)  | **0.27 ms** cached latency             |
-| **ANSI Text Width** (TUI rendering)   | npm `string-width`      | `Bun.stringWidth`          | **Instant** C++ zero-copy lookup       |
-
-## Plane 3 — append-only ingestion JSONL replay
-
-Self-healing replay for **`reports/ingestion-audit.jsonl`** (and any ASCII-field JSONL feed): `Bun.JSONL.parseChunk` on a streaming `Uint8Array` buffer, `Bun.XML.parse` for board prices, optional bitemporal `v_t` guard, and pattern flags (`SPIKE_UP`, `DOWN`, …) rendered with registry colors.
-
-```bash
-bun run replay -- --path /tmp/e.jsonl --markdown
-bun cli/sportsdesk_cli.ts replay --path reports/ingestion-audit.jsonl --json
+```text
+├── server.ts                          # Express + Vite dev / Node & Bun production entrypoint (:3000)
+├── packages/
+│   ├── contracts/                     # Shared TypeScript contracts & Bun runtime surface catalog
+│   ├── api/                           # HTTP API router, Config/Status store & Bun surface loader
+│   ├── backend/                       # Parsers, cohort aggregators, Bun.markdown renderer
+│   └── ui/                            # React 19 dashboard UI, panels & generated token registry
+├── server/                            # Adapters, telemetry, R2/DNS/profile/weblog inspectors
+├── src/                               # CLI preflight guard, ANSI/Markdown themes, Houdini CSS tokens
+├── design/                            # design/tokens.toml SSOT & branded domain types
+├── schema/                            # Field contracts, DOD6 v5.4 schema & telemetry matrix
+├── static/                            # Token-compiled static HTML surfaces & /status script
+├── docs/                              # Pipeline diagrams, live customer sources & generated artifacts
+├── scripts/                           # Unified Bun CLI, artifact generator & CI integrity gates
+└── tests/                             # bun:test unit, security, snapshot & SSR suites
 ```
 
-**Bun.XML golden AST (Plane 1 pin / Plane 3 verify):** each row with `xml` may carry `xml_golden_ast_sha256` and `bun_version` (`sha256` of `Bun.JSON5.stringify(Bun.XML.parse(xml.trim(), { compact: false }))`). Replay verifies pins unless `--no-verify-xml-golden`; `--strict-xml-golden` requires a pin on every `xml` row. Exit precedence: corrupt **1** → tx **2** → SLA **3** → golden drift **4**. Backfill pins: `bun run ingestion:enrich-xml-golden -- in.jsonl [out.jsonl]`.
+## Design Tokens & Generated Artifacts (Zero-Drift SSOT)
 
-Implementation: `sportsdesk_ingestion_replay.ts`, `lib/bun_xml_golden_ast_replay.ts`, drain mirror `lib/jsonl_stream_replay.ts`, runbook §8.4 in `docs/runbooks/bun_server_runtime_shapes_runbook.md`.
+[`design/tokens.toml`](design/tokens.toml) (`v1.5.0`) is the single source of truth for dashboard surfaces, SLA states, ingestion channels, risk routes, and `:root` aliases.
 
-## Qwen3.5-4B (Layers 18–28) Token Architecture & Single Source of Truth
+- `bun run gen:tokens` compiles `design/tokens.toml` into:
+  - [`packages/ui/src/tokens.registry.generated.ts`](packages/ui/src/tokens.registry.generated.ts)
+  - [`src/dashboard/tokens.generated.css`](src/dashboard/tokens.generated.css)
+- `bun run gen:tokens:gate` verifies zero drift against `design/tokens.toml`.
+- `bun run artifacts:generate` compiles tokens, verifies all 12 vector/raster hashes in [`docs/assets/pipeline-artifacts-metadata.json`](docs/assets/pipeline-artifacts-metadata.json), audits all Markdown files, and emits [`docs/generated/artifacts-manifest.json`](docs/generated/artifacts-manifest.json) and [`docs/generated/ARTIFACTS_AND_CLI.md`](docs/generated/ARTIFACTS_AND_CLI.md).
+- `bun run artifacts:check` fails closed on any generated file drift, pipeline asset mismatch, or broken documentation link.
 
-The system uses `design/tokens.toml` as the authoritative **Single Source of Truth (SSOT)** for all 13 neuron tokens, dark surfaces, ingestion channels, and algorithmic routes:
+See [`design/README.md`](design/README.md) for token and alias rules.
 
-- **Surface Tokens**: `--sd-surface-primary` (`#070b14`), `--sd-surface-card` (`#0b1329`).
-- **Channel Ingestion Tokens (Axis 1)**:
-  - `L18.N0204` (`#1d84b5`, Internet Retail Baseline, 1,500 ms SLA)
-  - `L19.N0518` (`#64748b`, Blocked Sentinel Filter, `{ kind: 'sentinel_drop' }` policy)
-  - `L20.N1105` (`#10b981`, Gateway Equilibrium & Vig Gate, 1,000 ms SLA)
-  - `L21.N0884` (`#ef4444`, Alert Twin Syndicate Mirror, 250 ms SLA)
-  - `L22.N1402` (`#f59e0b`, Builder Steam / Line Chase, 1,000 ms SLA) — _Single-owner Amber-500_
-  - `L23.N0412` (`#28a745`, Live In-Play Whale Anomaly, 500 ms SLA)
-  - `L24.N2019` (`#38bdf8`, CSLevel2 Recreational Longshot Bias, 2,000 ms SLA)
-- **Algorithmic Route Tokens (Axis 2)**:
-  - `L25.N1882` (`#06b6d4`, Route 02 Adverse Selection Devig Expansion)
-  - `L26.N3104` (`#a855f7`, Route 03 CLV Margin Decay Sharp Shrinkage)
-  - `L27.N0912` (`#d97706`, Route 01 Liquidity Exhaustion Breaker) — _Dedicated Amber-600_
-  - `L28.N2501` (`#f43f5e`, Route 04 Terminal Risk Mitigation Limit Clamp)
+## Security & Runtime Hardening
 
-### Decoupled Discriminated Union Typing
+- **No Implicit `.env` Bleed**: [`bunfig.toml`](bunfig.toml) sets `env = false`, `[install].ignoreScripts = true`, and `minimumReleaseAge = "3d"`. CLI entrypoints call `assertSafeExecArgv()` from [`src/cli/preflight_guard.ts`](src/cli/preflight_guard.ts) to block unallowlisted `--env-file` flags.
+- **Read-Only Runtime Surface Introspection**: The **Status & Config → Bun Runtime Surface** panel and `bun run cli surface` classify `Bun.*` exports (`class`, `namespace`, `function`, `constant`, `object`) and inspect `bun:*` built-in modules (`bun:sqlite`, `bun:ffi`, `bun:jsc`, `bun:test`, `bun:bundle`) while strictly redacting `Bun.env` and `Bun.secrets`.
+- **Safe Markdown & ANSI Rendering**: `Bun.markdown.render()` and `Bun.markdown.ansi(md, AnsiTheme)` strip terminal control sequences, tint `[REDACTED*]` tokens, and block `javascript:`, `data:`, and signed S3 URLs from OSC-8 hyperlinks.
+- **Session, CSRF & Origin Guards**: Protected APIs enforce operator/admin tokens or SQLite-backed `HttpOnly` session cookies, `Bun.CSRF` tokens on mutations, strict `SPORTSDESK_ALLOWED_ORIGINS` validation, and zero raw shell execution (verified by `bun run check:shell-boundary`).
 
-All channel transport SLAs and route thresholds are modeled with strict discriminated unions rather than overloaded primitive numbers or polymorphic strings:
+## Verification & Quality Gates
 
-```typescript
-// Axis 1: Transport SLA Contract
-export type TransportSla =
-  | { readonly kind: "latency"; readonly latencySlaMs: number }
-  | { readonly kind: "sentinel_drop" };
+```sh
+# Format & semantic check (Bun 1.4.4 native formatter)
+bun run format:check
+bun run format:debug
 
-// Axis 2: Algorithmic Route Threshold Contract
-export type RouteThreshold =
-  | { readonly kind: "consensus_lag"; readonly maxConsensusLagMs: number }
-  | { readonly kind: "bayes_shrinkage"; readonly tauStar: number; readonly minTicketCount: number }
-  | { readonly kind: "liquidity_depth"; readonly minTopDepthCents: Cents }
-  | { readonly kind: "composite_risk_gate"; readonly minToxicityScore: number; readonly maxHoldPercentage: number; readonly maxDeficitCents: Cents };
+# TypeScript typecheck across root, runtime scripts, and UI workspace
+bun run lint
 
-// Nominal Enum Enforcements
-export enum TriggerPredicateKind { ... }
-export enum MitigationActionKind { ... }
+# Full test suite
+bun test
+
+# Composite local CI gate
+bun run check:ci
+
+# Isolated production runtime verification (HTTP + auth + R2 + optional browser session)
+bun run build && bun run check:runtime
 ```
 
-## Verification & CI Quality Gates
+## Documentation Index
 
-All tokens and contracts are verified continuously through `lib/validation/token_validator.ts` and `tests/`:
-
-1. **Zero Drift**: `bun run gen:tokens:gate` (CI step) resets generated outputs, regens from `design/tokens.toml`, and fails on drift for `design/domain-branded-types.ts` and the two dashboards under `static/`.
-2. **24-bit Exact Uniqueness**: 13 unique `ColorHexInt` values derived from `Bun.color()`.
-3. **CIEDE2000 Perceptual Separation ($\Delta E\_{00} \ge 7.0$)**: Mathematically verified color distance floor across all token pairs, preventing indistinguishable UI swatches.
-4. **WCAG 2.1 Contrast Standards**: $\ge 3.0:1$ for graphical UI badges against dark surfaces (`#070b14` / `#0b1329`) and $\ge 4.5:1$ for typography.
-5. **Zero Dead Tokens**: Asserts bidirectional reference consistency (all declared tokens used, all used tokens declared).
-
-### Test Suite Classification
-
-The suite is grouped by what it verifies. File and assertion counts change with every edit and are
-never pinned in prose; the authoritative execution surfaces are `bun test tests/` (the CI gate) and
-`bun test` (which additionally discovers colocated `*.test.ts` suites in `lib/` and `scripts/`, with
-scratch and generated gate paths excluded via `bunfig.toml` `[test].pathIgnorePatterns`).
-
-- **Token verification** (`tests/verify_tokens.test.ts`): zero-drift regeneration from
-  `design/tokens.toml`, 24-bit colour uniqueness, CIEDE2000 perceptual separation, WCAG 2.1
-  contrast, dead-token/bi-directional reference consistency, discriminated-union guardrails, and
-  the generative property tests `test_property_ciede2000_metric_axioms` and
-  `test_property_wcag_contrast_ratio_bounds`.
-- **Server runtime & network hardening**: `tests/sendfile_threshold.test.ts` (lazy handle
-  construction vs end-to-end socket throughput at 16 KB / 64 KB / 1 MB),
-  `tests/server_headers.test.ts` (no `X-Frame-Options`; Telegram `frame-ancestors` present),
-  `tests/server_error.test.ts` (non-Error throws become structured 500 JSON without stack traces),
-  `tests/fetch_proxy_isolation.test.ts` (`NO_PROXY`, `{ proxy: false }`, `respectNoProxy`),
-  `tests/fetch_timeout.test.ts` (`AbortSignal.timeout`), `tests/bench_server.test.ts`
-  (`Response.json` vs `JSON.stringify` equivalence, lazy `Bun.file` bodies),
-  `tests/fetch_url_credentials.test.ts` (no embedded URL credentials, no
-  `rejectUnauthorized: false`), `tests/server_port.test.ts` (`BUN_PORT=4100` cascade), and
-  `tests/env_types.test.ts` / `tests/env_types.test-d.ts` (Bun.env typing).
-
-## Project Structure
-
-See **[ROOT_LAYOUT.md](ROOT_LAYOUT.md)** for the full map. At a glance:
-
-```
-├── cli/              # sportsdesk_* CLIs (bun run cli, schema, replay, …)
-├── services/         # webview daemon, Telegram bot, R2, churn engine, ingestion
-├── catalog/          # Fantasy402 sport navigation catalog
-├── lib/              # shared modules, F402 capture, schema SSOT (+ colocated *.test.ts)
-├── scripts/          # generators & capture; scripts/deploy/ for VPS/docs/reports (+ colocated *.test.ts)
-├── reports/          # surveillance outputs, ingestion-audit.jsonl & docs-review
-├── static/           # token-compiled daemon HTML
-├── docs/             # API evidence portal; docs/runbooks/ for long-form ops guides
-├── tests/            # bun test suites (CI gate target)
-├── verification/     # manager-boot-oracle slices & gen-tokens zero-drift gate
-├── dsh-plugin*/      # removable DeepSeek Harness plugin bundles (verify-load.mjs gated)
-├── bin/dx            # operator entrypoint
-├── design/           # tokens.toml + domain-branded-types.ts (gen:tokens)
-├── schema/           # migrations, manifest.bin, schema preload
-├── infra/            # Cloudflare Pages _headers
-└── types/env.d.ts
-```
-
-## Documentation Runbooks
-
-See [docs/runbooks/README.md](docs/runbooks/README.md) for the full index. Highlights:
-
-- [Bun Server Runtime Shapes Runbook](docs/runbooks/bun_server_runtime_shapes_runbook.md) — `Server extends Disposable`, `WebSocketHandler<T>`, and `TLSOptions`.
-- [Token Architecture & Verification Runbook](docs/runbooks/token_architecture_and_verification_runbook.md) — CIEDE2000, WCAG contrast, and token code generation.
-- [Cloudflare R2 & API Runbook](docs/runbooks/cloudflare_r2_and_api_runbook.md) — Cloudflare API & R2 storage guide.
-- [Operational Guardrails Runbook](docs/runbooks/operational_guardrails_runbook.md) — Manager wire evidence and capture guardrails.
-- [OS Bun Cron Integration Guide](docs/runbooks/os_bun_cron_integration_guide.md) — OS crontab and systemd timer integration.
-- [VPS Domain Setup Runbook](docs/runbooks/vps_domain_setup_runbook.md) — Production VPS deployment guide.
-- [GSLive report surfaces](docs/report-surfaces.md) — Operator map of the `#/reports/users` deep link and the `#/events/bet-history` sidecar, with an evidence level per surface.
-- [Real ingestion](docs/REAL_INGESTION.md) — Phase 4: live Polymarket positions (`--live`), provenance and stale-cache rules, and the F402 session plan.
-
-### Incidents
-
-Post-mortem write-ups for production outages that shipped behavioral guarantees worth preserving. Read before editing the files called out in the "Guarantees to preserve" table of each incident.
-
-- [2026-11-04 — Silent F402 bridge outage (14h49m), full recovery shipped](docs/incidents/2026-11-04-bridge-outage-recovery.md) — PRs [#43](https://github.com/bw496915-cmyk/Sports-desk-ops/pull/43), [#44](https://github.com/bw496915-cmyk/Sports-desk-ops/pull/44), [#45](https://github.com/bw496915-cmyk/Sports-desk-ops/pull/45), [#46](https://github.com/bw496915-cmyk/Sports-desk-ops/pull/46): external R2 alerter, launchd session refresh, 24h TTL default, SHELL_CAPTURE drop-at-start.
+- [`LOCAL_DEVELOPMENT.md`](LOCAL_DEVELOPMENT.md) — Local Bun 1.4.4 workflow, TLS/HTTPS, Verdaccio registry, R2 inspection, and Profile Radar sources.
+- [`docs/generated/ARTIFACTS_AND_CLI.md`](docs/generated/ARTIFACTS_AND_CLI.md) — Auto-generated artifacts manifest, SHA-256 table, and unified Bun CLI reference.
+- [`dashboard.md`](dashboard.md) — Live surveillance brief rendered by `/api/brief` and `bun run cli docs render dashboard.md`.
+- [`docs/live-customer-sources.md`](docs/live-customer-sources.md) — Private roster projection, retained wager history projector, and collector scheduling.
+- [`design/README.md`](design/README.md) — Design token SSOT (`design/tokens.toml`) and `:root` alias contract.
+- [`packages/contracts/README.md`](packages/contracts/README.md) — `@sportsdesk-ops/contracts` workspace package exports.
+- [`schema/README.md`](schema/README.md) — Data contracts, DOD6 v5.4 schema, and telemetry matrix.
+- [`static/README.md`](static/README.md) — Static HTML dashboards served by `server.ts`.

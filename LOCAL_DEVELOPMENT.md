@@ -12,6 +12,10 @@ Verify `command -v bun` and `bun --version` before installing.
 ```sh
 bun install --frozen-lockfile
 bun run hooks:install
+bun run cli help
+bun run artifacts:generate
+bun run artifacts:check
+bun run docs:check
 bun run format
 bun run format:check
 bun run format:debug
@@ -408,7 +412,7 @@ into the sign-in form. For admin access, replace `SPORTSDESK_DASHBOARD_TOKEN`
 with `SPORTSDESK_ADMIN_TOKEN` in the command:
 
 ```sh
-node --input-type=module -e 'import {parse} from "dotenv"; import {readFileSync} from "node:fs"; process.stdout.write(parse(readFileSync(".local/local-runtime.env")).SPORTSDESK_DASHBOARD_TOKEN ?? "")' | pbcopy
+bun -e 'import { parse } from "dotenv"; const raw = await Bun.file(".local/local-runtime.env").text(); process.stdout.write(parse(raw).SPORTSDESK_DASHBOARD_TOKEN ?? "")' | pbcopy
 ```
 
 ## Local HTTPS and WebSockets

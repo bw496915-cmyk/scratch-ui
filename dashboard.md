@@ -99,9 +99,9 @@
 **Two layers (do not conflate counts):**
 
 1. **Live strip** — `GET /api/customers` → `computeCustomersCohortPayload` (`packages/backend/src/customers.ts`). The Customers tab **Corpora & Surveillance Cohorts** header hydrates six KPI cards via `deriveCustomerCohortKpiCards` (`packages/ui/src/hydration.ts`). Counts are computed at request time; `pending` / `unavailable` never masquerade as zero.
-2. **Reference registry** — long-horizon corpus sizes and desk evidence below. Refresh with measured artifacts (`bun run audit:customer-book`, `./bin/dx bridge coverage`, `bun run customers:profiles`), not hand edits.
+2. **Reference registry** — long-horizon corpus sizes and desk evidence below. Refresh with measured artifacts (`bun run artifacts:check`, `bun run cli surface --deep`), not hand edits.
 
-#### Live KPI strip (`http://127.0.0.1:4022/?tab=customers` · matrix overlay `?matrix=1&tab=customers`)
+#### Live KPI strip (`http://127.0.0.1:3000/?tab=customers` · matrix overlay `?matrix=1&tab=customers`)
 
 | KPI card (UI)         | `CustomersCohortsSummary` field | Tier filter (chip) | Aggregation rule                                                          |
 | :-------------------- | :------------------------------ | :----------------- | :------------------------------------------------------------------------ |
@@ -116,7 +116,7 @@ Provenance badge: `capture` (live enriched book), `fixture` (backtest/fixture on
 
 ```sh
 # Live cohort JSON (same contract as the dashboard strip)
-curl -sS http://127.0.0.1:4022/api/customers | jq '{cohorts, provenance}'
+curl -sS http://127.0.0.1:3000/api/customers | jq '{cohorts, provenance}'
 ```
 
 #### Reference registry (measured snapshots — not the live KPI denominators)
@@ -129,14 +129,14 @@ curl -sS http://127.0.0.1:4022/api/customers | jq '{cohorts, provenance}'
 | **Active 4-Week Sports Bettors**      | **2,236**  | Active sports bettors in 4-week window (`totalActiveSportsBettors` in `docs/backtest-4wk-cfb-nba.json`)             |
 | **Local Customer Book Specification** |  **220**   | Full operator book (`enriched_customers_full.json`, 1,100 sampled tickets across 29 agents)                         |
 | **Committed Backtest Cohort**         |   **49**   | 4-week CFB/NBA historical backtest with CLV, volume, hold, and parlay data (`docs/backtest-4wk-cfb-nba.json`)       |
-| **Bridged Polymarket Wallets**        |   **22**   | Cross-domain customer-to-wallet attributions (`totalBridgedPolymarketWallets`, `./bin/dx bridge`)                   |
+| **Bridged Polymarket Wallets**        |   **22**   | Cross-domain customer-to-wallet attributions (`totalBridgedPolymarketWallets`, `docs/cross-domain-bridge.json`)     |
 | **CI Synthetic Fixture Book**         |   **6**    | Edge case test cohort (`tests/fixtures/backtest/enriched_customers_full.json`)                                      |
 | **Key Number Buyer Watchlist**        |   **5**    | Elite sharps targeting football key numbers 3, 7, 10, 14, 21 (`KEY_NUMBER_BUYER_PROFILES`)                          |
 | **Hook Syndicate Watchlist**          |   **5**    | Downline accounts exploiting half-point hooks (`HALF_POINT_HOOK_SYNDICATE_PROFILES`)                                |
 
 ### Multidimensional Profiling Architecture
 
-- **DOD6 v5.4 Binary Key Packer & Columnar Reader**: Zero-allocation 64-bit base-40 (`<=12` chars) / FNV-1a (`>12` chars) login key packing (`lib/dod6_v54_login_key.ts`) + 4-slot 16-bit radix probing (`lib/dod6_v54_lifetime_reader.ts`).
+- **DOD6 v5.4 Binary Key Packer & Columnar Reader**: Zero-allocation 64-bit base-40 (`<=12` chars) / FNV-1a (`>12` chars) login key packing + 4-slot 16-bit radix probing (`schema/dod6-v54.schema.json`).
 - **Unified Sharpness Composite Index (0.0 - 10.0)**: Decomposed into CLV (3.0), Bayesian Skill (2.5), Sizing Discipline (1.5), Signature Specialization (2.0), and Timing Exploitation (1.0).
 - **Stake Sizing Inequality**: Exact Gini coefficient (0.0 = Flat Unit, 1.0 = Martingale Chaser).
 - **Correlated Parlay Forensics**: Automated detection of Favorite Spread + Over, Underdog + Under, and 1H/Game crosses.
@@ -145,7 +145,7 @@ curl -sS http://127.0.0.1:4022/api/customers | jq '{cohorts, provenance}'
 
 ### 🧪 Bun 1.4.4 test harness — runtime beats stale `@types/bun`
 
-Pinned binary: `Bun 1.4.4` (`38afee6c84…`). When TypeScript and `bun test` disagree, trust the runner and `./bin/dx bun --types`:
+Pinned binary: `Bun 1.4.4` (`38afee6c84…`). When TypeScript and `bun test` disagree, trust the runner and `bun run cli surface --deep`:
 
 | Surface                                 | Declarations said                    | Runtime / tests use                                                     |
 | :-------------------------------------- | :----------------------------------- | :---------------------------------------------------------------------- |
@@ -156,17 +156,20 @@ Pinned binary: `Bun 1.4.4` (`38afee6c84…`). When TypeScript and `bun test` dis
 | `subprocess.resourceUsage().cpuTime`    | `number`                             | **`bigint`** microsecond fields                                         |
 | `FileSystemRouter.origin`               | `string`                             | **`string \| null`** when unresolved                                    |
 
-Contract probes: `bun test tests/bun_capabilities.test.ts`, `bun x bun-surface --filter which --json`, `bun run check:spec-citations` (pinned `packages/bun-types/*` blob URLs).
+Contract probes: `bun test tests/unit/bun_runtime_surface.test.ts`, `bun run cli surface --kinds`, `bun run cli surface --deep`, and `bun run cli artifacts check`.
 
 ---
 
-## ⚙️ Automated Shell Directives
+## ⚙️ Unified Bun CLI & Markdown Rendering Directives
 
-> Executed by `./bin/dx dashboard --exec` (`handleDashboardCli` in `cli/sportsdesk_cli.ts`).
-> `Bun.markdown.ansi` `AnsiTheme` flags: `--theme dark|light|mono|accessible`, `--columns <n>` (`0` disables wrapping), `--light` / `--dark`, `--colors` / `--no-color`, `--hyperlinks` / `--no-hyperlinks`, `--kitty-graphics`, `--linkify-symbols`.
-> Customer CLI helpers: `bun run customers index|list|find|search`, `bun run customers:profiles`, `bun run audit:customer-book`, `bun run normalize:customer-book`, `./bin/dx bridge coverage|value|match`.
+> Managed by [`scripts/sportsdesk_cli.ts`](scripts/sportsdesk_cli.ts) (`bun run cli ...`) and [`scripts/gen_artifacts.ts`](scripts/gen_artifacts.ts).
+> `Bun.markdown.render` / `Bun.markdown.ansi` flags: `--mode render|ansi|html`, `--preset obsidian-desk|amber-surveillance|emerald-audit|light-paper`, `--columns <n>`, `--light`, `--no-color`, `--no-hyperlinks`.
+> Generated artifact reference: [`docs/generated/ARTIFACTS_AND_CLI.md`](docs/generated/ARTIFACTS_AND_CLI.md).
 
 ```sh
-# Health probe trigger (executed when running `./bin/dx dashboard --exec`)
-echo "Desk health check: OK"
+# Render this brief in the terminal with TrueColor ANSI + safe OSC-8 hyperlinks
+bun run cli docs render dashboard.md --mode render --preset obsidian-desk --columns 88
+
+# Verify all generated artifacts, pipeline hashes, and Markdown links
+bun run cli check all
 ```

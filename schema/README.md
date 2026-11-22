@@ -1,9 +1,18 @@
-# SQLite schema tooling
+# Schema & Data Contracts
 
-| Path                        | Role                                                                            |
-| --------------------------- | ------------------------------------------------------------------------------- |
-| `migrations/`               | SQL migration stubs (`.gitkeep` until first migration lands)                    |
-| `manifest.bin`              | Local binary manifest written by `bun run schema --write-manifest` (gitignored) |
-| `preload/schema-inspect.ts` | Preload for `bun run schema:inspect` / `schema:repl`                            |
+Tracked schema contracts and telemetry matrices in `schema/`:
 
-Registry reports also write under `reports/schema.manifest.bin` during snapshot runs.
+| Path                                                     | Role                                                                |
+| :------------------------------------------------------- | :------------------------------------------------------------------ |
+| [`dod6-v54.schema.json`](dod6-v54.schema.json)           | DOD6 v5.4 columnar binary spine schema specification                |
+| [`wagers_field_contract.json`](wagers_field_contract.json) | Canonical wager field contract & wire mapping                       |
+| [`rsk06_telemetry_matrix.ts`](rsk06_telemetry_matrix.ts) | RSK-06 telemetry matrix definitions                                 |
+| `migrations/`                                            | SQL migration stubs (`.gitkeep` placeholder for future migrations)  |
+| `preload/`                                               | SQLite schema inspection preload helpers                            |
+
+Verify repository schema, artifacts, and Markdown links via the unified Bun CLI:
+
+```sh
+bun run cli artifacts check
+bun run cli check all
+```

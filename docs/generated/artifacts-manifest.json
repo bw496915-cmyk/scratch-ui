@@ -1,0 +1,220 @@
+{
+  "schemaVersion": "1.0.0",
+  "bunVersionPin": "1.4.4",
+  "tokensVersion": "1.5.0",
+  "cliEntrypoint": "bun run cli",
+  "tokenSummary": {
+    "canonicalCount": 41,
+    "aliasCount": 25,
+    "casStateCount": 4
+  },
+  "generatedArtifacts": [
+    {
+      "path": "packages/ui/src/tokens.registry.generated.ts",
+      "role": "Generated TypeScript design token registry & aliases",
+      "source": "design/tokens.toml",
+      "bytes": 7308,
+      "sha256": "6698daa6543d8bd8a61448c7131baf79827a41e400693828d266960422dacf5a"
+    },
+    {
+      "path": "src/dashboard/tokens.generated.css",
+      "role": "Generated CSS Houdini @property + :root token stylesheet",
+      "source": "design/tokens.toml",
+      "bytes": 9651,
+      "sha256": "0f923d447d57825072741d6ddaffe27d3e788e32f66dda939c9c3132dc2c7363"
+    },
+    {
+      "path": "design/domain-branded-types.ts",
+      "role": "Nominal branded primitives & neuron registry contracts",
+      "source": "design/tokens.toml",
+      "bytes": 44143,
+      "sha256": "d98fab5bf45b122cae2025b31b8d81fff93c648327c70924dfc2774f49721a85"
+    }
+  ],
+  "pipelineDiagrams": {
+    "catalogPath": "docs/assets/pipeline-artifacts-metadata.json",
+    "totalArtifacts": 4,
+    "verifiedFiles": 12,
+    "entries": [
+      {
+        "id": "SD-ARTIFACT-01-10MODE-PIPELINE",
+        "slug": "pipeline-10-mode-architecture",
+        "svgSha256": "9f0a5297e5061df67572214349f0ed65940e5be80c037c63cc05c06bcfb6eb5c",
+        "pngSha256": "7bdbe1422caf41c80f54da68482076534feaa0d976f13c19d777215d092197f0",
+        "webpSha256": "8b0332f59a6757c122c25bdd9241a495727b39a3c7f284059db61eba723ee135"
+      },
+      {
+        "id": "SD-ARTIFACT-02-6LAYER-CLEANING",
+        "slug": "pipeline-6-layer-data-cleaning",
+        "svgSha256": "0eb4f0d173262aa41aa253c4921377964cf7834779b446cc77d3b8c8808d5bb1",
+        "pngSha256": "bf8529ec45de92c3801d8a43fbc6164d4c5666a32d315b3bf77fadbcec93d40a",
+        "webpSha256": "e093a1eb874eccacedb4ac7f28e3e3ee40f65fafaf39360446bed7254838eb21"
+      },
+      {
+        "id": "SD-ARTIFACT-03-IP-AND-RECONCILIATION",
+        "slug": "pipeline-per-office-ip-and-reconciliation",
+        "svgSha256": "b49d2f7340a9dabec6f17e29d78f49f4c15c8e545427e5ca2b06e866e433ad98",
+        "pngSha256": "2b6a0868154df02b65c3a1477fc3e0e92983babf5b02cdfe41671400cbb892b9",
+        "webpSha256": "1fa2411ca6d05b79277d474139ed8c18f32a391f24989ac60a731ea1ef6c33b0"
+      },
+      {
+        "id": "SD-ARTIFACT-04-DUAL-SURFACE-GSLIVE",
+        "slug": "pipeline-dual-surface-gslive-model",
+        "svgSha256": "b26b3298b115081fc733ce0a8d5d60222923b973be19d904b0c4c556b84e0546",
+        "pngSha256": "c42d873dd4a667974a8ad9c2a8b2efa2f6bc76b21ccc847d252f4e68dd5c2207",
+        "webpSha256": "c8624edd41e35ca44cc741906d04ade79fe26169b74ebfef23a6167e33f29a85"
+      }
+    ]
+  },
+  "markdownDocs": [
+    {
+      "path": "dashboard.md",
+      "title": "📊 SportsDesk & Fantasy402 Real-Time Surveillance Dashboard",
+      "lines": 176,
+      "bytes": 20186,
+      "sha256": "d8d12427b7ff479e67ae836a3ee6a728b4d5f94eb1742118e808bd6b10050cce",
+      "localLinksChecked": 3
+    },
+    {
+      "path": "design/README.md",
+      "title": "Design Token SSOT",
+      "lines": 27,
+      "bytes": 2153,
+      "sha256": "b845052bf7068991dc675b06730b5f4b3c190f30405367c1d39b06bebc9802f7",
+      "localLinksChecked": 8
+    },
+    {
+      "path": "docs/live-customer-sources.md",
+      "title": "Local live customer identities",
+      "lines": 85,
+      "bytes": 5419,
+      "sha256": "bbd69062bfb88d61534ee3edeef7037a809f2b8c8280af061b4dc648dc2a810e",
+      "localLinksChecked": 0
+    },
+    {
+      "path": "LOCAL_DEVELOPMENT.md",
+      "title": "Local SportsDesk development",
+      "lines": 537,
+      "bytes": 28567,
+      "sha256": "77030b6e8e2609db6ac6a1922fc875e6f9f5c54388a4762262d86658ae16913a",
+      "localLinksChecked": 0
+    },
+    {
+      "path": "packages/contracts/README.md",
+      "title": "`@sportsdesk-ops/contracts`",
+      "lines": 47,
+      "bytes": 4124,
+      "sha256": "e07ad566999f0a5428a886af8fb21aa4540bbf6f07cf6c9a0d35800beb3a94f1",
+      "localLinksChecked": 0
+    },
+    {
+      "path": "README.md",
+      "title": "SportsDesk Ops Dashboard",
+      "lines": 125,
+      "bytes": 7582,
+      "sha256": "fa8cc34166761e95531728e762acf91940a2692a7623fbed300a6526b91e5576",
+      "localLinksChecked": 22
+    },
+    {
+      "path": "schema/README.md",
+      "title": "Schema & Data Contracts",
+      "lines": 19,
+      "bytes": 1152,
+      "sha256": "8cedb0dc6cffde72c6361e4d08acb27d2e227436cadf5abfea722967754301ec",
+      "localLinksChecked": 3
+    },
+    {
+      "path": "static/README.md",
+      "title": "Static HTML Surfaces",
+      "lines": 16,
+      "bytes": 860,
+      "sha256": "88b5a5e4f32e9c1a3eb1695656433503a239b46ea494aca1c8800e893feeb3c6",
+      "localLinksChecked": 7
+    },
+    {
+      "path": "tests/fixtures/backtest/README.md",
+      "title": "Synthetic backtest fixture (P1.1)",
+      "lines": 70,
+      "bytes": 3350,
+      "sha256": "f8a885a7e4413f7840e27f8f29292bf0772f40398a1514ae0086bb490c60313a",
+      "localLinksChecked": 0
+    },
+    {
+      "path": "tests/fixtures/verify-load/FIXTURES.md",
+      "title": "verify-load pinned artifacts (CI)",
+      "lines": 14,
+      "bytes": 720,
+      "sha256": "c6092f7cc138905ad90fb690fa3cb90b05463a321fdc7af1e6559644c95d5bcc",
+      "localLinksChecked": 0
+    }
+  ],
+  "cliCommands": [
+    {
+      "command": "bun run cli help",
+      "description": "Display unified Bun CLI command reference and pinned runtime version"
+    },
+    {
+      "command": "bun run cli artifacts generate",
+      "description": "Compile design/tokens.toml and regenerate docs/generated/artifacts-manifest.json + ARTIFACTS_AND_CLI.md"
+    },
+    {
+      "command": "bun run cli artifacts check",
+      "description": "Fail-closed drift gate for generated token outputs, pipeline asset hashes, and generated artifact docs"
+    },
+    {
+      "command": "bun run cli docs check",
+      "description": "Verify zero broken local links and zero stale legacy references across all .md files"
+    },
+    {
+      "command": "bun run cli docs list",
+      "description": "List all tracked repository Markdown documents with line counts and link status"
+    },
+    {
+      "command": "bun run cli docs render <file>",
+      "description": "Render a Markdown file via Bun.markdown.render() / Bun.markdown.ansi(AnsiTheme) in the terminal"
+    },
+    {
+      "command": "bun run cli surface [--kinds|--deep|--json]",
+      "description": "Run read-only live Bun Runtime Surface audit (Bun.* kinds, bun:* modules, namespaces, classes)"
+    },
+    {
+      "command": "bun run cli check [gate|all]",
+      "description": "Execute repository integrity gates under Bun (lockfile, route-surface, bundle-hygiene, shell-boundary, snapshots, artifacts, docs)"
+    },
+    {
+      "command": "bun run cli scripts [filter]",
+      "description": "Inspect grouped package.json scripts using Bun.inspect.table"
+    }
+  ],
+  "packageScripts": {
+    "format": "bun fmt",
+    "format:check": "bun fmt --check",
+    "format:debug": "bun fmt --debug-check",
+    "hooks:install": "git config --local core.hooksPath .githooks",
+    "registry:install": "bun install --cwd tools/registry --frozen-lockfile",
+    "registry:start": "bun run --cwd tools/registry start",
+    "registry:check": "bun scripts/check_local_registry.ts",
+    "cli": "bun scripts/sportsdesk_cli.ts",
+    "gen:tokens": "bun scripts/gen_artifacts.ts --tokens-only",
+    "gen:tokens:gate": "bun scripts/gen_artifacts.ts --tokens-only --check",
+    "artifacts:generate": "bun scripts/gen_artifacts.ts",
+    "artifacts:check": "bun scripts/gen_artifacts.ts --check",
+    "docs:check": "bun scripts/sportsdesk_cli.ts docs check",
+    "dev": "NODE_ENV=development SPORTSDESK_DEV_SERVER=1 tsx server.ts",
+    "start": "node server.mjs",
+    "start:local": "bun --no-env-file server.mjs",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=esm --packages=external --external:bun:sqlite --outfile=server.mjs",
+    "preview": "vite preview --host 0.0.0.0 --port 3000",
+    "clean": "rm -rf dist server.js server.mjs",
+    "lint": "tsc --noEmit && tsc --noEmit --project scripts/tsconfig.runtime.json && tsc --noEmit --project packages/ui/tsconfig.json",
+    "test": "bun test",
+    "test:update-snapshots": "TZ=UTC bun test --update-snapshots",
+    "check:lockfile": "bun scripts/check_lockfile_integrity.ts",
+    "check:route-surface": "bun scripts/check_route_surface.ts",
+    "check:bundle-hygiene": "bun scripts/check_bundle_hygiene.ts",
+    "check:runtime": "bun scripts/verify_runtime_connections.ts",
+    "check:shell-boundary": "bun scripts/check_shell_boundary.ts",
+    "check:snapshots": "bun scripts/check_snapshot_hygiene.ts",
+    "check:ci": "bun run format:check && bun run format:debug && bun run check:lockfile && bun run artifacts:check && bun run docs:check && bun test && bun run check:snapshots && bun run check:route-surface && bun run check:bundle-hygiene && bun run check:shell-boundary"
+  }
+}

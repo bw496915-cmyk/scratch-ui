@@ -114,7 +114,10 @@ jobs:
       - name: Security & profile theme test suite
         run: bun test
 
-      - name: Static route surface & bundle hygiene guardrails
+      - name: Static route surface, bundle hygiene, artifact drift & docs guardrails
         run: |
+          bun run artifacts:check
+          bun run docs:check
           bun run check:route-surface
           bun run check:bundle-hygiene
+          bun run check:shell-boundary

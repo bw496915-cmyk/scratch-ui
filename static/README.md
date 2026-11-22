@@ -1,15 +1,15 @@
-# Daemon static HTML
+# Static HTML Surfaces
 
-Token-compiled dashboards served by `sportsdesk_webview_server.ts`:
+Static HTML and client script surfaces served under `/static/*` by [`server.ts`](../server.ts):
 
-- `customer-churn-simulation-dashboard.html` — `GET /` and `GET /dashboard`
-- `telegram-miniapp-dashboard.html` — `GET /miniapp`
-- `live-bets.html` — `GET /live-bets`
-- `status.html` — `GET /status`
+- [`status.html`](status.html) + [`status.js`](status.js) — authenticated `/status` daemon probe page compliant with production `script-src 'self'` CSP
+- [`customer-churn-simulation-dashboard.html`](customer-churn-simulation-dashboard.html) — customer churn simulation static snapshot
+- [`telegram-miniapp-dashboard.html`](telegram-miniapp-dashboard.html) — Telegram Mini App static dashboard snapshot
+- [`live-bets.html`](live-bets.html) — live wager tape static snapshot
 
-Every figure on the dashboard comes from a `data/` artifact through `GET /api/kpis`, not from the
-markup (`lib/desk_kpis.ts`). The agent-tree raster is not in this directory: it is
-`scratch/agent-graph.webp`, served guarded as `GET /agent-graph.webp`, because it is a rendering of
-the graph `/graph` serves.
+Design tokens are compiled from [`design/tokens.toml`](../design/tokens.toml) (`v1.5.0`) via the unified Bun CLI:
 
-Regenerate token slices: `bun run gen:tokens` (see `lib/gen_tokens/emission_targets.ts`).
+```sh
+bun run gen:tokens          # regenerate token TS registry & Houdini CSS
+bun run gen:tokens:gate     # fail-closed zero-drift check
+```
