@@ -37,6 +37,19 @@ Verified **12** raster/vector assets across **4** pipeline diagrams:
 | `SD-ARTIFACT-03-IP-AND-RECONCILIATION` | `pipeline-per-office-ip-and-reconciliation` | `b49d2f7340a9` | `2b6a0868154d` | `1fa2411ca6d0` |
 | `SD-ARTIFACT-04-DUAL-SURFACE-GSLIVE`   | `pipeline-dual-surface-gslive-model`        | `b26b3298b115` | `c42d873dd4a6` | `c8624edd41e3` |
 
+## Brand Identity & Metadata-Bearing Assets (`design/branding.toml`)
+
+Verified **6/6** branding assets (**5** stamped with Dublin Core + XMP Core + `sportsdesk:*` context) and `public/manifest.webmanifest`:
+
+| Asset ID                   | Path                                               |    Dimensions | Role                           | XMP Context                     | SHA-256 (12)   |
+| :------------------------- | :------------------------------------------------- | ------------: | :----------------------------- | :------------------------------ | :------------- |
+| `SD-BRAND-01-EMBLEM-WEBP`  | `public/assets/branding/sportsdesk-emblem.webp`    |  256×256 WEBP | `app-emblem`                   | `brand:sportsdesk-emblem:webp`  | `9c74d06e5cf3` |
+| `SD-BRAND-02-EMBLEM-64`    | `public/assets/branding/sportsdesk-emblem-64.png`  |     64×64 PNG | `browser-favicon`              | `brand:sportsdesk-emblem:64`    | `0bd6b0ad9d40` |
+| `SD-BRAND-03-EMBLEM-180`   | `public/assets/branding/sportsdesk-emblem-180.png` |   180×180 PNG | `apple-touch-icon`             | `brand:sportsdesk-emblem:180`   | `973f73bfa8df` |
+| `SD-BRAND-04-EMBLEM-512`   | `public/assets/branding/sportsdesk-emblem-512.png` |   512×512 PNG | `manifest-app-icon`            | `brand:sportsdesk-emblem:512`   | `2d90fbaf90fc` |
+| `SD-BRAND-05-OG-CARD-WEBP` | `public/assets/branding/sportsdesk-og-card.webp`   | 1200×630 WEBP | `opengraph-social-banner-webp` | `brand:sportsdesk-og-card:webp` | `f36fc0f72437` |
+| `SD-BRAND-06-OG-CARD-JPG`  | `public/assets/branding/sportsdesk-og-card.jpg`    | 1200×630 JPEG | `opengraph-social-banner-jpeg` | crawler JPEG                    | `18d290e6110a` |
+
 ## Verified Markdown Documentation Inventory
 
 Every local link across all **10** tracked Markdown documents is checked by `bun run docs:check`:
@@ -70,6 +83,8 @@ Every local link across all **10** tracked Markdown documents is checked by `bun
 | `bun run gen:tokens:gate`       | `bun scripts/gen_artifacts.ts --tokens-only --check`                                                                                                                                                                                                                                             |
 | `bun run artifacts:generate`    | `bun scripts/gen_artifacts.ts`                                                                                                                                                                                                                                                                   |
 | `bun run artifacts:check`       | `bun scripts/gen_artifacts.ts --check`                                                                                                                                                                                                                                                           |
+| `bun run branding:generate`     | `bun scripts/gen_branding_assets.ts`                                                                                                                                                                                                                                                             |
+| `bun run branding:check`        | `bun scripts/gen_branding_assets.ts --check`                                                                                                                                                                                                                                                     |
 | `bun run docs:check`            | `bun scripts/sportsdesk_cli.ts docs check`                                                                                                                                                                                                                                                       |
 | `bun run dev`                   | `NODE_ENV=development SPORTSDESK_DEV_SERVER=1 tsx server.ts`                                                                                                                                                                                                                                     |
 | `bun run start`                 | `node server.mjs`                                                                                                                                                                                                                                                                                |

@@ -66,6 +66,101 @@
       }
     ]
   },
+  "brandingAssets": {
+    "specPath": "design/branding.toml",
+    "catalogPath": "public/assets/branding/branding-metadata.json",
+    "manifestPath": "public/manifest.webmanifest",
+    "brandVersion": "v1.01.23-next",
+    "totalAssets": 6,
+    "verifiedFiles": 6,
+    "xmpVerifiedFiles": 5,
+    "entries": [
+      {
+        "id": "SD-BRAND-01-EMBLEM-WEBP",
+        "slug": "sportsdesk-emblem-webp",
+        "repoPath": "public/assets/branding/sportsdesk-emblem.webp",
+        "format": "webp",
+        "width": 256,
+        "height": 256,
+        "bytes": 7814,
+        "sha256": "9c74d06e5cf352e8852cdd9930e06e5635ceef88064c87411108e726b939a74d",
+        "metadataBearing": true,
+        "assetRole": "app-emblem",
+        "surfaceContext": "dashboard-header-nav",
+        "streamId": "brand:sportsdesk-emblem:webp"
+      },
+      {
+        "id": "SD-BRAND-02-EMBLEM-64",
+        "slug": "sportsdesk-emblem-64",
+        "repoPath": "public/assets/branding/sportsdesk-emblem-64.png",
+        "format": "png",
+        "width": 64,
+        "height": 64,
+        "bytes": 7803,
+        "sha256": "0bd6b0ad9d40ddd3999deac95ecfdbfc3ce9f906410e6de196be529742881163",
+        "metadataBearing": true,
+        "assetRole": "browser-favicon",
+        "surfaceContext": "browser-tab-icon",
+        "streamId": "brand:sportsdesk-emblem:64"
+      },
+      {
+        "id": "SD-BRAND-03-EMBLEM-180",
+        "slug": "sportsdesk-emblem-180",
+        "repoPath": "public/assets/branding/sportsdesk-emblem-180.png",
+        "format": "png",
+        "width": 180,
+        "height": 180,
+        "bytes": 43150,
+        "sha256": "973f73bfa8df0dfa30940da7052040d27105bc4d404efa38e98e6711596fbe6f",
+        "metadataBearing": true,
+        "assetRole": "apple-touch-icon",
+        "surfaceContext": "ios-homescreen-icon",
+        "streamId": "brand:sportsdesk-emblem:180"
+      },
+      {
+        "id": "SD-BRAND-04-EMBLEM-512",
+        "slug": "sportsdesk-emblem-512",
+        "repoPath": "public/assets/branding/sportsdesk-emblem-512.png",
+        "format": "png",
+        "width": 512,
+        "height": 512,
+        "bytes": 268573,
+        "sha256": "2d90fbaf90fcf36e35252552a5fa9df9ca33733724efbbfb404bc5e5fbdb7106",
+        "metadataBearing": true,
+        "assetRole": "manifest-app-icon",
+        "surfaceContext": "web-app-manifest",
+        "streamId": "brand:sportsdesk-emblem:512"
+      },
+      {
+        "id": "SD-BRAND-05-OG-CARD-WEBP",
+        "slug": "sportsdesk-og-card-webp",
+        "repoPath": "public/assets/branding/sportsdesk-og-card.webp",
+        "format": "webp",
+        "width": 1200,
+        "height": 630,
+        "bytes": 28864,
+        "sha256": "f36fc0f724372794e2b16686c1aac26fec4b7f917045e0be714e58cf469e9dd0",
+        "metadataBearing": true,
+        "assetRole": "opengraph-social-banner-webp",
+        "surfaceContext": "social-share-preview",
+        "streamId": "brand:sportsdesk-og-card:webp"
+      },
+      {
+        "id": "SD-BRAND-06-OG-CARD-JPG",
+        "slug": "sportsdesk-og-card-jpg",
+        "repoPath": "public/assets/branding/sportsdesk-og-card.jpg",
+        "format": "jpeg",
+        "width": 1200,
+        "height": 630,
+        "bytes": 63150,
+        "sha256": "18d290e6110a7e705c4fa8e7a2826d93ee3ac7941dcbef122770541a46c85b43",
+        "metadataBearing": false,
+        "assetRole": "opengraph-social-banner-jpeg",
+        "surfaceContext": "social-share-crawler",
+        "streamId": "brand:sportsdesk-og-card:jpg"
+      }
+    ]
+  },
   "markdownDocs": [
     {
       "path": "dashboard.md",
@@ -199,6 +294,8 @@
     "gen:tokens:gate": "bun scripts/gen_artifacts.ts --tokens-only --check",
     "artifacts:generate": "bun scripts/gen_artifacts.ts",
     "artifacts:check": "bun scripts/gen_artifacts.ts --check",
+    "branding:generate": "bun scripts/gen_branding_assets.ts",
+    "branding:check": "bun scripts/gen_branding_assets.ts --check",
     "docs:check": "bun scripts/sportsdesk_cli.ts docs check",
     "dev": "NODE_ENV=development SPORTSDESK_DEV_SERVER=1 tsx server.ts",
     "start": "node server.mjs",

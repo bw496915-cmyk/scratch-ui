@@ -636,6 +636,24 @@ export interface ImageProvenanceFields {
   readonly merkleRoot: string | null
 }
 
+/** Extended Dublin Core, XMP Core, and SportsDesk operational branding context. */
+export interface ImageProvenanceContext {
+  readonly title: string | null
+  readonly description: string | null
+  readonly creator: string | null
+  readonly rights: string | null
+  readonly creatorTool: string | null
+  readonly createDate: string | null
+  readonly brand: string | null
+  readonly assetRole: string | null
+  readonly surfaceContext: string | null
+  readonly domainContext: string | null
+  readonly tokensVersion: string | null
+  readonly sourceSpec: string | null
+  readonly palette: string | null
+  readonly subjects: readonly string[]
+}
+
 /**
  * Header-only provenance of one WebP/PNG artifact. `available` reports whether
  * `Bun.Image` could read the container header, not whether the metadata is complete.
@@ -649,7 +667,9 @@ export interface ImageProvenanceReport {
   /** Channels that actually contributed at least one `sportsdesk:*` value. */
   readonly channels: readonly ImageProvenanceChannel[]
   readonly fields: ImageProvenanceFields
-  /** Raw values as carried, keyed by `sportsdesk:<name>`. */
+  /** Extended Dublin Core / XMP / SportsDesk context metadata when present. */
+  readonly context?: ImageProvenanceContext | undefined
+  /** Raw values as carried, keyed by `sportsdesk:<name>` (plus `dc:*` / `xmp:*`). */
   readonly raw: Readonly<Record<string, string>>
   readonly issues: readonly string[]
   readonly errorCode?: string | undefined

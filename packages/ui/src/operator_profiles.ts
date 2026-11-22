@@ -19,12 +19,34 @@ export interface OperatorProfile {
 export const BRAND_ASSETS = {
   appName: "SportsDesk Ops Surveillance Dashboard-v1.01.23-next",
   shortName: "SportsDesk & Fantasy402 Operations",
+  monogram: "SD",
   version: "v1.01.23-next",
+  organization: "SportsDesk & Fantasy402 Quantitative Risk Operations",
+  tagline: "Real-time wager surveillance, sharp profiling, and automated risk desk telemetry",
+  tokensVersion: "1.5.0",
+  domainContext: "sportsbook-risk-surveillance",
   emblemWebp: "/assets/branding/sportsdesk-emblem.webp",
   emblemPng64: "/assets/branding/sportsdesk-emblem-64.png",
   emblemPng180: "/assets/branding/sportsdesk-emblem-180.png",
+  emblemPng512: "/assets/branding/sportsdesk-emblem-512.png",
   ogCardJpg: "/assets/branding/sportsdesk-og-card.jpg",
-  emblemAlt: "SportsDesk & Fantasy402 Operations Radar Shield Emblem",
+  ogCardWebp: "/assets/branding/sportsdesk-og-card.webp",
+  ogCardWidth: 1200,
+  ogCardHeight: 630,
+  manifestUrl: "/manifest.webmanifest",
+  metadataCatalogUrl: "/assets/branding/branding-metadata.json",
+  emblemAlt:
+    "SportsDesk & Fantasy402 hexagonal obsidian radar shield emblem with cyan trajectory vector",
+  ogImageAlt:
+    "SportsDesk & Fantasy402 Operations surveillance radar shield and real-time telemetry banner",
+  palette: {
+    canvasBg: "#070b14",
+    surfaceElevated: "#0b1120",
+    accentPrimary: "#38bdf8",
+    accentEmerald: "#34d399",
+    accentAmber: "#fbbf24",
+    accentDanger: "#f87171",
+  },
 } as const
 
 export const OPERATOR_PROFILES: readonly OperatorProfile[] = [

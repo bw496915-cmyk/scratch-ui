@@ -1,0 +1,43 @@
+{
+  "name": "SportsDesk Ops Surveillance Dashboard-v1.01.23-next",
+  "short_name": "SportsDesk & Fantasy402 Operations",
+  "description": "Unified SportsDesk & Fantasy402 surveillance console for real-time wager telemetry, downline risk exposure, sharp profiling, and threshold alerting.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#070b14",
+  "theme_color": "#070b14",
+  "categories": [
+    "finance",
+    "analytics",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "/assets/branding/sportsdesk-emblem-64.png",
+      "sizes": "64x64",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/branding/sportsdesk-emblem-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/branding/sportsdesk-emblem.webp",
+      "sizes": "256x256",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/branding/sportsdesk-emblem-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

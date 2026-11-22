@@ -1,6 +1,6 @@
 {
   "name": "Remix SportsDesk Ops Surveillance Dashboard-v1.01.23-next",
-  "description": "Unified SportsDesk \u0026 Fantasy402 surveillance console combining real-time wager telemetry, downline risk overview, bettor churn simulation, system logs, partner liquidity, and automated threshold alerting. for seamless sportsbook operation and actionable data insights.",
+  "description": "Unified SportsDesk & Fantasy402 surveillance console for real-time wager telemetry, downline risk exposure, sharp profiling, and threshold alerting.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

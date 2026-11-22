@@ -27,6 +27,8 @@
     "gen:tokens:gate": "bun scripts/gen_artifacts.ts --tokens-only --check",
     "artifacts:generate": "bun scripts/gen_artifacts.ts",
     "artifacts:check": "bun scripts/gen_artifacts.ts --check",
+    "branding:generate": "bun scripts/gen_branding_assets.ts",
+    "branding:check": "bun scripts/gen_branding_assets.ts --check",
     "docs:check": "bun scripts/sportsdesk_cli.ts docs check",
     "dev": "NODE_ENV=development SPORTSDESK_DEV_SERVER=1 tsx server.ts",
     "start": "node server.mjs",

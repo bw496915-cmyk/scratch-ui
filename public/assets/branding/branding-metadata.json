@@ -1,0 +1,316 @@
+{
+  "schema": "sportsdesk-branding/v1",
+  "version": "1.5.0",
+  "tokensSpec": "design/tokens.toml",
+  "tokensVersion": "1.5.0",
+  "updatedAt": "2026-11-22T00:00:00Z",
+  "generation": 10123,
+  "brand": {
+    "appName": "SportsDesk Ops Surveillance Dashboard-v1.01.23-next",
+    "shortName": "SportsDesk & Fantasy402 Operations",
+    "monogram": "SD",
+    "version": "v1.01.23-next",
+    "organization": "SportsDesk & Fantasy402 Quantitative Risk Operations",
+    "tagline": "Real-time wager surveillance, sharp profiling, and automated risk desk telemetry",
+    "description": "Unified SportsDesk & Fantasy402 surveillance console for real-time wager telemetry, downline risk exposure, sharp profiling, and threshold alerting.",
+    "rights": "Copyright (c) 2026 SportsDesk & Fantasy402 Operations. All rights reserved.",
+    "creatorTool": "SportsDesk Bun.Image Branding Pipeline (Bun 1.4.4)",
+    "emblemAlt": "SportsDesk & Fantasy402 hexagonal obsidian radar shield emblem with cyan trajectory vector",
+    "ogImageAlt": "SportsDesk & Fantasy402 Operations surveillance radar shield and real-time telemetry banner"
+  },
+  "context": {
+    "domain": "sportsbook-risk-surveillance",
+    "audience": "Quantitative Risk Desk, Line Managers & Compliance Analysts",
+    "classification": "OPERATIONAL_BRANDING",
+    "surfaces": [
+      "web-dashboard",
+      "opengraph-social",
+      "web-manifest",
+      "cli-ansi",
+      "r2-artifacts"
+    ],
+    "keywords": [
+      "sportsbook-risk",
+      "wager-telemetry",
+      "sharp-profiling",
+      "downline-exposure",
+      "fantasy402",
+      "sportsdesk-ops"
+    ]
+  },
+  "palette": {
+    "canvas_bg": "#070b14",
+    "surface_elevated": "#0b1120",
+    "border_subtle": "#1e293b",
+    "accent_primary": "#38bdf8",
+    "accent_emerald": "#34d399",
+    "accent_amber": "#fbbf24",
+    "accent_danger": "#f87171",
+    "text_primary": "#f8fafc",
+    "text_muted": "#94a3b8"
+  },
+  "totalAssets": 6,
+  "metadataBearingCount": 5,
+  "embeddedMetadataStandards": [
+    "Adobe XMP Packet (WebP RIFF XMP chunk with VP8X flag & PNG iTXt XML:com.adobe.xmp)",
+    "Dublin Core Metadata Element Set (dc:title, dc:description, dc:creator, dc:rights, dc:subject)",
+    "XMP Basic Schema (xmp:CreatorTool, xmp:CreateDate)",
+    "SportsDesk Provenance & Brand Context Namespace (sportsdesk:streamId, genU32, merkleRoot, brand, assetRole, surfaceContext, domainContext, tokensVersion, sourceSpec, palette)",
+    "W3C Web App Manifest (public/manifest.webmanifest) & Schema.org WebApplication JSON-LD"
+  ],
+  "assets": [
+    {
+      "id": "SD-BRAND-01-EMBLEM-WEBP",
+      "slug": "sportsdesk-emblem-webp",
+      "title": "SportsDesk Operations Radar Shield Emblem (256px WebP)",
+      "description": "Primary 256x256 WebP radar shield emblem for SportsDesk & Fantasy402 dashboard navigation and Shift Handoff headers.",
+      "assetRole": "app-emblem",
+      "surfaceContext": "dashboard-header-nav",
+      "subjects": [
+        "sportsdesk-ops",
+        "brand-emblem",
+        "radar-shield",
+        "header-nav",
+        "webp"
+      ],
+      "repoPath": "public/assets/branding/sportsdesk-emblem.webp",
+      "publicUrl": "/assets/branding/sportsdesk-emblem.webp",
+      "sourceMasterPath": "src/assets/images/sportsdesk_emblem_master_1795386608489.jpg",
+      "sourceMasterSha256": "7d748225c91452365d72028ecd4e0300afcb70c3469fd1bc74d97d0d2583a711",
+      "format": "webp",
+      "mimeType": "image/webp",
+      "width": 256,
+      "height": 256,
+      "bytes": 7814,
+      "sha256": "9c74d06e5cf352e8852cdd9930e06e5635ceef88064c87411108e726b939a74d",
+      "metadataBearing": true,
+      "xmpChannels": [
+        "webp-xmp"
+      ],
+      "provenance": {
+        "streamId": "brand:sportsdesk-emblem:webp",
+        "genU32": 10123,
+        "merkleRoot": "7d748225c91452365d72028ecd4e0300afcb70c3469fd1bc74d97d0d2583a711"
+      },
+      "embeddedContext": {
+        "brand": "SportsDesk & Fantasy402 Operations",
+        "domainContext": "sportsbook-risk-surveillance",
+        "tokensVersion": "1.5.0",
+        "sourceSpec": "design/branding.toml",
+        "creator": "SportsDesk & Fantasy402 Quantitative Risk Operations",
+        "rights": "Copyright (c) 2026 SportsDesk & Fantasy402 Operations. All rights reserved.",
+        "creatorTool": "SportsDesk Bun.Image Branding Pipeline (Bun 1.4.4)"
+      }
+    },
+    {
+      "id": "SD-BRAND-02-EMBLEM-64",
+      "slug": "sportsdesk-emblem-64",
+      "title": "SportsDesk Operations Browser Favicon (64px PNG)",
+      "description": "Crisp 64x64 PNG favicon icon stamped with SportsDesk Dublin Core and XMP provenance metadata.",
+      "assetRole": "browser-favicon",
+      "surfaceContext": "browser-tab-icon",
+      "subjects": [
+        "sportsdesk-ops",
+        "favicon",
+        "png-64",
+        "browser-tab"
+      ],
+      "repoPath": "public/assets/branding/sportsdesk-emblem-64.png",
+      "publicUrl": "/assets/branding/sportsdesk-emblem-64.png",
+      "sourceMasterPath": "src/assets/images/sportsdesk_emblem_master_1795386608489.jpg",
+      "sourceMasterSha256": "7d748225c91452365d72028ecd4e0300afcb70c3469fd1bc74d97d0d2583a711",
+      "format": "png",
+      "mimeType": "image/png",
+      "width": 64,
+      "height": 64,
+      "bytes": 7803,
+      "sha256": "0bd6b0ad9d40ddd3999deac95ecfdbfc3ce9f906410e6de196be529742881163",
+      "metadataBearing": true,
+      "xmpChannels": [
+        "png-xmp"
+      ],
+      "provenance": {
+        "streamId": "brand:sportsdesk-emblem:64",
+        "genU32": 10123,
+        "merkleRoot": "7d748225c91452365d72028ecd4e0300afcb70c3469fd1bc74d97d0d2583a711"
+      },
+      "embeddedContext": {
+        "brand": "SportsDesk & Fantasy402 Operations",
+        "domainContext": "sportsbook-risk-surveillance",
+        "tokensVersion": "1.5.0",
+        "sourceSpec": "design/branding.toml",
+        "creator": "SportsDesk & Fantasy402 Quantitative Risk Operations",
+        "rights": "Copyright (c) 2026 SportsDesk & Fantasy402 Operations. All rights reserved.",
+        "creatorTool": "SportsDesk Bun.Image Branding Pipeline (Bun 1.4.4)"
+      }
+    },
+    {
+      "id": "SD-BRAND-03-EMBLEM-180",
+      "slug": "sportsdesk-emblem-180",
+      "title": "SportsDesk Operations Apple Touch Icon (180px PNG)",
+      "description": "High-DPI 180x180 PNG touch icon for iOS home screen bookmarks and desktop shortcut badges.",
+      "assetRole": "apple-touch-icon",
+      "surfaceContext": "ios-homescreen-icon",
+      "subjects": [
+        "sportsdesk-ops",
+        "apple-touch-icon",
+        "png-180",
+        "mobile-shortcut"
+      ],
+      "repoPath": "public/assets/branding/sportsdesk-emblem-180.png",
+      "publicUrl": "/assets/branding/sportsdesk-emblem-180.png",
+      "sourceMasterPath": "src/assets/images/sportsdesk_emblem_master_1795386608489.jpg",
+      "sourceMasterSha256": "7d748225c91452365d72028ecd4e0300afcb70c3469fd1bc74d97d0d2583a711",
+      "format": "png",
+      "mimeType": "image/png",
+      "width": 180,
+      "height": 180,
+      "bytes": 43150,
+      "sha256": "973f73bfa8df0dfa30940da7052040d27105bc4d404efa38e98e6711596fbe6f",
+      "metadataBearing": true,
+      "xmpChannels": [
+        "png-xmp"
+      ],
+      "provenance": {
+        "streamId": "brand:sportsdesk-emblem:180",
+        "genU32": 10123,
+        "merkleRoot": "7d748225c91452365d72028ecd4e0300afcb70c3469fd1bc74d97d0d2583a711"
+      },
+      "embeddedContext": {
+        "brand": "SportsDesk & Fantasy402 Operations",
+        "domainContext": "sportsbook-risk-surveillance",
+        "tokensVersion": "1.5.0",
+        "sourceSpec": "design/branding.toml",
+        "creator": "SportsDesk & Fantasy402 Quantitative Risk Operations",
+        "rights": "Copyright (c) 2026 SportsDesk & Fantasy402 Operations. All rights reserved.",
+        "creatorTool": "SportsDesk Bun.Image Branding Pipeline (Bun 1.4.4)"
+      }
+    },
+    {
+      "id": "SD-BRAND-04-EMBLEM-512",
+      "slug": "sportsdesk-emblem-512",
+      "title": "SportsDesk Operations High-Res App Icon (512px PNG)",
+      "description": "512x512 maskable PNG application icon declared in public/manifest.webmanifest with embedded XMP provenance.",
+      "assetRole": "manifest-app-icon",
+      "surfaceContext": "web-app-manifest",
+      "subjects": [
+        "sportsdesk-ops",
+        "app-icon",
+        "png-512",
+        "web-manifest"
+      ],
+      "repoPath": "public/assets/branding/sportsdesk-emblem-512.png",
+      "publicUrl": "/assets/branding/sportsdesk-emblem-512.png",
+      "sourceMasterPath": "src/assets/images/sportsdesk_emblem_master_1795386608489.jpg",
+      "sourceMasterSha256": "7d748225c91452365d72028ecd4e0300afcb70c3469fd1bc74d97d0d2583a711",
+      "format": "png",
+      "mimeType": "image/png",
+      "width": 512,
+      "height": 512,
+      "bytes": 268573,
+      "sha256": "2d90fbaf90fcf36e35252552a5fa9df9ca33733724efbbfb404bc5e5fbdb7106",
+      "metadataBearing": true,
+      "xmpChannels": [
+        "png-xmp"
+      ],
+      "provenance": {
+        "streamId": "brand:sportsdesk-emblem:512",
+        "genU32": 10123,
+        "merkleRoot": "7d748225c91452365d72028ecd4e0300afcb70c3469fd1bc74d97d0d2583a711"
+      },
+      "embeddedContext": {
+        "brand": "SportsDesk & Fantasy402 Operations",
+        "domainContext": "sportsbook-risk-surveillance",
+        "tokensVersion": "1.5.0",
+        "sourceSpec": "design/branding.toml",
+        "creator": "SportsDesk & Fantasy402 Quantitative Risk Operations",
+        "rights": "Copyright (c) 2026 SportsDesk & Fantasy402 Operations. All rights reserved.",
+        "creatorTool": "SportsDesk Bun.Image Branding Pipeline (Bun 1.4.4)"
+      }
+    },
+    {
+      "id": "SD-BRAND-05-OG-CARD-WEBP",
+      "slug": "sportsdesk-og-card-webp",
+      "title": "SportsDesk Operations OpenGraph Command Banner (1200x630 WebP)",
+      "description": "Widescreen 1200x630 WebP social share banner featuring the obsidian radar shield and live telemetry waveform with embedded XMP context.",
+      "assetRole": "opengraph-social-banner-webp",
+      "surfaceContext": "social-share-preview",
+      "subjects": [
+        "sportsdesk-ops",
+        "opengraph",
+        "social-card",
+        "telemetry-banner",
+        "webp"
+      ],
+      "repoPath": "public/assets/branding/sportsdesk-og-card.webp",
+      "publicUrl": "/assets/branding/sportsdesk-og-card.webp",
+      "sourceMasterPath": "src/assets/images/sportsdesk_og_card_1795386608006.jpg",
+      "sourceMasterSha256": "906c4142603bfe7c62649db7e427d24a135a6d4a4a507da70c5953684001b869",
+      "format": "webp",
+      "mimeType": "image/webp",
+      "width": 1200,
+      "height": 630,
+      "bytes": 28864,
+      "sha256": "f36fc0f724372794e2b16686c1aac26fec4b7f917045e0be714e58cf469e9dd0",
+      "metadataBearing": true,
+      "xmpChannels": [
+        "webp-xmp"
+      ],
+      "provenance": {
+        "streamId": "brand:sportsdesk-og-card:webp",
+        "genU32": 10123,
+        "merkleRoot": "906c4142603bfe7c62649db7e427d24a135a6d4a4a507da70c5953684001b869"
+      },
+      "embeddedContext": {
+        "brand": "SportsDesk & Fantasy402 Operations",
+        "domainContext": "sportsbook-risk-surveillance",
+        "tokensVersion": "1.5.0",
+        "sourceSpec": "design/branding.toml",
+        "creator": "SportsDesk & Fantasy402 Quantitative Risk Operations",
+        "rights": "Copyright (c) 2026 SportsDesk & Fantasy402 Operations. All rights reserved.",
+        "creatorTool": "SportsDesk Bun.Image Branding Pipeline (Bun 1.4.4)"
+      }
+    },
+    {
+      "id": "SD-BRAND-06-OG-CARD-JPG",
+      "slug": "sportsdesk-og-card-jpg",
+      "title": "SportsDesk Operations OpenGraph Social Preview Card (1200x630 JPEG)",
+      "description": "Universal 1200x630 JPEG OpenGraph and Twitter/X summary_large_image card for social crawlers and unfurls.",
+      "assetRole": "opengraph-social-banner-jpeg",
+      "surfaceContext": "social-share-crawler",
+      "subjects": [
+        "sportsdesk-ops",
+        "opengraph",
+        "twitter-card",
+        "social-crawler",
+        "jpeg"
+      ],
+      "repoPath": "public/assets/branding/sportsdesk-og-card.jpg",
+      "publicUrl": "/assets/branding/sportsdesk-og-card.jpg",
+      "sourceMasterPath": "src/assets/images/sportsdesk_og_card_1795386608006.jpg",
+      "sourceMasterSha256": "906c4142603bfe7c62649db7e427d24a135a6d4a4a507da70c5953684001b869",
+      "format": "jpeg",
+      "mimeType": "image/jpeg",
+      "width": 1200,
+      "height": 630,
+      "bytes": 63150,
+      "sha256": "18d290e6110a7e705c4fa8e7a2826d93ee3ac7941dcbef122770541a46c85b43",
+      "metadataBearing": false,
+      "xmpChannels": [],
+      "provenance": {
+        "streamId": "brand:sportsdesk-og-card:jpg",
+        "genU32": 10123,
+        "merkleRoot": "906c4142603bfe7c62649db7e427d24a135a6d4a4a507da70c5953684001b869"
+      },
+      "embeddedContext": {
+        "brand": "SportsDesk & Fantasy402 Operations",
+        "domainContext": "sportsbook-risk-surveillance",
+        "tokensVersion": "1.5.0",
+        "sourceSpec": "design/branding.toml",
+        "creator": "SportsDesk & Fantasy402 Quantitative Risk Operations",
+        "rights": "Copyright (c) 2026 SportsDesk & Fantasy402 Operations. All rights reserved.",
+        "creatorTool": "SportsDesk Bun.Image Branding Pipeline (Bun 1.4.4)"
+      }
+    }
+  ]
+}

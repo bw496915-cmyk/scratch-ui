@@ -15,6 +15,11 @@ import {
   encodeImageWithAvifFallback,
   toImageRpcPayload,
 } from "../lib/image_avif_fallback.ts"
+import {
+  buildSportsdeskProvenanceXmp,
+  type ImageProvenanceContextInput,
+  inspectImageProvenance,
+} from "../lib/image_provenance.ts"
 import { extractPngMetadata, extractWebpXmp } from "../lib/xmp_container.ts"
 
 const RASTER_EXTS = new Set([".png", ".jpg", ".jpeg", ".webp", ".avif", ".heic", ".gif", ".ico"])
@@ -46,6 +51,10 @@ interface TransformRequest {
   readonly colors?: number | undefined
   readonly dither?: boolean | undefined
   readonly xmpXml?: string | undefined
+  readonly metadataContext?: (ImageProvenanceContextInput & {
+    readonly streamId?: string | undefined
+    readonly genU32?: number | undefined
+  }) | undefined
   readonly rotate?: 0 | 90 | 180 | 270 | undefined
   readonly flip?: boolean | undefined
   readonly flop?: boolean | undefined
@@ -190,6 +199,7 @@ async function runScan(req: ScanRequest): Promise<unknown> {
   const formatBreakdown: Record<string, number> = {}
   let totalBytes = 0
   let mismatchCount = 0
+  let xmpAssetCount = 0
 
   for (const { fullPath, root } of discovered) {
     const relSource = relative(req.cwd, fullPath).replace(/\\/g, "/")
@@ -251,6 +261,36 @@ async function runScan(req: ScanRequest): Promise<unknown> {
 
       formatBreakdown[sniffedFormat] = (formatBreakdown[sniffedFormat] ?? 0) + 1
 
+      let provenance: Record<string, unknown> | undefined
+      let hasXmpMetadata = false
+      if (sniffedFormat === "webp" || sniffedFormat === "png" || sniffedFormat === "avif") {
+        try {
+          const provReport = await inspectImageProvenance(rawBytes)
+          if (provReport.channels.length > 0 || provReport.context) {
+            hasXmpMetadata = true
+            xmpAssetCount += 1
+            provenance = {
+              channels: provReport.channels,
+              streamId: provReport.fields.streamId,
+              genU32: provReport.fields.genU32,
+              merkleRoot: provReport.fields.merkleRoot,
+              title: provReport.context?.title ?? null,
+              description: provReport.context?.description ?? null,
+              brand: provReport.context?.brand ?? null,
+              assetRole: provReport.context?.assetRole ?? null,
+              surfaceContext: provReport.context?.surfaceContext ?? null,
+              domainContext: provReport.context?.domainContext ?? null,
+              tokensVersion: provReport.context?.tokensVersion ?? null,
+              creator: provReport.context?.creator ?? null,
+              rights: provReport.context?.rights ?? null,
+              subjects: provReport.context?.subjects ?? [],
+            }
+          }
+        } catch {
+          hasXmpMetadata = false
+        }
+      }
+
       assets.push({
         type: "BunImageAssetDiagnostic",
         source: relSource,
@@ -269,6 +309,8 @@ async function runScan(req: ScanRequest): Promise<unknown> {
         lastModified: st.mtime.toISOString(),
         placeholderDataUrl,
         canTransform: true,
+        hasXmpMetadata,
+        ...(provenance ? { provenance } : {}),
         mimeType:
           sniffedFormat === "jpeg"
             ? "image/jpeg"
@@ -307,6 +349,7 @@ async function runScan(req: ScanRequest): Promise<unknown> {
     scanMs: Math.max(1, Math.round(performance.now() - startedAt)),
     totalBytes,
     mismatchCount,
+    xmpAssetCount,
     formatBreakdown,
     codecs,
     count: assets.length,
@@ -377,6 +420,40 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
   const pngColors = Math.min(256, Math.max(2, Math.round(req.colors ?? 256)))
   const pngDither = req.dither ?? true
 
+  let effectiveXmpXml = req.xmpXml
+  if (!effectiveXmpXml && req.metadataContext) {
+    const sourceBytes = new Uint8Array(await bunFile.arrayBuffer())
+    const sourceMerkle = hashBytesSha256(sourceBytes)
+    const ctx = req.metadataContext
+    effectiveXmpXml = buildSportsdeskProvenanceXmp(
+      {
+        streamId: ctx.streamId ?? `studio:${req.source}`,
+        genU32: ctx.genU32 ?? 10123,
+        merkleRoot: sourceMerkle,
+      },
+      {
+        title: ctx.title,
+        description: ctx.description,
+        creator: ctx.creator ?? "SportsDesk & Fantasy402 Quantitative Risk Operations",
+        rights:
+          ctx.rights ??
+          "Copyright (c) 2026 SportsDesk & Fantasy402 Operations. All rights reserved.",
+        creatorTool: ctx.creatorTool ?? `SportsDesk Bun.Image Format Studio (Bun ${Bun.version})`,
+        createDate: ctx.createDate ?? new Date().toISOString(),
+        brand: ctx.brand ?? "SportsDesk & Fantasy402 Operations",
+        assetRole: ctx.assetRole,
+        surfaceContext: ctx.surfaceContext,
+        domainContext: ctx.domainContext ?? "sportsbook-risk-surveillance",
+        tokensVersion: ctx.tokensVersion ?? "1.5.0",
+        sourceSpec: ctx.sourceSpec ?? "design/branding.toml",
+        palette:
+          ctx.palette ??
+          "canvas_bg=#070b14;surface_elevated=#0b1120;accent_primary=#38bdf8;accent_emerald=#34d399",
+        subjects: ctx.subjects,
+      },
+    )
+  }
+
   const encodedResult = await encodeImageWithAvifFallback(buildPipeline, {
     format: req.format,
     quality,
@@ -385,7 +462,7 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
     palette: pngPalette,
     colors: pngColors,
     dither: pngDither,
-    xmpXml: req.xmpXml,
+    xmpXml: effectiveXmpXml,
   })
 
   const outBytes = encodedResult.bytes
@@ -394,6 +471,31 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
   const mimeType = outBlob.type
   const xmpInjected = encodedResult.xmpInjected
   const xmpBytes = encodedResult.xmpBytes
+
+  let verifiedProvenance: Record<string, unknown> | undefined
+  if (xmpInjected) {
+    try {
+      const inspected = await inspectImageProvenance(outBytes)
+      verifiedProvenance = {
+        channels: inspected.channels,
+        streamId: inspected.fields.streamId,
+        genU32: inspected.fields.genU32,
+        merkleRoot: inspected.fields.merkleRoot,
+        title: inspected.context?.title ?? null,
+        description: inspected.context?.description ?? null,
+        brand: inspected.context?.brand ?? null,
+        assetRole: inspected.context?.assetRole ?? null,
+        surfaceContext: inspected.context?.surfaceContext ?? null,
+        domainContext: inspected.context?.domainContext ?? null,
+        tokensVersion: inspected.context?.tokensVersion ?? null,
+        creator: inspected.context?.creator ?? null,
+        rights: inspected.context?.rights ?? null,
+        subjects: inspected.context?.subjects ?? [],
+      }
+    } catch {
+      verifiedProvenance = undefined
+    }
+  }
 
   const outMeta = await new Bun.Image(outBytes).metadata()
   const durationMs = Math.max(1, Math.round(performance.now() - startedAt))
@@ -461,6 +563,7 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
         }
       : {}),
     ...(xmpInjected ? { xmpInjected: true, xmpBytes } : {}),
+    ...(verifiedProvenance ? { provenance: verifiedProvenance } : {}),
     ...(resolvedFormat === "webp"
       ? {
           webpLossless: effectiveWebpLossless,

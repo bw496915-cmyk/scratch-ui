@@ -30,6 +30,42 @@ export interface BunImageCodecSupport {
   readonly note: string
 }
 
+export interface BunImageMetadataContext {
+  readonly streamId?: string | undefined
+  readonly genU32?: number | undefined
+  readonly title?: string | undefined
+  readonly description?: string | undefined
+  readonly creator?: string | undefined
+  readonly rights?: string | undefined
+  readonly creatorTool?: string | undefined
+  readonly createDate?: string | undefined
+  readonly brand?: string | undefined
+  readonly assetRole?: string | undefined
+  readonly surfaceContext?: string | undefined
+  readonly domainContext?: string | undefined
+  readonly tokensVersion?: string | undefined
+  readonly sourceSpec?: string | undefined
+  readonly palette?: string | undefined
+  readonly subjects?: readonly string[] | undefined
+}
+
+export interface BunImageProvenanceSummary {
+  readonly channels: readonly string[]
+  readonly streamId: string | null
+  readonly genU32: number | null
+  readonly merkleRoot: string | null
+  readonly title: string | null
+  readonly description: string | null
+  readonly brand: string | null
+  readonly assetRole: string | null
+  readonly surfaceContext: string | null
+  readonly domainContext: string | null
+  readonly tokensVersion: string | null
+  readonly creator: string | null
+  readonly rights: string | null
+  readonly subjects: readonly string[]
+}
+
 export interface BunImageAssetRow {
   readonly type: "BunImageAssetDiagnostic" | "BunImageAssetScanFailure"
   readonly source: string
@@ -50,6 +86,8 @@ export interface BunImageAssetRow {
   readonly vectorElementCount?: number | undefined
   readonly canTransform?: boolean | undefined
   readonly mimeType?: string | undefined
+  readonly hasXmpMetadata?: boolean | undefined
+  readonly provenance?: BunImageProvenanceSummary | undefined
   readonly code?: string | undefined
 }
 
@@ -65,6 +103,7 @@ export interface BunAssetsDiagnosticPayload {
   readonly scanMs?: number | undefined
   readonly totalBytes?: number | undefined
   readonly mismatchCount?: number | undefined
+  readonly xmpAssetCount?: number | undefined
   readonly formatBreakdown?: Readonly<Record<string, number>> | undefined
   readonly codecs?: readonly BunImageCodecSupport[] | undefined
   readonly count: number
@@ -89,6 +128,7 @@ export interface BunImageTransformRequest {
   readonly colors?: number | undefined
   readonly dither?: boolean | undefined
   readonly xmpXml?: string | undefined
+  readonly metadataContext?: BunImageMetadataContext | undefined
   readonly rotate?: 0 | 90 | 180 | 270 | undefined
   readonly flip?: boolean | undefined
   readonly flop?: boolean | undefined
@@ -127,6 +167,7 @@ export interface BunImageTransformResult {
   readonly webpBitstream?: string | undefined
   readonly xmpInjected?: boolean | undefined
   readonly xmpBytes?: number | undefined
+  readonly provenance?: BunImageProvenanceSummary | undefined
 }
 
 let cachedScan: {
@@ -343,6 +384,7 @@ export async function transformBunImageAsset(
       typeof req.xmpXml === "string" && req.xmpXml.trim().length > 0
         ? req.xmpXml.slice(0, 65_536)
         : undefined,
+    metadataContext: sanitizeMetadataContext(req.metadataContext),
     rotate,
     flip: Boolean(req.flip),
     flop: Boolean(req.flop),
@@ -355,4 +397,49 @@ export async function transformBunImageAsset(
         ? Math.min(2.5, Math.max(0, req.saturation))
         : 1,
   })
+}
+
+function trimOpt(value: unknown, maxLen: number): string | undefined {
+  if (typeof value !== "string") return undefined
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed.slice(0, maxLen) : undefined
+}
+
+function sanitizeMetadataContext(
+  ctx?: BunImageMetadataContext,
+): BunImageMetadataContext | undefined {
+  if (!ctx || typeof ctx !== "object") return undefined
+  const subjects = Array.isArray(ctx.subjects)
+    ? ctx.subjects
+        .map((s) => trimOpt(s, 64))
+        .filter((s): s is string => s !== undefined)
+        .slice(0, 12)
+    : undefined
+  const genU32 =
+    typeof ctx.genU32 === "number" &&
+    Number.isInteger(ctx.genU32) &&
+    ctx.genU32 >= 0 &&
+    ctx.genU32 <= 0xffffffff
+      ? ctx.genU32
+      : undefined
+  const cleaned: BunImageMetadataContext = {
+    streamId: trimOpt(ctx.streamId, 160),
+    genU32,
+    title: trimOpt(ctx.title, 200),
+    description: trimOpt(ctx.description, 600),
+    creator: trimOpt(ctx.creator, 160),
+    rights: trimOpt(ctx.rights, 200),
+    creatorTool: trimOpt(ctx.creatorTool, 160),
+    createDate: trimOpt(ctx.createDate, 64),
+    brand: trimOpt(ctx.brand, 120),
+    assetRole: trimOpt(ctx.assetRole, 80),
+    surfaceContext: trimOpt(ctx.surfaceContext, 80),
+    domainContext: trimOpt(ctx.domainContext, 80),
+    tokensVersion: trimOpt(ctx.tokensVersion, 32),
+    sourceSpec: trimOpt(ctx.sourceSpec, 120),
+    palette: trimOpt(ctx.palette, 200),
+    subjects: subjects && subjects.length > 0 ? subjects : undefined,
+  }
+  const hasAny = Object.values(cleaned).some((v) => v !== undefined)
+  return hasAny ? cleaned : undefined
 }

@@ -22,6 +22,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import { dirname, join, relative, resolve } from "node:path"
 
 import { parseToml } from "../lib/bun_toml.ts"
+import { extractPngMetadata, extractWebpXmp } from "../lib/xmp_container.ts"
 
 export interface CanonicalTokenEntry {
   readonly token: string
@@ -105,6 +106,29 @@ export interface ArtifactsManifest {
       readonly webpSha256: string
     }[]
   }
+  readonly brandingAssets?: {
+    readonly specPath: string
+    readonly catalogPath: string
+    readonly manifestPath: string
+    readonly brandVersion: string
+    readonly totalAssets: number
+    readonly verifiedFiles: number
+    readonly xmpVerifiedFiles: number
+    readonly entries: readonly {
+      readonly id: string
+      readonly slug: string
+      readonly repoPath: string
+      readonly format: string
+      readonly width: number
+      readonly height: number
+      readonly bytes: number
+      readonly sha256: string
+      readonly metadataBearing: boolean
+      readonly assetRole: string
+      readonly surfaceContext: string
+      readonly streamId: string
+    }[]
+  } | undefined
   readonly markdownDocs: readonly {
     readonly path: string
     readonly title: string
@@ -127,6 +151,7 @@ export interface ArtifactPipelineResult {
   readonly writtenFiles: readonly string[]
   readonly driftedFiles: readonly string[]
   readonly pipelineIssues: readonly string[]
+  readonly brandingIssues?: readonly string[] | undefined
   readonly markdownIssues: readonly string[]
   readonly manifest?: ArtifactsManifest | undefined
 }
@@ -633,6 +658,166 @@ export function auditPipelineArtifactsMetadata(rootDir: string): {
   }
 }
 
+export interface BrandingAssetSyncEntry {
+  readonly id: string
+  readonly slug: string
+  readonly repoPath: string
+  readonly format: string
+  readonly width: number
+  readonly height: number
+  readonly bytes: number
+  readonly sha256: string
+  readonly metadataBearing: boolean
+  readonly assetRole: string
+  readonly surfaceContext: string
+  readonly streamId: string
+}
+
+/**
+ * Synchronously verifies every branding asset declared in
+ * `public/assets/branding/branding-metadata.json` against on-disk byte sizes,
+ * SHA-256 digests, `design/branding.toml`, `public/manifest.webmanifest`, and
+ * embedded XMP `sportsdesk:*` + `dc:*` context packets.
+ */
+export function auditBrandingAssetsSync(rootDir: string): {
+  readonly specPath: string
+  readonly catalogPath: string
+  readonly manifestPath: string
+  readonly brandVersion: string
+  readonly totalAssets: number
+  readonly verifiedFiles: number
+  readonly xmpVerifiedFiles: number
+  readonly entries: readonly BrandingAssetSyncEntry[]
+  readonly issues: readonly string[]
+} {
+  const specPath = "design/branding.toml"
+  const catalogPath = "public/assets/branding/branding-metadata.json"
+  const manifestPath = "public/manifest.webmanifest"
+  const issues: string[] = []
+  const entries: BrandingAssetSyncEntry[] = []
+
+  if (!existsSync(resolve(rootDir, specPath))) {
+    issues.push(`Missing branding spec: ${specPath}`)
+  }
+  if (!existsSync(resolve(rootDir, manifestPath))) {
+    issues.push(`Missing web app manifest: ${manifestPath}`)
+  }
+
+  const fullCatalog = resolve(rootDir, catalogPath)
+  if (!existsSync(fullCatalog)) {
+    issues.push(`Missing branding metadata catalog: ${catalogPath}`)
+    return {
+      specPath,
+      catalogPath,
+      manifestPath,
+      brandVersion: "unknown",
+      totalAssets: 0,
+      verifiedFiles: 0,
+      xmpVerifiedFiles: 0,
+      entries,
+      issues,
+    }
+  }
+
+  const parsed = JSON.parse(readFileSync(fullCatalog, "utf8")) as {
+    readonly brand?: { readonly version?: string }
+    readonly assets?: readonly {
+      readonly id: string
+      readonly slug: string
+      readonly repoPath: string
+      readonly format: string
+      readonly width: number
+      readonly height: number
+      readonly bytes: number
+      readonly sha256: string
+      readonly metadataBearing: boolean
+      readonly assetRole: string
+      readonly surfaceContext: string
+      readonly provenance?: { readonly streamId?: string }
+    }[]
+  }
+
+  const assets = parsed.assets ?? []
+  let verifiedFiles = 0
+  let xmpVerifiedFiles = 0
+
+  for (const asset of assets) {
+    const fullPath = resolve(rootDir, asset.repoPath)
+    const streamId = asset.provenance?.streamId ?? ""
+    if (!existsSync(fullPath)) {
+      issues.push(`${asset.slug}: missing branding asset at ${asset.repoPath}`)
+      continue
+    }
+
+    const buf = readFileSync(fullPath)
+    const actualSha = sha256Hex(buf)
+    let ok = true
+
+    if (buf.byteLength !== asset.bytes) {
+      issues.push(
+        `${asset.repoPath}: byte size drift (actual=${buf.byteLength}, catalog=${asset.bytes})`,
+      )
+      ok = false
+    }
+    if (actualSha !== asset.sha256) {
+      issues.push(
+        `${asset.repoPath}: SHA-256 drift (actual=${actualSha.slice(0, 12)}, catalog=${asset.sha256.slice(0, 12)})`,
+      )
+      ok = false
+    }
+
+    if (asset.metadataBearing) {
+      const u8 = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength)
+      const xmp =
+        asset.format === "webp"
+          ? extractWebpXmp(u8).xmp
+          : asset.format === "png"
+            ? extractPngMetadata(u8).xmp
+            : null
+      if (
+        !xmp ||
+        !xmp.includes(`<sportsdesk:streamId>${streamId}</sportsdesk:streamId>`) ||
+        !xmp.includes("<sportsdesk:brand>") ||
+        !xmp.includes("<dc:title>")
+      ) {
+        issues.push(`${asset.repoPath}: missing or incomplete embedded XMP/Dublin Core metadata`)
+        ok = false
+      } else {
+        xmpVerifiedFiles += 1
+      }
+    }
+
+    if (ok) verifiedFiles += 1
+
+    entries.push({
+      id: asset.id,
+      slug: asset.slug,
+      repoPath: asset.repoPath,
+      format: asset.format,
+      width: asset.width,
+      height: asset.height,
+      bytes: buf.byteLength,
+      sha256: actualSha,
+      metadataBearing: asset.metadataBearing,
+      assetRole: asset.assetRole,
+      surfaceContext: asset.surfaceContext,
+      streamId,
+    })
+  }
+
+  return {
+    specPath,
+    catalogPath,
+    manifestPath,
+    brandVersion: parsed.brand?.version ?? "unknown",
+    totalAssets: assets.length,
+    verifiedFiles,
+    xmpVerifiedFiles,
+    entries,
+    issues,
+  }
+}
+
 function discoverMarkdownFiles(rootDir: string): string[] {
   const out: string[] = []
   const SKIP_DIRS = new Set([
@@ -831,6 +1016,25 @@ export function emitArtifactsAndCliMarkdown(manifest: ArtifactsManifest): string
     ]),
   )
 
+  const brandingTable = manifest.brandingAssets
+    ? formatAlignedMarkdownTable(
+        ["Asset ID", "Path", "Dimensions", "Role", "XMP Context", "SHA-256 (12)"],
+        ["left", "left", "right", "left", "left", "left"],
+        manifest.brandingAssets.entries.map((b) => [
+          `\`${b.id}\``,
+          `\`${b.repoPath}\``,
+          `${b.width}×${b.height} ${b.format.toUpperCase()}`,
+          `\`${b.assetRole}\``,
+          b.metadataBearing ? `\`${b.streamId}\`` : "crawler JPEG",
+          `\`${b.sha256.slice(0, 12)}\``,
+        ]),
+      )
+    : ""
+
+  const brandingSection = manifest.brandingAssets
+    ? `\n## Brand Identity & Metadata-Bearing Assets (\`${manifest.brandingAssets.specPath}\`)\n\nVerified **${manifest.brandingAssets.verifiedFiles}/${manifest.brandingAssets.totalAssets}** branding assets (**${manifest.brandingAssets.xmpVerifiedFiles}** stamped with Dublin Core + XMP Core + \`sportsdesk:*\` context) and \`${manifest.brandingAssets.manifestPath}\`:\n\n${brandingTable}\n`
+    : ""
+
   return `# SportsDesk Ops — Generated Artifacts & Unified Bun CLI
 
 > **Generated file — do not edit by hand.**
@@ -850,7 +1054,7 @@ ${artifactTable}
 Verified **${manifest.pipelineDiagrams.verifiedFiles}** raster/vector assets across **${manifest.pipelineDiagrams.totalArtifacts}** pipeline diagrams:
 
 ${diagramTable}
-
+${brandingSection}
 ## Verified Markdown Documentation Inventory
 
 Every local link across all **${manifest.markdownDocs.length}** tracked Markdown documents is checked by \`bun run docs:check\`:
@@ -922,8 +1126,9 @@ export function runArtifactPipeline(options: {
     }
   }
 
-  // 2. Verify pipeline diagram hashes
+  // 2. Verify pipeline diagram hashes & branding asset metadata
   const pipelineAudit = auditPipelineArtifactsMetadata(rootDir)
+  const brandingAudit = auditBrandingAssetsSync(rootDir)
 
   // 3. Audit all non-generated Markdown docs first (so manifest hashes reflect authoritative docs)
   const generatedDocPath = "docs/generated/ARTIFACTS_AND_CLI.md"
@@ -989,6 +1194,16 @@ export function runArtifactPipeline(options: {
         webpSha256: r.sha256ByExt.webp ?? "",
       })),
     },
+    brandingAssets: {
+      specPath: brandingAudit.specPath,
+      catalogPath: brandingAudit.catalogPath,
+      manifestPath: brandingAudit.manifestPath,
+      brandVersion: brandingAudit.brandVersion,
+      totalAssets: brandingAudit.totalAssets,
+      verifiedFiles: brandingAudit.verifiedFiles,
+      xmpVerifiedFiles: brandingAudit.xmpVerifiedFiles,
+      entries: brandingAudit.entries,
+    },
     markdownDocs: mdAudit.docs.map((d) => ({
       path: d.path,
       title: d.title,
@@ -1016,12 +1231,14 @@ export function runArtifactPipeline(options: {
     ok:
       driftedFiles.length === 0 &&
       pipelineAudit.issues.length === 0 &&
+      brandingAudit.issues.length === 0 &&
       allMarkdownIssues.length === 0,
     mode: check ? "check" : "generate",
     tokensOnly: false,
     writtenFiles,
     driftedFiles,
     pipelineIssues: pipelineAudit.issues,
+    brandingIssues: brandingAudit.issues,
     markdownIssues: allMarkdownIssues,
     manifest,
   }
@@ -1045,6 +1262,9 @@ if (isMain) {
     }
     for (const p of result.pipelineIssues) {
       console.error(`  - [PIPELINE] ${p}`)
+    }
+    for (const b of result.brandingIssues ?? []) {
+      console.error(`  - [BRANDING] ${b}`)
     }
     for (const m of result.markdownIssues) {
       console.error(`  - [DOCS] ${m}`)

@@ -26,6 +26,23 @@ export interface BunImageCodecSupport {
   readonly note: string
 }
 
+export interface BunImageProvenanceSummary {
+  readonly channels: readonly string[]
+  readonly streamId: string | null
+  readonly genU32: number | null
+  readonly merkleRoot: string | null
+  readonly title: string | null
+  readonly description: string | null
+  readonly brand: string | null
+  readonly assetRole: string | null
+  readonly surfaceContext: string | null
+  readonly domainContext: string | null
+  readonly tokensVersion: string | null
+  readonly creator: string | null
+  readonly rights: string | null
+  readonly subjects: readonly string[]
+}
+
 export interface BunImageAssetRow {
   readonly type: "BunImageAssetDiagnostic" | "BunImageAssetScanFailure"
   readonly source: string
@@ -46,6 +63,8 @@ export interface BunImageAssetRow {
   readonly vectorElementCount?: number | undefined
   readonly canTransform?: boolean | undefined
   readonly mimeType?: string | undefined
+  readonly hasXmpMetadata?: boolean | undefined
+  readonly provenance?: BunImageProvenanceSummary | undefined
   readonly code?: string | undefined
 }
 
@@ -61,6 +80,7 @@ export interface BunAssetsPayload {
   readonly scanMs?: number | undefined
   readonly totalBytes?: number | undefined
   readonly mismatchCount?: number | undefined
+  readonly xmpAssetCount?: number | undefined
   readonly formatBreakdown?: Readonly<Record<string, number>> | undefined
   readonly codecs?: readonly BunImageCodecSupport[] | undefined
   readonly count: number
@@ -98,6 +118,7 @@ export interface BunImageTransformResult {
   readonly webpBitstream?: string | undefined
   readonly xmpInjected?: boolean | undefined
   readonly xmpBytes?: number | undefined
+  readonly provenance?: BunImageProvenanceSummary | undefined
 }
 
 export interface BunAssetsTabPanelProps {
@@ -256,6 +277,11 @@ export function BunAssetsTabPanel({
   const [flop, setFlop] = useState<boolean>(false)
   const [brightness, setBrightness] = useState<number>(1)
   const [saturation, setSaturation] = useState<number>(1)
+  const [embedXmpContext, setEmbedXmpContext] = useState<boolean>(true)
+  const [metaTitle, setMetaTitle] = useState<string>("")
+  const [metaAssetRole, setMetaAssetRole] = useState<string>("brand-derivative")
+  const [metaSurfaceContext, setMetaSurfaceContext] = useState<string>("web-dashboard")
+  const [metaStreamId, setMetaStreamId] = useState<string>("")
 
   const [transforming, setTransforming] = useState<boolean>(false)
   const [transformError, setTransformError] = useState<string | null>(null)
@@ -362,14 +388,31 @@ export function BunAssetsTabPanel({
     [assets, selectedSource],
   )
 
-  // Reset per-asset preview/transform output when switching selection
+  // Reset per-asset preview/transform output & hydrate contextual metadata defaults when switching selection
   useEffect(() => {
     setPreviewMode("original")
     setPreviewError(false)
     setTransformResult(null)
     setTransformError(null)
     setCopiedDataUrl(false)
-  }, [selectedSource])
+    if (selectedAsset) {
+      const baseSlug = fileBasename(selectedAsset.source)
+        .replace(/\.[^.]+$/, "")
+        .replace(/[^a-zA-Z0-9_-]+/g, "-")
+        .toLowerCase()
+      const prov = selectedAsset.provenance
+      setMetaTitle(prov?.title ?? `SportsDesk Asset — ${fileBasename(selectedAsset.source)}`)
+      setMetaAssetRole(
+        prov?.assetRole ??
+          (selectedAsset.source.includes("/branding/") ? "brand-asset" : "ops-derivative"),
+      )
+      setMetaSurfaceContext(
+        prov?.surfaceContext ??
+          (selectedAsset.source.includes("og-card") ? "social-share-preview" : "web-dashboard"),
+      )
+      setMetaStreamId(prov?.streamId ?? `brand:${baseSlug}`)
+    }
+  }, [selectedAsset])
 
   const codecs = useMemo<readonly BunImageCodecSupport[]>(() => {
     if (payload?.codecs && payload.codecs.length > 0) return payload.codecs
@@ -400,6 +443,11 @@ export function BunAssetsTabPanel({
     [payload?.mismatchCount, assets],
   )
 
+  const xmpAssetCount = useMemo(
+    () => payload?.xmpAssetCount ?? assets.filter((a) => a.hasXmpMetadata).length,
+    [payload?.xmpAssetCount, assets],
+  )
+
   const toggleSort = (field: SortField): void => {
     if (sortField === field) {
       setSortDir((prev) => (prev === "asc" ? "desc" : "asc"))
@@ -409,7 +457,17 @@ export function BunAssetsTabPanel({
     }
   }
 
-  const applyPreset = (preset: "webp80" | "thumb320" | "jpeg85" | "png6"): void => {
+  const applyPreset = (
+    preset:
+      | "webp80"
+      | "thumb320"
+      | "jpeg85"
+      | "png6"
+      | "ogBanner"
+      | "emblem256"
+      | "touch180"
+      | "favicon64",
+  ): void => {
     setRotate(0)
     setFlip(false)
     setFlop(false)
@@ -432,6 +490,46 @@ export function BunAssetsTabPanel({
       setQuality(85)
       setWidthInput("")
       setHeightInput("")
+    } else if (preset === "ogBanner") {
+      setTargetFormat("webp")
+      setQuality(86)
+      setFit("fill")
+      setWidthInput("1200")
+      setHeightInput("630")
+      setEmbedXmpContext(true)
+      setMetaAssetRole("opengraph-social-banner-webp")
+      setMetaSurfaceContext("social-share-preview")
+      setMetaStreamId("brand:sportsdesk-og-card:webp")
+    } else if (preset === "emblem256") {
+      setTargetFormat("webp")
+      setQuality(88)
+      setFit("fill")
+      setWidthInput("256")
+      setHeightInput("256")
+      setEmbedXmpContext(true)
+      setMetaAssetRole("app-emblem")
+      setMetaSurfaceContext("dashboard-header-nav")
+      setMetaStreamId("brand:sportsdesk-emblem:webp")
+    } else if (preset === "touch180") {
+      setTargetFormat("png")
+      setCompressionLevel(9)
+      setFit("fill")
+      setWidthInput("180")
+      setHeightInput("180")
+      setEmbedXmpContext(true)
+      setMetaAssetRole("apple-touch-icon")
+      setMetaSurfaceContext("ios-homescreen-icon")
+      setMetaStreamId("brand:sportsdesk-emblem:180")
+    } else if (preset === "favicon64") {
+      setTargetFormat("png")
+      setCompressionLevel(9)
+      setFit("fill")
+      setWidthInput("64")
+      setHeightInput("64")
+      setEmbedXmpContext(true)
+      setMetaAssetRole("browser-favicon")
+      setMetaSurfaceContext("browser-tab-icon")
+      setMetaStreamId("brand:sportsdesk-emblem:64")
     } else {
       setTargetFormat("png")
       setCompressionLevel(7)
@@ -479,6 +577,23 @@ export function BunAssetsTabPanel({
           flop,
           brightness,
           saturation,
+          metadataContext:
+            embedXmpContext && (targetFormat === "webp" || targetFormat === "png" || targetFormat === "avif")
+              ? {
+                  streamId: metaStreamId.trim() || undefined,
+                  title: metaTitle.trim() || undefined,
+                  description:
+                    selectedAsset.provenance?.description ??
+                    `Generated via SportsDesk Bun.Image Format Studio from ${selectedAsset.source}`,
+                  assetRole: metaAssetRole.trim() || undefined,
+                  surfaceContext: metaSurfaceContext.trim() || undefined,
+                  subjects: [
+                    "sportsdesk-ops",
+                    metaAssetRole.trim() || "brand-asset",
+                    targetFormat,
+                  ],
+                }
+              : undefined,
         }),
       })
       const json = (await response.json()) as BunImageTransformResult & {
@@ -512,6 +627,11 @@ export function BunAssetsTabPanel({
     flop,
     brightness,
     saturation,
+    embedXmpContext,
+    metaStreamId,
+    metaTitle,
+    metaAssetRole,
+    metaSurfaceContext,
   ])
 
   const handleCopyDataUrl = useCallback(async (): Promise<void> => {
@@ -606,6 +726,14 @@ export function BunAssetsTabPanel({
                 <span aria-hidden="true">·</span>
                 <span>
                   {payload.scanMs}ms{payload.cached ? " (cached)" : ""}
+                </span>
+              </>
+            ) : null}
+            {xmpAssetCount > 0 ? (
+              <>
+                <span aria-hidden="true">·</span>
+                <span style={{ color: "#34d399", fontWeight: 600 }}>
+                  {xmpAssetCount} XMP-stamped
                 </span>
               </>
             ) : null}
@@ -1534,6 +1662,102 @@ export function BunAssetsTabPanel({
                 </div>
               </div>
 
+              {/* Embedded XMP / Dublin Core / SportsDesk Context Metadata */}
+              {selectedAsset.provenance ? (
+                <div
+                  data-testid="asset-xmp-context-card"
+                  style={{
+                    marginTop: "10px",
+                    padding: "10px 12px",
+                    borderRadius: "6px",
+                    borderWidth: "1px",
+                    borderStyle: "solid",
+                    borderColor: "rgba(52, 211, 153, 0.28)",
+                    backgroundColor: "rgba(6, 78, 59, 0.14)",
+                    fontSize: "11.5px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "6px",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    <span style={{ color: "#34d399", fontWeight: 600 }}>
+                      Embedded XMP &amp; Brand Context
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: MONO_FONT,
+                        fontSize: "10.5px",
+                        color: "#7dd3fc",
+                      }}
+                    >
+                      {selectedAsset.provenance.channels.join(" + ") || "xmp"}
+                      {selectedAsset.provenance.tokensVersion
+                        ? ` · tokens v${selectedAsset.provenance.tokensVersion}`
+                        : ""}
+                    </span>
+                  </div>
+                  {selectedAsset.provenance.title ? (
+                    <div style={{ color: "#f1f5f9", fontWeight: 600, marginBottom: "4px" }}>
+                      {selectedAsset.provenance.title}
+                    </div>
+                  ) : null}
+                  {selectedAsset.provenance.description ? (
+                    <div
+                      style={{
+                        color: "#94a3b8",
+                        fontSize: "11px",
+                        lineHeight: 1.4,
+                        marginBottom: "6px",
+                      }}
+                    >
+                      {selectedAsset.provenance.description}
+                    </div>
+                  ) : null}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      gap: "4px 10px",
+                      fontFamily: MONO_FONT,
+                      fontSize: "10.5px",
+                      color: "#cbd5e1",
+                    }}
+                  >
+                    {selectedAsset.provenance.streamId ? (
+                      <div>
+                        <span style={{ color: "#64748b" }}>stream: </span>
+                        {selectedAsset.provenance.streamId}
+                      </div>
+                    ) : null}
+                    {selectedAsset.provenance.assetRole ? (
+                      <div>
+                        <span style={{ color: "#64748b" }}>role: </span>
+                        {selectedAsset.provenance.assetRole}
+                      </div>
+                    ) : null}
+                    {selectedAsset.provenance.surfaceContext ? (
+                      <div>
+                        <span style={{ color: "#64748b" }}>surface: </span>
+                        {selectedAsset.provenance.surfaceContext}
+                      </div>
+                    ) : null}
+                    {selectedAsset.provenance.domainContext ? (
+                      <div>
+                        <span style={{ color: "#64748b" }}>domain: </span>
+                        {selectedAsset.provenance.domainContext}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+
               {/* Transform Studio (Raster Assets) or Vector Summary (SVG) */}
               {selectedAsset.canTransform === false ? (
                 <div
@@ -1581,6 +1805,10 @@ export function BunAssetsTabPanel({
                     >
                       {(
                         [
+                          ["ogBanner", "OG 1200×630"],
+                          ["emblem256", "Emblem 256"],
+                          ["touch180", "Touch 180"],
+                          ["favicon64", "Favicon 64"],
                           ["webp80", "WebP 80%"],
                           ["thumb320", "320px WebP"],
                           ["jpeg85", "JPEG 85%"],
@@ -1596,9 +1824,21 @@ export function BunAssetsTabPanel({
                             borderRadius: "4px",
                             borderWidth: "1px",
                             borderStyle: "solid",
-                            borderColor: "#334155",
+                            borderColor:
+                              id === "ogBanner" ||
+                              id === "emblem256" ||
+                              id === "touch180" ||
+                              id === "favicon64"
+                                ? "rgba(56, 189, 248, 0.45)"
+                                : "#334155",
                             backgroundColor: "#0f172a",
-                            color: "#cbd5e1",
+                            color:
+                              id === "ogBanner" ||
+                              id === "emblem256" ||
+                              id === "touch180" ||
+                              id === "favicon64"
+                                ? "#7dd3fc"
+                                : "#cbd5e1",
                             fontSize: "10.5px",
                             fontWeight: 500,
                             whiteSpace: "nowrap",
@@ -2133,6 +2373,143 @@ export function BunAssetsTabPanel({
                     </label>
                   </div>
 
+                  {/* Contextual Branding & Provenance XMP Stamping */}
+                  {targetFormat === "webp" || targetFormat === "png" || targetFormat === "avif" ? (
+                    <div
+                      data-testid="xmp-context-stamping-controls"
+                      style={{
+                        marginTop: "12px",
+                        padding: "10px 12px",
+                        borderRadius: "6px",
+                        borderWidth: "1px",
+                        borderStyle: "solid",
+                        borderColor: embedXmpContext ? "rgba(56, 189, 248, 0.3)" : "#1e293b",
+                        backgroundColor: "#0a101d",
+                        fontSize: "11.5px",
+                      }}
+                    >
+                      <label
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          color: "#e2e8f0",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={embedXmpContext}
+                          onChange={(e) => setEmbedXmpContext(e.target.checked)}
+                        />
+                        <span>Stamp SportsDesk Brand &amp; Dublin Core XMP Metadata</span>
+                      </label>
+                      {embedXmpContext ? (
+                        <div
+                          style={{
+                            marginTop: "8px",
+                            display: "grid",
+                            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                            gap: "8px",
+                          }}
+                        >
+                          <label style={{ display: "block", color: "#94a3b8", gridColumn: "1 / -1" }}>
+                            dc:title
+                            <input
+                              type="text"
+                              value={metaTitle}
+                              onChange={(e) => setMetaTitle(e.target.value)}
+                              placeholder="SportsDesk Operations Asset Title"
+                              style={{
+                                marginTop: "3px",
+                                width: "100%",
+                                boxSizing: "border-box",
+                                padding: "5px 8px",
+                                borderRadius: "5px",
+                                borderWidth: "1px",
+                                borderStyle: "solid",
+                                borderColor: "#334155",
+                                backgroundColor: "#0f172a",
+                                color: "#f1f5f9",
+                                fontSize: "11.5px",
+                              }}
+                            />
+                          </label>
+                          <label style={{ display: "block", color: "#94a3b8" }}>
+                            sportsdesk:assetRole
+                            <input
+                              type="text"
+                              value={metaAssetRole}
+                              onChange={(e) => setMetaAssetRole(e.target.value)}
+                              placeholder="app-emblem"
+                              style={{
+                                marginTop: "3px",
+                                width: "100%",
+                                boxSizing: "border-box",
+                                padding: "5px 8px",
+                                borderRadius: "5px",
+                                borderWidth: "1px",
+                                borderStyle: "solid",
+                                borderColor: "#334155",
+                                backgroundColor: "#0f172a",
+                                color: "#f1f5f9",
+                                fontFamily: MONO_FONT,
+                                fontSize: "11px",
+                              }}
+                            />
+                          </label>
+                          <label style={{ display: "block", color: "#94a3b8" }}>
+                            sportsdesk:surfaceContext
+                            <input
+                              type="text"
+                              value={metaSurfaceContext}
+                              onChange={(e) => setMetaSurfaceContext(e.target.value)}
+                              placeholder="dashboard-header-nav"
+                              style={{
+                                marginTop: "3px",
+                                width: "100%",
+                                boxSizing: "border-box",
+                                padding: "5px 8px",
+                                borderRadius: "5px",
+                                borderWidth: "1px",
+                                borderStyle: "solid",
+                                borderColor: "#334155",
+                                backgroundColor: "#0f172a",
+                                color: "#f1f5f9",
+                                fontFamily: MONO_FONT,
+                                fontSize: "11px",
+                              }}
+                            />
+                          </label>
+                          <label style={{ display: "block", color: "#94a3b8", gridColumn: "1 / -1" }}>
+                            sportsdesk:streamId
+                            <input
+                              type="text"
+                              value={metaStreamId}
+                              onChange={(e) => setMetaStreamId(e.target.value)}
+                              placeholder="brand:sportsdesk-emblem:webp"
+                              style={{
+                                marginTop: "3px",
+                                width: "100%",
+                                boxSizing: "border-box",
+                                padding: "5px 8px",
+                                borderRadius: "5px",
+                                borderWidth: "1px",
+                                borderStyle: "solid",
+                                borderColor: "#334155",
+                                backgroundColor: "#0f172a",
+                                color: "#f1f5f9",
+                                fontFamily: MONO_FONT,
+                                fontSize: "11px",
+                              }}
+                            />
+                          </label>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+
                   {/* Primary Transform Action */}
                   <div
                     style={{
@@ -2284,9 +2661,32 @@ export function BunAssetsTabPanel({
                             : transformResult.webpBitstream
                               ? ` · ${transformResult.webpBitstream}`
                               : ""}{" "}
+                          {transformResult.xmpInjected
+                            ? ` · XMP ${transformResult.xmpBytes ?? 0} B`
+                            : ""}
                           · {transformResult.durationMs}ms · {transformResult.backend} · #
                           {transformResult.sha256}
                         </span>
+                        {transformResult.provenance ? (
+                          <div
+                            data-testid="transform-provenance-verified"
+                            style={{
+                              width: "100%",
+                              fontFamily: MONO_FONT,
+                              fontSize: "10.5px",
+                              color: "#34d399",
+                            }}
+                          >
+                            Verified XMP ({transformResult.provenance.channels.join("+")}):{" "}
+                            {transformResult.provenance.streamId ?? "stamped"}
+                            {transformResult.provenance.assetRole
+                              ? ` · role=${transformResult.provenance.assetRole}`
+                              : ""}
+                            {transformResult.provenance.surfaceContext
+                              ? ` · surface=${transformResult.provenance.surfaceContext}`
+                              : ""}
+                          </div>
+                        ) : null}
                         <div style={{ display: "flex", gap: "6px" }}>
                           <button
                             type="button"

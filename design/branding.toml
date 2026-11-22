@@ -1,0 +1,168 @@
+# SportsDesk & Fantasy402 Brand Identity & Asset Generation SSOT
+# Parsed via native Bun.TOML (lib/bun_toml.ts) and compiled by scripts/gen_branding_assets.ts
+
+[meta]
+schema = "sportsdesk-branding/v1"
+version = "1.5.0"
+tokens_spec = "design/tokens.toml"
+tokens_version = "1.5.0"
+updated_at = "2026-11-22T00:00:00Z"
+generation = 10123
+
+[brand]
+app_name = "SportsDesk Ops Surveillance Dashboard-v1.01.23-next"
+short_name = "SportsDesk & Fantasy402 Operations"
+monogram = "SD"
+version = "v1.01.23-next"
+organization = "SportsDesk & Fantasy402 Quantitative Risk Operations"
+tagline = "Real-time wager surveillance, sharp profiling, and automated risk desk telemetry"
+description = "Unified SportsDesk & Fantasy402 surveillance console for real-time wager telemetry, downline risk exposure, sharp profiling, and threshold alerting."
+rights = "Copyright (c) 2026 SportsDesk & Fantasy402 Operations. All rights reserved."
+creator_tool = "SportsDesk Bun.Image Branding Pipeline (Bun 1.4.4)"
+emblem_alt = "SportsDesk & Fantasy402 hexagonal obsidian radar shield emblem with cyan trajectory vector"
+og_image_alt = "SportsDesk & Fantasy402 Operations surveillance radar shield and real-time telemetry banner"
+
+[context]
+domain = "sportsbook-risk-surveillance"
+audience = "Quantitative Risk Desk, Line Managers & Compliance Analysts"
+classification = "OPERATIONAL_BRANDING"
+surfaces = ["web-dashboard", "opengraph-social", "web-manifest", "cli-ansi", "r2-artifacts"]
+keywords = [
+  "sportsbook-risk",
+  "wager-telemetry",
+  "sharp-profiling",
+  "downline-exposure",
+  "fantasy402",
+  "sportsdesk-ops",
+]
+
+[palette]
+canvas_bg = "#070b14"
+surface_elevated = "#0b1120"
+border_subtle = "#1e293b"
+accent_primary = "#38bdf8"
+accent_emerald = "#34d399"
+accent_amber = "#fbbf24"
+accent_danger = "#f87171"
+text_primary = "#f8fafc"
+text_muted = "#94a3b8"
+
+[sources]
+emblem_master = "src/assets/images/sportsdesk_emblem_master_1795386608489.jpg"
+og_card_master = "src/assets/images/sportsdesk_og_card_1795386608006.jpg"
+
+[[assets]]
+id = "SD-BRAND-01-EMBLEM-WEBP"
+slug = "sportsdesk-emblem-webp"
+source_key = "emblem_master"
+output_path = "public/assets/branding/sportsdesk-emblem.webp"
+public_url = "/assets/branding/sportsdesk-emblem.webp"
+format = "webp"
+width = 256
+height = 256
+fit = "fill"
+quality = 88
+lossless = false
+embed_xmp = true
+asset_role = "app-emblem"
+surface_context = "dashboard-header-nav"
+stream_id = "brand:sportsdesk-emblem:webp"
+title = "SportsDesk Operations Radar Shield Emblem (256px WebP)"
+description = "Primary 256x256 WebP radar shield emblem for SportsDesk & Fantasy402 dashboard navigation and Shift Handoff headers."
+subjects = ["sportsdesk-ops", "brand-emblem", "radar-shield", "header-nav", "webp"]
+
+[[assets]]
+id = "SD-BRAND-02-EMBLEM-64"
+slug = "sportsdesk-emblem-64"
+source_key = "emblem_master"
+output_path = "public/assets/branding/sportsdesk-emblem-64.png"
+public_url = "/assets/branding/sportsdesk-emblem-64.png"
+format = "png"
+width = 64
+height = 64
+fit = "fill"
+compression_level = 9
+embed_xmp = true
+asset_role = "browser-favicon"
+surface_context = "browser-tab-icon"
+stream_id = "brand:sportsdesk-emblem:64"
+title = "SportsDesk Operations Browser Favicon (64px PNG)"
+description = "Crisp 64x64 PNG favicon icon stamped with SportsDesk Dublin Core and XMP provenance metadata."
+subjects = ["sportsdesk-ops", "favicon", "png-64", "browser-tab"]
+
+[[assets]]
+id = "SD-BRAND-03-EMBLEM-180"
+slug = "sportsdesk-emblem-180"
+source_key = "emblem_master"
+output_path = "public/assets/branding/sportsdesk-emblem-180.png"
+public_url = "/assets/branding/sportsdesk-emblem-180.png"
+format = "png"
+width = 180
+height = 180
+fit = "fill"
+compression_level = 9
+embed_xmp = true
+asset_role = "apple-touch-icon"
+surface_context = "ios-homescreen-icon"
+stream_id = "brand:sportsdesk-emblem:180"
+title = "SportsDesk Operations Apple Touch Icon (180px PNG)"
+description = "High-DPI 180x180 PNG touch icon for iOS home screen bookmarks and desktop shortcut badges."
+subjects = ["sportsdesk-ops", "apple-touch-icon", "png-180", "mobile-shortcut"]
+
+[[assets]]
+id = "SD-BRAND-04-EMBLEM-512"
+slug = "sportsdesk-emblem-512"
+source_key = "emblem_master"
+output_path = "public/assets/branding/sportsdesk-emblem-512.png"
+public_url = "/assets/branding/sportsdesk-emblem-512.png"
+format = "png"
+width = 512
+height = 512
+fit = "fill"
+compression_level = 9
+embed_xmp = true
+asset_role = "manifest-app-icon"
+surface_context = "web-app-manifest"
+stream_id = "brand:sportsdesk-emblem:512"
+title = "SportsDesk Operations High-Res App Icon (512px PNG)"
+description = "512x512 maskable PNG application icon declared in public/manifest.webmanifest with embedded XMP provenance."
+subjects = ["sportsdesk-ops", "app-icon", "png-512", "web-manifest"]
+
+[[assets]]
+id = "SD-BRAND-05-OG-CARD-WEBP"
+slug = "sportsdesk-og-card-webp"
+source_key = "og_card_master"
+output_path = "public/assets/branding/sportsdesk-og-card.webp"
+public_url = "/assets/branding/sportsdesk-og-card.webp"
+format = "webp"
+width = 1200
+height = 630
+fit = "fill"
+quality = 86
+lossless = false
+embed_xmp = true
+asset_role = "opengraph-social-banner-webp"
+surface_context = "social-share-preview"
+stream_id = "brand:sportsdesk-og-card:webp"
+title = "SportsDesk Operations OpenGraph Command Banner (1200x630 WebP)"
+description = "Widescreen 1200x630 WebP social share banner featuring the obsidian radar shield and live telemetry waveform with embedded XMP context."
+subjects = ["sportsdesk-ops", "opengraph", "social-card", "telemetry-banner", "webp"]
+
+[[assets]]
+id = "SD-BRAND-06-OG-CARD-JPG"
+slug = "sportsdesk-og-card-jpg"
+source_key = "og_card_master"
+output_path = "public/assets/branding/sportsdesk-og-card.jpg"
+public_url = "/assets/branding/sportsdesk-og-card.jpg"
+format = "jpeg"
+width = 1200
+height = 630
+fit = "fill"
+quality = 88
+embed_xmp = false
+asset_role = "opengraph-social-banner-jpeg"
+surface_context = "social-share-crawler"
+stream_id = "brand:sportsdesk-og-card:jpg"
+title = "SportsDesk Operations OpenGraph Social Preview Card (1200x630 JPEG)"
+description = "Universal 1200x630 JPEG OpenGraph and Twitter/X summary_large_image card for social crawlers and unfurls."
+subjects = ["sportsdesk-ops", "opengraph", "twitter-card", "social-crawler", "jpeg"]
