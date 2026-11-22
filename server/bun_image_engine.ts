@@ -82,6 +82,7 @@ export interface BunImageTransformRequest {
   readonly withoutEnlargement?: boolean | undefined
   readonly filter?: BunImageResampleFilter | undefined
   readonly quality?: number | undefined
+  readonly lossless?: boolean | undefined
   readonly compressionLevel?: number | undefined
   readonly palette?: boolean | undefined
   readonly colors?: number | undefined
@@ -118,6 +119,8 @@ export interface BunImageTransformResult {
   readonly pngPalette?: boolean | undefined
   readonly pngColors?: number | undefined
   readonly pngDither?: boolean | undefined
+  readonly webpLossless?: boolean | undefined
+  readonly webpBitstream?: string | undefined
   readonly xmpInjected?: boolean | undefined
   readonly xmpBytes?: number | undefined
 }
@@ -336,6 +339,7 @@ export async function transformBunImageAsset(
       typeof req.quality === "number" && Number.isFinite(req.quality)
         ? Math.min(100, Math.max(1, Math.round(req.quality)))
         : 80,
+    lossless: Boolean(req.lossless),
     compressionLevel:
       typeof req.compressionLevel === "number" && Number.isFinite(req.compressionLevel)
         ? Math.min(9, Math.max(0, Math.round(req.compressionLevel)))

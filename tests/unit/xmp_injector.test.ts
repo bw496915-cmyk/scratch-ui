@@ -1,6 +1,7 @@
 import { XML } from "bun"
 import { describe, expect, test } from "bun:test"
 import { resolve } from "node:path"
+import { deflateSync } from "node:zlib"
 
 import { transformBunImageAsset } from "../../server/bun_image_engine.ts"
 import { injectPngXmp, injectWebpXmp, injectXmp } from "../../server/xmp_injector.ts"
@@ -9,6 +10,36 @@ const decoder = new TextDecoder()
 const PNG_SIG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 const XMP_PNG_PREFIX = new TextEncoder().encode("XML:com.adobe.xmp\0\0\0\0\0")
 const WORKSPACE_ROOT = resolve(import.meta.dir, "../..")
+
+const CRC32_TABLE = (() => {
+  const table = new Uint32Array(256)
+  for (let i = 0; i < 256; i++) {
+    let c = i
+    for (let k = 0; k < 8; k++) {
+      c = (c & 1) !== 0 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
+    }
+    table[i] = c >>> 0
+  }
+  return table
+})()
+
+function crc32(bytes: Uint8Array): number {
+  let c = 0xffffffff
+  for (let i = 0; i < bytes.length; i++) {
+    c = CRC32_TABLE[(c ^ bytes[i]!) & 0xff]! ^ (c >>> 8)
+  }
+  return (c ^ 0xffffffff) >>> 0
+}
+
+function makePngChunk(type: string, data: Uint8Array): Uint8Array {
+  const out = new Uint8Array(12 + data.byteLength)
+  const view = new DataView(out.buffer)
+  view.setUint32(0, data.byteLength, false)
+  for (let i = 0; i < 4; i++) out[4 + i] = type.charCodeAt(i)
+  out.set(data, 8)
+  view.setUint32(8 + data.byteLength, crc32(out.subarray(4, 8 + data.byteLength)), false)
+  return out
+}
 
 const CREATOR_VALUE = "SportsDesk Provenance — α"
 
@@ -26,31 +57,36 @@ const REPLACEMENT_XMP =
   `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>` +
   `</x:xmpmeta><?xpacket end="w"?>`
 
-function makeBmp32Fixture(width = 16, height = 16): Uint8Array {
-  const pixelBytes = width * height * 4
-  const buf = new Uint8Array(54 + pixelBytes)
-  const view = new DataView(buf.buffer)
-  buf[0] = 0x42
-  buf[1] = 0x4d
-  view.setUint32(2, buf.byteLength, true)
-  view.setUint32(10, 54, true)
-  view.setUint32(14, 40, true)
-  view.setInt32(18, width, true)
-  view.setInt32(22, -height, true)
-  view.setUint16(26, 1, true)
-  view.setUint16(28, 32, true)
-  view.setUint32(34, pixelBytes, true)
+function makeRgbaPngFixture(width = 16, height = 16): Uint8Array {
+  const ihdr = new Uint8Array(13)
+  const ihdrView = new DataView(ihdr.buffer)
+  ihdrView.setUint32(0, width, false)
+  ihdrView.setUint32(4, height, false)
+  ihdr[8] = 8 // 8-bit depth
+  ihdr[9] = 6 // RGBA truecolor with alpha
 
+  const raw = new Uint8Array(height * (1 + width * 4))
   for (let y = 0; y < height; y++) {
+    const row = y * (1 + width * 4)
+    raw[row] = 0 // filter: None
     for (let x = 0; x < width; x++) {
-      const i = 54 + (y * width + x) * 4
-      buf[i] = 0x80
-      buf[i + 1] = (y * 16) & 0xff
-      buf[i + 2] = (x * 16) & 0xff
-      buf[i + 3] = x < width / 2 ? 0xff : 0x80
+      const i = row + 1 + x * 4
+      raw[i] = (x * 16) & 0xff
+      raw[i + 1] = (y * 16) & 0xff
+      raw[i + 2] = 0x80
+      raw[i + 3] = x < width / 2 ? 0xff : 0x80
     }
   }
-  return buf
+
+  const idat = new Uint8Array(deflateSync(raw))
+  return new Uint8Array(
+    Bun.concatArrayBuffers([
+      PNG_SIG,
+      makePngChunk("IHDR", ihdr),
+      makePngChunk("IDAT", idat),
+      makePngChunk("IEND", new Uint8Array(0)),
+    ]),
+  )
 }
 
 function readFourCC(buf: Uint8Array, offset: number): string {
@@ -66,17 +102,20 @@ function extractWebpXmp(webp: Uint8Array): {
   xmp: string | null
   vp8xFlags: number | null
   riffSizeMatches: boolean
+  chunkTypes: string[]
 } {
   const view = new DataView(webp.buffer, webp.byteOffset, webp.byteLength)
   const riffSize = view.getUint32(4, true)
   let vp8xFlags: number | null = null
   let xmp: string | null = null
+  const chunkTypes: string[] = []
 
   let offset = 12
   while (offset + 8 <= webp.byteLength) {
     const fourCC = readFourCC(webp, offset)
     const size = view.getUint32(offset + 4, true)
     const paddedSize = size + (size & 1)
+    chunkTypes.push(fourCC)
 
     if (fourCC === "VP8X") {
       vp8xFlags = webp[offset + 8]!
@@ -86,7 +125,7 @@ function extractWebpXmp(webp: Uint8Array): {
     offset += 8 + paddedSize
   }
 
-  return { xmp, vp8xFlags, riffSizeMatches: riffSize === webp.byteLength - 8 }
+  return { xmp, vp8xFlags, riffSizeMatches: riffSize === webp.byteLength - 8, chunkTypes }
 }
 
 function extractPngXmp(png: Uint8Array): {
@@ -140,19 +179,22 @@ function assertValidXmpXml(xmp: string | null, expectedCreator?: string): void {
 describe("xmp-injector round-trip with Bun.Image + Bun.XML", () => {
   const WIDTH = 16
   const HEIGHT = 16
-  const bmpFixture = makeBmp32Fixture(WIDTH, HEIGHT)
+  const rgbaFixture = makeRgbaPngFixture(WIDTH, HEIGHT)
 
-  test("WebP: encodes via Bun.Image, injects XMP, validates via Bun.XML, and re-decodes cleanly", async () => {
+  test("WebP (lossy alpha VP8X+ALPH+VP8 ): patches VP8X flags in place, injects XMP, validates via Bun.XML, and re-decodes cleanly", async () => {
     const encoded = new Uint8Array(
-      await new Bun.Image(bmpFixture).webp({ quality: 85 }).toBuffer(),
+      await new Bun.Image(rgbaFixture).webp({ lossless: false, quality: 85 }).toBuffer(),
     )
+    const before = extractWebpXmp(encoded)
+    expect(before.chunkTypes).toEqual(["VP8X", "ALPH", "VP8 "])
+    expect(before.vp8xFlags).toBe(0x10)
 
     const stamped = injectWebpXmp(encoded, SAMPLE_XMP)
     const parsed = extractWebpXmp(stamped)
 
     expect(parsed.riffSizeMatches).toBe(true)
-    expect(parsed.vp8xFlags).not.toBeNull()
-    expect((parsed.vp8xFlags! & 0x04) !== 0).toBe(true)
+    expect(parsed.chunkTypes).toEqual(["VP8X", "ALPH", "VP8 ", "XMP "])
+    expect(parsed.vp8xFlags).toBe(0x14) // VP8X_FLAG_ALPHA (0x10) | VP8X_FLAG_XMP (0x04)
     expect(parsed.xmp).toBe(SAMPLE_XMP)
     assertValidXmpXml(parsed.xmp, CREATOR_VALUE)
 
@@ -163,7 +205,7 @@ describe("xmp-injector round-trip with Bun.Image + Bun.XML", () => {
 
   test("PNG: encodes via Bun.Image, injects iTXt XMP, validates via Bun.XML, and re-decodes cleanly", async () => {
     const encoded = new Uint8Array(
-      await new Bun.Image(bmpFixture)
+      await new Bun.Image(rgbaFixture)
         .png({ colors: 256, compressionLevel: 6, dither: false, palette: false })
         .toBuffer(),
     )
@@ -184,7 +226,7 @@ describe("xmp-injector round-trip with Bun.Image + Bun.XML", () => {
 
   test("Indexed PNG (color-type 3 with PLTE/tRNS): stamps iTXt before IEND and re-decodes cleanly", async () => {
     const indexed = new Uint8Array(
-      await new Bun.Image(bmpFixture)
+      await new Bun.Image(rgbaFixture)
         .png({ colors: 64, compressionLevel: 9, dither: true, palette: true })
         .toBuffer(),
     )
@@ -206,12 +248,15 @@ describe("xmp-injector round-trip with Bun.Image + Bun.XML", () => {
     expect(meta.height).toBe(HEIGHT)
   })
 
-  test("injectXmp auto-detects both formats and replaces existing XMP idempotently", async () => {
+  test("injectXmp auto-detects lossless WebP (VP8L -> VP8X with alpha bit 28) & PNG and replaces existing XMP idempotently", async () => {
     const webp = new Uint8Array(
-      await new Bun.Image(bmpFixture).webp({ lossless: true }).toBuffer(),
+      await new Bun.Image(rgbaFixture).webp({ lossless: true, quality: 100 }).toBuffer(),
     )
+    const beforeWebp = extractWebpXmp(webp)
+    expect(beforeWebp.chunkTypes).toEqual(["VP8L"])
+
     const png = new Uint8Array(
-      await new Bun.Image(bmpFixture)
+      await new Bun.Image(rgbaFixture)
         .png({ colors: 256, compressionLevel: 6, dither: false, palette: false })
         .toBuffer(),
     )
@@ -221,6 +266,8 @@ describe("xmp-injector round-trip with Bun.Image + Bun.XML", () => {
 
     const webpParsed = extractWebpXmp(webpV2)
     expect(webpParsed.riffSizeMatches).toBe(true)
+    expect(webpParsed.chunkTypes).toEqual(["VP8X", "VP8L", "XMP "])
+    expect(webpParsed.vp8xFlags).toBe(0x14) // VP8X_FLAG_ALPHA (copied from VP8L bit 28) | VP8X_FLAG_XMP
     expect(webpParsed.xmp).toBe(REPLACEMENT_XMP)
     assertValidXmpXml(webpParsed.xmp)
     expect((await new Bun.Image(webpV2).metadata()).width).toBe(WIDTH)
@@ -232,7 +279,7 @@ describe("xmp-injector round-trip with Bun.Image + Bun.XML", () => {
     expect((await new Bun.Image(pngV2).metadata()).width).toBe(WIDTH)
   })
 
-  test("transformBunImageAsset pipeline stamps optional xmpXml onto indexed PNG and WebP outputs", async () => {
+  test("transformBunImageAsset pipeline stamps optional xmpXml onto indexed PNG and lossy/lossless WebP outputs", async () => {
     const pngResult = await transformBunImageAsset(WORKSPACE_ROOT, {
       source: "public/assets/branding/sportsdesk-emblem.webp",
       format: "png",
@@ -255,20 +302,40 @@ describe("xmp-injector round-trip with Bun.Image + Bun.XML", () => {
     expect(pngParsed.count).toBe(1)
     assertValidXmpXml(pngParsed.xmp, CREATOR_VALUE)
 
-    const webpResult = await transformBunImageAsset(WORKSPACE_ROOT, {
+    const webpLossy = await transformBunImageAsset(WORKSPACE_ROOT, {
       source: "public/assets/branding/sportsdesk-emblem.webp",
       format: "webp",
+      lossless: false,
       quality: 85,
       xmpXml: SAMPLE_XMP,
     })
 
-    expect(webpResult.ok).toBe(true)
-    expect(webpResult.xmpInjected).toBe(true)
-    const webpBytes = Uint8Array.from(
-      Buffer.from(webpResult.dataUrl.replace("data:image/webp;base64,", ""), "base64"),
+    expect(webpLossy.ok).toBe(true)
+    expect(webpLossy.webpLossless).toBe(false)
+    expect(webpLossy.xmpInjected).toBe(true)
+    const webpLossyBytes = Uint8Array.from(
+      Buffer.from(webpLossy.dataUrl.replace("data:image/webp;base64,", ""), "base64"),
     )
-    const webpParsed = extractWebpXmp(webpBytes)
-    expect(webpParsed.riffSizeMatches).toBe(true)
-    assertValidXmpXml(webpParsed.xmp, CREATOR_VALUE)
+    const webpLossyParsed = extractWebpXmp(webpLossyBytes)
+    expect(webpLossyParsed.riffSizeMatches).toBe(true)
+    assertValidXmpXml(webpLossyParsed.xmp, CREATOR_VALUE)
+
+    const webpLossless = await transformBunImageAsset(WORKSPACE_ROOT, {
+      source: "public/assets/branding/sportsdesk-emblem.webp",
+      format: "webp",
+      lossless: true,
+      quality: 100,
+      xmpXml: SAMPLE_XMP,
+    })
+
+    expect(webpLossless.ok).toBe(true)
+    expect(webpLossless.webpLossless).toBe(true)
+    expect(webpLossless.xmpInjected).toBe(true)
+    const webpLosslessBytes = Uint8Array.from(
+      Buffer.from(webpLossless.dataUrl.replace("data:image/webp;base64,", ""), "base64"),
+    )
+    const webpLosslessParsed = extractWebpXmp(webpLosslessBytes)
+    expect(webpLosslessParsed.riffSizeMatches).toBe(true)
+    assertValidXmpXml(webpLosslessParsed.xmp, CREATOR_VALUE)
   })
 })

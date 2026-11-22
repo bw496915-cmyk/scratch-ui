@@ -94,6 +94,10 @@ export interface BunImageTransformResult {
   readonly pngPalette?: boolean | undefined
   readonly pngColors?: number | undefined
   readonly pngDither?: boolean | undefined
+  readonly webpLossless?: boolean | undefined
+  readonly webpBitstream?: string | undefined
+  readonly xmpInjected?: boolean | undefined
+  readonly xmpBytes?: number | undefined
 }
 
 export interface BunAssetsTabPanelProps {
@@ -242,6 +246,7 @@ export function BunAssetsTabPanel({
   const [fit, setFit] = useState<"inside" | "fill">("inside")
   const [resampleFilter, setResampleFilter] = useState<BunImageResampleFilter>("lanczos3")
   const [quality, setQuality] = useState<number>(80)
+  const [webpLossless, setWebpLossless] = useState<boolean>(false)
   const [compressionLevel, setCompressionLevel] = useState<number>(6)
   const [pngPalette, setPngPalette] = useState<boolean>(false)
   const [pngColors, setPngColors] = useState<number>(64)
@@ -464,6 +469,7 @@ export function BunAssetsTabPanel({
           withoutEnlargement: true,
           filter: resampleFilter,
           quality,
+          lossless: targetFormat === "webp" ? webpLossless : undefined,
           compressionLevel,
           palette: targetFormat === "png" ? pngPalette : undefined,
           colors: targetFormat === "png" && pngPalette ? pngColors : undefined,
@@ -496,6 +502,7 @@ export function BunAssetsTabPanel({
     fit,
     resampleFilter,
     quality,
+    webpLossless,
     compressionLevel,
     pngPalette,
     pngColors,
@@ -1950,6 +1957,72 @@ export function BunAssetsTabPanel({
                             : `img.png({ compressionLevel: ${compressionLevel} })`}
                         </code>
                       </div>
+                    ) : targetFormat === "webp" ? (
+                      <div
+                        data-webp-options-panel="true"
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
+                        }}
+                      >
+                        <label style={{ display: "block", color: "#94a3b8" }}>
+                          Quality:{" "}
+                          <strong
+                            style={{
+                              color: "#f1f5f9",
+                              fontFamily: MONO_FONT,
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            {quality}%
+                          </strong>
+                          <input
+                            type="range"
+                            min={10}
+                            max={100}
+                            step={1}
+                            value={quality}
+                            onChange={(e) => setQuality(Number(e.target.value))}
+                            style={{ width: "100%", marginTop: "6px" }}
+                          />
+                        </label>
+                        <label
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            color: "#cbd5e1",
+                            cursor: "pointer",
+                          }}
+                          title="Emit lossless VP8L bitstream instead of lossy VP8"
+                        >
+                          <input
+                            type="checkbox"
+                            data-webp-lossless-toggle="true"
+                            checked={webpLossless}
+                            onChange={(e) => setWebpLossless(e.target.checked)}
+                          />
+                          <span>Lossless (VP8L)</span>
+                        </label>
+                        <code
+                          data-webp-call-preview="true"
+                          style={{
+                            display: "block",
+                            padding: "4px 6px",
+                            borderRadius: "4px",
+                            backgroundColor: "#0f172a",
+                            border: "1px solid #1e293b",
+                            color: "#7dd3fc",
+                            fontFamily: MONO_FONT,
+                            fontSize: "10.5px",
+                            overflowX: "auto",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {`img.webp({ lossless: ${webpLossless}, quality: ${quality} })`}
+                        </code>
+                      </div>
                     ) : (
                       <label style={{ display: "block", color: "#94a3b8" }}>
                         Quality:{" "}
@@ -2208,7 +2281,9 @@ export function BunAssetsTabPanel({
                           {transformResult.outputWidth}×{transformResult.outputHeight}
                           {transformResult.pngColorTypeLabel
                             ? ` · ${transformResult.pngColorTypeLabel}`
-                            : ""}{" "}
+                            : transformResult.webpBitstream
+                              ? ` · ${transformResult.webpBitstream}`
+                              : ""}{" "}
                           · {transformResult.durationMs}ms · {transformResult.backend} · #
                           {transformResult.sha256}
                         </span>

@@ -35,6 +35,7 @@ interface TransformRequest {
   readonly withoutEnlargement?: boolean | undefined
   readonly filter?: ResampleFilter | undefined
   readonly quality?: number | undefined
+  readonly lossless?: boolean | undefined
   readonly compressionLevel?: number | undefined
   readonly palette?: boolean | undefined
   readonly colors?: number | undefined
@@ -141,7 +142,7 @@ async function probeCodecSupport(): Promise<readonly CodecSupportInfo[]> {
       const img = new Bun.Image(PROBE_PNG_BYTES)
       const chain =
         format === "webp"
-          ? img.webp({ quality: 80 })
+          ? img.webp({ lossless: false, quality: 80 })
           : format === "jpeg"
             ? img.jpeg({ quality: 80 })
             : format === "png"
@@ -364,6 +365,7 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
   }
 
   const quality = Math.min(100, Math.max(1, Math.round(req.quality ?? 80)))
+  const webpLossless = Boolean(req.lossless)
   const compressionLevel = Math.min(9, Math.max(0, Math.round(req.compressionLevel ?? 6)))
   const pngPalette = Boolean(req.palette)
   const pngColors = Math.min(256, Math.max(2, Math.round(req.colors ?? 256)))
@@ -374,7 +376,7 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
 
   const encoded =
     req.format === "webp"
-      ? pipeline.webp({ quality })
+      ? pipeline.webp({ lossless: webpLossless, quality })
       : req.format === "jpeg"
         ? pipeline.jpeg({ quality })
         : req.format === "png"
@@ -408,6 +410,31 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
           : req.format === "avif"
             ? "image/avif"
             : "image/heic"
+
+  const isWebpBytes =
+    outBytes.byteLength >= 16 &&
+    outBytes[0] === 0x52 &&
+    outBytes[1] === 0x49 &&
+    outBytes[2] === 0x46 &&
+    outBytes[3] === 0x46 &&
+    outBytes[8] === 0x57 &&
+    outBytes[9] === 0x45 &&
+    outBytes[10] === 0x42 &&
+    outBytes[11] === 0x50
+  const webpFourCC =
+    req.format === "webp" && isWebpBytes
+      ? String.fromCharCode(outBytes[12]!, outBytes[13]!, outBytes[14]!, outBytes[15]!)
+      : undefined
+  const webpBitstream =
+    webpFourCC === "VP8L"
+      ? "Lossless (VP8L)"
+      : webpFourCC === "VP8 "
+        ? "Lossy (VP8)"
+        : webpFourCC === "VP8X"
+          ? webpLossless
+            ? "Extended Lossless (VP8X/VP8L)"
+            : "Extended Lossy (VP8X)"
+          : undefined
 
   const isPngBytes =
     outBytes.byteLength >= 26 &&
@@ -457,6 +484,12 @@ async function runTransform(req: TransformRequest): Promise<unknown> {
     mimeType,
     dataUrl,
     ...(xmpInjected ? { xmpInjected: true, xmpBytes } : {}),
+    ...(req.format === "webp"
+      ? {
+          webpLossless,
+          webpBitstream,
+        }
+      : {}),
     ...(req.format === "png"
       ? {
           pngColorType,
