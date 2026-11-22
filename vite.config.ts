@@ -2,23 +2,30 @@ import fs from "fs"
 import path from "path"
 
 import react from "@vitejs/plugin-react"
-import { parse as parseToml } from "smol-toml"
 import { defineConfig, type Plugin } from "vite"
 
-/** Transform static `.toml` ES module imports into default + named exports (Bun parity). */
+import { parseToml } from "./lib/bun_toml.ts"
+
+/** Transform static `.toml` ES module imports into tree-shakeable named + default exports (Bun parity). */
 function tomlImportPlugin(): Plugin {
   return {
     name: "sportsdesk-toml-import",
     transform(code: string, id: string) {
       const cleanId = id.split("?")[0] ?? id
       if (!cleanId.endsWith(".toml")) return null
-      const parsed = parseToml(code) as Record<string, unknown>
-      const lines: string[] = [`const _toml = ${JSON.stringify(parsed)};`, `export default _toml;`]
-      for (const key of Object.keys(parsed)) {
+      const parsed = parseToml<Record<string, unknown>>(code)
+      const lines: string[] = []
+      const defaultProps: string[] = []
+      for (const [key, value] of Object.entries(parsed)) {
+        const serialized = JSON.stringify(value)
         if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key)) {
-          lines.push(`export const ${key} = _toml[${JSON.stringify(key)}];`)
+          lines.push(`export const ${key} = ${serialized};`)
+          defaultProps.push(`${JSON.stringify(key)}: ${key}`)
+        } else {
+          defaultProps.push(`${JSON.stringify(key)}: ${serialized}`)
         }
       }
+      lines.push(`export default { ${defaultProps.join(", ")} };`)
       return {
         code: lines.join("\n"),
         map: null,

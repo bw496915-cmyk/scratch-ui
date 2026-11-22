@@ -12,8 +12,7 @@
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 
-import { parse as parseToml } from "smol-toml"
-
+import { parseToml } from "../../lib/bun_toml.ts"
 import {
   SLA_STATE_FRESH,
   SLA_STATE_POISON,

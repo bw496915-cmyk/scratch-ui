@@ -2,8 +2,7 @@ import { describe, expect, test } from "bun:test"
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 
-import { parse as parseToml } from "smol-toml"
-
+import { parseToml } from "../../lib/bun_toml.ts"
 import { deltaE2000 as uiDeltaE2000 } from "../../packages/ui/src/viz/perceptual.ts"
 import {
   ciede2000,

@@ -225,7 +225,9 @@ export function createPrivateDashboardRoutes(
     const view = new ApiTelemetryView(telemetry.snapshot(router, selection), opts)
     const inspected =
       router === "bun-native" ? Bun.inspect(view, opts) : inspectDeskValue(view, opts)
-    const output = showOptions ? `${inspected}\n${renderInspectOptionsBanner(opts)}` : inspected
+    const output = showOptions
+      ? `${inspected}\n${renderInspectOptionsBanner(opts, "Bun.inspect.options", { showOptions: true })}`
+      : inspected
     return Response.json({ output, plain: stripAnsi(output) } satisfies ApiTelemetryInspection)
   }
 

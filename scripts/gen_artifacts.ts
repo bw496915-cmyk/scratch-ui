@@ -21,7 +21,7 @@ import { createHash } from "node:crypto"
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
 import { dirname, join, relative, resolve } from "node:path"
 
-import { parse as parseTomlFallback } from "smol-toml"
+import { parseToml } from "../lib/bun_toml.ts"
 
 export interface CanonicalTokenEntry {
   readonly token: string
@@ -221,12 +221,7 @@ function sha256Hex(content: string | Uint8Array): string {
 }
 
 function parseTomlDocument(raw: string): Record<string, unknown> {
-  const bunObj = (globalThis as Record<string, unknown>).Bun as
-    { readonly TOML?: { readonly parse?: (input: string) => unknown } } | undefined
-  if (typeof bunObj?.TOML?.parse === "function") {
-    return bunObj.TOML.parse(raw) as Record<string, unknown>
-  }
-  return parseTomlFallback(raw) as Record<string, unknown>
+  return parseToml<Record<string, unknown>>(raw)
 }
 
 function asRecord(value: unknown): Record<string, unknown> {

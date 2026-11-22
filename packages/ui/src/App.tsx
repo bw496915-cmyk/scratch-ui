@@ -607,8 +607,9 @@ export function App(): React.ReactElement {
   const cohortProfileRows = useMemo<readonly ShowcaseCustomer[]>(() => {
     if (cohortsReport === null) return []
     const merged = mergeProfileRows(
-      bookRowsToProfiles(cohortsReport.fixtures, "fixture"),
+      bookRowsToProfiles(cohortsReport.bookRows ?? [], "book"),
       backtestRowsToProfiles(cohortsReport.backtestAll),
+      bookRowsToProfiles(cohortsReport.fixtures, "fixture"),
     )
     return applyGraphForensicsToProfiles(merged, graphForensicsByCustomer)
   }, [cohortsReport, graphForensicsByCustomer])

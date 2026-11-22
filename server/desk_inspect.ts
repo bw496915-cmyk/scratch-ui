@@ -664,6 +664,7 @@ export function parseInspectCliArgs(
 export function renderInspectOptionsBanner(
   options: BunInspectOptions = {},
   contextLabel = "Bun.inspect.options",
+  extras: { readonly showOptions?: boolean } = {},
 ): string {
   const resolved = resolveInspectOptions(options)
   const colors = resolved.colors
@@ -688,7 +689,12 @@ export function renderInspectOptionsBanner(
       color: ANSI.cyan,
     },
     {
-      tokens: ["CLI:", ...(formatInspectCliFlags(resolved) || "(defaults)").split(" ")],
+      tokens: [
+        "CLI:",
+        ...(
+          formatInspectCliFlags(resolved, { showOptions: extras.showOptions }) || "(defaults)"
+        ).split(" "),
+      ],
       color: ANSI.yellow,
     },
   ]) {

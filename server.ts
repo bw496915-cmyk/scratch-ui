@@ -373,8 +373,8 @@ async function startServer() {
     }
 
     addRawRows(localBookCached?.value, "book")
-    addRawRows(fixtureCached?.value, "fixture")
     addRawRows(backtestCached?.value?.customerLeaderboard, "backtest")
+    addRawRows(fixtureCached?.value, "fixture")
     return Array.from(byId.values())
   }
 

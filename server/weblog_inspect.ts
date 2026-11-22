@@ -1381,7 +1381,8 @@ export class WebLogView extends DeskView<WebLogEntry> {
         )
       }
     }
-    if (this.meta.showOptions) lines.push(renderInspectOptionsBanner(opts, "WebLogView --options"))
+    if (this.meta.showOptions)
+      lines.push(renderInspectOptionsBanner(opts, "WebLogView --options", { showOptions: true }))
     return lines.join("\n")
   }
 }
@@ -1527,7 +1528,9 @@ export class WebLogVectorView extends DeskView<WebLogVectorProfile> {
 
     lines.push(bot)
     if (this.meta.showOptions) {
-      lines.push(renderInspectOptionsBanner(opts, "WebLogVectorView --options"))
+      lines.push(
+        renderInspectOptionsBanner(opts, "WebLogVectorView --options", { showOptions: true }),
+      )
     }
     return lines.join("\n")
   }
@@ -1785,7 +1788,9 @@ export function createWebLogStore() {
         ...resolved,
         maxColWidth: Math.min(resolved.maxStringLength, cellWidth),
       }),
-      ...(opts.showOptions ? [renderInspectOptionsBanner(resolved, "Weblog table --options")] : []),
+      ...(opts.showOptions
+        ? [renderInspectOptionsBanner(resolved, "Weblog table --options", { showOptions: true })]
+        : []),
     ].join("\n")
 
     return {

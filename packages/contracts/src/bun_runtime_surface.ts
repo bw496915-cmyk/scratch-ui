@@ -646,7 +646,8 @@ export const BUN_DEEP_NAMESPACE_TARGETS: readonly {
     key: "TOML",
     label: "Bun.TOML",
     domain: "Parsers & Formats",
-    notes: "Native Zig TOML parser for workspace configs and bunfig.toml",
+    notes:
+      "Native TOML v1.1.0 parse() & stringify() with Temporal date/time round-tripping and direct .toml module imports",
   },
   {
     key: "JSON5",

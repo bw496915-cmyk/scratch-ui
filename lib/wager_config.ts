@@ -8,7 +8,6 @@ import { existsSync } from "node:fs"
 import { readFile } from "node:fs/promises"
 import { isDeepStrictEqual } from "node:util"
 
-import { parse as parseToml } from "smol-toml"
 import { z } from "zod"
 
 import {
@@ -21,6 +20,7 @@ import {
 } from "../src/config/wagerTiers.ts"
 import type { Tier, WagerTiersConfig } from "../src/config/wagerTiers.types.ts"
 import { auditConfig } from "./audit_log.ts"
+import { parseToml } from "./bun_toml.ts"
 
 export type { Tier, WagerTiersConfig }
 export { getTier, resolveTier }

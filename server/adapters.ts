@@ -1247,7 +1247,9 @@ export async function executeNodeTerminalQuery(
   const flagValue = (name: string): string | undefined => flagValues.get(name.toLowerCase())
   const arg = positionalArgs[0] ?? ""
   const appendOptionsIfRequested = (output: string, label: string): string =>
-    showOptions ? `${output}\n${renderInspectOptionsBanner(inspectOpts, label)}` : output
+    showOptions
+      ? `${output}\n${renderInspectOptionsBanner(inspectOpts, label, { showOptions: true })}`
+      : output
 
   let stdout = ""
   let exitCode = 0

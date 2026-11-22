@@ -196,22 +196,114 @@ function actionColor(action: string): string {
   return ANSI.green
 }
 
-function computeBayesianKelly(p: ModeledProfileRecord) {
-  const netUsd = p.lifetimeNetUsd ?? -p.ltvUsd
+const AXIS_CAPS = {
+  clvScore: 3.0,
+  skillScore: 2.5,
+  sizingScore: 1.5,
+  sigScore: 2.0,
+  timingScore: 1.0,
+} as const
+
+function finiteNum(value: unknown): number | null {
+  if (value === undefined || value === null || value === "") return null
+  const n = Number(value)
+  return Number.isFinite(n) ? n : null
+}
+
+function firstFinite(...values: readonly unknown[]): number | null {
+  for (const v of values) {
+    const n = finiteNum(v)
+    if (n !== null) return n
+  }
+  return null
+}
+
+function clampAxis(value: number, max: number): number {
+  return Number(Math.min(max, Math.max(0, value)).toFixed(2))
+}
+
+/**
+ * Reconciles derived 5-axis sharpness scores (3.0 + 2.5 + 1.5 + 2.0 + 1.0 = 10.0)
+ * so their sum equals the composite score without exceeding any axis cap.
+ */
+export function deriveSharpnessAxes(score: number, clvBps = 0) {
+  const clampedScore = Number(Math.min(10, Math.max(0, score)).toFixed(2))
+  const clvScore = clampAxis(
+    clvBps > 0
+      ? Math.min(clampedScore, Math.max(clampedScore * 0.3, clvBps / 100))
+      : clampedScore * 0.3,
+    AXIS_CAPS.clvScore,
+  )
+  const otherCaps = [
+    AXIS_CAPS.skillScore,
+    AXIS_CAPS.sizingScore,
+    AXIS_CAPS.sigScore,
+    AXIS_CAPS.timingScore,
+  ] as const
+  let remaining = Math.max(0, clampedScore - clvScore)
+  const values = [0, 0, 0, 0]
+  const active = [0, 1, 2, 3]
+  while (remaining > 1e-6 && active.length > 0) {
+    const capSum = active.reduce((sum, idx) => sum + (otherCaps[idx]! - values[idx]!), 0)
+    if (capSum <= 1e-6) break
+    let overflowed = false
+    for (let i = active.length - 1; i >= 0; i--) {
+      const idx = active[i]!
+      const room = otherCaps[idx]! - values[idx]!
+      const share = remaining * (room / capSum)
+      if (share >= room - 1e-9) {
+        values[idx] = otherCaps[idx]!
+        remaining -= room
+        active.splice(i, 1)
+        overflowed = true
+      }
+    }
+    if (!overflowed) {
+      for (const idx of active) {
+        const room = otherCaps[idx]! - values[idx]!
+        values[idx] = values[idx]! + remaining * (room / capSum)
+      }
+      remaining = 0
+    }
+  }
+  const rounded = values.map((v, i) => clampAxis(v, otherCaps[i]!))
+  const drift = Number(
+    (clampedScore - (clvScore + rounded[0]! + rounded[1]! + rounded[2]! + rounded[3]!)).toFixed(2),
+  )
+  if (drift !== 0) {
+    for (let i = 0; i < 4; i++) {
+      const candidate = Number((rounded[i]! + drift).toFixed(2))
+      if (candidate >= 0 && candidate <= otherCaps[i]!) {
+        rounded[i] = candidate
+        break
+      }
+    }
+  }
+  return {
+    clvScore,
+    skillScore: rounded[0]!,
+    sizingScore: rounded[1]!,
+    sigScore: rounded[2]!,
+    timingScore: rounded[3]!,
+  }
+}
+
+export function computeBayesianKelly(p: ModeledProfileRecord) {
+  // Desk-perspective net: negative means desk loss (bettor profit), positive means desk profit.
+  const deskNetUsd = p.lifetimeNetUsd ?? p.ltvUsd
+  const netAdjustment = deskNetUsd < 0 ? 0.018 : deskNetUsd > 0 ? -0.01 : 0
   const volUsd = p.lifetimeVolumeUsd ?? Math.max(1000, p.meanStake * (p.betCount ?? 64))
   const posteriorWinRate = Number(
-    Math.min(
-      0.62,
-      Math.max(0.44, 0.5 + (p.score - 5.2) * 0.016 + (netUsd > 0 ? 0.018 : -0.01)),
-    ).toFixed(4),
+    Math.min(0.62, Math.max(0.44, 0.5 + (p.score - 5.2) * 0.016 + netAdjustment)).toFixed(4),
   )
   const ciLow = Number(Math.max(0.35, posteriorWinRate - 0.038).toFixed(4))
   const ciHigh = Number(Math.min(0.72, posteriorWinRate + 0.038).toFixed(4))
   const impliedEdgePct = Number(((posteriorWinRate * 1.909 - 1) * 100).toFixed(2))
   const fullKelly = Number(Math.max(0, (posteriorWinRate * 1.909 - 1) / 0.909).toFixed(4))
-  const quarterKellyStakeUsd = Math.round(
-    Math.max(50, p.meanStake * Math.max(0.25, fullKelly * 10)),
-  )
+  const quarterKellyStakeUsd =
+    fullKelly <= 0 || p.meanStake <= 0
+      ? 0
+      : Math.max(1, Math.round(p.meanStake * Math.min(1, fullKelly * 2.5)))
   const probAboveBreakeven =
     posteriorWinRate > 0.5238
       ? Math.min(0.96, Number((0.62 + (posteriorWinRate - 0.5238) * 5.2).toFixed(2)))
@@ -257,61 +349,77 @@ export function normalizeRawCustomerToProfileRecord(
       retainedHistory: history,
     }
   }
-  const lifetimeVol =
-    Number(
-      row.lifetimeVolumeUsd ??
-        row.lifetime_volume_usd ??
-        row.total_volume ??
-        row.lifetime_volume ??
-        row.volume ??
-        row.handleUsd ??
-        48500,
-    ) || 48500
-  const lifetimeNet =
-    Number(
-      row.lifetimeNetUsd ?? row.lifetime_net_usd ?? row.net_pnl ?? row.lifetime_net ?? row.net ?? 0,
-    ) || 0
+  const unknownSet = new Set<string>(
+    Array.isArray(row.unknown) ? row.unknown.map((u) => String(u)) : [],
+  )
+
+  const rawLifetimeVol = firstFinite(
+    row.lifetimeVolumeUsd,
+    row.lifetime_volume_usd,
+    row.totalParlayHandleUsd,
+    row.total_volume,
+    row.lifetime_volume,
+    row.volume,
+    row.handleUsd,
+  )
+  const lifetimeVol = rawLifetimeVol !== null && rawLifetimeVol > 0 ? rawLifetimeVol : 48500
+  const rawLifetimeNet = firstFinite(
+    row.lifetimeNetUsd,
+    row.lifetime_net_usd,
+    row.baselineDeskNetUsd,
+    row.net_pnl,
+    row.lifetime_net,
+    row.net,
+  )
+  const lifetimeNet = rawLifetimeNet ?? 0
   const recentTickets = Array.isArray(row.recent_tickets)
     ? (row.recent_tickets as Array<Record<string, unknown>>)
     : []
+  const rawBetCount = firstFinite(
+    row.betCount,
+    row.bet_count,
+    row.totalParlayTickets,
+    row.total_bets,
+    row.wagers,
+  )
   const betCount =
-    Number(
-      row.betCount ??
-        row.bet_count ??
-        row.total_bets ??
-        row.wagers ??
-        (recentTickets.length > 0 ? Math.max(24, recentTickets.length * 16) : 64),
-    ) || 64
-  const meanStake =
-    Number(row.meanStake ?? row.mean_stake ?? row.avg_stake) ||
-    (recentTickets.length > 0
-      ? Math.round(
-          recentTickets.reduce((acc, t) => acc + (Number(t.risk_usd) || 0), 0) /
-            recentTickets.length,
-        ) || 250
-      : betCount > 0
-        ? Math.round(lifetimeVol / betCount)
-        : 250)
+    rawBetCount !== null && rawBetCount > 0
+      ? rawBetCount
+      : recentTickets.length > 0
+        ? Math.max(24, recentTickets.length * 16)
+        : 64
+  const rawMeanStake = firstFinite(row.meanStake, row.mean_stake, row.avg_stake)
+  const meanStake = unknownSet.has("meanStake")
+    ? (rawMeanStake ?? 0)
+    : rawMeanStake !== null && rawMeanStake > 0
+      ? rawMeanStake
+      : recentTickets.length > 0
+        ? Math.round(
+            recentTickets.reduce((acc, t) => acc + (Number(t.risk_usd) || 0), 0) /
+              recentTickets.length,
+          ) || 250
+        : rawLifetimeVol !== null && rawLifetimeVol > 0 && betCount > 0
+          ? Math.round(rawLifetimeVol / betCount)
+          : betCount > 0
+            ? Math.round(lifetimeVol / betCount)
+            : 250
+  const rawHoldPct = firstFinite(row.holdPct, row.hold_pct, row.baselineHoldPct)
   const holdPct =
-    row.holdPct !== undefined
-      ? Number(row.holdPct)
-      : row.hold_pct !== undefined
-        ? Number(row.hold_pct)
-        : lifetimeVol > 0
-          ? Number(((-lifetimeNet / lifetimeVol) * 100).toFixed(2))
-          : 4.5
+    rawHoldPct !== null
+      ? Number(rawHoldPct.toFixed(2))
+      : rawLifetimeNet !== null && lifetimeVol > 0
+        ? Number(((lifetimeNet / lifetimeVol) * 100).toFixed(2))
+        : 4.5
+  const rawSharpInput = firstFinite(
+    row.score,
+    row.compositeScore,
+    row.sharpScore,
+    row.sharp_score,
+  )
   const rawSharpScore =
-    row.score !== undefined
-      ? Number(row.score)
-      : row.compositeScore !== undefined
-        ? Number(row.compositeScore)
-        : row.sharp_score !== undefined
-          ? Number(row.sharp_score) > 10
-            ? Number(row.sharp_score) / 10
-            : Number(row.sharp_score)
-          : null
+    rawSharpInput !== null ? (rawSharpInput > 10 ? rawSharpInput / 10 : rawSharpInput) : null
   const score =
-    rawSharpScore !== null && Number.isFinite(rawSharpScore)
+    rawSharpScore !== null
       ? Number(Math.min(10, Math.max(0.5, rawSharpScore)).toFixed(1))
       : Number(
           Math.min(
@@ -319,7 +427,13 @@ export function normalizeRawCustomerToProfileRecord(
             Math.max(2.5, 5.2 + (lifetimeNet < 0 ? 1.8 : -0.7) + (meanStake > 800 ? 1.3 : 0.4)),
           ).toFixed(1),
         )
-  const contextType = typeof row.context_type === "string" ? row.context_type.toUpperCase() : ""
+  const rawContextType =
+    typeof row.contextType === "string"
+      ? row.contextType
+      : typeof row.context_type === "string"
+        ? row.context_type
+        : ""
+  const contextType = rawContextType.toUpperCase()
   const tier = String(
     row.tier ??
       (contextType.includes("STEAM") || contextType.includes("SYNDICATE")
@@ -334,33 +448,134 @@ export function normalizeRawCustomerToProfileRecord(
                 ? "TIER_4_SEMI_SHARP"
                 : "TIER_5_RECREATIONAL"),
   )
-  const gini = Number(
-    row.gini ?? row.giniCoefficient ?? (score >= 8.5 ? 0.19 : score >= 7.5 ? 0.27 : 0.38),
+
+  const rawGini = firstFinite(row.gini, row.giniCoefficient)
+  const giniKnown = rawGini !== null && !unknownSet.has("gini")
+  if (!giniKnown) unknownSet.add("gini")
+  const gini = giniKnown ? rawGini : 0
+
+  const sizingKnown =
+    !unknownSet.has("sizing") && (typeof row.sizingStrategy === "string" || giniKnown)
+  if (!sizingKnown) unknownSet.add("sizing")
+  const sizingStrategy =
+    typeof row.sizingStrategy === "string"
+      ? row.sizingStrategy
+      : giniKnown
+        ? gini < 0.28
+          ? "FLAT_UNIT"
+          : gini < 0.45
+            ? "KELLY_SCALED"
+            : "VARIABLE"
+        : "UNMEASURED"
+
+  const sports7dVol = finiteNum(row.sports_7d_volume_usd) ?? 0
+  const rawVar95 = firstFinite(row.var95Usd, row.var_95_usd)
+  const var95Known = !unknownSet.has("var95") && (rawVar95 !== null || sports7dVol > 0)
+  if (!var95Known) unknownSet.add("var95")
+  const var95Usd = var95Known ? (rawVar95 ?? Math.round(sports7dVol * 0.24)) : 0
+  const rawCvar95 = firstFinite(row.cvar95Usd, row.cvar_95_usd)
+  const cvar95Usd = var95Known ? (rawCvar95 ?? Math.round(var95Usd * 1.35)) : 0
+
+  const rawLimit = firstFinite(row.recommendedLimitUsd, row.limitUsd, row.wager_limit_usd)
+  const limitKnown = rawLimit !== null && !unknownSet.has("limit")
+  if (!limitKnown) unknownSet.add("limit")
+  const recommendedLimitUsd = limitKnown ? rawLimit : 0
+
+  const rawDelay = firstFinite(row.inPlayDelaySec, row.delay_seconds)
+  const delayKnown = rawDelay !== null && !unknownSet.has("delay")
+  if (!delayKnown) unknownSet.add("delay")
+  const inPlayDelaySec = delayKnown ? rawDelay : 0
+
+  const rawShade = firstFinite(row.lineShadeCents, row.line_shade_cents)
+  const shadeKnown = rawShade !== null && !unknownSet.has("shade")
+  if (!shadeKnown) unknownSet.add("shade")
+  const lineShadeCents = shadeKnown ? rawShade : 0
+
+  const rawCopy = firstFinite(row.shadowCopyMultiplier, row.shadow_copy_multiplier)
+  const copyKnown = rawCopy !== null && !unknownSet.has("copy")
+  if (!copyKnown) unknownSet.add("copy")
+  const shadowCopyMultiplier = copyKnown ? rawCopy : 0
+
+  const rawSyndicateProb = firstFinite(row.syndicateProb, row.syndicate_prob)
+  const syndicateKnown = rawSyndicateProb !== null && !unknownSet.has("syndicate")
+  if (!syndicateKnown) unknownSet.add("syndicate")
+  const syndicateProb = syndicateKnown ? Math.min(1, Math.max(0, rawSyndicateProb)) : 0
+  const syndicateRisk = syndicateKnown
+    ? String(
+        row.syndicateRisk ??
+          row.syndicate_risk ??
+          (syndicateProb >= 0.7 ? "HIGH" : syndicateProb >= 0.4 ? "ELEVATED" : "LOW"),
+      )
+    : "UNMEASURED"
+
+  const rawProbitRho = firstFinite(row.probitRho, row.probit_rho)
+  const rawCorrRate = firstFinite(
+    row.correlatedExploitRate,
+    row.correlated_exploit_rate,
+    rawProbitRho,
   )
-  const sports7dVol = Number(row.sports_7d_volume_usd ?? 0)
-  const var95Usd =
-    Number(row.var95Usd ?? row.var_95_usd) ||
-    (sports7dVol > 0
-      ? Math.round(sports7dVol * 0.24)
-      : Math.round(meanStake * Math.max(3, score * 1.1)))
-  const cvar95Usd = Number(row.cvar95Usd ?? row.cvar_95_usd) || Math.round(var95Usd * 1.35)
-  const recommendedLimitUsd =
-    Number(row.recommendedLimitUsd ?? row.limitUsd ?? row.wager_limit_usd) ||
-    (score >= 8 ? 500 : score >= 7 ? 1000 : 2500)
-  const clvBps = Number(row.clv_bps ?? 0)
+  const guardUpper =
+    typeof row.primaryGuardTriggered === "string" ? row.primaryGuardTriggered.toUpperCase() : ""
+  const deskSavingsUsd = finiteNum(row.deskSavingsUsd) ?? 0
+  const hasBacktestCorrelation =
+    rawProbitRho !== null ||
+    contextType.includes("PARLAY") ||
+    guardUpper.includes("PROBIT") ||
+    guardUpper.includes("SUBSET") ||
+    guardUpper.includes("CORREL")
+  const correlationKnown =
+    !unknownSet.has("correlation") &&
+    (rawCorrRate !== null ||
+      hasBacktestCorrelation ||
+      (typeof row.correlatedRisk === "string" &&
+        row.correlatedRisk !== "NONE" &&
+        row.correlatedRisk !== "UNMEASURED"))
+  if (!correlationKnown) unknownSet.add("correlation")
+  const correlatedExploitRate = correlationKnown
+    ? (rawCorrRate ??
+      Number(Math.min(0.95, Math.max(0.25, Math.abs(holdPct) / 100)).toFixed(2)))
+    : 0
+  const correlatedRisk = correlationKnown
+    ? String(
+        row.correlatedRisk ??
+          ((rawProbitRho !== null && rawProbitRho >= 0.65) ||
+          guardUpper.includes("PROBIT") ||
+          deskSavingsUsd >= 100_000
+            ? "CRITICAL"
+            : correlatedExploitRate >= 0.45
+              ? "HIGH"
+              : "MODERATE"),
+      )
+    : "UNMEASURED"
+
+  const clvBps = firstFinite(row.avgClvBps, row.clv_bps) ?? 0
+  const derivedAxes = deriveSharpnessAxes(score, clvBps)
+  const rawClvScore = firstFinite(row.clvScore)
+  const rawSkillScore = firstFinite(row.skillScore)
+  const rawSizingScore = firstFinite(row.sizingScore)
+  const rawSigScore = firstFinite(row.sigScore)
+  const rawTimingScore = firstFinite(row.timingScore)
   const clvScore =
-    Number(row.clvScore) ||
-    Number(
-      Math.min(3.0, clvBps > 0 ? Math.max(score * 0.26, clvBps / 45) : score * 0.31).toFixed(2),
-    )
-  const skillScore = Number(row.skillScore) || Number(Math.min(2.5, score * 0.25).toFixed(2))
-  const sizingScore = Number(row.sizingScore) || Number(Math.min(1.5, score * 0.16).toFixed(2))
-  const sigScore = Number(row.sigScore) || Number(Math.min(2.0, score * 0.19).toFixed(2))
-  const timingScore = Number(row.timingScore) || Number(Math.min(1.0, score * 0.09).toFixed(2))
+    rawClvScore !== null ? clampAxis(rawClvScore, AXIS_CAPS.clvScore) : derivedAxes.clvScore
+  const skillScore =
+    rawSkillScore !== null ? clampAxis(rawSkillScore, AXIS_CAPS.skillScore) : derivedAxes.skillScore
+  const sizingScore =
+    rawSizingScore !== null
+      ? clampAxis(rawSizingScore, AXIS_CAPS.sizingScore)
+      : derivedAxes.sizingScore
+  const sigScore =
+    rawSigScore !== null ? clampAxis(rawSigScore, AXIS_CAPS.sigScore) : derivedAxes.sigScore
+  const timingScore =
+    rawTimingScore !== null
+      ? clampAxis(rawTimingScore, AXIS_CAPS.timingScore)
+      : derivedAxes.timingScore
+
   const firstLeague =
     recentTickets.length > 0 && typeof recentTickets[0]?.league === "string"
       ? `${String(recentTickets[0].league)} ${String(recentTickets[0].market ?? "")}`.trim()
       : null
+  const rawLtv = firstFinite(row.ltvUsd, row.ltv_usd)
+  const ltvUsd = rawLtv !== null ? Math.round(rawLtv) : Math.round(lifetimeNet)
 
   return {
     kind: "modeled",
@@ -378,35 +593,33 @@ export function normalizeRawCustomerToProfileRecord(
     sizingScore,
     sigScore,
     timingScore,
-    sizingStrategy: String(
-      row.sizingStrategy ?? (gini < 0.28 ? "FLAT_UNIT" : gini < 0.45 ? "KELLY_SCALED" : "VARIABLE"),
-    ),
+    sizingStrategy,
     gini,
     meanStake,
     specialization: String(
-      row.specialization ?? row.dominantSport ?? firstLeague ?? "Multi-Market",
+      row.specialization ??
+        row.dominantComboFamily ??
+        row.dominantSport ??
+        firstLeague ??
+        "Multi-Market",
     ),
     timingArchetype: String(
       row.timingArchetype ??
         (contextType || (score >= 7.5 ? "EARLY_OPENER" : "RECREATIONAL_PREGAME")),
     ),
-    correlatedRisk: String(
-      row.correlatedRisk ?? (score >= 8 ? "HIGH" : score >= 6.5 ? "MODERATE" : "NONE"),
-    ),
-    correlatedExploitRate: Number(row.correlatedExploitRate ?? (score >= 8 ? 0.38 : 0.08)),
-    syndicateRisk: String(
-      row.syndicateRisk ?? (score >= 8 ? "HIGH" : score >= 6.5 ? "ELEVATED" : "LOW"),
-    ),
-    syndicateProb: Number(row.syndicateProb ?? (score >= 8 ? 0.76 : 0.18)),
+    correlatedRisk,
+    correlatedExploitRate,
+    syndicateRisk,
+    syndicateProb,
     subAccountIndex: typeof row.subAccountIndex === "number" ? row.subAccountIndex : null,
     var95Usd,
     cvar95Usd,
     holdPct,
-    ltvUsd: Number(row.ltvUsd ?? Math.round(-lifetimeNet * 1.4)),
+    ltvUsd,
     recommendedLimitUsd,
-    inPlayDelaySec: Number(row.inPlayDelaySec ?? row.delay_seconds ?? (score >= 7.5 ? 5 : 2)),
-    lineShadeCents: Number(row.lineShadeCents ?? (score >= 8 ? 10 : score >= 7 ? 5 : 0)),
-    shadowCopyMultiplier: Number(row.shadowCopyMultiplier ?? (score >= 8 ? 1.5 : 0.25)),
+    inPlayDelaySec,
+    lineShadeCents,
+    shadowCopyMultiplier,
     action: String(
       row.action ??
         (score >= 8
@@ -416,10 +629,17 @@ export function normalizeRawCustomerToProfileRecord(
             : "ACCEPT · STANDARD SURVEILLANCE"),
     ),
     ipAddress: redactIpToSubnetHash(
-      String(row.ipAddress ?? row.ip_address ?? row.ip_subnet ?? row.ip ?? "102.128.164.122"),
+      String(
+        row.ipAddress ??
+          row.ip_address ??
+          row.ipSubnet ??
+          row.ip_subnet ??
+          row.ip ??
+          "102.128.164.122",
+      ),
     ).redacted,
     source: typeof row.source === "string" ? row.source : "cohort",
-    unknown: Array.isArray(row.unknown) ? row.unknown.map((u) => String(u)) : undefined,
+    unknown: unknownSet.size > 0 ? Array.from(unknownSet) : undefined,
     tags: Array.isArray(row.tags) ? row.tags.map((t) => String(t)) : undefined,
     betCount,
     lifetimeVolumeUsd: lifetimeVol,
@@ -487,7 +707,7 @@ export class ProfileView extends DeskView<ProfileInspectRecord> {
           : ["Retained wager history: Unavailable"]),
         "Lifetime totals, risk ratings and trading directives: Unavailable",
         ...(this.meta.showOptions
-          ? [renderInspectOptionsBanner(opts, "ProfileView --options")]
+          ? [renderInspectOptionsBanner(opts, "ProfileView --options", { showOptions: true })]
           : []),
       ].join("\n")
     }
@@ -558,9 +778,10 @@ export class ProfileView extends DeskView<ProfileInspectRecord> {
         },
         {
           k: "Recommended Limit",
-          v: unknownSet.has("limit")
-            ? "—"
-            : `${fmtCur(p.recommendedLimitUsd)} · Delay: ${unknownSet.has("delay") ? "—" : `${p.inPlayDelaySec}s`} · Shade: ${p.lineShadeCents}¢`,
+          v:
+            unknownSet.has("limit") && unknownSet.has("delay") && unknownSet.has("shade")
+              ? "—"
+              : `${unknownSet.has("limit") ? "—" : fmtCur(p.recommendedLimitUsd)} · Delay: ${unknownSet.has("delay") ? "—" : `${p.inPlayDelaySec}s`} · Shade: ${unknownSet.has("shade") ? "—" : `${p.lineShadeCents}¢`}`,
           c: ANSI.cyan,
         },
         {
@@ -575,8 +796,16 @@ export class ProfileView extends DeskView<ProfileInspectRecord> {
         },
         {
           k: "Syndicate / Parlay",
-          v: `Synd=${p.syndicateRisk} (${Math.round(p.syndicateProb * 100)}%) · Corr=${p.correlatedRisk} (${Math.round(p.correlatedExploitRate * 100)}%) · Copy=${p.shadowCopyMultiplier.toFixed(2)}x`,
-          c: p.syndicateRisk === "HIGH" ? ANSI.boldRed : ANSI.yellow,
+          v:
+            unknownSet.has("syndicate") && unknownSet.has("correlation") && unknownSet.has("copy")
+              ? "—"
+              : `Synd=${unknownSet.has("syndicate") ? "—" : `${p.syndicateRisk} (${Math.round(p.syndicateProb * 100)}%)`} · Corr=${unknownSet.has("correlation") ? "—" : `${p.correlatedRisk} (${Math.round(p.correlatedExploitRate * 100)}%)`} · Copy=${unknownSet.has("copy") ? "—" : `${p.shadowCopyMultiplier.toFixed(2)}x`}`,
+          c:
+            (!unknownSet.has("syndicate") && p.syndicateRisk === "HIGH") ||
+            (!unknownSet.has("correlation") &&
+              (p.correlatedRisk === "CRITICAL" || p.correlatedRisk === "HIGH"))
+              ? ANSI.boldRed
+              : ANSI.yellow,
         },
       ]
       const orderedMetrics = opts.sorted
@@ -647,7 +876,7 @@ export class ProfileView extends DeskView<ProfileInspectRecord> {
         frame(
           `  ${paint("Implied Edge:", ANSI.gray, colors)} ${paint(`${bk.impliedEdgePct >= 0 ? "+" : ""}${bk.impliedEdgePct.toFixed(2)}%`, bk.impliedEdgePct > 0 ? ANSI.boldRed : ANSI.green, colors)}  ` +
             `${paint("Full Kelly:", ANSI.gray, colors)} ${paint(`${(bk.fullKelly * 100).toFixed(2)}%`, ANSI.white, colors)}  ` +
-            `${paint("¼-Kelly Stake:", ANSI.gray, colors)} ${paint(fmtCur(bk.quarterKellyStakeUsd), ANSI.yellow, colors)}`,
+            `${paint("¼-Kelly Stake:", ANSI.gray, colors)} ${paint(unknownSet.has("meanStake") ? "—" : fmtCur(bk.quarterKellyStakeUsd), ANSI.yellow, colors)}`,
         ),
       )
 
@@ -718,7 +947,7 @@ export class ProfileView extends DeskView<ProfileInspectRecord> {
     lines.push(bot)
 
     if (this.meta.showOptions) {
-      lines.push(renderInspectOptionsBanner(opts, "ProfileView --options"))
+      lines.push(renderInspectOptionsBanner(opts, "ProfileView --options", { showOptions: true }))
     }
 
     return lines.join("\n")
@@ -819,7 +1048,7 @@ export class ProfileCohortView extends DeskView<ProfileInspectRecord> {
         ...(filterLine ? [filterLine] : []),
         paint("  No customer profiles match the active filters.", ANSI.gray, colors),
         ...(this.meta.showOptions
-          ? [renderInspectOptionsBanner(opts, "ProfileCohortView --options")]
+          ? [renderInspectOptionsBanner(opts, "ProfileCohortView --options", { showOptions: true })]
           : []),
       ].join("\n")
     }
@@ -885,16 +1114,19 @@ export class ProfileCohortView extends DeskView<ProfileInspectRecord> {
           SRC: p.source,
         }
       const bk = opts.getters ? computeBayesianKelly(p) : null
+      const unknownSet = new Set(p.unknown ?? [])
       return {
         CUSTOMER: paint(p.id, ANSI.boldWhite, colors),
         TIER: paint(shortTier(p.tier), tierColor(p.tier), colors),
         SHARP: paint(p.score.toFixed(1), tierColor(p.tier), colors),
         AGENT: paint(p.agentId, ANSI.cyan, colors),
-        GINI: p.gini,
-        MEAN: p.meanStake,
-        VAR95: p.var95Usd,
-        HOLD: paint(`${p.holdPct.toFixed(1)}%`, p.holdPct < 0 ? ANSI.boldRed : ANSI.green, colors),
-        LIMIT: p.recommendedLimitUsd,
+        GINI: unknownSet.has("gini") ? "—" : p.gini,
+        MEAN: unknownSet.has("meanStake") ? "—" : p.meanStake,
+        VAR95: unknownSet.has("var95") ? "—" : p.var95Usd,
+        HOLD: unknownSet.has("holdPct")
+          ? "—"
+          : paint(`${p.holdPct.toFixed(1)}%`, p.holdPct < 0 ? ANSI.boldRed : ANSI.green, colors),
+        LIMIT: unknownSet.has("limit") ? "—" : p.recommendedLimitUsd,
         DIRECTIVE: paint(
           truncateVisible(p.action, Math.min(opts.maxStringLength, opts.compact ? 18 : 26)),
           actionColor(p.action),
@@ -961,7 +1193,7 @@ export class ProfileCohortView extends DeskView<ProfileInspectRecord> {
       table,
       ...deepLines,
       ...(this.meta.showOptions
-        ? [renderInspectOptionsBanner(opts, "ProfileCohortView --options")]
+        ? [renderInspectOptionsBanner(opts, "ProfileCohortView --options", { showOptions: true })]
         : []),
     ].join("\n")
   }
@@ -1090,6 +1322,7 @@ export class ProfileRadarView extends DeskView<ProfileInspectRecord> {
       }
       lines.push(div, frame("Modeled profile · illustrative model metrics"))
       const bk = computeBayesianKelly(p)
+      const unknownSet = new Set(p.unknown ?? [])
       lines.push(div)
       lines.push(
         frame(
@@ -1101,8 +1334,8 @@ export class ProfileRadarView extends DeskView<ProfileInspectRecord> {
       lines.push(
         frame(
           `${paint("Vec:", ANSI.gray, colors)} [${p.clvScore.toFixed(2)}, ${p.skillScore.toFixed(2)}, ${p.sizingScore.toFixed(2)}, ${p.sigScore.toFixed(2)}, ${p.timingScore.toFixed(2)}]  ` +
-            `${paint("Gini:", ANSI.gray, colors)} ${p.gini.toFixed(2)}  ` +
-            `${paint("Synd:", ANSI.gray, colors)} ${Math.round(p.syndicateProb * 100)}%`,
+            `${paint("Gini:", ANSI.gray, colors)} ${unknownSet.has("gini") ? "—" : p.gini.toFixed(2)}  ` +
+            `${paint("Synd:", ANSI.gray, colors)} ${unknownSet.has("syndicate") ? "—" : `${Math.round(p.syndicateProb * 100)}%`}`,
         ),
       )
       if (!opts.compact) {
@@ -1119,7 +1352,7 @@ export class ProfileRadarView extends DeskView<ProfileInspectRecord> {
             frame(
               `  SIG ${renderProgressBar(p.sigScore, 2.0, w, "yellow", colors)}  ` +
                 `TIM ${renderProgressBar(p.timingScore, 1.0, w, "green", colors)}  ` +
-                `${paint(`¼Kelly=${formatInspectCurrency(bk.quarterKellyStakeUsd, { numericSeparator: opts.numericSeparator })}`, ANSI.white, colors)}`,
+                `${paint(`¼Kelly=${unknownSet.has("meanStake") ? "—" : formatInspectCurrency(bk.quarterKellyStakeUsd, { numericSeparator: opts.numericSeparator })}`, ANSI.white, colors)}`,
             ),
           )
         }
@@ -1141,7 +1374,9 @@ export class ProfileRadarView extends DeskView<ProfileInspectRecord> {
       lines.push(frame(`${list.length - maxItems} additional profiles omitted by inspect limit`))
     lines.push(bot)
     if (this.meta.showOptions) {
-      lines.push(renderInspectOptionsBanner(opts, "ProfileRadarView --options"))
+      lines.push(
+        renderInspectOptionsBanner(opts, "ProfileRadarView --options", { showOptions: true }),
+      )
     }
     return lines.join("\n")
   }
@@ -1227,7 +1462,11 @@ export function formatProfileInspectPayload(params: {
     tableHeader,
     tableBody,
     ...(params.showOptions
-      ? [renderInspectOptionsBanner(resolved, "Bun.inspect.table --options")]
+      ? [
+          renderInspectOptionsBanner(resolved, "Bun.inspect.table --options", {
+            showOptions: true,
+          }),
+        ]
       : []),
   ].join("\n")
 
@@ -1242,7 +1481,9 @@ export function formatProfileInspectPayload(params: {
     cohortAnsi: inspectDeskValue(cohortView, resolved),
     radarAnsi: inspectDeskValue(radarView, resolved),
     tableAnsi,
-    optionsBannerAnsi: renderInspectOptionsBanner(resolved, "Profiles Bun.inspect.options"),
+    optionsBannerAnsi: renderInspectOptionsBanner(resolved, "Profiles Bun.inspect.options", {
+      showOptions: params.showOptions,
+    }),
     resolvedOptions: resolved,
     optionsJsLiteral: formatInspectOptionsObject(resolved),
     cliFlags,
