@@ -191,3 +191,8 @@ export {
 } from "./ThemeToggle.tsx"
 export { ThresholdsPanel, type ThresholdsPanelProps } from "./ThresholdsPanel.tsx"
 export { type WebLogSeverityCounts, type WebLogSeverityFilter } from "./WebLogsInspectorSection.tsx"
+export {
+  SystemLogSeverityBarChart,
+  LOG_SEVERITY_SERIES_META,
+  type SystemLogSeverityBarChartProps,
+} from "./SystemLogSeverityBarChart.tsx"

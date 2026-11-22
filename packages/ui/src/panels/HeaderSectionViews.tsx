@@ -35,7 +35,9 @@ import {
   WebLogsInspectorSection,
   type WebLogSeverityCounts,
   type WebLogSeverityFilter,
+  type WebLogSnapshot,
 } from "./WebLogsInspectorSection.tsx"
+import { SystemLogSeverityBarChart } from "./SystemLogSeverityBarChart.tsx"
 import {
   BitwiseLogFilterStore,
   buildBitwiseLogIndex,
@@ -3297,6 +3299,20 @@ export function SystemLogsPanel({
   const bitwiseStore = bitwiseStoreRef.current
   const unifiedTbodyRef = useRef<HTMLTableSectionElement | null>(null)
   const weblogExportRef = useRef<(() => number) | null>(null)
+  const weblogRefreshRef = useRef<(() => void) | null>(null)
+  const [weblogSnapshot, setWeblogSnapshot] = useState<WebLogSnapshot>({
+    entries: [],
+    loading: true,
+    bitwiseIndex: buildBitwiseLogIndex(
+      [],
+      () => 0,
+      () => "",
+    ),
+  })
+
+  const handleWeblogSnapshot = useCallback((snapshot: WebLogSnapshot) => {
+    setWeblogSnapshot(snapshot)
+  }, [])
 
   useEffect(() => {
     if (weblogSeverityFilter && weblogSeverityFilter !== "ALL") {
@@ -3661,6 +3677,19 @@ export function SystemLogsPanel({
         onExportJson={handleExportFilteredLogsJson}
       />
 
+      {/* 24-Hour Log Severity Distribution Bar Chart (CRITICAL, HIGH, WATCH, NORMAL) */}
+      <SystemLogSeverityBarChart
+        mode={logMode}
+        weblogEntries={weblogSnapshot.entries}
+        unifiedLogs={sortedUnifiedLogs}
+        weblogBitwiseIndex={weblogSnapshot.bitwiseIndex}
+        unifiedBitwiseIndex={unifiedBitwiseIndex}
+        bitwiseStore={bitwiseStore}
+        loading={logMode === "weblogs" ? weblogSnapshot.loading : false}
+        onRefreshWeblogs={() => weblogRefreshRef.current?.()}
+        onSwitchToUnified={() => setLogMode("unified")}
+      />
+
       {logMode === "weblogs" ? (
         <WebLogsInspectorSection
           onOpenTerminal={() => onNavigateTab("terminal")}
@@ -3670,6 +3699,8 @@ export function SystemLogsPanel({
           onSeverityCountsChange={onWeblogSeverityCountsChange}
           bitwiseFilterStore={bitwiseStore}
           exportFilteredRef={weblogExportRef}
+          onWeblogSnapshot={handleWeblogSnapshot}
+          refreshRef={weblogRefreshRef}
         />
       ) : (
         <>

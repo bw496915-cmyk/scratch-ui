@@ -35,6 +35,7 @@ import {
   parseBitwiseSeverityQuery,
   severityLabelToBit,
   type BitwiseLogFilterStore,
+  type BitwiseLogIndex,
 } from "../system_log_bitwise_filter.ts"
 import {
   buildSystemLogsJsonExportPayload,
@@ -213,6 +214,12 @@ export interface WebLogApiResponse {
   readonly generatedAt: string
 }
 
+export interface WebLogSnapshot {
+  readonly entries: readonly WebLogEntry[]
+  readonly loading: boolean
+  readonly bitwiseIndex: BitwiseLogIndex
+}
+
 export interface WebLogsInspectorSectionProps {
   readonly onOpenTerminal?: () => void
   readonly onRunTerminalCommand?: (cmd: string) => void
@@ -221,6 +228,8 @@ export interface WebLogsInspectorSectionProps {
   readonly onSeverityCountsChange?: ((counts: WebLogSeverityCounts) => void) | undefined
   readonly bitwiseFilterStore?: BitwiseLogFilterStore | undefined
   readonly exportFilteredRef?: React.MutableRefObject<(() => number) | null> | undefined
+  readonly onWeblogSnapshot?: ((snapshot: WebLogSnapshot) => void) | undefined
+  readonly refreshRef?: React.MutableRefObject<(() => void) | null> | undefined
 }
 
 const WEBLOG_PAGE_SIZE = 100
@@ -385,6 +394,8 @@ export function WebLogsInspectorSection({
   onSeverityCountsChange,
   bitwiseFilterStore,
   exportFilteredRef,
+  onWeblogSnapshot,
+  refreshRef,
 }: WebLogsInspectorSectionProps): React.ReactElement {
   const [data, setData] = useState<WebLogApiResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -692,6 +703,27 @@ export function WebLogsInspectorSection({
       }
     }
   }, [exportFilteredRef, exportFilteredWeblogsJson])
+
+  useEffect(() => {
+    if (!refreshRef) return
+    const triggerRefresh = () => {
+      void fetchWebLogs(data?.page.offset ?? 0)
+    }
+    refreshRef.current = triggerRefresh
+    return () => {
+      if (refreshRef.current === triggerRefresh) {
+        refreshRef.current = null
+      }
+    }
+  }, [refreshRef, fetchWebLogs, data?.page.offset])
+
+  useEffect(() => {
+    onWeblogSnapshot?.({
+      entries: data?.entries ?? [],
+      loading,
+      bitwiseIndex: weblogBitwiseIndex,
+    })
+  }, [onWeblogSnapshot, data?.entries, loading, weblogBitwiseIndex])
 
   const activeAnsi =
     inspectMode === "weblog"
