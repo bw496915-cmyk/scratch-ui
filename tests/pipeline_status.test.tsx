@@ -11,7 +11,14 @@ import {
 } from "../packages/backend/src/r2_pipeline.ts"
 import {
   buildStaleKeysTrendSeries,
+  DEFAULT_R2_AUTO_REFRESH_SECONDS,
+  formatAutoRefreshStatus,
+  normalizeR2AutoRefreshSeconds,
+  R2_AUTO_REFRESH_OPTIONS,
+  R2_AUTO_REFRESH_STORAGE_KEY,
   R2PipelineTabPanel,
+  readStoredR2AutoRefreshSeconds,
+  writeStoredR2AutoRefreshSeconds,
 } from "../packages/ui/src/panels/R2PipelineTabPanel.tsx"
 import {
   buildNodeAutomationsSnapshot,
@@ -336,5 +343,89 @@ describe("pipeline publication versus data freshness", () => {
     expect(html).toContain(
       "staleKeys trend over last 60 minutes: latest 1 of 4 stale across 3 samples (min 1, max 3)",
     )
+  })
+
+  test("configurable R2 auto-refresh interval normalizes, persists safely, and renders active/off states", async () => {
+    expect(DEFAULT_R2_AUTO_REFRESH_SECONDS).toBe(60)
+    expect(R2_AUTO_REFRESH_OPTIONS.map((o) => o.seconds)).toEqual([0, 15, 30, 60, 300])
+
+    expect(normalizeR2AutoRefreshSeconds(0)).toBe(0)
+    expect(normalizeR2AutoRefreshSeconds("off")).toBe(0)
+    expect(normalizeR2AutoRefreshSeconds("Off")).toBe(0)
+    expect(normalizeR2AutoRefreshSeconds("30")).toBe(30)
+    expect(normalizeR2AutoRefreshSeconds(60)).toBe(60)
+    expect(normalizeR2AutoRefreshSeconds("300")).toBe(300)
+    expect(normalizeR2AutoRefreshSeconds("45")).toBe(60)
+    expect(normalizeR2AutoRefreshSeconds(-10)).toBe(60)
+    expect(normalizeR2AutoRefreshSeconds(null)).toBe(60)
+    expect(normalizeR2AutoRefreshSeconds("")).toBe(60)
+
+    const backing = new Map<string, string>()
+    const fakeStorage = {
+      getItem: (key: string) => backing.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        backing.set(key, value)
+      },
+    }
+    expect(readStoredR2AutoRefreshSeconds(fakeStorage)).toBe(60)
+    writeStoredR2AutoRefreshSeconds(30, fakeStorage)
+    expect(backing.get(R2_AUTO_REFRESH_STORAGE_KEY)).toBe("30")
+    expect(readStoredR2AutoRefreshSeconds(fakeStorage)).toBe(30)
+    writeStoredR2AutoRefreshSeconds(0, fakeStorage)
+    expect(readStoredR2AutoRefreshSeconds(fakeStorage)).toBe(0)
+
+    const brokenStorage = {
+      getItem: () => {
+        throw new Error("denied")
+      },
+      setItem: () => {
+        throw new Error("quota")
+      },
+    }
+    expect(readStoredR2AutoRefreshSeconds(brokenStorage)).toBe(60)
+    expect(() => writeStoredR2AutoRefreshSeconds(30, brokenStorage)).not.toThrow()
+
+    expect(formatAutoRefreshStatus(0, 12, false)).toBe("Off")
+    expect(formatAutoRefreshStatus(30, 12, true)).toBe("Probing…")
+    expect(formatAutoRefreshStatus(30, 28, false)).toBe("Next 28s")
+    expect(formatAutoRefreshStatus(300, 125, false)).toBe("Next 2m 05s")
+    expect(formatAutoRefreshStatus(60, null, false)).toBe("Every 60s")
+
+    const result = await createPipeline({ capturedAt: now().toISOString() }).probeAll()
+
+    const html30 = renderToStaticMarkup(
+      <R2PipelineTabPanel
+        data={result}
+        loading={false}
+        error={null}
+        onRefresh={() => {}}
+        autoRefreshSeconds={30}
+        nextRefreshAtMs={null}
+      />,
+    )
+    expect(html30).toContain('data-r2-auto-refresh="30"')
+    expect(html30).toContain('role="radiogroup"')
+    expect(html30).toContain('aria-label="R2 pipeline auto-refresh interval"')
+    expect(html30).toContain('aria-checked="true" data-r2-refresh-option="30"')
+    expect(html30).toContain("Every 30s")
+    expect(html30).toContain(">Off<")
+    expect(html30).toContain(">15s<")
+    expect(html30).toContain(">30s<")
+    expect(html30).toContain(">60s<")
+    expect(html30).toContain(">5m<")
+
+    const htmlOff = renderToStaticMarkup(
+      <R2PipelineTabPanel
+        data={result}
+        loading={false}
+        error={null}
+        onRefresh={() => {}}
+        autoRefreshSeconds={0}
+        nextRefreshAtMs={null}
+      />,
+    )
+    expect(htmlOff).toContain('data-r2-auto-refresh="0"')
+    expect(htmlOff).toContain('aria-checked="true" data-r2-refresh-option="0"')
+    expect(htmlOff).toContain('data-r2-auto-refresh-status="true"')
   })
 })

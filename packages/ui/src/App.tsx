@@ -91,10 +91,12 @@ import {
   OperatorProfileMenu,
   PanelErrorBoundary,
   parseStoredRankingsHeatMapValue,
+  type R2AutoRefreshIntervalSec,
   R2PipelineTabPanel,
   RANKINGS_HEATMAP_STORAGE_KEY,
   RankingsTabPanel,
   readStoredDashboardTheme,
+  readStoredR2AutoRefreshSeconds,
   readStoredRankingsHeatMap,
   RiskOverviewPanel,
   ShiftDurationTimer,
@@ -108,6 +110,7 @@ import {
   TerminalTabPanel,
   type WebLogSeverityCounts,
   type WebLogSeverityFilter,
+  writeStoredR2AutoRefreshSeconds,
   writeStoredRankingsHeatMap,
 } from "./panels/index.tsx"
 import { WsSyncStatusIndicator } from "./panels/WsSyncStatusIndicator.tsx"
@@ -448,6 +451,12 @@ export function App(): React.ReactElement {
     null,
   )
   const [r2PipelineHistoryError, setR2PipelineHistoryError] = useState<string | null>(null)
+  const [r2AutoRefreshSeconds, setR2AutoRefreshSeconds] = useState<R2AutoRefreshIntervalSec>(() =>
+    readStoredR2AutoRefreshSeconds(),
+  )
+  const [r2NextRefreshAtMs, setR2NextRefreshAtMs] = useState<number | null>(null)
+  const [r2RefreshCycleNonce, setR2RefreshCycleNonce] = useState<number>(0)
+  const r2PollInFlightRef = useRef<boolean>(false)
   const [verifyingTickets, setVerifyingTickets] = useState<boolean>(false)
   const [verifyTicketsError, setVerifyTicketsError] = useState<string | null>(null)
   const [cohortsReport, setCohortsReport] = useState<CustomersApiResponse | null>(null)
@@ -2254,16 +2263,43 @@ export function App(): React.ReactElement {
     fetchAlerts(alertFilter)
   }, [activeTab, alertFilter, authReady])
 
-  // While the R2 pipeline tab is open, sample freshness each minute so the
-  // process-local history has a series to plot (the server throttles samples).
+  // Hydrate R2 freshness history immediately when opening the R2 Pipeline tab.
   useEffect(() => {
     if (!authReady || activeTab !== "r2") return
     void fetchR2PipelineHistory()
-    const interval = setInterval(() => {
-      void fetchR2PipelineHistory(true)
-    }, 60_000)
-    return () => clearInterval(interval)
   }, [activeTab, authReady])
+
+  // Configurable auto-refresh polling for R2 pipeline freshness & history while the R2 tab is open.
+  useEffect(() => {
+    if (!authReady || activeTab !== "r2" || r2AutoRefreshSeconds === 0) {
+      setR2NextRefreshAtMs(null)
+      return
+    }
+    let cancelled = false
+    const intervalMs = r2AutoRefreshSeconds * 1000
+    setR2NextRefreshAtMs(Date.now() + intervalMs)
+
+    const interval = setInterval(() => {
+      if (cancelled || r2PollInFlightRef.current) return
+      r2PollInFlightRef.current = true
+      void (async () => {
+        try {
+          await fetchR2Pipeline(true)
+          await fetchR2PipelineHistory(false)
+        } finally {
+          r2PollInFlightRef.current = false
+          if (!cancelled) {
+            setR2NextRefreshAtMs(Date.now() + intervalMs)
+          }
+        }
+      })()
+    }, intervalMs)
+
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [activeTab, authReady, r2AutoRefreshSeconds, r2RefreshCycleNonce])
 
   // Auto-dismiss toast after 4s
   useEffect(() => {
@@ -5292,10 +5328,19 @@ export function App(): React.ReactElement {
               historyError={r2PipelineHistoryError}
               loading={r2PipelineLoading}
               error={r2PipelineError}
+              autoRefreshSeconds={r2AutoRefreshSeconds}
+              nextRefreshAtMs={r2NextRefreshAtMs}
+              onAutoRefreshChange={(seconds) => {
+                setR2AutoRefreshSeconds(seconds)
+                writeStoredR2AutoRefreshSeconds(seconds)
+              }}
               onRefresh={(force) => {
                 void (async () => {
                   await fetchR2Pipeline(Boolean(force))
                   await fetchR2PipelineHistory(false)
+                  if (r2AutoRefreshSeconds > 0) {
+                    setR2RefreshCycleNonce((n) => n + 1)
+                  }
                 })()
               }}
               onVerifyTickets={(dryRun) => {

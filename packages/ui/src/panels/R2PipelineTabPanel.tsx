@@ -1,5 +1,5 @@
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { resolveDaemon4020State } from "@sportsdesk-ops/contracts"
 
@@ -15,6 +15,92 @@ import type {
 } from "../types.ts"
 import { SkeletonBlock, SkeletonCardGrid } from "./PanelSkeleton.tsx"
 
+export type R2AutoRefreshIntervalSec = 0 | 15 | 30 | 60 | 300
+
+export const R2_AUTO_REFRESH_OPTIONS: readonly {
+  readonly seconds: R2AutoRefreshIntervalSec
+  readonly label: string
+}[] = [
+  { seconds: 0, label: "Off" },
+  { seconds: 15, label: "15s" },
+  { seconds: 30, label: "30s" },
+  { seconds: 60, label: "60s" },
+  { seconds: 300, label: "5m" },
+]
+
+export const DEFAULT_R2_AUTO_REFRESH_SECONDS: R2AutoRefreshIntervalSec = 60
+export const R2_AUTO_REFRESH_STORAGE_KEY = "sportsdesk_r2_auto_refresh_sec"
+
+const VALID_R2_AUTO_REFRESH_SECONDS = new Set<number>(
+  R2_AUTO_REFRESH_OPTIONS.map((option) => option.seconds),
+)
+
+export function normalizeR2AutoRefreshSeconds(raw: unknown): R2AutoRefreshIntervalSec {
+  if (typeof raw === "string") {
+    const trimmed = raw.trim().toLowerCase()
+    if (trimmed === "off" || trimmed === "0") return 0
+    if (trimmed.length === 0) return DEFAULT_R2_AUTO_REFRESH_SECONDS
+    const parsed = Number(trimmed)
+    if (Number.isInteger(parsed) && VALID_R2_AUTO_REFRESH_SECONDS.has(parsed)) {
+      return parsed as R2AutoRefreshIntervalSec
+    }
+    return DEFAULT_R2_AUTO_REFRESH_SECONDS
+  }
+  if (typeof raw === "number" && Number.isInteger(raw) && VALID_R2_AUTO_REFRESH_SECONDS.has(raw)) {
+    return raw as R2AutoRefreshIntervalSec
+  }
+  return DEFAULT_R2_AUTO_REFRESH_SECONDS
+}
+
+export function readStoredR2AutoRefreshSeconds(
+  storage?: Pick<Storage, "getItem"> | null,
+): R2AutoRefreshIntervalSec {
+  try {
+    const target =
+      storage !== undefined ? storage : typeof localStorage !== "undefined" ? localStorage : null
+    if (!target) return DEFAULT_R2_AUTO_REFRESH_SECONDS
+    const raw = target.getItem(R2_AUTO_REFRESH_STORAGE_KEY)
+    if (raw === null) return DEFAULT_R2_AUTO_REFRESH_SECONDS
+    return normalizeR2AutoRefreshSeconds(raw)
+  } catch {
+    return DEFAULT_R2_AUTO_REFRESH_SECONDS
+  }
+}
+
+export function writeStoredR2AutoRefreshSeconds(
+  seconds: R2AutoRefreshIntervalSec,
+  storage?: Pick<Storage, "setItem"> | null,
+): void {
+  try {
+    const target =
+      storage !== undefined ? storage : typeof localStorage !== "undefined" ? localStorage : null
+    if (!target) return
+    target.setItem(R2_AUTO_REFRESH_STORAGE_KEY, String(normalizeR2AutoRefreshSeconds(seconds)))
+  } catch {
+    // Ignore storage quota or sandbox restrictions.
+  }
+}
+
+export function formatAutoRefreshStatus(
+  intervalSeconds: R2AutoRefreshIntervalSec,
+  remainingSeconds: number | null,
+  loading: boolean,
+): string {
+  if (intervalSeconds === 0) return "Off"
+  if (loading) return "Probing…"
+  if (remainingSeconds !== null && Number.isFinite(remainingSeconds)) {
+    const clamped = Math.max(0, Math.ceil(remainingSeconds))
+    if (clamped >= 60) {
+      const mins = Math.floor(clamped / 60)
+      const secs = clamped % 60
+      return `Next ${mins}m ${String(secs).padStart(2, "0")}s`
+    }
+    return `Next ${clamped}s`
+  }
+  const match = R2_AUTO_REFRESH_OPTIONS.find((option) => option.seconds === intervalSeconds)
+  return `Every ${match?.label ?? `${intervalSeconds}s`}`
+}
+
 export interface R2PipelineTabPanelProps {
   readonly data: R2PipelineApiResponse | null
   /**
@@ -29,6 +115,9 @@ export interface R2PipelineTabPanelProps {
   readonly onVerifyTickets?: (dryRun?: boolean) => void
   readonly verifyingTickets?: boolean
   readonly verifyTicketsError?: string | null
+  readonly autoRefreshSeconds?: R2AutoRefreshIntervalSec
+  readonly onAutoRefreshChange?: (seconds: R2AutoRefreshIntervalSec) => void
+  readonly nextRefreshAtMs?: number | null
 }
 
 function formatAge(ageSeconds: number | null): string {
@@ -388,6 +477,146 @@ function StaleKeysSparkline({
   )
 }
 
+function R2AutoRefreshControl({
+  intervalSeconds,
+  onChange,
+  nextRefreshAtMs,
+  loading,
+}: {
+  readonly intervalSeconds: R2AutoRefreshIntervalSec
+  readonly onChange: (seconds: R2AutoRefreshIntervalSec) => void
+  readonly nextRefreshAtMs: number | null
+  readonly loading: boolean
+}): React.ReactElement {
+  const [nowMs, setNowMs] = useState<number>(() => Date.now())
+
+  useEffect(() => {
+    if (intervalSeconds === 0 || nextRefreshAtMs === null) return
+    setNowMs(Date.now())
+    const timer = setInterval(() => {
+      setNowMs(Date.now())
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [intervalSeconds, nextRefreshAtMs])
+
+  const remainingSeconds =
+    intervalSeconds > 0 && nextRefreshAtMs !== null
+      ? Math.max(0, Math.ceil((nextRefreshAtMs - nowMs) / 1000))
+      : null
+  const statusText = formatAutoRefreshStatus(intervalSeconds, remainingSeconds, loading)
+  const indicatorColor =
+    intervalSeconds === 0 ? "#64748b" : loading ? "#38bdf8" : "#4ade80"
+
+  return (
+    <div
+      data-r2-auto-refresh={String(intervalSeconds)}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "5px",
+        padding: "6px 10px",
+        borderRadius: "6px",
+        backgroundColor: "rgba(15, 23, 42, 0.72)",
+        border: "1px solid rgba(51, 65, 85, 0.75)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "10px",
+          fontSize: "10px",
+          lineHeight: 1.2,
+        }}
+      >
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "5px",
+            color: "#94a3b8",
+            fontWeight: 600,
+            whiteSpace: "nowrap",
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              width: "6px",
+              height: "6px",
+              borderRadius: "999px",
+              backgroundColor: indicatorColor,
+              display: "inline-block",
+              flexShrink: 0,
+            }}
+          />
+          Auto-Refresh
+        </span>
+        <span
+          data-r2-auto-refresh-status="true"
+          style={{
+            fontWeight: 700,
+            color: intervalSeconds === 0 ? "#94a3b8" : loading ? "#38bdf8" : "#cbd5e1",
+            fontVariantNumeric: "tabular-nums",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {statusText}
+        </span>
+      </div>
+      <div
+        role="radiogroup"
+        aria-label="R2 pipeline auto-refresh interval"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "3px",
+          flexWrap: "nowrap",
+        }}
+      >
+        {R2_AUTO_REFRESH_OPTIONS.map((option) => {
+          const selected = option.seconds === intervalSeconds
+          const isOff = option.seconds === 0
+          return (
+            <button
+              key={option.seconds}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              data-r2-refresh-option={String(option.seconds)}
+              onClick={() => onChange(option.seconds)}
+              style={{
+                padding: "3px 7px",
+                borderRadius: "4px",
+                fontSize: "11px",
+                fontWeight: selected ? 700 : 600,
+                lineHeight: 1.2,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                fontVariantNumeric: "tabular-nums",
+                border: selected
+                  ? isOff
+                    ? "1px solid #64748b"
+                    : "1px solid #38bdf8"
+                  : "1px solid rgba(51, 65, 85, 0.7)",
+                backgroundColor: selected
+                  ? isOff
+                    ? "rgba(100, 116, 139, 0.25)"
+                    : "rgba(56, 189, 248, 0.18)"
+                  : "rgba(30, 41, 59, 0.55)",
+                color: selected ? (isOff ? "#e2e8f0" : "#7dd3fc") : "#94a3b8",
+              }}
+            >
+              {option.label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 interface BlockerGroup {
   readonly key: string
   readonly headline: string
@@ -492,8 +721,22 @@ export function R2PipelineTabPanel({
   onVerifyTickets,
   verifyingTickets = false,
   verifyTicketsError = null,
+  autoRefreshSeconds,
+  onAutoRefreshChange,
+  nextRefreshAtMs = null,
 }: R2PipelineTabPanelProps): React.ReactElement {
   const [copiedCmdId, setCopiedCmdId] = useState<string | null>(null)
+  const [uncontrolledRefreshSec, setUncontrolledRefreshSec] = useState<R2AutoRefreshIntervalSec>(
+    DEFAULT_R2_AUTO_REFRESH_SECONDS,
+  )
+  const effectiveAutoRefreshSec = autoRefreshSeconds ?? uncontrolledRefreshSec
+  const handleAutoRefreshChange = (nextSeconds: R2AutoRefreshIntervalSec) => {
+    if (onAutoRefreshChange) {
+      onAutoRefreshChange(nextSeconds)
+    } else {
+      setUncontrolledRefreshSec(nextSeconds)
+    }
+  }
   const automations = data?.automations
   const ticketVerify = automations?.ticketVerification ?? null
 
@@ -648,6 +891,12 @@ export function R2PipelineTabPanel({
               totalSinks={staleKeysTotalSinks}
             />
           )}
+          <R2AutoRefreshControl
+            intervalSeconds={effectiveAutoRefreshSec}
+            onChange={handleAutoRefreshChange}
+            nextRefreshAtMs={nextRefreshAtMs}
+            loading={loading}
+          />
           <button
             type="button"
             style={styles.actionBtn}
