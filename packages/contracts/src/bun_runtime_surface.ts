@@ -12,6 +12,7 @@
  * - NEVER reads, serializes, or transmits `Bun.env`, `process.env`, or `Bun.secrets` values.
  */
 
+import type { BunFileLoaderLiveProbe } from "./bun_file_loader.ts"
 import { bunColorCss, bunEscapeHtml, bunStringWidth, bunStripAnsi } from "./bun_syntax_highlight.ts"
 
 export type GlobalTierId = "bun-specific" | "node-compat" | "web-standards"
@@ -60,7 +61,8 @@ export interface BunCoreApiDomainSpec {
 export type BunCapabilityPillarId =
   "http-websockets" | "data" | "files-processes" | "security" | "formats" | "low-level"
 
-export type BunCapabilityActionTarget = "globals" | "sandbox" | "modules-classes" | "live-audit"
+export type BunCapabilityActionTarget =
+  "globals" | "sandbox" | "modules-classes" | "live-audit" | "file-loader"
 
 export interface BunCapabilityItemSpec {
   readonly id: string
@@ -188,6 +190,7 @@ export interface BunRuntimeSurfaceAuditSnapshot {
   readonly globalProbes: readonly LiveGlobalProbeEntry[]
   readonly utilityProbes: readonly LiveUtilityProbeEntry[]
   readonly coreDomainProbes: readonly LiveCoreApiDomainProbeEntry[]
+  readonly fileLoaderProbe?: BunFileLoaderLiveProbe | undefined
   readonly auditedAt: string
   readonly auditDurationMs: number
 }
@@ -540,10 +543,17 @@ export const BUN_CORE_API_DOMAINS: readonly BunCoreApiDomainSpec[] = [
   {
     id: "file-object-io",
     domain: "File & Object I/O",
-    apis: ["Bun.file()", "Bun.write()", "Bun.s3 / S3Client", "Bun.Glob", "Bun.Archive"],
+    apis: [
+      "Bun.file()",
+      "Bun.write()",
+      "Bun.embeddedFiles",
+      "Bun.s3 / S3Client",
+      "Bun.Glob",
+      "Bun.Archive",
+    ],
     capabilities:
-      "Lazy BunFile / S3File handles (s3:// URLs for R2/S3); sendfile/copy_file_range zero-copy writes; native globbing and tar/archive handling",
-    probeBunKeys: ["file", "write", "s3", "S3Client", "Glob", "Archive"],
+      "Lazy Blob-compatible BunFile / S3File handles (file loader -> Bun.file(), --compile embeddedFiles table); sendfile/copy_file_range zero-copy writes; native globbing and tar/archive handling",
+    probeBunKeys: ["file", "write", "embeddedFiles", "s3", "S3Client", "Glob", "Archive"],
     builtinModules: [],
   },
   {
@@ -918,10 +928,9 @@ export const BUN_CAPABILITY_PILLARS: readonly BunCapabilityPillarSpec[] = [
       {
         id: "bun-file",
         api: "Bun.file()",
-        summary: "Lazy, fast file I/O",
-        probeBunKeys: ["file", "write"],
-        inspectSubTab: "live-audit",
-        inspectQuery: "file",
+        summary: "Lazy, fast file I/O (Blob + file loader)",
+        probeBunKeys: ["file", "write", "embeddedFiles"],
+        inspectSubTab: "file-loader",
       },
       {
         id: "bun-shell",
@@ -1764,6 +1773,35 @@ export function runBunSurfaceAudit(
       ? `${headerLine}\n${formatInspectTable(exportsList, ["key", "kind", "type"])}`
       : headerLine
 
+  const embeddedRaw = bunObj?.embeddedFiles
+  const embeddedList = Array.isArray(embeddedRaw)
+    ? embeddedRaw.slice(0, 24).map((entry) => {
+        const rec = entry as {
+          readonly name?: unknown
+          readonly type?: unknown
+          readonly size?: unknown
+        }
+        return {
+          name: typeof rec?.name === "string" ? rec.name : "embedded-asset",
+          type: typeof rec?.type === "string" ? rec.type : "application/octet-stream",
+          size: typeof rec?.size === "number" && Number.isFinite(rec.size) ? rec.size : 0,
+        }
+      })
+    : []
+
+  const fileLoaderProbe: BunFileLoaderLiveProbe = {
+    source,
+    bunVersion,
+    bunFileAvailable: typeof bunObj?.file === "function",
+    bunWriteAvailable: typeof bunObj?.write === "function",
+    bunBuildAvailable: typeof bunObj?.build === "function",
+    isStandaloneExecutable: Boolean(bunObj?.isStandaloneExecutable),
+    embeddedFilesAvailable: Array.isArray(embeddedRaw),
+    embeddedFilesCount: Array.isArray(embeddedRaw) ? embeddedRaw.length : 0,
+    embeddedFiles: embeddedList,
+    sampleAsset: null,
+  }
+
   return {
     source,
     hostRuntime: resolveHostRuntimeLabel(),
@@ -1784,6 +1822,7 @@ export function runBunSurfaceAudit(
     globalProbes: buildGlobalProbes(scope),
     utilityProbes: buildUtilityProbes(bunExportSet),
     coreDomainProbes: buildCoreDomainProbes(bunExportSet),
+    fileLoaderProbe,
     auditedAt: new Date().toISOString(),
     auditDurationMs: Math.max(0, Number((performance.now() - startedMs).toFixed(2))),
   }
@@ -1807,6 +1846,7 @@ export function buildAuditSnapshotFromBinaryProbe(
     readonly deepInspections?: readonly BunDeepInspectionEntry[] | undefined
     readonly globalProbes?: readonly LiveGlobalProbeEntry[] | undefined
     readonly inspectTableText?: string | undefined
+    readonly fileLoaderProbe?: BunFileLoaderLiveProbe | undefined
   },
   durationMs: number,
 ): BunRuntimeSurfaceAuditSnapshot {
@@ -1860,6 +1900,7 @@ export function buildAuditSnapshotFromBinaryProbe(
         : buildGlobalProbes(globalThis as unknown as Record<string, unknown>),
     utilityProbes: buildUtilityProbes(bunExportSet),
     coreDomainProbes: buildCoreDomainProbes(bunExportSet),
+    ...(probe.fileLoaderProbe ? { fileLoaderProbe: probe.fileLoaderProbe } : {}),
     auditedAt: new Date().toISOString(),
     auditDurationMs: Math.max(0, Number(durationMs.toFixed(2))),
   }

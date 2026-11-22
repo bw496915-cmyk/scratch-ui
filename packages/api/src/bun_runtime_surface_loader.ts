@@ -13,8 +13,14 @@
  */
 
 import { execFileSync } from "node:child_process"
+import { existsSync } from "node:fs"
 import { createRequire } from "node:module"
+import { resolve } from "node:path"
 
+import type {
+  BunFileLoaderLiveProbe,
+  BunFileSampleAssetProbe,
+} from "../../contracts/src/bun_file_loader.ts"
 import {
   buildAuditSnapshotFromBinaryProbe,
   BUN_BUILTIN_MODULE_TARGETS,
@@ -28,6 +34,11 @@ import {
   type LiveGlobalProbeEntry,
   runBunSurfaceAudit,
 } from "../../contracts/src/bun_runtime_surface.ts"
+
+const SAMPLE_WORKSPACE_ASSET_CANDIDATES = [
+  "public/assets/branding/sportsdesk-emblem-64.png",
+  "packages/ui/src/logo.svg",
+] as const
 
 const CACHE_TTL_MS = 60_000
 
@@ -238,6 +249,57 @@ for (const tier of tiers) {
     globalProbes.push({ name, tier: tier.id, present, valueType });
   }
 }
+const embeddedRaw = Array.isArray(Bun.embeddedFiles) ? Bun.embeddedFiles : [];
+const embeddedFiles = embeddedRaw.slice(0, 24).map((f) => ({
+  name: typeof f?.name === "string" ? f.name : "embedded-asset",
+  type: typeof f?.type === "string" ? f.type : "application/octet-stream",
+  size: typeof f?.size === "number" ? f.size : 0,
+}));
+let sampleAsset = null;
+for (const candidate of ${JSON.stringify(SAMPLE_WORKSPACE_ASSET_CANDIDATES)}) {
+  try {
+    const f = Bun.file(candidate);
+    if (await f.exists()) {
+      let responseReady = false;
+      try {
+        const res = new Response(f);
+        responseReady = res.body !== null;
+      } catch {}
+      let formDataReady = false;
+      try {
+        const fd = new FormData();
+        fd.append("asset", f, candidate.split("/").pop() || "asset");
+        formDataReady = fd.has("asset");
+      } catch {}
+      const unknownFallback = Bun.file("probe.unknownext123").type || "application/octet-stream";
+      sampleAsset = {
+        assetPath: candidate,
+        instanceofBlob: f instanceof Blob,
+        type: String(f.type || "application/octet-stream"),
+        size: Number(f.size || 0),
+        exists: true,
+        sliceByteLength: Number(f.slice(0, 64).size || 0),
+        streamSupported: typeof f.stream === "function",
+        responseReady,
+        formDataReady,
+        unknownExtFallbackMime: String(unknownFallback),
+      };
+      break;
+    }
+  } catch {}
+}
+const fileLoaderProbe = {
+  source: "bun-binary-probe",
+  bunVersion: String(Bun.version ?? ""),
+  bunFileAvailable: typeof Bun.file === "function",
+  bunWriteAvailable: typeof Bun.write === "function",
+  bunBuildAvailable: typeof Bun.build === "function",
+  isStandaloneExecutable: Boolean(Bun.isStandaloneExecutable),
+  embeddedFilesAvailable: Array.isArray(Bun.embeddedFiles),
+  embeddedFilesCount: embeddedRaw.length,
+  embeddedFiles,
+  sampleAsset,
+};
 const inspectTableText = Bun.inspect.table(bunKeys, ["key", "kind", "type"], { colors: false });
 process.stdout.write(JSON.stringify({
   bunVersion: String(Bun.version ?? ""),
@@ -249,6 +311,7 @@ process.stdout.write(JSON.stringify({
   deepInspections,
   globalProbes,
   inspectTableText,
+  fileLoaderProbe,
 }));
 `
 
@@ -264,6 +327,7 @@ interface RawBinaryProbePayload {
   readonly deepInspections?: readonly BunDeepInspectionEntry[] | undefined
   readonly globalProbes?: readonly LiveGlobalProbeEntry[] | undefined
   readonly inspectTableText?: string | undefined
+  readonly fileLoaderProbe?: BunFileLoaderLiveProbe | undefined
 }
 
 function loadInProcessBunBuiltinModules(): Readonly<Record<string, unknown>> {
@@ -285,6 +349,57 @@ function loadInProcessBunBuiltinModules(): Readonly<Record<string, unknown>> {
   return resolved
 }
 
+function probeInProcessSampleAsset(): BunFileSampleAssetProbe | null {
+  const bunObj = (globalThis as Record<string, unknown>).Bun as
+    | {
+        readonly file?: (path: string) => Blob & {
+          readonly stream?: () => ReadableStream<Uint8Array>
+        }
+      }
+    | undefined
+  if (!bunObj || typeof bunObj.file !== "function") return null
+
+  const cwd = process.cwd()
+  for (const relPath of SAMPLE_WORKSPACE_ASSET_CANDIDATES) {
+    const absPath = resolve(cwd, relPath)
+    if (!existsSync(absPath)) continue
+    try {
+      const handle = bunObj.file(absPath)
+      let responseReady = false
+      try {
+        const res = new Response(handle)
+        responseReady = res.body !== null
+      } catch {
+        responseReady = false
+      }
+      let formDataReady = false
+      try {
+        const fd = new FormData()
+        fd.append("asset", handle, relPath.split("/").pop() ?? "asset")
+        formDataReady = fd.has("asset")
+      } catch {
+        formDataReady = false
+      }
+      const unknownMime = bunObj.file("probe.unknownext123").type || "application/octet-stream"
+      return {
+        assetPath: relPath,
+        instanceofBlob: handle instanceof Blob,
+        type: handle.type || "application/octet-stream",
+        size: handle.size,
+        exists: true,
+        sliceByteLength: handle.slice(0, 64).size,
+        streamSupported: typeof handle.stream === "function",
+        responseReady,
+        formDataReady,
+        unknownExtFallbackMime: unknownMime,
+      }
+    } catch {
+      // Try next candidate
+    }
+  }
+  return null
+}
+
 export interface LoadBunRuntimeSurfaceOptions {
   readonly forceRefresh?: boolean | undefined
   readonly disableBinaryProbe?: boolean | undefined
@@ -299,6 +414,16 @@ export function loadBunRuntimeSurfaceAudit(
     builtinModules,
   )
   if (inProcess.bunDetected || options.disableBinaryProbe) {
+    if (inProcess.bunDetected && inProcess.fileLoaderProbe) {
+      const sampleAsset = probeInProcessSampleAsset()
+      return {
+        ...inProcess,
+        fileLoaderProbe: {
+          ...inProcess.fileLoaderProbe,
+          sampleAsset,
+        },
+      }
+    }
     return inProcess
   }
 

@@ -30,6 +30,7 @@ export {
   type BunAssetsTabPanelProps,
   type BunImageAssetRow,
 } from "./BunAssetsTabPanel.tsx"
+export { BunFileLoaderSection, type BunFileLoaderSectionProps } from "./BunFileLoaderSection.tsx"
 export {
   BunRuntimeSurfaceSection,
   type BunRuntimeSurfaceSectionProps,

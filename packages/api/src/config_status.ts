@@ -1652,6 +1652,34 @@ const CONSTANT_AND_VARIABLE_SPECS: readonly ConfigItemSpec[] = [
       },
     ],
   },
+  {
+    key: "BUN_BUNDLER.fileLoader",
+    label: "file Loader -> BunFile (Blob) & --compile Pipeline",
+    kind: "constant",
+    category: "Server & Runtime",
+    valueType: "string",
+    description:
+      "Pairs Bun's --loader:<ext>=file hashed asset emission with lazy Blob-compatible Bun.file() handles, Bun.embeddedFiles in --compile executables, and sibling napi TSFN addon loading.",
+    sourceFile: "packages/contracts/src/bun_file_loader.ts",
+    sensitive: false,
+    editable: false,
+    defaultValue: "file -> BunFile (Blob) + napi + --compile",
+    consumers: [
+      {
+        component: "packages/api/src/bun_runtime_surface_loader.ts",
+        layer: "api",
+        usage:
+          "Live-probes Bun.file() Blob compatibility, MIME inference, lazy slicing, Response/FormData streaming, and Bun.embeddedFiles",
+      },
+      {
+        component: "StatusDashboardPanel",
+        layer: "ui",
+        usage:
+          "Renders interactive file Loader -> BunFile & --compile Pipeline builder inside Bun Runtime Surface",
+        tabId: "status-dashboard",
+      },
+    ],
+  },
 ]
 
 function sanitizeConfigInputValue(raw: unknown, maxLength = 512): string {

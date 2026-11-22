@@ -8,6 +8,7 @@ import {
   FileText,
   FlaskConical,
   Globe,
+  HardDrive,
   Layers,
   RefreshCw,
   Search,
@@ -47,13 +48,20 @@ import {
 } from "@sportsdesk-ops/contracts"
 
 import { renderAnsiReact } from "../ansi.tsx"
+import { BunFileLoaderSection } from "./BunFileLoaderSection.tsx"
 import { CopyBunTerminalAnsiButton } from "./SyntaxHighlightedPre.tsx"
 
 const MONO_FONT =
   'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace'
 
 export type RuntimeSurfaceSubTab =
-  "globals" | "utilities" | "core-apis" | "modules-classes" | "live-audit" | "sandbox"
+  | "globals"
+  | "utilities"
+  | "core-apis"
+  | "modules-classes"
+  | "live-audit"
+  | "sandbox"
+  | "file-loader"
 
 export interface BunRuntimeSurfaceSectionProps {
   readonly audit?: BunRuntimeSurfaceAuditSnapshot | null | undefined
@@ -766,6 +774,7 @@ export function BunRuntimeSurfaceSection({
               icon: Cpu,
             },
             { id: "sandbox", label: "06. Markdown & Sandbox", icon: FlaskConical },
+            { id: "file-loader", label: "07. file Loader → BunFile", icon: HardDrive },
           ] as const
         ).map((tab) => {
           const Icon = tab.icon
@@ -3611,6 +3620,11 @@ export function BunRuntimeSurfaceSection({
             </div>
           </div>
         </div>
+      ) : null}
+
+      {/* VIEW 7: FILE LOADER -> BUNFILE (BLOB), --COMPILE & NAPI PIPELINE */}
+      {subTab === "file-loader" ? (
+        <BunFileLoaderSection probe={effectiveAudit.fileLoaderProbe} />
       ) : null}
     </div>
   )
