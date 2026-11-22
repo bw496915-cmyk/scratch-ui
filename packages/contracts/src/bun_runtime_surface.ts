@@ -57,6 +57,46 @@ export interface BunCoreApiDomainSpec {
   readonly builtinModules: readonly string[]
 }
 
+export type BunCapabilityPillarId =
+  "http-websockets" | "data" | "files-processes" | "security" | "formats" | "low-level"
+
+export type BunCapabilityActionTarget = "globals" | "sandbox" | "modules-classes" | "live-audit"
+
+export interface BunCapabilityItemSpec {
+  readonly id: string
+  readonly api: string
+  readonly summary: string
+  readonly probeBunKeys: readonly string[]
+  readonly probeGlobals?: readonly string[] | undefined
+  readonly probeDeepIds?: readonly string[] | undefined
+  readonly inspectSubTab?: BunCapabilityActionTarget | undefined
+  readonly inspectQuery?: string | undefined
+}
+
+export interface BunCapabilityPillarSpec {
+  readonly id: BunCapabilityPillarId
+  readonly title: string
+  readonly items: readonly BunCapabilityItemSpec[]
+}
+
+export interface LiveCapabilityItemProbe {
+  readonly id: string
+  readonly api: string
+  readonly summary: string
+  readonly available: boolean
+  readonly matchedSymbols: readonly string[]
+  readonly inspectSubTab?: BunCapabilityActionTarget | undefined
+  readonly inspectQuery?: string | undefined
+}
+
+export interface LiveCapabilityPillarProbe {
+  readonly id: BunCapabilityPillarId
+  readonly title: string
+  readonly availableCount: number
+  readonly totalCount: number
+  readonly items: readonly LiveCapabilityItemProbe[]
+}
+
 export type BunExportKind = "class" | "namespace" | "function" | "constant" | "object"
 
 export type BunDeepInspectionCategory = "builtin-module" | "bun-namespace" | "bun-class"
@@ -647,6 +687,13 @@ export const BUN_DEEP_NAMESPACE_TARGETS: readonly {
     notes: "Native Argon2id & bcrypt password hash/verify helpers",
   },
   {
+    key: "secrets",
+    label: "Bun.secrets",
+    domain: "Crypto & Hashing",
+    notes:
+      "OS keychain credential interface (get/set/delete; symbol metadata only, values never read)",
+  },
+  {
     key: "FFI",
     label: "Bun.FFI",
     domain: "Build, FFI & UI",
@@ -727,6 +774,12 @@ export const BUN_DEEP_CLASS_TARGETS: readonly {
     notes: "Native RESP3 Redis/Valkey client with pipelining & pub/sub",
   },
   {
+    key: "SQL",
+    label: "Bun.SQL",
+    domain: "Databases & Caches",
+    notes: "Unified Postgres, MySQL & SQLite client class backing Bun.sql",
+  },
+  {
     key: "Terminal",
     label: "Bun.Terminal",
     domain: "Subprocesses & Shell",
@@ -791,6 +844,248 @@ export const BUN_BUILTIN_MODULE_TARGETS: readonly {
     notes: "Compile-time dead-code elimination feature(flag) intrinsic",
   },
 ]
+
+export const BUN_CAPABILITY_PILLARS: readonly BunCapabilityPillarSpec[] = [
+  {
+    id: "http-websockets",
+    title: "HTTP & WEBSOCKETS",
+    items: [
+      {
+        id: "bun-serve",
+        api: "Bun.serve()",
+        summary: "HTTP, routing & WebSockets",
+        probeBunKeys: ["serve"],
+        inspectSubTab: "live-audit",
+        inspectQuery: "serve",
+      },
+      {
+        id: "request-cookies",
+        api: "request.cookies",
+        summary: "Zero-overhead cookies",
+        probeBunKeys: ["CookieMap", "Cookie"],
+        probeDeepIds: ["Bun.CookieMap"],
+        inspectSubTab: "modules-classes",
+        inspectQuery: "CookieMap",
+      },
+      {
+        id: "fetch-http2",
+        api: "fetch",
+        summary: "HTTP/2, proxies, unix sockets",
+        probeBunKeys: ["FetchSession"],
+        probeGlobals: ["fetch"],
+        inspectSubTab: "modules-classes",
+        inspectQuery: "FetchSession",
+      },
+    ],
+  },
+  {
+    id: "data",
+    title: "DATA",
+    items: [
+      {
+        id: "bun-sql",
+        api: "Bun.sql",
+        summary: "Postgres, MySQL, SQLite",
+        probeBunKeys: ["sql", "SQL"],
+        probeDeepIds: ["bun:sqlite", "Bun.SQL"],
+        inspectSubTab: "modules-classes",
+        inspectQuery: "SQL",
+      },
+      {
+        id: "bun-redis",
+        api: "Bun.redis",
+        summary: "Redis client & Pub/Sub",
+        probeBunKeys: ["redis", "RedisClient"],
+        probeDeepIds: ["Bun.RedisClient"],
+        inspectSubTab: "modules-classes",
+        inspectQuery: "RedisClient",
+      },
+      {
+        id: "bun-s3",
+        api: "Bun.s3",
+        summary: "S3-compatible storage",
+        probeBunKeys: ["s3", "S3Client"],
+        probeDeepIds: ["Bun.S3Client"],
+        inspectSubTab: "modules-classes",
+        inspectQuery: "S3Client",
+      },
+    ],
+  },
+  {
+    id: "files-processes",
+    title: "FILES & PROCESSES",
+    items: [
+      {
+        id: "bun-file",
+        api: "Bun.file()",
+        summary: "Lazy, fast file I/O",
+        probeBunKeys: ["file", "write"],
+        inspectSubTab: "live-audit",
+        inspectQuery: "file",
+      },
+      {
+        id: "bun-shell",
+        api: "Bun.$",
+        summary: "Cross-platform shell",
+        probeBunKeys: ["$"],
+        inspectSubTab: "live-audit",
+        inspectQuery: "$",
+      },
+      {
+        id: "bun-spawn",
+        api: "Bun.spawn()",
+        summary: "Child processes & IPC",
+        probeBunKeys: ["spawn", "spawnSync", "Terminal"],
+        probeDeepIds: ["Bun.Terminal"],
+        inspectSubTab: "modules-classes",
+        inspectQuery: "Terminal",
+      },
+    ],
+  },
+  {
+    id: "security",
+    title: "SECURITY",
+    items: [
+      {
+        id: "bun-password",
+        api: "Bun.password",
+        summary: "argon2 & bcrypt",
+        probeBunKeys: ["password"],
+        probeDeepIds: ["Bun.password"],
+        inspectSubTab: "modules-classes",
+        inspectQuery: "password",
+      },
+      {
+        id: "bun-csrf",
+        api: "Bun.CSRF",
+        summary: "CSRF tokens",
+        probeBunKeys: ["CSRF"],
+        probeDeepIds: ["Bun.CSRF"],
+        inspectSubTab: "modules-classes",
+        inspectQuery: "CSRF",
+      },
+      {
+        id: "bun-secrets",
+        api: "Bun.secrets",
+        summary: "OS keychain",
+        probeBunKeys: ["secrets"],
+        probeDeepIds: ["Bun.secrets"],
+        inspectSubTab: "modules-classes",
+        inspectQuery: "secrets",
+      },
+    ],
+  },
+  {
+    id: "formats",
+    title: "FORMATS",
+    items: [
+      {
+        id: "bun-yaml",
+        api: "Bun.YAML",
+        summary: "YAML & TOML imports",
+        probeBunKeys: ["YAML", "TOML"],
+        probeDeepIds: ["Bun.YAML", "Bun.TOML"],
+        inspectSubTab: "modules-classes",
+        inspectQuery: "YAML",
+      },
+      {
+        id: "bun-markdown",
+        api: "Bun.markdown",
+        summary: "CommonMark → HTML",
+        probeBunKeys: ["markdown"],
+        probeDeepIds: ["Bun.markdown"],
+        inspectSubTab: "sandbox",
+      },
+      {
+        id: "bun-escape-html",
+        api: "Bun.escapeHTML()",
+        summary: "and 40+ utilities",
+        probeBunKeys: ["escapeHTML"],
+        inspectSubTab: "sandbox",
+      },
+    ],
+  },
+  {
+    id: "low-level",
+    title: "LOW LEVEL",
+    items: [
+      {
+        id: "bun-ffi",
+        api: "bun:ffi",
+        summary: "Call C, Rust, Zig",
+        probeBunKeys: ["FFI"],
+        probeDeepIds: ["bun:ffi", "Bun.FFI"],
+        inspectSubTab: "modules-classes",
+        inspectQuery: "bun:ffi",
+      },
+      {
+        id: "worker-threads",
+        api: "Worker",
+        summary: "Threads & structuredClone",
+        probeBunKeys: [],
+        probeGlobals: ["Worker", "structuredClone"],
+        inspectSubTab: "globals",
+        inspectQuery: "Worker",
+      },
+      {
+        id: "bun-glob",
+        api: "Bun.Glob",
+        summary: "Fast glob matching",
+        probeBunKeys: ["Glob"],
+        probeDeepIds: ["Bun.Glob"],
+        inspectSubTab: "modules-classes",
+        inspectQuery: "Glob",
+      },
+    ],
+  },
+]
+
+export function probeBunCapabilityMatrix(
+  audit: BunRuntimeSurfaceAuditSnapshot,
+): readonly LiveCapabilityPillarProbe[] {
+  const bunExports = new Set(audit.exports.map((e) => e.key))
+  const presentGlobals = new Set(audit.globalProbes.filter((g) => g.present).map((g) => g.name))
+  const availableDeepIds = new Set(
+    audit.deepInspections.filter((d) => d.available).map((d) => d.id),
+  )
+
+  return BUN_CAPABILITY_PILLARS.map((pillar) => {
+    const items = pillar.items.map((item): LiveCapabilityItemProbe => {
+      const matchedSymbols: string[] = []
+      for (const k of item.probeBunKeys) {
+        if (bunExports.has(k)) {
+          matchedSymbols.push(`Bun.${k}`)
+        }
+      }
+      for (const g of item.probeGlobals ?? []) {
+        if (presentGlobals.has(g)) {
+          matchedSymbols.push(g)
+        }
+      }
+      for (const id of item.probeDeepIds ?? []) {
+        if (availableDeepIds.has(id) && !matchedSymbols.includes(id)) {
+          matchedSymbols.push(id)
+        }
+      }
+      return {
+        id: item.id,
+        api: item.api,
+        summary: item.summary,
+        available: matchedSymbols.length > 0,
+        matchedSymbols,
+        inspectSubTab: item.inspectSubTab,
+        inspectQuery: item.inspectQuery,
+      }
+    })
+    return {
+      id: pillar.id,
+      title: pillar.title,
+      availableCount: items.filter((i) => i.available).length,
+      totalCount: items.length,
+      items,
+    }
+  })
+}
 
 /** Section 4: Exact Live Surface Audit Snippet for inspecting installed Bun binary exports. */
 export const LIVE_SURFACE_AUDIT_SNIPPET = `const bunKeys = Object.getOwnPropertyNames(Bun)
@@ -1181,8 +1476,9 @@ export function inspectBunDeepTarget(
     const scope: BunDeepSymbolMember["scope"] =
       meta.category === "bun-class" ? "static" : kind === "constant" ? "constant" : "export"
 
+    const isRedactedTarget = meta.id === "Bun.secrets" || meta.id === "Bun.env"
     const safePreview =
-      kind === "constant" && !REDACTED_BUN_KEYS.has(name)
+      kind === "constant" && !isRedactedTarget && !REDACTED_BUN_KEYS.has(name)
         ? formatSafeConstantPreview(val)
         : undefined
 

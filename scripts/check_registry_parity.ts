@@ -2,17 +2,6 @@
  * @file scripts/check_registry_parity.ts
  * @description Workspace manifest, Bun version pin, `.npmrc`, `bunfig.toml`,
  * and `NPM_CONFIG_USERCONFIG` registry parity audit & CI gate.
- *
- * Verifies parity across:
- *  1. `.bun-version` vs `package.json` (`packageManager`, `engines.bun`, `@types/bun`),
- *     `tools/registry/package.json`, and `.github/workflows/ci.yml`.
- *  2. Root `package.json` `workspaces` globs vs actual `packages/*` manifests,
- *     internal workspace dependency targets, and `bun.lock` workspace entries.
- *  3. Absence of nested `.npmrc`, `bunfig.toml`, or `publishConfig.registry`
- *     overrides inside workspace packages.
- *  4. Root `bunfig.toml`, project `.npmrc`, `package.json` `publishConfig.registry`,
- *     `NPM_CONFIG_USERCONFIG` (when configured), and `tools/registry/bunfig.toml`
- *     registry/scope/auth parity with secret-leak protection.
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
@@ -92,7 +81,9 @@ interface PackageManifestJson {
 }
 
 function readJsonSafe<T>(filePath: string): T | null {
-  if (!existsSync(filePath)) return null
+  if (!existsSync(filePath)) {
+    return null
+  }
   try {
     return JSON.parse(readFileSync(filePath, "utf8")) as T
   } catch {
@@ -102,11 +93,14 @@ function readJsonSafe<T>(filePath: string): T | null {
 
 export function normalizeRegistryEndpoint(raw: string): string {
   const trimmed = raw.trim()
-  if (!trimmed) return ""
+  if (!trimmed) {
+    return ""
+  }
   try {
     const parsed = new URL(trimmed)
     const cleanPath = parsed.pathname.replace(/\/+$/, "") || "/"
-    return `${parsed.protocol.toLowerCase()}//${parsed.host.toLowerCase()}${cleanPath === "/" ? "/" : `${cleanPath}/`}`
+    const suffix = cleanPath === "/" ? "/" : `${cleanPath}/`
+    return `${parsed.protocol.toLowerCase()}//${parsed.host.toLowerCase()}${suffix}`
   } catch {
     return trimmed.replace(/\/+$/, "").toLowerCase()
   }
@@ -121,112 +115,29 @@ function isLoopbackHost(registryUrl: string): boolean {
   }
 }
 
-function authPrefixForRegistry(registryUrl: string): string | null {
-  try {
-    const parsed = new URL(registryUrl)
-    const cleanPath = parsed.pathname.replace(/\/+$/, "")
-    return `//${parsed.host.toLowerCase()}${cleanPath}/`
-  } catch {
+function extractBunPackageManagerVersion(packageManager: string | undefined): string | null {
+  if (!packageManager) {
     return null
   }
-}
-
-function hasCredentialForRegistry(npmrc: ParsedNpmrcFile, registryUrl: string): boolean {
-  const prefix = authPrefixForRegistry(registryUrl)
-  if (!prefix) return false
-  for (const [key, entry] of Object.entries(npmrc.registryAuth)) {
-    const normalizedKey = key.toLowerCase().endsWith("/")
-      ? key.toLowerCase()
-      : `${key.toLowerCase()}/`
-    if (normalizedKey === prefix) {
-      return Boolean(
-        entry.authToken ||
-        entry.authTokenEnvRef ||
-        entry.rawAuth ||
-        entry.rawAuthEnvRef ||
-        entry.username ||
-        entry.passwordBase64 ||
-        entry.passwordEnvRef,
-      )
-    }
-  }
-  return false
-}
-
-function extractBunPackageManagerVersion(packageManager: string | undefined): string | null {
-  if (!packageManager) return null
   const match = /^bun@(\d+\.\d+\.\d+(?:[-+][^\s]+)?)$/i.exec(packageManager.trim())
   return match?.[1] ?? packageManager.trim()
 }
 
-function extractRegistryUrlFromBunfig(reg: ParsedBunfigInstallConfig["registry"]): string | null {
-  if (!reg) return null
-  if (typeof reg === "string") return reg
-  return reg.url
-}
-
-function extractScopesFromBunfig(
-  scopes: ParsedBunfigInstallConfig["scopes"],
+function normalizeScopeMap(
+  scopes: Readonly<Record<string, string | { readonly url?: string }>> | undefined,
 ): Record<string, string> {
   const out: Record<string, string> = {}
-  if (!scopes) return out
+  if (!scopes) {
+    return out
+  }
   for (const [rawScope, value] of Object.entries(scopes)) {
-    const normalizedScope = rawScope.startsWith("@") ? rawScope : `@${rawScope}`
+    const key = rawScope.startsWith("@") ? rawScope : `@${rawScope}`
     const url = typeof value === "string" ? value : value.url
-    if (url) out[normalizedScope] = url
+    if (url) {
+      out[key] = url
+    }
   }
   return out
-}
-
-function expandWorkspaceGlobs(rootDir: string, globs: readonly string[]): string[] {
-  const matched: string[] = []
-  const seen = new Set<string>()
-
-  for (const pattern of globs) {
-    const clean = pattern.trim().replace(/^\.\//, "").replace(/\/+$/, "")
-    if (!clean) continue
-    if (clean.endsWith("/*")) {
-      const parentRel = clean.slice(0, -2)
-      const parentAbs = resolve(rootDir, parentRel)
-      if (!existsSync(parentAbs) || !statSync(parentAbs).isDirectory()) continue
-      for (const entry of readdirSync(parentAbs).sort()) {
-        if (entry.startsWith(".") || entry === "node_modules") continue
-        const relPath = `${parentRel}/${entry}`
-        const absPath = resolve(rootDir, relPath)
-        if (statSync(absPath).isDirectory() && !seen.has(relPath)) {
-          seen.add(relPath)
-          matched.push(relPath)
-        }
-      }
-    } else {
-      const absPath = resolve(rootDir, clean)
-      if (existsSync(absPath) && statSync(absPath).isDirectory() && !seen.has(clean)) {
-        seen.add(clean)
-        matched.push(clean)
-      }
-    }
-  }
-
-  return matched.sort()
-}
-
-function findRealSecretTokenInTrackedNpmrc(npmrc: ParsedNpmrcFile): string | null {
-  for (const [prefix, entry] of Object.entries(npmrc.registryAuth)) {
-    const token = entry.authToken?.trim()
-    if (!token) continue
-    const isEnvPlaceholder = /^\$\{[A-Za-z0-9_]+\??\}$/.test(token)
-    if (isEnvPlaceholder) continue
-    const isLocalLoopback =
-      prefix.startsWith("//127.0.0.1:") ||
-      prefix.startsWith("//localhost:") ||
-      prefix.startsWith("//[::1]:")
-    const isKnownPlaceholder = token === "local-development" || token === "placeholder"
-    if (isLocalLoopback && isKnownPlaceholder) continue
-    if (/^(?:ghp_|github_pat_|gho_|ghu_|npm_[A-Za-z0-9]{10,})/.test(token) || !isLocalLoopback) {
-      return `Tracked .npmrc contains non-placeholder literal token for '${prefix}' (use \${ENV_VAR} instead)`
-    }
-  }
-  return null
 }
 
 /**
@@ -243,16 +154,14 @@ export function auditWorkspaceRegistryParity(
   const violations: string[] = []
   const warnings: string[] = []
 
-  // -------------------------------------------------------------------------
-  // 1. Bun version parity (.bun-version, root package.json, tools/registry, ci.yml)
-  // -------------------------------------------------------------------------
   const bunVersionPath = resolve(rootDir, ".bun-version")
   const dotBunVersion = existsSync(bunVersionPath)
     ? readFileSync(bunVersionPath, "utf8").trim()
     : null
+  const validDotBun = Boolean(dotBunVersion && isValidSemver(dotBunVersion))
   if (!dotBunVersion) {
     violations.push("Missing `.bun-version` file in repository root")
-  } else if (!isValidSemver(dotBunVersion)) {
+  } else if (!validDotBun) {
     violations.push(`Invalid semver in .bun-version: '${dotBunVersion}'`)
   }
 
@@ -265,24 +174,6 @@ export function auditWorkspaceRegistryParity(
   const rootEnginesBun = rootPkg?.engines?.bun?.trim() ?? null
   const typesBun = rootPkg?.devDependencies?.["@types/bun"]?.trim() ?? null
 
-  if (dotBunVersion && isValidSemver(dotBunVersion)) {
-    if (rootPackageManager && !eq(rootPackageManager, dotBunVersion)) {
-      violations.push(
-        `package.json packageManager 'bun@${rootPackageManager}' diverges from .bun-version '${dotBunVersion}'`,
-      )
-    }
-    if (rootEnginesBun && !safeSatisfies(dotBunVersion, rootEnginesBun)) {
-      violations.push(
-        `package.json engines.bun '${rootEnginesBun}' diverges from .bun-version '${dotBunVersion}'`,
-      )
-    }
-    if (typesBun && !safeSatisfies(dotBunVersion, typesBun)) {
-      violations.push(
-        `package.json devDependencies.@types/bun '${typesBun}' diverges from .bun-version '${dotBunVersion}'`,
-      )
-    }
-  }
-
   const toolsRegistryPkg = readJsonSafe<PackageManifestJson>(
     resolve(rootDir, "tools/registry/package.json"),
   )
@@ -290,16 +181,30 @@ export function auditWorkspaceRegistryParity(
     toolsRegistryPkg?.packageManager,
   )
   const toolsRegistryEnginesBun = toolsRegistryPkg?.engines?.bun?.trim() ?? null
-  if (dotBunVersion && isValidSemver(dotBunVersion) && toolsRegistryPkg) {
-    if (toolsRegistryPackageManager && !eq(toolsRegistryPackageManager, dotBunVersion)) {
-      violations.push(
-        `tools/registry/package.json packageManager 'bun@${toolsRegistryPackageManager}' diverges from .bun-version '${dotBunVersion}'`,
-      )
-    }
-    if (toolsRegistryEnginesBun && !safeSatisfies(dotBunVersion, toolsRegistryEnginesBun)) {
-      violations.push(
-        `tools/registry/package.json engines.bun '${toolsRegistryEnginesBun}' diverges from .bun-version '${dotBunVersion}'`,
-      )
+
+  if (validDotBun && dotBunVersion) {
+    const versionTargets: ReadonlyArray<
+      readonly [string, string | null, string | null, string | null]
+    > = [
+      ["package.json", rootPackageManager, rootEnginesBun, typesBun],
+      ["tools/registry/package.json", toolsRegistryPackageManager, toolsRegistryEnginesBun, null],
+    ]
+    for (const [label, pmVer, enginesVer, typesVer] of versionTargets) {
+      if (pmVer && !eq(pmVer, dotBunVersion)) {
+        violations.push(
+          `${label} packageManager 'bun@${pmVer}' diverges from .bun-version '${dotBunVersion}'`,
+        )
+      }
+      if (enginesVer && !safeSatisfies(dotBunVersion, enginesVer)) {
+        violations.push(
+          `${label} engines.bun '${enginesVer}' diverges from .bun-version '${dotBunVersion}'`,
+        )
+      }
+      if (typesVer && !safeSatisfies(dotBunVersion, typesVer)) {
+        violations.push(
+          `${label} devDependencies.@types/bun '${typesVer}' diverges from .bun-version '${dotBunVersion}'`,
+        )
+      }
     }
   }
 
@@ -314,7 +219,7 @@ export function auditWorkspaceRegistryParity(
       )
     }
     for (const m of ciText.matchAll(/bun-version:\s*["']?([^\s"']+)["']?/g)) {
-      if (dotBunVersion && (!isValidSemver(dotBunVersion) || !eq(m[1]!, dotBunVersion))) {
+      if (dotBunVersion && (!validDotBun || !eq(m[1]!, dotBunVersion))) {
         violations.push(
           `.github/workflows/ci.yml pins bun-version '${m[1]}' instead of .bun-version '${dotBunVersion}'`,
         )
@@ -322,22 +227,47 @@ export function auditWorkspaceRegistryParity(
     }
   }
 
-  // -------------------------------------------------------------------------
-  // 2. Workspace manifest parity (package.json <-> packages/* <-> bun.lock)
-  // -------------------------------------------------------------------------
   const declaredGlobs = Array.isArray(rootPkg?.workspaces) ? [...rootPkg.workspaces] : []
   if (declaredGlobs.length === 0) {
     violations.push("Root `package.json` must declare non-empty `workspaces`")
   }
 
-  const resolvedPaths = expandWorkspaceGlobs(rootDir, declaredGlobs)
+  const resolvedSet = new Set<string>()
+  for (const pattern of declaredGlobs) {
+    const clean = pattern.trim().replace(/^\.\//, "").replace(/\/+$/, "")
+    if (!clean) {
+      continue
+    }
+    if (!clean.endsWith("/*")) {
+      const absPath = resolve(rootDir, clean)
+      if (existsSync(absPath) && statSync(absPath).isDirectory()) {
+        resolvedSet.add(clean)
+      }
+      continue
+    }
+    const parentRel = clean.slice(0, -2)
+    const parentAbs = resolve(rootDir, parentRel)
+    if (!existsSync(parentAbs) || !statSync(parentAbs).isDirectory()) {
+      continue
+    }
+    for (const entry of readdirSync(parentAbs).sort()) {
+      if (entry.startsWith(".") || entry === "node_modules") {
+        continue
+      }
+      const relPath = `${parentRel}/${entry}`
+      if (statSync(resolve(rootDir, relPath)).isDirectory()) {
+        resolvedSet.add(relPath)
+      }
+    }
+  }
+  const resolvedPaths = [...resolvedSet].sort()
+
   const packageNames: Record<string, string> = {}
   const nestedOverrideFiles: string[] = []
   const workspacePackagesByName = new Map<string, { path: string; pkg: PackageManifestJson }>()
 
   for (const relPath of resolvedPaths) {
-    const pkgFile = resolve(rootDir, relPath, "package.json")
-    const pkg = readJsonSafe<PackageManifestJson>(pkgFile)
+    const pkg = readJsonSafe<PackageManifestJson>(resolve(rootDir, relPath, "package.json"))
     if (!pkg) {
       violations.push(`Workspace '${relPath}' is missing readable package.json`)
       continue
@@ -373,14 +303,14 @@ export function auditWorkspaceRegistryParity(
     }
   }
 
-  // Check for un-declared folders under packages/ if packages/* is used
   const packagesRoot = resolve(rootDir, "packages")
   if (existsSync(packagesRoot) && statSync(packagesRoot).isDirectory()) {
     for (const entry of readdirSync(packagesRoot)) {
-      if (entry.startsWith(".") || entry === "node_modules") continue
+      if (entry.startsWith(".") || entry === "node_modules") {
+        continue
+      }
       const rel = `packages/${entry}`
-      const abs = resolve(rootDir, rel)
-      if (statSync(abs).isDirectory() && !resolvedPaths.includes(rel)) {
+      if (statSync(resolve(rootDir, rel)).isDirectory() && !resolvedPaths.includes(rel)) {
         violations.push(
           `Directory '${rel}' exists under packages/ but is not covered by workspaces`,
         )
@@ -388,34 +318,28 @@ export function auditWorkspaceRegistryParity(
     }
   }
 
-  // Validate internal workspace "*" / "workspace:*" references
   let internalDependenciesValid = true
   for (const [pkgName, { path: wsPath, pkg }] of workspacePackagesByName) {
-    for (const [depName, spec] of Object.entries({
-      ...(pkg.dependencies ?? {}),
-      ...(pkg.devDependencies ?? {}),
-    })) {
-      if (
-        spec.startsWith("workspace:") ||
-        (depName.startsWith("@sportsdesk-ops/") && spec === "*")
-      ) {
-        if (!workspacePackagesByName.has(depName)) {
-          internalDependenciesValid = false
-          violations.push(
-            `Workspace '${pkgName}' (${wsPath}) references missing internal workspace '${depName}' (${spec})`,
-          )
-        }
+    const allDeps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) }
+    for (const [depName, spec] of Object.entries(allDeps)) {
+      const isInternalRef =
+        spec.startsWith("workspace:") || (depName.startsWith("@sportsdesk-ops/") && spec === "*")
+      if (isInternalRef && !workspacePackagesByName.has(depName)) {
+        internalDependenciesValid = false
+        violations.push(
+          `Workspace '${pkgName}' (${wsPath}) references missing internal workspace '${depName}' (${spec})`,
+        )
       }
     }
   }
 
-  // Compare declared workspaces against bun.lock
   const lockfilePath = resolve(rootDir, "bun.lock")
   let lockfilePaths: string[] = []
-  if (existsSync(lockfilePath)) {
+  if (!existsSync(lockfilePath)) {
+    violations.push("Missing `bun.lock` for workspace parity check")
+  } else {
     try {
-      const parsedLock = parseBunLockFile(readFileSync(lockfilePath, "utf8"))
-      const lockWorkspaces = parsedLock.workspaces ?? {}
+      const lockWorkspaces = parseBunLockFile(readFileSync(lockfilePath, "utf8")).workspaces ?? {}
       lockfilePaths = Object.keys(lockWorkspaces)
         .filter((k) => k !== "")
         .sort()
@@ -444,32 +368,25 @@ export function auditWorkspaceRegistryParity(
         `Unable to parse bun.lock for workspace parity: ${err instanceof Error ? err.message : String(err)}`,
       )
     }
-  } else {
-    violations.push("Missing `bun.lock` for workspace parity check")
   }
 
-  // -------------------------------------------------------------------------
-  // 3. Registry parity: package.json <-> bunfig.toml <-> .npmrc <-> NPM_CONFIG_USERCONFIG
-  // -------------------------------------------------------------------------
   const rootPublishConfigRegistry = rootPkg?.publishConfig?.registry?.trim() ?? null
-
   const rootBunfigPath = resolve(rootDir, "bunfig.toml")
   let projectBunfig: ParsedBunfigInstallConfig | null = null
-  if (existsSync(rootBunfigPath)) {
+  if (!existsSync(rootBunfigPath)) {
+    violations.push("Missing root `bunfig.toml`")
+  } else {
     projectBunfig = parseBunfigInstallToml(
       readFileSync(rootBunfigPath, "utf8"),
       "project-bunfig",
       env,
       rootBunfigPath,
     )
-  } else {
-    violations.push("Missing root `bunfig.toml`")
   }
 
-  const bunfigDefaultRegistry = projectBunfig
-    ? extractRegistryUrlFromBunfig(projectBunfig.registry)
-    : null
-  const bunfigScopes = projectBunfig ? extractScopesFromBunfig(projectBunfig.scopes) : {}
+  const bunfigReg = projectBunfig?.registry
+  const bunfigDefaultRegistry = typeof bunfigReg === "string" ? bunfigReg : (bunfigReg?.url ?? null)
+  const bunfigScopes = normalizeScopeMap(projectBunfig?.scopes)
 
   const projectNpmrcPath = resolve(rootDir, ".npmrc")
   let projectNpmrc: ParsedNpmrcFile | null = null
@@ -484,68 +401,101 @@ export function auditWorkspaceRegistryParity(
   }
 
   const projectNpmrcRegistry = projectNpmrc?.registry ?? null
-  const projectNpmrcScopes: Record<string, string> = {}
-  if (projectNpmrc) {
-    for (const [rawScope, url] of Object.entries(projectNpmrc.scopes)) {
-      const normalizedScope = rawScope.startsWith("@") ? rawScope : `@${rawScope}`
-      projectNpmrcScopes[normalizedScope] = url
-    }
-  }
+  const projectNpmrcScopes = normalizeScopeMap(projectNpmrc?.scopes)
   const projectNpmrcAuthPrefixes = projectNpmrc ? Object.keys(projectNpmrc.registryAuth).sort() : []
 
-  // Secret hygiene & auth prefix parity on project .npmrc
   if (projectNpmrc) {
-    const tokenIssue = findRealSecretTokenInTrackedNpmrc(projectNpmrc)
-    if (tokenIssue) violations.push(tokenIssue)
+    for (const [prefix, entry] of Object.entries(projectNpmrc.registryAuth)) {
+      const token = entry.authToken?.trim()
+      if (!token || /^\$\{[A-Za-z0-9_]+\??\}$/.test(token)) {
+        continue
+      }
+      const isLocalLoopback =
+        prefix.startsWith("//127.0.0.1:") ||
+        prefix.startsWith("//localhost:") ||
+        prefix.startsWith("//[::1]:")
+      const isKnownPlaceholder = token === "local-development" || token === "placeholder"
+      if (isLocalLoopback && isKnownPlaceholder) {
+        continue
+      }
+      if (/^(?:ghp_|github_pat_|gho_|ghu_|npm_[A-Za-z0-9]{10,})/.test(token) || !isLocalLoopback) {
+        violations.push(
+          `Tracked .npmrc contains non-placeholder literal token for '${prefix}' (use \${ENV_VAR} instead)`,
+        )
+        break
+      }
+    }
 
     for (const [scope, scopeUrl] of Object.entries(projectNpmrcScopes)) {
-      if (isLoopbackHost(scopeUrl)) {
-        if (!hasCredentialForRegistry(projectNpmrc, scopeUrl)) {
-          violations.push(
-            `.npmrc configures local scope '${scope}=${scopeUrl}' without matching loopback credential prefix (Bun requires a placeholder _authToken for local publishing)`,
-          )
+      if (!isLoopbackHost(scopeUrl)) {
+        if (!scopeUrl.toLowerCase().startsWith("https://")) {
+          violations.push(`.npmrc scope '${scope}' uses non-HTTPS remote registry '${scopeUrl}'`)
         }
-      } else if (!scopeUrl.toLowerCase().startsWith("https://")) {
-        violations.push(`.npmrc scope '${scope}' uses non-HTTPS remote registry '${scopeUrl}'`)
+        continue
+      }
+      let expectedPrefix: string | null = null
+      try {
+        const parsed = new URL(scopeUrl)
+        expectedPrefix = `//${parsed.host.toLowerCase()}${parsed.pathname.replace(/\/+$/, "")}/`
+      } catch {
+        expectedPrefix = null
+      }
+      const hasCredential =
+        expectedPrefix !== null &&
+        Object.entries(projectNpmrc.registryAuth).some(([key, auth]) => {
+          const lower = key.toLowerCase()
+          const normalizedKey = lower.endsWith("/") ? lower : `${lower}/`
+          return (
+            normalizedKey === expectedPrefix &&
+            Boolean(
+              auth.authToken ||
+              auth.authTokenEnvRef ||
+              auth.rawAuth ||
+              auth.rawAuthEnvRef ||
+              auth.username ||
+              auth.passwordBase64 ||
+              auth.passwordEnvRef,
+            )
+          )
+        })
+      if (!hasCredential) {
+        violations.push(
+          `.npmrc configures local scope '${scope}=${scopeUrl}' without matching loopback credential prefix (Bun requires a placeholder _authToken for local publishing)`,
+        )
       }
     }
   }
 
-  // Cross-check default registry parity between publishConfig, bunfig.toml, and .npmrc
-  if (bunfigDefaultRegistry && projectNpmrcRegistry) {
+  const defaultRegistryPairs: ReadonlyArray<
+    readonly [string, string | null, string, string | null, string]
+  > = [
+    ["bunfig.toml", bunfigDefaultRegistry, ".npmrc", projectNpmrcRegistry, "while .npmrc sets"],
+    [
+      "package.json publishConfig.registry",
+      rootPublishConfigRegistry,
+      "bunfig.toml",
+      bunfigDefaultRegistry,
+      "diverges from bunfig.toml",
+    ],
+    [
+      "package.json publishConfig.registry",
+      rootPublishConfigRegistry,
+      ".npmrc",
+      projectNpmrcRegistry,
+      "diverges from .npmrc",
+    ],
+  ]
+  for (const [lhsLabel, lhsUrl, _rhsLabel, rhsUrl, connector] of defaultRegistryPairs) {
     if (
-      normalizeRegistryEndpoint(bunfigDefaultRegistry) !==
-      normalizeRegistryEndpoint(projectNpmrcRegistry)
+      lhsUrl &&
+      rhsUrl &&
+      normalizeRegistryEndpoint(lhsUrl) !== normalizeRegistryEndpoint(rhsUrl)
     ) {
-      violations.push(
-        `Default registry mismatch: bunfig.toml sets '${bunfigDefaultRegistry}' while .npmrc sets '${projectNpmrcRegistry}'`,
-      )
+      const lhsPrefix = lhsLabel.includes("publishConfig") ? `${lhsLabel} '` : `${lhsLabel} sets '`
+      violations.push(`Default registry mismatch: ${lhsPrefix}${lhsUrl}' ${connector} '${rhsUrl}'`)
     }
   }
 
-  if (rootPublishConfigRegistry && bunfigDefaultRegistry) {
-    if (
-      normalizeRegistryEndpoint(rootPublishConfigRegistry) !==
-      normalizeRegistryEndpoint(bunfigDefaultRegistry)
-    ) {
-      violations.push(
-        `Default registry mismatch: package.json publishConfig.registry '${rootPublishConfigRegistry}' diverges from bunfig.toml '${bunfigDefaultRegistry}'`,
-      )
-    }
-  }
-
-  if (rootPublishConfigRegistry && projectNpmrcRegistry) {
-    if (
-      normalizeRegistryEndpoint(rootPublishConfigRegistry) !==
-      normalizeRegistryEndpoint(projectNpmrcRegistry)
-    ) {
-      violations.push(
-        `Default registry mismatch: package.json publishConfig.registry '${rootPublishConfigRegistry}' diverges from .npmrc '${projectNpmrcRegistry}'`,
-      )
-    }
-  }
-
-  // Cross-check scoped registry parity between bunfig.toml [install.scopes] and .npmrc
   const allScopes = new Set([...Object.keys(bunfigScopes), ...Object.keys(projectNpmrcScopes)])
   for (const scope of allScopes) {
     const bunfigUrl = bunfigScopes[scope]
@@ -567,13 +517,12 @@ export function auditWorkspaceRegistryParity(
     }
   }
 
-  // Validate NPM_CONFIG_USERCONFIG parity when set (e.g. CI private-registry env)
   const rawUserConfig =
     env.NPM_CONFIG_USERCONFIG?.trim() || env.npm_config_userconfig?.trim() || null
   let userNpmrcPath: string | null = null
   let userNpmrcDetected = false
   let userNpmrcRegistry: string | null = null
-  const userNpmrcScopes: Record<string, string> = {}
+  let userNpmrcScopes: Record<string, string> = {}
 
   if (rawUserConfig) {
     userNpmrcPath = resolveNpmrcPath(rawUserConfig, rootDir, homeDir)
@@ -591,17 +540,15 @@ export function auditWorkspaceRegistryParity(
         env,
       })
       userNpmrcRegistry = userNpmrc.registry ?? null
-      for (const [rawScope, url] of Object.entries(userNpmrc.scopes)) {
-        const normalizedScope = rawScope.startsWith("@") ? rawScope : `@${rawScope}`
-        userNpmrcScopes[normalizedScope] = url
-
-        const expectedUrl = bunfigScopes[normalizedScope] ?? projectNpmrcScopes[normalizedScope]
+      userNpmrcScopes = normalizeScopeMap(userNpmrc.scopes)
+      for (const [scope, url] of Object.entries(userNpmrcScopes)) {
+        const expectedUrl = bunfigScopes[scope] ?? projectNpmrcScopes[scope]
         if (
           expectedUrl &&
           normalizeRegistryEndpoint(url) !== normalizeRegistryEndpoint(expectedUrl)
         ) {
           violations.push(
-            `NPM_CONFIG_USERCONFIG scope '${normalizedScope}' ('${url}') diverges from project config ('${expectedUrl}')`,
+            `NPM_CONFIG_USERCONFIG scope '${scope}' ('${url}') diverges from project config ('${expectedUrl}')`,
           )
         }
       }
@@ -624,7 +571,6 @@ export function auditWorkspaceRegistryParity(
     }
   }
 
-  // Check standalone tools/registry/bunfig.toml preserves security settings without overriding registries
   const toolsRegistryBunfigPath = resolve(rootDir, "tools/registry/bunfig.toml")
   if (existsSync(toolsRegistryBunfigPath)) {
     const toolsBunfigRaw = readFileSync(toolsRegistryBunfigPath, "utf8")
@@ -687,7 +633,12 @@ export function auditWorkspaceRegistryParity(
   }
 }
 
-function main(): void {
+const isMain =
+  typeof process !== "undefined" &&
+  process.argv[1] &&
+  resolve(process.argv[1]).endsWith(join("scripts", "check_registry_parity.ts"))
+
+if (isMain) {
   const args = process.argv.slice(2)
   if (args.includes("--help") || args.includes("-h")) {
     console.log(`Check workspace manifest, Bun version pin, .npmrc, and bunfig.toml parity.
@@ -695,20 +646,20 @@ function main(): void {
 Usage:
   bun scripts/check_registry_parity.ts [--json]
   bun run check:registry-parity`)
-    return
+    process.exit(0)
   }
 
   const report = auditWorkspaceRegistryParity()
   if (args.includes("--json")) {
     console.log(JSON.stringify(report, null, 2))
-    if (!report.ok) process.exit(1)
-    return
+    if (!report.ok) {
+      process.exit(1)
+    }
+    process.exit(0)
   }
 
-  if (report.warnings.length > 0) {
-    for (const w of report.warnings) {
-      console.warn(`WARN: ${w}`)
-    }
+  for (const w of report.warnings) {
+    console.warn(`WARN: ${w}`)
   }
 
   if (!report.ok) {
@@ -726,13 +677,4 @@ Usage:
   console.log(
     `PASS: Registry & workspace parity verified (Bun ${report.bunVersion.dotBunVersion}, ${wsCount} workspaces synced with bun.lock, zero nested overrides${scopeList ? `, scopes: ${scopeList}` : ""}).`,
   )
-}
-
-const isMain =
-  typeof process !== "undefined" &&
-  process.argv[1] &&
-  resolve(process.argv[1]).endsWith(join("scripts", "check_registry_parity.ts"))
-
-if (isMain) {
-  main()
 }

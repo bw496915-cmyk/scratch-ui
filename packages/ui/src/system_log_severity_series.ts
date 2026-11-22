@@ -112,7 +112,6 @@ export function parseSystemLogEntryTimestampMs(entry: {
   ) {
     return entry.sourceSortMs
   }
-
   if (
     typeof entry.timestamp === "number" &&
     Number.isFinite(entry.timestamp) &&
@@ -121,43 +120,43 @@ export function parseSystemLogEntryTimestampMs(entry: {
     return entry.timestamp
   }
 
+  const parseValidDate = (raw: string): number | null => {
+    const parsed = Date.parse(raw)
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+  }
+
   if (typeof entry.timestamp === "string" && entry.timestamp.trim() !== "") {
     const trimmed = entry.timestamp.trim()
     if (/^\d{10,13}$/.test(trimmed)) {
       const num = Number.parseInt(trimmed, 10)
       return trimmed.length === 10 ? num * 1000 : num
     }
-    const parsed = Date.parse(trimmed)
-    if (Number.isFinite(parsed) && parsed > 0) return parsed
+    const parsed = parseValidDate(trimmed)
+    if (parsed !== null) {
+      return parsed
+    }
   }
 
   if (typeof entry.sourceTime === "string" && entry.sourceTime.trim() !== "") {
     const isoCandidate = entry.sourceTime.trim().replace(" ", "T")
     const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/.test(isoCandidate)
-    const parsed = Date.parse(hasZone ? isoCandidate : `${isoCandidate}-05:00`)
-    if (Number.isFinite(parsed) && parsed > 0) return parsed
+    const parsed = parseValidDate(hasZone ? isoCandidate : `${isoCandidate}-05:00`)
+    if (parsed !== null) {
+      return parsed
+    }
   }
 
   if (typeof entry.dateLabel === "string" && entry.dateLabel.trim() !== "") {
     const timePart = typeof entry.timeEst === "string" ? entry.timeEst.trim() : ""
     const combined = timePart ? `${entry.dateLabel.trim()} ${timePart}` : entry.dateLabel.trim()
-    const parsed = Date.parse(combined)
-    if (Number.isFinite(parsed) && parsed > 0) return parsed
+    return parseValidDate(combined)
   }
 
   return null
 }
 
 function formatHourClock(epochMs: number): string {
-  const d = new Date(epochMs)
-  return `${String(d.getHours()).padStart(2, "0")}:00`
-}
-
-function formatDateTimeHour(epochMs: number): string {
-  const d = new Date(epochMs)
-  const mon = MONTH_SHORT[d.getMonth()] ?? "—"
-  const day = d.getDate()
-  return `${mon} ${day}, ${formatHourClock(epochMs)}`
+  return `${String(new Date(epochMs).getHours()).padStart(2, "0")}:00`
 }
 
 export interface Build24HourSeveritySeriesOptions {
@@ -168,10 +167,6 @@ export interface Build24HourSeveritySeriesOptions {
 /**
  * Buckets arbitrary log records into 24 consecutive 1-hour bins spanning the last
  * 24 hours, counting `CRITICAL`, `HIGH`, `WATCH`, and `NORMAL` severities.
- *
- * When parsed timestamps exist exclusively in an older historical capture (more
- * than 24h before `anchorMs`), anchors to the capture's latest timestamp hour
- * (`windowMode: "capture"`) so retained log files plot accurately.
  */
 export function build24HourSeveritySeries<T>(
   rows: readonly T[],
@@ -198,29 +193,25 @@ export function build24HourSeveritySeries<T>(
       unparsedTimestampLogs += 1
       continue
     }
-    if (ts > maxParsedTs) maxParsedTs = ts
+    if (ts > maxParsedTs) {
+      maxParsedTs = ts
+    }
     parsedEntries.push({
       ts,
       severity: extractors.getSeverity(row),
     })
   }
 
-  const liveEndHourStart = Math.floor(anchorMs / SYSTEM_LOG_HOUR_MS) * SYSTEM_LOG_HOUR_MS
-  const liveWindowEndMs = liveEndHourStart + SYSTEM_LOG_HOUR_MS
-  const liveWindowStartMs = liveWindowEndMs - windowHours * SYSTEM_LOG_HOUR_MS
-
-  const hasLiveEntry = parsedEntries.some(
-    (entry) => entry.ts >= liveWindowStartMs && entry.ts < liveWindowEndMs,
-  )
-
   let windowMode: "live" | "capture" = "live"
-  let windowEndMs = liveWindowEndMs
-  let windowStartMs = liveWindowStartMs
+  let windowEndMs =
+    Math.floor(anchorMs / SYSTEM_LOG_HOUR_MS) * SYSTEM_LOG_HOUR_MS + SYSTEM_LOG_HOUR_MS
+  let windowStartMs = windowEndMs - windowHours * SYSTEM_LOG_HOUR_MS
 
+  const hasLiveEntry = parsedEntries.some((e) => e.ts >= windowStartMs && e.ts < windowEndMs)
   if (!hasLiveEntry && parsedEntries.length > 0 && Number.isFinite(maxParsedTs)) {
     windowMode = "capture"
-    const captureEndHourStart = Math.floor(maxParsedTs / SYSTEM_LOG_HOUR_MS) * SYSTEM_LOG_HOUR_MS
-    windowEndMs = captureEndHourStart + SYSTEM_LOG_HOUR_MS
+    windowEndMs =
+      Math.floor(maxParsedTs / SYSTEM_LOG_HOUR_MS) * SYSTEM_LOG_HOUR_MS + SYSTEM_LOG_HOUR_MS
     windowStartMs = windowEndMs - windowHours * SYSTEM_LOG_HOUR_MS
   }
 
@@ -249,38 +240,40 @@ export function build24HourSeveritySeries<T>(
   let totalHigh = 0
   let totalWatch = 0
   let totalNormal = 0
-  let peakHourLabel: string | null = null
-  let peakHourCount = 0
+  const binTotals = counts.map((bin) => {
+    totalCritical += bin.CRITICAL
+    totalHigh += bin.HIGH
+    totalWatch += bin.WATCH
+    totalNormal += bin.NORMAL
+    return bin.CRITICAL + bin.HIGH + bin.WATCH + bin.NORMAL
+  })
 
-  const meanRaw = windowHours > 0 ? includedLogs / windowHours : 0
+  const meanRaw = includedLogs / windowHours
   let squaredDiffSum = 0
-  for (const bin of counts) {
-    const binTotal = bin.CRITICAL + bin.HIGH + bin.WATCH + bin.NORMAL
-    const diff = binTotal - meanRaw
+  for (const total of binTotals) {
+    const diff = total - meanRaw
     squaredDiffSum += diff * diff
   }
-  const stdDev = windowHours > 0 ? Math.sqrt(squaredDiffSum / windowHours) : 0
+  const stdDev = Math.sqrt(squaredDiffSum / windowHours)
   const meanHourlyVolume = Math.round(meanRaw * 100) / 100
   const spikeThreshold = includedLogs > 0 ? Math.max(3, Math.ceil(meanRaw + 1.5 * stdDev)) : 0
+
+  let peakHourLabel: string | null = null
+  let peakHourCount = 0
   let spikeHourCount = 0
 
   const buckets: SystemLogSeverityBucket[] = counts.map((bin, idx) => {
     const bucketStartMs = windowStartMs + idx * SYSTEM_LOG_HOUR_MS
     const bucketEndMs = bucketStartMs + SYSTEM_LOG_HOUR_MS
+    const startDate = new Date(bucketStartMs)
     const hourLabel = formatHourClock(bucketStartMs)
-    const rangeLabel = `${hourLabel}–${formatHourClock(bucketEndMs)}`
-    const dateTimeLabel = formatDateTimeHour(bucketStartMs)
-    const hoursAgo = windowHours - 1 - idx
-    const relativeLabel = hoursAgo === 0 ? "This hr" : `-${hoursAgo}h`
-    const total = bin.CRITICAL + bin.HIGH + bin.WATCH + bin.NORMAL
+    const total = binTotals[idx]!
     const isSpike = spikeThreshold > 0 && total >= spikeThreshold && total > meanRaw * 1.5
+    const hoursAgo = windowHours - 1 - idx
 
-    totalCritical += bin.CRITICAL
-    totalHigh += bin.HIGH
-    totalWatch += bin.WATCH
-    totalNormal += bin.NORMAL
-    if (isSpike) spikeHourCount += 1
-
+    if (isSpike) {
+      spikeHourCount += 1
+    }
     if (total > peakHourCount) {
       peakHourCount = total
       peakHourLabel = hourLabel
@@ -291,9 +284,9 @@ export function build24HourSeveritySeries<T>(
       bucketStartMs,
       bucketEndMs,
       hourLabel,
-      rangeLabel,
-      dateTimeLabel,
-      relativeLabel,
+      rangeLabel: `${hourLabel}–${formatHourClock(bucketEndMs)}`,
+      dateTimeLabel: `${MONTH_SHORT[startDate.getMonth()] ?? "—"} ${startDate.getDate()}, ${hourLabel}`,
+      relativeLabel: hoursAgo === 0 ? "This hr" : `-${hoursAgo}h`,
       CRITICAL: bin.CRITICAL,
       HIGH: bin.HIGH,
       WATCH: bin.WATCH,

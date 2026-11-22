@@ -3,6 +3,7 @@ import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import {
   BUN_ANSI_THEME_PRESETS,
+  BUN_CAPABILITY_PILLARS,
   BUN_CORE_API_DOMAINS,
   BUN_GLOBAL_TIERS,
   BUN_MARKDOWN_CALLBACK_SPECS,
@@ -18,6 +19,7 @@ import {
   evaluateBunStringUtilities,
   formatInspectTable,
   generateBunUuidV7,
+  probeBunCapabilityMatrix,
   renderBunMarkdownStudio,
   runBunSurfaceAudit,
 } from "../../packages/contracts/src/bun_runtime_surface.ts"
@@ -66,6 +68,37 @@ describe("Bun Runtime Surface catalog & live audit engine", () => {
     expect(DEEP_SURFACE_AUDIT_SNIPPET).toContain("Bun.markdown")
     expect(BUN_ANSI_THEME_PRESETS.length).toBeGreaterThanOrEqual(4)
     expect(BUN_MARKDOWN_CALLBACK_SPECS.length).toBeGreaterThanOrEqual(10)
+
+    expect(BUN_CAPABILITY_PILLARS).toHaveLength(6)
+    expect(BUN_CAPABILITY_PILLARS.map((p) => p.title)).toEqual([
+      "HTTP & WEBSOCKETS",
+      "DATA",
+      "FILES & PROCESSES",
+      "SECURITY",
+      "FORMATS",
+      "LOW LEVEL",
+    ])
+    const flatCapabilityApis = BUN_CAPABILITY_PILLARS.flatMap((p) => p.items.map((i) => i.api))
+    expect(flatCapabilityApis).toEqual([
+      "Bun.serve()",
+      "request.cookies",
+      "fetch",
+      "Bun.sql",
+      "Bun.redis",
+      "Bun.s3",
+      "Bun.file()",
+      "Bun.$",
+      "Bun.spawn()",
+      "Bun.password",
+      "Bun.CSRF",
+      "Bun.secrets",
+      "Bun.YAML",
+      "Bun.markdown",
+      "Bun.escapeHTML()",
+      "bun:ffi",
+      "Worker",
+      "Bun.Glob",
+    ])
   })
 
   test("runs live surface audit with symbol kinds, deep bun:* modules, namespaces, and classes without exposing secrets", () => {
@@ -150,6 +183,22 @@ describe("Bun Runtime Surface catalog & live audit engine", () => {
     const s3Deep = loaded.deepInspections.find((d) => d.id === "Bun.S3Client")
     expect(s3Deep?.available).toBe(true)
     expect(s3Deep?.members.some((m) => m.scope === "prototype")).toBe(true)
+
+    const secretsDeep = loaded.deepInspections.find((d) => d.id === "Bun.secrets")
+    expect(secretsDeep?.available).toBe(true)
+    expect(secretsDeep?.members.map((m) => m.name)).toEqual(
+      expect.arrayContaining(["delete", "get", "set"]),
+    )
+    expect(secretsDeep?.members.every((m) => m.safePreview === undefined)).toBe(true)
+
+    const matrix = probeBunCapabilityMatrix(loaded)
+    expect(matrix).toHaveLength(6)
+    const totalMatrixItems = matrix.reduce((acc, p) => acc + p.totalCount, 0)
+    const availableMatrixItems = matrix.reduce((acc, p) => acc + p.availableCount, 0)
+    expect(totalMatrixItems).toBe(18)
+    expect(availableMatrixItems).toBeGreaterThanOrEqual(16)
+    expect(matrix.find((p) => p.id === "security")?.availableCount).toBe(3)
+    expect(matrix.find((p) => p.id === "formats")?.availableCount).toBe(3)
   })
 
   test("classifies symbol kinds accurately across classes, namespaces, functions, constants, and objects", () => {
@@ -222,6 +271,17 @@ describe("Bun Runtime Surface catalog & live audit engine", () => {
     })
     expect(audit.globalProbes.find((g) => g.name === "fetch")?.present).toBe(true)
     expect(audit.globalProbes.find((g) => g.name === "Bun")?.present).toBe(false)
+
+    const fallbackMatrix = probeBunCapabilityMatrix(audit)
+    const fetchItem = fallbackMatrix
+      .find((p) => p.id === "http-websockets")
+      ?.items.find((i) => i.id === "fetch-http2")
+    expect(fetchItem?.available).toBe(true)
+    expect(fetchItem?.matchedSymbols).toEqual(["fetch"])
+    const sqlItem = fallbackMatrix
+      .find((p) => p.id === "data")
+      ?.items.find((i) => i.id === "bun-sql")
+    expect(sqlItem?.available).toBe(false)
   })
 
   test("evaluates cross-runtime utility helpers (UUIDv7, deepEquals, strings, color, table)", () => {
@@ -303,6 +363,16 @@ describe("StatusDashboardPanel & BunRuntimeSurfaceSection integration", () => {
       }),
     )
     expect(coreApisHtml).toContain('data-runtime-view="core-apis"')
+    expect(coreApisHtml).toContain('data-bun-capability-matrix="true"')
+    expect(coreApisHtml).toContain('data-capability-pillar="http-websockets"')
+    expect(coreApisHtml).toContain('data-capability-pillar="low-level"')
+    expect(coreApisHtml).toContain("HTTP &amp; WEBSOCKETS")
+    expect(coreApisHtml).toContain("FILES &amp; PROCESSES")
+    expect(coreApisHtml).toContain("Bun.serve()")
+    expect(coreApisHtml).toContain("request.cookies")
+    expect(coreApisHtml).toContain("Bun.secrets")
+    expect(coreApisHtml).toContain("Bun.escapeHTML()")
+    expect(coreApisHtml).toContain("Bun.Glob")
     expect(coreApisHtml).toContain("HTTP &amp; Networking")
     expect(coreApisHtml).toContain("bun:sqlite")
 

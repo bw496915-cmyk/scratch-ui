@@ -32,6 +32,7 @@ import {
   evaluateBunColorConversions,
   evaluateBunStringUtilities,
   generateBunUuidV7,
+  probeBunCapabilityMatrix,
   renderBunMarkdownStudio,
   runBunSurfaceAudit,
   type BunDeepInspectionCategory,
@@ -41,6 +42,7 @@ import {
   type BunRuntimeSurfaceAuditSnapshot,
   type BunUtilityCategoryId,
   type GlobalTierId,
+  type LiveCapabilityItemProbe,
 } from "@sportsdesk-ops/contracts"
 import { renderAnsiReact } from "../ansi.tsx"
 import { CopyBunTerminalAnsiButton } from "./SyntaxHighlightedPre.tsx"
@@ -257,9 +259,49 @@ export function BunRuntimeSurfaceSection({
     })
   }, [utilityCategoryFilter, utilitySearch])
 
+  const capabilityMatrix = useMemo(() => probeBunCapabilityMatrix(effectiveAudit), [effectiveAudit])
+
+  const capabilityMatrixTotals = useMemo(() => {
+    let available = 0
+    let total = 0
+    for (const pillar of capabilityMatrix) {
+      available += pillar.availableCount
+      total += pillar.totalCount
+    }
+    return { available, total }
+  }, [capabilityMatrix])
+
+  const filteredCapabilityPillars = useMemo(() => {
+    const q = coreApiSearch.trim().toLowerCase()
+    if (!q) {
+      return capabilityMatrix
+    }
+    return capabilityMatrix
+      .map((pillar) => {
+        const pillarMatches = pillar.title.toLowerCase().includes(q)
+        const matchingItems = pillarMatches
+          ? pillar.items
+          : pillar.items.filter((item) => {
+              const hay =
+                `${item.api} ${item.summary} ${item.matchedSymbols.join(" ")}`.toLowerCase()
+              return hay.includes(q)
+            })
+        if (matchingItems.length === 0) {
+          return null
+        }
+        return {
+          ...pillar,
+          items: matchingItems,
+        }
+      })
+      .filter((p): p is NonNullable<typeof p> => p !== null)
+  }, [capabilityMatrix, coreApiSearch])
+
   const filteredCoreDomains = useMemo(() => {
     const q = coreApiSearch.trim().toLowerCase()
-    if (!q) return BUN_CORE_API_DOMAINS
+    if (!q) {
+      return BUN_CORE_API_DOMAINS
+    }
     return BUN_CORE_API_DOMAINS.filter((d) => {
       const hay = `${d.domain} ${d.apis.join(" ")} ${d.capabilities}`.toLowerCase()
       return hay.includes(q)
@@ -452,6 +494,26 @@ export function BunRuntimeSurfaceSection({
   const handleMintUuidV7 = () => {
     const next = generateBunUuidV7()
     setUuidHistory((prev) => [next, ...prev.slice(0, 5)])
+  }
+
+  const handleInspectCapability = (item: LiveCapabilityItemProbe) => {
+    if (!item.inspectSubTab) {
+      return
+    }
+    const query = item.inspectQuery ?? ""
+    if (item.inspectSubTab === "globals") {
+      setGlobalTierFilter("all")
+      setGlobalSearch(query)
+    } else if (item.inspectSubTab === "modules-classes") {
+      setDeepCategoryFilter("all")
+      setDeepKindFilter("all")
+      setDeepSearch(query)
+    } else if (item.inspectSubTab === "live-audit") {
+      setAuditKindFilter("all")
+      setAuditTypeFilter("all")
+      setAuditSearch(query)
+    }
+    setSubTab(item.inspectSubTab)
   }
 
   return (
@@ -1278,7 +1340,7 @@ export function BunRuntimeSurfaceSection({
                 aria-label="Search core Bun APIs"
                 value={coreApiSearch}
                 onChange={(e) => setCoreApiSearch(e.target.value)}
-                placeholder="Filter by domain or API (e.g. s3, sqlite, dns)…"
+                placeholder="Filter pillars, APIs or domains (e.g. cookies, s3, secrets)…"
                 style={{
                   width: "100%",
                   padding: "5px 10px 5px 28px",
@@ -1294,127 +1356,327 @@ export function BunRuntimeSurfaceSection({
             </div>
           </div>
 
-          <div style={{ overflowX: "auto" }}>
-            <table
+          {/* 6-Pillar Bun Capability Matrix */}
+          {filteredCapabilityPillars.length > 0 ? (
+            <div
+              data-bun-capability-matrix="true"
               style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                fontSize: "12px",
+                padding: "12px 14px",
+                borderBottomWidth: "1px",
+                borderBottomStyle: "solid",
+                borderBottomColor: "var(--border-default, #1e293b)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
               }}
             >
-              <thead>
-                <tr
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "8px",
+                }}
+              >
+                <div
                   style={{
-                    textAlign: "left",
-                    fontSize: "11px",
-                    color: "var(--text-muted, #94a3b8)",
-                    borderBottomWidth: "1px",
-                    borderBottomStyle: "solid",
-                    borderBottomColor: "var(--border-default, #1e293b)",
+                    fontSize: "11.5px",
+                    fontWeight: 700,
+                    color: "var(--text-primary, #f8fafc)",
                   }}
                 >
-                  <th style={{ padding: "8px 14px", width: "175px", fontWeight: 600 }}>Domain</th>
-                  <th style={{ padding: "8px 14px", width: "280px", fontWeight: 600 }}>APIs</th>
-                  <th style={{ padding: "8px 14px", fontWeight: 600 }}>Key Capabilities</th>
-                  <th
-                    style={{
-                      padding: "8px 14px",
-                      width: "96px",
-                      textAlign: "right",
-                      fontWeight: 600,
-                    }}
-                  >
-                    Live Probe
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCoreDomains.map((domain) => {
-                  const probe = coreDomainProbeMap.get(domain.id)
-                  const allLive =
-                    probe !== undefined &&
-                    probe.totalProbed > 0 &&
-                    probe.availableCount === probe.totalProbed
+                  Bun Capability Matrix — 6 Pillars · {capabilityMatrixTotals.total} Core Primitives
+                </div>
+                <div
+                  style={{
+                    fontFamily: MONO_FONT,
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    fontVariantNumeric: "tabular-nums",
+                    color:
+                      capabilityMatrixTotals.available === capabilityMatrixTotals.total
+                        ? "#4ade80"
+                        : capabilityMatrixTotals.available > 0
+                          ? "#fbbf24"
+                          : "#64748b",
+                  }}
+                >
+                  {capabilityMatrixTotals.available}/{capabilityMatrixTotals.total} live primitives
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(255px, 1fr))",
+                  gap: "10px",
+                }}
+              >
+                {filteredCapabilityPillars.map((pillar) => {
+                  const pillarAllLive = pillar.availableCount === pillar.totalCount
                   return (
-                    <tr
-                      key={domain.id}
-                      data-core-api-domain={domain.id}
+                    <div
+                      key={pillar.id}
+                      data-capability-pillar={pillar.id}
                       style={{
-                        borderBottomWidth: "1px",
-                        borderBottomStyle: "solid",
-                        borderBottomColor: "rgba(30, 41, 59, 0.65)",
+                        borderRadius: "6px",
+                        borderWidth: "1px",
+                        borderStyle: "solid",
+                        borderColor: "var(--border-default, #1e293b)",
+                        backgroundColor: "var(--surface-overlay, #0a101d)",
+                        padding: "10px 11px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
                       }}
                     >
-                      <td
+                      <div
                         style={{
-                          padding: "10px 14px",
-                          fontWeight: 700,
-                          color: "var(--text-primary, #f8fafc)",
-                          verticalAlign: "top",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "8px",
+                          paddingBottom: "6px",
+                          borderBottomWidth: "1px",
+                          borderBottomStyle: "solid",
+                          borderBottomColor: "rgba(30, 41, 59, 0.85)",
                         }}
                       >
-                        {domain.domain}
-                        {domain.builtinModules.length > 0 ? (
-                          <div
-                            style={{
-                              marginTop: "3px",
-                              fontFamily: MONO_FONT,
-                              fontSize: "10.5px",
-                              fontWeight: 500,
-                              color: "#c084fc",
-                            }}
-                          >
-                            {domain.builtinModules.join(" · ")}
-                          </div>
-                        ) : null}
-                      </td>
-                      <td
-                        style={{
-                          padding: "10px 14px",
-                          fontFamily: MONO_FONT,
-                          fontSize: "11.5px",
-                          color: "#7dd3fc",
-                          lineHeight: 1.6,
-                          verticalAlign: "top",
-                        }}
-                      >
-                        {domain.apis.join(" · ")}
-                      </td>
-                      <td
-                        style={{
-                          padding: "10px 14px",
-                          color: "var(--text-muted, #cbd5e1)",
-                          lineHeight: 1.5,
-                          verticalAlign: "top",
-                        }}
-                      >
-                        {domain.capabilities}
-                      </td>
-                      <td
-                        style={{
-                          padding: "10px 14px",
-                          textAlign: "right",
-                          fontFamily: MONO_FONT,
-                          fontVariantNumeric: "tabular-nums",
-                          fontSize: "11.5px",
-                          fontWeight: 600,
-                          color: allLive
-                            ? "#4ade80"
-                            : (probe?.availableCount ?? 0) > 0
-                              ? "#fbbf24"
-                              : "#64748b",
-                          verticalAlign: "top",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {probe ? `${probe.availableCount}/${probe.totalProbed}` : "—"}
-                      </td>
-                    </tr>
+                        <span
+                          style={{
+                            fontSize: "10.5px",
+                            fontWeight: 700,
+                            letterSpacing: "0.06em",
+                            color: "#94a3b8",
+                          }}
+                        >
+                          {pillar.title}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: MONO_FONT,
+                            fontSize: "10.5px",
+                            fontWeight: 600,
+                            fontVariantNumeric: "tabular-nums",
+                            color: pillarAllLive
+                              ? "#4ade80"
+                              : pillar.availableCount > 0
+                                ? "#fbbf24"
+                                : "#64748b",
+                          }}
+                        >
+                          {pillar.availableCount}/{pillar.totalCount} live
+                        </span>
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                        {pillar.items.map((item) => {
+                          const canInspect = Boolean(item.inspectSubTab)
+                          const symbolTooltip =
+                            item.matchedSymbols.length > 0
+                              ? `Live symbols: ${item.matchedSymbols.join(", ")}`
+                              : "Bun-native primitive (available when running under Bun)"
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              data-capability-item={item.id}
+                              data-capability-available={item.available ? "true" : "false"}
+                              onClick={() => handleInspectCapability(item)}
+                              disabled={!canInspect}
+                              title={
+                                canInspect ? `${symbolTooltip} — click to inspect` : symbolTooltip
+                              }
+                              style={{
+                                width: "100%",
+                                textAlign: "left",
+                                padding: "6px 8px",
+                                borderRadius: "5px",
+                                borderWidth: "1px",
+                                borderStyle: "solid",
+                                borderColor: "rgba(30, 41, 59, 0.75)",
+                                backgroundColor: "rgba(15, 23, 42, 0.72)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: "8px",
+                                cursor: canInspect ? "pointer" : "default",
+                              }}
+                            >
+                              <div style={{ minWidth: 0 }}>
+                                <div
+                                  style={{
+                                    fontFamily: MONO_FONT,
+                                    fontSize: "11.5px",
+                                    fontWeight: 700,
+                                    color: item.available ? "#7dd3fc" : "#94a3b8",
+                                  }}
+                                >
+                                  {item.api}
+                                </div>
+                                <div
+                                  style={{
+                                    marginTop: "1px",
+                                    fontSize: "11px",
+                                    color: "var(--text-muted, #94a3b8)",
+                                    lineHeight: 1.35,
+                                  }}
+                                >
+                                  {item.summary}
+                                </div>
+                              </div>
+                              <span
+                                style={{
+                                  flexShrink: 0,
+                                  fontFamily: MONO_FONT,
+                                  fontSize: "10px",
+                                  fontWeight: 600,
+                                  fontVariantNumeric: "tabular-nums",
+                                  color: item.available ? "#4ade80" : "#64748b",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {item.available ? (canInspect ? "live →" : "live") : "Bun-only"}
+                              </span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
                   )
                 })}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            </div>
+          ) : null}
+
+          {filteredCapabilityPillars.length === 0 && filteredCoreDomains.length === 0 ? (
+            <div style={{ padding: "18px 14px", fontSize: "12px", color: "#94a3b8" }}>
+              No capability pillars or core API domains match &ldquo;{coreApiSearch}&rdquo;.
+            </div>
+          ) : filteredCoreDomains.length > 0 ? (
+            <div style={{ overflowX: "auto" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontSize: "12px",
+                }}
+              >
+                <thead>
+                  <tr
+                    style={{
+                      textAlign: "left",
+                      fontSize: "11px",
+                      color: "var(--text-muted, #94a3b8)",
+                      borderBottomWidth: "1px",
+                      borderBottomStyle: "solid",
+                      borderBottomColor: "var(--border-default, #1e293b)",
+                    }}
+                  >
+                    <th style={{ padding: "8px 14px", width: "175px", fontWeight: 600 }}>Domain</th>
+                    <th style={{ padding: "8px 14px", width: "280px", fontWeight: 600 }}>APIs</th>
+                    <th style={{ padding: "8px 14px", fontWeight: 600 }}>Key Capabilities</th>
+                    <th
+                      style={{
+                        padding: "8px 14px",
+                        width: "96px",
+                        textAlign: "right",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Live Probe
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCoreDomains.map((domain) => {
+                    const probe = coreDomainProbeMap.get(domain.id)
+                    const allLive =
+                      probe !== undefined &&
+                      probe.totalProbed > 0 &&
+                      probe.availableCount === probe.totalProbed
+                    return (
+                      <tr
+                        key={domain.id}
+                        data-core-api-domain={domain.id}
+                        style={{
+                          borderBottomWidth: "1px",
+                          borderBottomStyle: "solid",
+                          borderBottomColor: "rgba(30, 41, 59, 0.65)",
+                        }}
+                      >
+                        <td
+                          style={{
+                            padding: "10px 14px",
+                            fontWeight: 700,
+                            color: "var(--text-primary, #f8fafc)",
+                            verticalAlign: "top",
+                          }}
+                        >
+                          {domain.domain}
+                          {domain.builtinModules.length > 0 ? (
+                            <div
+                              style={{
+                                marginTop: "3px",
+                                fontFamily: MONO_FONT,
+                                fontSize: "10.5px",
+                                fontWeight: 500,
+                                color: "#c084fc",
+                              }}
+                            >
+                              {domain.builtinModules.join(" · ")}
+                            </div>
+                          ) : null}
+                        </td>
+                        <td
+                          style={{
+                            padding: "10px 14px",
+                            fontFamily: MONO_FONT,
+                            fontSize: "11.5px",
+                            color: "#7dd3fc",
+                            lineHeight: 1.6,
+                            verticalAlign: "top",
+                          }}
+                        >
+                          {domain.apis.join(" · ")}
+                        </td>
+                        <td
+                          style={{
+                            padding: "10px 14px",
+                            color: "var(--text-muted, #cbd5e1)",
+                            lineHeight: 1.5,
+                            verticalAlign: "top",
+                          }}
+                        >
+                          {domain.capabilities}
+                        </td>
+                        <td
+                          style={{
+                            padding: "10px 14px",
+                            textAlign: "right",
+                            fontFamily: MONO_FONT,
+                            fontVariantNumeric: "tabular-nums",
+                            fontSize: "11.5px",
+                            fontWeight: 600,
+                            color: allLive
+                              ? "#4ade80"
+                              : (probe?.availableCount ?? 0) > 0
+                                ? "#fbbf24"
+                                : "#64748b",
+                            verticalAlign: "top",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {probe ? `${probe.availableCount}/${probe.totalProbed}` : "—"}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
         </div>
       ) : null}
 

@@ -106,9 +106,10 @@ function SystemLogSeverityTooltip({
   active,
   payload,
 }: SeverityTooltipProps): React.ReactElement | null {
-  if (!active || !payload || payload.length === 0) return null
-  const bucket = payload[0]?.payload
-  if (!bucket) return null
+  const bucket = active ? payload?.[0]?.payload : undefined
+  if (!bucket) {
+    return null
+  }
 
   return (
     <div
@@ -252,6 +253,17 @@ const FALLBACK_FILTER_SNAPSHOT = {
 
 const NOOP_SUBSCRIBE = (): (() => void) => () => {}
 const GET_FALLBACK_FILTER_SNAPSHOT = () => FALLBACK_FILTER_SNAPSHOT
+const EMPTY_ACTION_BTN_STYLE: React.CSSProperties = {
+  padding: "6px 14px",
+  borderRadius: "6px",
+  border: "1px solid #334155",
+  backgroundColor: "#1e293b",
+  color: "#f1f5f9",
+  fontSize: "12px",
+  fontWeight: 500,
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+}
 
 export const SystemLogSeverityBarChart = memo(function SystemLogSeverityBarChart({
   mode,
@@ -281,23 +293,19 @@ export const SystemLogSeverityBarChart = memo(function SystemLogSeverityBarChart
   const effectiveScope: ChartScopeMode = isFiltered ? scopeMode : "all"
 
   const series = useMemo(() => {
-    if (mode === "weblogs") {
-      const targetRows =
-        effectiveScope === "filtered" &&
-        weblogBitwiseIndex &&
-        weblogBitwiseIndex.length === weblogEntries.length
-          ? selectBitwiseFilteredRows(weblogEntries, weblogBitwiseIndex, snap.parsed)
-          : weblogEntries
-      return buildWebLog24HourSeveritySeries(targetRows, { anchorMs })
-    }
+    const selectRows = <T,>(
+      rows: readonly T[],
+      index: BitwiseLogIndex | undefined,
+    ): readonly T[] =>
+      effectiveScope === "filtered" && index && index.length === rows.length
+        ? selectBitwiseFilteredRows(rows, index, snap.parsed)
+        : rows
 
-    const targetRows =
-      effectiveScope === "filtered" &&
-      unifiedBitwiseIndex &&
-      unifiedBitwiseIndex.length === unifiedLogs.length
-        ? selectBitwiseFilteredRows(unifiedLogs, unifiedBitwiseIndex, snap.parsed)
-        : unifiedLogs
-    return buildUnifiedLog24HourSeveritySeries(targetRows, { anchorMs })
+    return mode === "weblogs"
+      ? buildWebLog24HourSeveritySeries(selectRows(weblogEntries, weblogBitwiseIndex), { anchorMs })
+      : buildUnifiedLog24HourSeveritySeries(selectRows(unifiedLogs, unifiedBitwiseIndex), {
+          anchorMs,
+        })
   }, [
     mode,
     effectiveScope,
@@ -770,37 +778,13 @@ export const SystemLogSeverityBarChart = memo(function SystemLogSeverityBarChart
               <button
                 type="button"
                 onClick={() => bitwiseStore.reset()}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: "6px",
-                  border: "1px solid #334155",
-                  backgroundColor: "#1e293b",
-                  color: "#f1f5f9",
-                  fontSize: "12px",
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                }}
+                style={EMPTY_ACTION_BTN_STYLE}
               >
                 Clear Active Filter
               </button>
             ) : null}
             {mode === "weblogs" && onRefreshWeblogs ? (
-              <button
-                type="button"
-                onClick={onRefreshWeblogs}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: "6px",
-                  border: "1px solid #334155",
-                  backgroundColor: "#1e293b",
-                  color: "#f1f5f9",
-                  fontSize: "12px",
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                }}
-              >
+              <button type="button" onClick={onRefreshWeblogs} style={EMPTY_ACTION_BTN_STYLE}>
                 Refresh Weblogs
               </button>
             ) : null}
@@ -812,15 +796,11 @@ export const SystemLogSeverityBarChart = memo(function SystemLogSeverityBarChart
                 type="button"
                 onClick={onSwitchToUnified}
                 style={{
-                  padding: "6px 14px",
-                  borderRadius: "6px",
+                  ...EMPTY_ACTION_BTN_STYLE,
                   border: "1px solid rgba(56, 189, 248, 0.45)",
                   backgroundColor: "rgba(56, 189, 248, 0.14)",
                   color: "#7dd3fc",
-                  fontSize: "12px",
                   fontWeight: 600,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
                 }}
               >
                 View Unified Stream ({unifiedLogs.length})
