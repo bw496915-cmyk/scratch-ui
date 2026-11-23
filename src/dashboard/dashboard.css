@@ -125,27 +125,27 @@ blockquote {
 }
 
 .sd-pill-live {
-  border-color: rgba(16, 185, 129, 0.45);
-  background-color: rgba(16, 185, 129, 0.12);
-  color: var(--sd-theme-emerald);
+  border-color: color-mix(in oklch, var(--color-green) 45%, transparent);
+  background-color: color-mix(in oklch, var(--color-green) 12%, transparent);
+  color: var(--color-green);
 }
 
 .sd-pill-fixture {
-  border-color: rgba(245, 158, 11, 0.45);
-  background-color: rgba(245, 158, 11, 0.12);
-  color: var(--sd-tier-steam);
+  border-color: color-mix(in oklch, var(--color-amber) 45%, transparent);
+  background-color: color-mix(in oklch, var(--color-amber) 12%, transparent);
+  color: var(--color-amber);
 }
 
 .sd-pill-alert {
-  border-color: rgba(239, 68, 68, 0.45);
-  background-color: rgba(239, 68, 68, 0.12);
-  color: var(--sd-tier-alert);
+  border-color: color-mix(in oklch, var(--color-red) 45%, transparent);
+  background-color: color-mix(in oklch, var(--color-red) 12%, transparent);
+  color: var(--color-red);
 }
 
 .sd-pill-sharp {
-  border-color: rgba(168, 85, 247, 0.45);
-  background-color: rgba(168, 85, 247, 0.12);
-  color: var(--sd-route-sharp);
+  border-color: color-mix(in oklch, var(--color-violet) 45%, transparent);
+  background-color: color-mix(in oklch, var(--color-violet) 12%, transparent);
+  color: var(--color-violet);
 }
 
 .sd-preset-btn {
@@ -259,8 +259,8 @@ blockquote {
 }
 
 .sd-pill-blocked {
-  border-color: rgba(100, 116, 139, 0.5);
-  background-color: rgba(100, 116, 139, 0.14);
+  border-color: color-mix(in oklch, var(--sd-tier-blocked) 50%, transparent);
+  background-color: color-mix(in oklch, var(--sd-tier-blocked) 14%, transparent);
   color: var(--sd-tier-blocked);
 }
 

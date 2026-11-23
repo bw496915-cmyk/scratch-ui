@@ -6538,49 +6538,49 @@ button.sd-badge {
 }
 
 .sd-badge--selected {
-  box-shadow: 0 0 0 1px #38bdf8;
+  box-shadow: 0 0 0 1px var(--color-blue);
 }
 
 .sd-badge--originator {
-  border-color: rgba(239, 68, 68, 0.48);
-  background-color: rgba(239, 68, 68, 0.14);
-  color: #fca5a5;
+  border-color: color-mix(in oklch, var(--color-red) 48%, transparent);
+  background-color: color-mix(in oklch, var(--color-red) 14%, transparent);
+  color: var(--color-red);
 }
 
 .sd-badge--syndicate-link {
-  border-color: rgba(245, 158, 11, 0.48);
-  background-color: rgba(245, 158, 11, 0.14);
-  color: #fcd34d;
+  border-color: color-mix(in oklch, var(--color-amber) 48%, transparent);
+  background-color: color-mix(in oklch, var(--color-amber) 14%, transparent);
+  color: var(--color-amber);
 }
 
 .sd-badge--clv-leader {
-  border-color: rgba(52, 211, 153, 0.44);
-  background-color: rgba(16, 185, 129, 0.12);
-  color: #6ee7b7;
+  border-color: color-mix(in oklch, var(--color-green) 44%, transparent);
+  background-color: color-mix(in oklch, var(--color-green) 12%, transparent);
+  color: var(--color-green);
 }
 
 .sd-badge--parlay-critical {
-  border-color: rgba(244, 63, 94, 0.5);
-  background-color: rgba(244, 63, 94, 0.15);
-  color: #fda4af;
+  border-color: color-mix(in oklch, var(--color-red) 52%, transparent);
+  background-color: color-mix(in oklch, var(--color-red) 16%, transparent);
+  color: var(--color-red);
 }
 
 .sd-badge--sharp {
-  border-color: rgba(56, 189, 248, 0.42);
-  background-color: rgba(14, 165, 233, 0.12);
-  color: #7dd3fc;
+  border-color: color-mix(in oklch, var(--color-blue) 42%, transparent);
+  background-color: color-mix(in oklch, var(--color-blue) 12%, transparent);
+  color: var(--color-blue);
 }
 
 .sd-badge--whale {
-  border-color: rgba(192, 132, 252, 0.48);
-  background-color: rgba(168, 85, 247, 0.15);
-  color: #d8b4fe;
+  border-color: color-mix(in oklch, var(--color-violet) 48%, transparent);
+  background-color: color-mix(in oklch, var(--color-violet) 15%, transparent);
+  color: var(--color-violet);
 }
 
 .sd-badge--alert-operator {
-  border-color: rgba(239, 68, 68, 0.55);
-  background-color: rgba(239, 68, 68, 0.18);
-  color: #fecaca;
+  border-color: color-mix(in oklch, var(--color-red) 55%, transparent);
+  background-color: color-mix(in oklch, var(--color-red) 18%, transparent);
+  color: var(--color-red);
 }
 
 /* --- Action Bar & Action Buttons --- */
@@ -7395,33 +7395,33 @@ button.sd-badge {
 [data-dashboard-theme="light"] .sd-badge--originator,
 [data-dashboard-theme="light"] .sd-badge--alert-operator,
 [data-dashboard-theme="light"] .sd-badge--parlay-critical {
-  background-color: #fee2e2;
-  border-color: #fca5a5;
-  color: #991b1b;
+  background-color: color-mix(in oklch, var(--color-red) 12%, transparent);
+  border-color: color-mix(in oklch, var(--color-red) 38%, transparent);
+  color: var(--color-red);
 }
 
 [data-dashboard-theme="light"] .sd-badge--syndicate-link {
-  background-color: #fef3c7;
-  border-color: #fcd34d;
-  color: #92400e;
+  background-color: color-mix(in oklch, var(--color-amber) 14%, transparent);
+  border-color: color-mix(in oklch, var(--color-amber) 38%, transparent);
+  color: var(--color-amber);
 }
 
 [data-dashboard-theme="light"] .sd-badge--clv-leader {
-  background-color: #d1fae5;
-  border-color: #6ee7b7;
-  color: #065f46;
+  background-color: color-mix(in oklch, var(--color-green) 12%, transparent);
+  border-color: color-mix(in oklch, var(--color-green) 38%, transparent);
+  color: var(--color-green);
 }
 
 [data-dashboard-theme="light"] .sd-badge--sharp {
-  background-color: #e0f2fe;
-  border-color: #7dd3fc;
-  color: #075985;
+  background-color: color-mix(in oklch, var(--color-blue) 12%, transparent);
+  border-color: color-mix(in oklch, var(--color-blue) 38%, transparent);
+  color: var(--color-blue);
 }
 
 [data-dashboard-theme="light"] .sd-badge--whale {
-  background-color: #f3e8ff;
-  border-color: #d8b4fe;
-  color: #6b21a8;
+  background-color: color-mix(in oklch, var(--color-violet) 12%, transparent);
+  border-color: color-mix(in oklch, var(--color-violet) 38%, transparent);
+  color: var(--color-violet);
 }
 
 [data-dashboard-theme="light"] .sd-risk-gauge {

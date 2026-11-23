@@ -287,8 +287,7 @@ function R2AutoRefreshControl({
       ? Math.max(0, Math.ceil((nextRefreshAtMs - nowMs) / 1000))
       : null
   const statusText = formatAutoRefreshStatus(intervalSeconds, remainingSeconds, loading)
-  const indicatorColor =
-    intervalSeconds === 0 ? "#64748b" : loading ? "#38bdf8" : "#4ade80"
+  const indicatorColor = intervalSeconds === 0 ? "#64748b" : loading ? "#38bdf8" : "#4ade80"
 
   return (
     <div

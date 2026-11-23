@@ -220,8 +220,10 @@ export function computeStaleKeysSparklineGeometry({
   const latestCount =
     points.length > 0 ? points[points.length - 1]!.staleCount : (fallbackStaleCount ?? 0)
   const firstCount = points.length > 0 ? points[0]!.staleCount : latestCount
-  const minCount = points.length > 0 ? (min(points, (d) => d.staleCount) ?? latestCount) : latestCount
-  const maxCount = points.length > 0 ? (max(points, (d) => d.staleCount) ?? latestCount) : latestCount
+  const minCount =
+    points.length > 0 ? (min(points, (d) => d.staleCount) ?? latestCount) : latestCount
+  const maxCount =
+    points.length > 0 ? (max(points, (d) => d.staleCount) ?? latestCount) : latestCount
 
   const isDangerNow = latestCount > effectiveThreshold
   const peakExceededDanger = maxCount > effectiveThreshold
@@ -536,12 +538,7 @@ export function StaleKeysSparkline({
                 />
               )}
               {isHovered && !isLast && !coord.exceeded && (
-                <circle
-                  cx={coord.x.toFixed(1)}
-                  cy={coord.y.toFixed(1)}
-                  r={2.8}
-                  fill={tone}
-                />
+                <circle cx={coord.x.toFixed(1)} cy={coord.y.toFixed(1)} r={2.8} fill={tone} />
               )}
               <circle
                 cx={coord.x.toFixed(1)}
