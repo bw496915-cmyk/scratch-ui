@@ -123,22 +123,100 @@ export function isPublicApiRoute(pathname: string, method: string): boolean {
   return false
 }
 
+export const NONCED_HTML_CACHE_CONTROL = "private, no-store"
+export const HASHED_ASSET_CACHE_CONTROL = "public, max-age=31536000, immutable"
+
+const CSP_NONCE_PATTERN = /^[A-Za-z0-9+/=_-]{16,128}$/
+
+/** Generate a fresh 128-bit CSPRNG base64 CSP nonce for a single HTML response. */
+export function generateCspNonce(): string {
+  return randomBytes(16).toString("base64")
+}
+
+function assertValidCspNonce(nonce: string): string {
+  if (!CSP_NONCE_PATTERN.test(nonce)) {
+    throw new RangeError("Invalid CSP nonce format")
+  }
+  return nonce
+}
+
+/**
+ * Inject a per-request CSP nonce into an HTML shell:
+ * - Inserts `<meta property="csp-nonce" nonce="...">` (never `content="..."`, which leaks to
+ *   CSS attribute selectors) at the very top of `<head>` immediately after `<meta charset>`
+ *   to prevent DOM clobbering of `document.querySelector('meta[property="csp-nonce"]')`.
+ * - Stamps `nonce="..."` on `<script>`, `<style>`, and `<link rel="stylesheet">` tags.
+ */
+export function injectCspNonceIntoHtml(html: string, rawNonce: string): string {
+  const nonce = assertValidCspNonce(rawNonce)
+  const metaTag = `<meta property="csp-nonce" nonce="${nonce}" />`
+
+  // Strip any pre-existing csp-nonce meta tag before inserting at the top of <head>
+  let out = html.replace(/<meta\b[^>]*\bproperty=["']csp-nonce["'][^>]*>\s*/gi, "")
+
+  const charsetRe = /(<meta\b[^>]*\bcharset\s*=\s*["']?[^"'\s>]+["']?[^>]*>)/i
+  if (charsetRe.test(out)) {
+    out = out.replace(charsetRe, `$1\n    ${metaTag}`)
+  } else if (/<head\b[^>]*>/i.test(out)) {
+    out = out.replace(/(<head\b[^>]*>)/i, `$1\n    ${metaTag}`)
+  } else {
+    out = `${metaTag}\n${out}`
+  }
+
+  // Stamp nonce onto <script> and <style> opening tags that do not already carry a nonce attribute
+  out = out.replace(/<(script|style)\b([^>]*)>/gi, (full, tag: string, attrs: string) => {
+    if (/\bnonce\s*=/i.test(attrs)) return full
+    return `<${tag} nonce="${nonce}"${attrs}>`
+  })
+
+  // Stamp nonce onto <link rel="stylesheet"> tags that do not already carry a nonce attribute
+  out = out.replace(/<link\b([^>]*)>/gi, (full, attrs: string) => {
+    if (!/\brel\s*=\s*["']?stylesheet["']?/i.test(attrs)) return full
+    if (/\bnonce\s*=/i.test(attrs)) return full
+    return `<link nonce="${nonce}"${attrs}>`
+  })
+
+  return out
+}
+
 /**
  * Build baseline HTTP security headers that harden HTML & API responses while
- * preserving React inline styles and Telegram Mini-App / AI Studio preview embedding.
+ * supporting CSP Level 3 split `style-src-elem` / `style-src-attr` directives,
+ * per-request nonces, and Telegram Mini-App / AI Studio preview embedding.
  * Note: `X-Frame-Options` is intentionally omitted so CSP `frame-ancestors` governs framing.
  */
 export function buildSecurityHeaders(options: {
   readonly isProd: boolean
   readonly isHttps: boolean
+  readonly nonce?: string | undefined
+  readonly styleAttrPolicy?: "none" | "unsafe-inline" | undefined
 }): Record<string, string> {
+  const nonce = options.nonce !== undefined ? assertValidCspNonce(options.nonce) : undefined
+  const nonceToken = nonce ? `'nonce-${nonce}'` : null
+  const styleAttrDirective =
+    options.styleAttrPolicy === "none" ? "style-src-attr 'none'" : "style-src-attr 'unsafe-inline'"
+
   const scriptSrc = options.isProd
-    ? "script-src 'self'"
-    : "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+    ? nonceToken
+      ? `script-src 'self' ${nonceToken} 'strict-dynamic'`
+      : "script-src 'self'"
+    : nonceToken
+      ? `script-src 'self' ${nonceToken} 'unsafe-inline' 'unsafe-eval'`
+      : "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+
+  const styleSrc = nonceToken
+    ? `style-src 'self' ${nonceToken}`
+    : "style-src 'self' 'unsafe-inline'"
+  const styleSrcElem = nonceToken
+    ? `style-src-elem 'self' ${nonceToken}`
+    : "style-src-elem 'self' 'unsafe-inline'"
+
   const csp = [
     "default-src 'self'",
     scriptSrc,
-    "style-src 'self' 'unsafe-inline'",
+    styleSrc,
+    styleSrcElem,
+    styleAttrDirective,
     "img-src 'self' data: blob: https://*.r2.dev",
     "font-src 'self' data:",
     "connect-src 'self' ws: wss:",
@@ -157,6 +235,43 @@ export function buildSecurityHeaders(options: {
       ? { "Strict-Transport-Security": "max-age=31536000; includeSubDomains" }
       : {}),
   }
+}
+
+/**
+ * Send a per-request nonced HTML shell with `Cache-Control: private, no-store` and no `ETag`
+ * / `Last-Modified` headers so browsers and CDNs can never serve a `304 Not Modified` body
+ * with a stale nonce against a fresh CSP header.
+ */
+export function sendNoncedHtmlShell(
+  res: Pick<express.Response, "status" | "setHeader" | "removeHeader" | "end">,
+  options: {
+    readonly html: string
+    readonly isProd: boolean
+    readonly isHttps: boolean
+    readonly styleAttrPolicy?: "none" | "unsafe-inline" | undefined
+    readonly nonce?: string | undefined
+  },
+): string {
+  const nonce =
+    options.nonce !== undefined ? assertValidCspNonce(options.nonce) : generateCspNonce()
+  const noncedHtml = injectCspNonceIntoHtml(options.html, nonce)
+  const secHeaders = buildSecurityHeaders({
+    isProd: options.isProd,
+    isHttps: options.isHttps,
+    nonce,
+    styleAttrPolicy: options.styleAttrPolicy,
+  })
+  for (const [key, val] of Object.entries(secHeaders)) {
+    res.setHeader(key, val)
+  }
+  const body = Buffer.from(noncedHtml, "utf8")
+  res.setHeader("Content-Type", "text/html; charset=utf-8")
+  res.setHeader("Content-Length", String(body.byteLength))
+  res.setHeader("Cache-Control", NONCED_HTML_CACHE_CONTROL)
+  res.removeHeader("ETag")
+  res.removeHeader("Last-Modified")
+  res.status(200).end(body)
+  return nonce
 }
 
 /** Constant-time equality over SHA-256 digests so string length never leaks timing. */

@@ -22,7 +22,9 @@ import {
   createEnforceAdminMiddleware,
   createEnforceAuthMiddleware,
   createHttpAuthController,
+  HASHED_ASSET_CACHE_CONTROL,
   isPublicApiRoute,
+  sendNoncedHtmlShell,
   validateTerminalCommand,
 } from "./lib/http_auth.ts"
 import { probeR2ImageProvenance } from "./lib/image_provenance.ts"
@@ -1026,10 +1028,18 @@ async function startServer() {
     }
   })
 
-  // ── Agent HTML Inspector Route (Authenticated) ──
+  // ── Agent HTML Inspector Route (Authenticated, Nonced, No-Store, No-ETag) ──
   app.get("/agent/:id", requireExpressAuth, async (req, res) => {
     const detail = await agentDetailService.getAgentDetail(req.params.id)
-    res.type("text/html; charset=utf-8").send(renderAgentHtmlPage(detail))
+    const forwardedProto = String(req.headers["x-forwarded-proto"] ?? "")
+      .split(",")[0]
+      ?.trim()
+      .toLowerCase()
+    sendNoncedHtmlShell(res, {
+      html: renderAgentHtmlPage(detail),
+      isProd: IS_PROD,
+      isHttps: req.secure || forwardedProto === "https",
+    })
   })
 
   // ── Contained Static & Docs Asset Serving ──
@@ -1051,11 +1061,37 @@ async function startServer() {
   serveContainedDir("/static", resolve(CWD, "static"), false)
   serveContainedDir("/docs", resolve(CWD, "docs"), true)
 
-  // ── Frontend SPA (Static `dist/` in Production, Lazy Vite Middleware in Dev) ──
-  if (IS_PROD && existsSync(resolve(CWD, "dist/index.html"))) {
-    app.use(express.static(resolve(CWD, "dist")))
-    app.get("*", (_req, res) => {
-      res.sendFile(resolve(CWD, "dist/index.html"))
+  // ── Frontend SPA (Nonced HTML Shell + Immutable Hashed Assets in Prod, Lazy Vite in Dev) ──
+  const distDir = resolve(CWD, "dist")
+  const distIndexPath = resolve(distDir, "index.html")
+  if (IS_PROD && existsSync(distIndexPath)) {
+    const distIndexTemplate = await readFile(distIndexPath, "utf8")
+    const distAssetsDir = resolve(distDir, "assets")
+    if (existsSync(distAssetsDir)) {
+      app.use(
+        "/assets",
+        express.static(distAssetsDir, {
+          etag: false,
+          immutable: true,
+          maxAge: "1y",
+          setHeaders: (res) => {
+            res.setHeader("Cache-Control", HASHED_ASSET_CACHE_CONTROL)
+          },
+        }),
+      )
+    }
+    // Never auto-serve dist/index.html via express.static (would attach ETag & skip per-request nonce)
+    app.use(express.static(distDir, { index: false }))
+    app.get("*", (req, res) => {
+      const forwardedProto = String(req.headers["x-forwarded-proto"] ?? "")
+        .split(",")[0]
+        ?.trim()
+        .toLowerCase()
+      sendNoncedHtmlShell(res, {
+        html: distIndexTemplate,
+        isProd: true,
+        isHttps: req.secure || forwardedProto === "https",
+      })
     })
   } else {
     const { createServer: createViteServer } = await import("vite")

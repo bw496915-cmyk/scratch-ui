@@ -6043,6 +6043,82 @@ body {
 .sd-quickjump-ribbon {
   max-width: 100%;
   box-sizing: border-box;
+  overflow: hidden;
+  max-height: 360px;
+  transition:
+    max-height 240ms cubic-bezier(0.4, 0, 0.2, 1),
+    padding 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sd-quickjump-ribbon--collapsed {
+  max-height: 36px;
+}
+
+.sd-quickjump-collapsed-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  width: 100%;
+  min-width: 0;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    max-height 240ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 180ms ease,
+    visibility 0s linear 240ms;
+}
+
+.sd-quickjump-ribbon--collapsed .sd-quickjump-collapsed-bar {
+  max-height: 28px;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    max-height 240ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 180ms ease 60ms,
+    visibility 0s linear 0s;
+}
+
+.sd-quickjump-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  width: 100%;
+  min-width: 0;
+  max-height: 340px;
+  opacity: 1;
+  overflow: hidden;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    max-height 240ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 180ms ease 40ms,
+    visibility 0s linear 0s;
+}
+
+.sd-quickjump-ribbon--collapsed .sd-quickjump-body {
+  max-height: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    max-height 240ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 160ms ease,
+    visibility 0s linear 240ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-quickjump-ribbon,
+  .sd-quickjump-collapsed-bar,
+  .sd-quickjump-body {
+    transition: none;
+  }
 }
 
 .sd-quickjump-meta {
@@ -6060,6 +6136,10 @@ body {
 @media (max-width: 1023px) {
   .sd-quickjump-ribbon {
     padding: 8px 12px !important;
+  }
+
+  .sd-quickjump-ribbon--collapsed {
+    padding: 4px 12px !important;
   }
 
   .sd-quickjump-strip {

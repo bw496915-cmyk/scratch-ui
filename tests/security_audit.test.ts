@@ -20,9 +20,14 @@ import {
   createHttpAuthController,
   digestSessionId,
   enforceAuth as defaultEnforceAuth,
+  generateCspNonce,
+  HASHED_ASSET_CACHE_CONTROL,
+  injectCspNonceIntoHtml,
   isPublicApiRoute,
+  NONCED_HTML_CACHE_CONTROL,
   redactIpToSubnetHash,
   redactRawIpsInText,
+  sendNoncedHtmlShell,
   type SessionRecord,
   validateTerminalCommand,
 } from "../lib/http_auth.ts"
@@ -1013,6 +1018,124 @@ describe("F5: Security Headers & Telegram Mini-App Frame Ancestors", () => {
     expect(headers["Content-Security-Policy"]).toContain("telegram:")
     expect(headers["Content-Security-Policy"]).toContain("object-src 'none'")
     expect(headers["X-Frame-Options"]).toBeUndefined()
+  })
+
+  test("nonced production CSP splits style-src-elem and style-src-attr and applies strict-dynamic", () => {
+    const nonceA = generateCspNonce()
+    const nonceB = generateCspNonce()
+    expect(nonceA).not.toBe(nonceB)
+    expect(Buffer.from(nonceA, "base64").byteLength).toBe(16)
+
+    const strictHeaders = buildSecurityHeaders({
+      isProd: true,
+      isHttps: true,
+      nonce: nonceA,
+      styleAttrPolicy: "none",
+    })
+    const strictCsp = strictHeaders["Content-Security-Policy"]!
+    expect(strictCsp).toContain(`script-src 'self' 'nonce-${nonceA}' 'strict-dynamic'`)
+    expect(strictCsp).toContain(`style-src 'self' 'nonce-${nonceA}'`)
+    expect(strictCsp).toContain(`style-src-elem 'self' 'nonce-${nonceA}'`)
+    expect(strictCsp).toContain("style-src-attr 'none'")
+    expect(strictCsp).not.toContain("style-src-elem 'self' 'unsafe-inline'")
+
+    const inlineAttrHeaders = buildSecurityHeaders({
+      isProd: true,
+      isHttps: true,
+      nonce: nonceB,
+      styleAttrPolicy: "unsafe-inline",
+    })
+    const inlineAttrCsp = inlineAttrHeaders["Content-Security-Policy"]!
+    expect(inlineAttrCsp).toContain(`style-src-elem 'self' 'nonce-${nonceB}'`)
+    expect(inlineAttrCsp).toContain("style-src-attr 'unsafe-inline'")
+  })
+
+  test("injectCspNonceIntoHtml places meta[property=csp-nonce] with nonce attr (never content) right after charset and nonces script/style/stylesheet tags", () => {
+    const nonce = generateCspNonce()
+    const rawHtml = [
+      "<!doctype html>",
+      '<html lang="en">',
+      "  <head>",
+      '    <meta charset="UTF-8" />',
+      '    <link rel="stylesheet" href="/assets/index-abc123.css" />',
+      '    <link rel="icon" href="/favicon.ico" />',
+      "    <style>body { color: #fff; }</style>",
+      '    <script type="application/ld+json">{"@type":"WebApplication"}</script>',
+      "  </head>",
+      '  <body><script type="module" src="/assets/index-abc123.js"></script></body>',
+      "</html>",
+    ].join("\n")
+
+    const injected = injectCspNonceIntoHtml(rawHtml, nonce)
+    const charsetIdx = injected.indexOf('<meta charset="UTF-8" />')
+    const metaNonceTag = `<meta property="csp-nonce" nonce="${nonce}" />`
+    const metaNonceIdx = injected.indexOf(metaNonceTag)
+    const firstLinkIdx = injected.indexOf("<link")
+
+    expect(metaNonceIdx).toBeGreaterThan(charsetIdx)
+    expect(metaNonceIdx).toBeLessThan(firstLinkIdx)
+    expect(injected).not.toMatch(/<meta\b[^>]*csp-nonce[^>]*\bcontent=/i)
+
+    expect(injected).toContain(
+      `<link nonce="${nonce}" rel="stylesheet" href="/assets/index-abc123.css" />`,
+    )
+    expect(injected).toContain('<link rel="icon" href="/favicon.ico" />')
+    expect(injected).toContain(`<style nonce="${nonce}">body { color: #fff; }</style>`)
+    expect(injected).toContain(`<script nonce="${nonce}" type="application/ld+json">`)
+    expect(injected).toContain(
+      `<script nonce="${nonce}" type="module" src="/assets/index-abc123.js"></script>`,
+    )
+
+    expect(() => injectCspNonceIntoHtml(rawHtml, 'bad"nonce')).toThrow(RangeError)
+  })
+
+  test("sendNoncedHtmlShell enforces Cache-Control: private, no-store, omits ETag/Last-Modified, and matches CSP header nonce to HTML body", () => {
+    const headers = new Map<string, string>([
+      ["etag", 'W/"stale-etag"'],
+      ["last-modified", "Wed, 21 Oct 2026 07:28:00 GMT"],
+    ])
+    let statusCode = 0
+    let bodyBuf: Buffer | null = null
+    const mockRes = {
+      status(code: number) {
+        statusCode = code
+        return this
+      },
+      setHeader(name: string, value: string | number | readonly string[]) {
+        headers.set(name.toLowerCase(), Array.isArray(value) ? value.join(", ") : String(value))
+        return this
+      },
+      removeHeader(name: string) {
+        headers.delete(name.toLowerCase())
+      },
+      end(chunk?: unknown) {
+        bodyBuf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk ?? ""), "utf8")
+        return this
+      },
+    }
+
+    const nonce = sendNoncedHtmlShell(mockRes as never, {
+      html: '<!doctype html><html><head><meta charset="UTF-8" /><link rel="stylesheet" href="/assets/app.css" /></head><body><script type="module" src="/assets/app.js"></script></body></html>',
+      isProd: true,
+      isHttps: true,
+    })
+
+    expect(statusCode).toBe(200)
+    expect(headers.get("cache-control")).toBe(NONCED_HTML_CACHE_CONTROL)
+    expect(headers.get("cache-control")).toBe("private, no-store")
+    expect(headers.has("etag")).toBe(false)
+    expect(headers.has("last-modified")).toBe(false)
+    expect(HASHED_ASSET_CACHE_CONTROL).toBe("public, max-age=31536000, immutable")
+
+    const csp = headers.get("content-security-policy") ?? ""
+    expect(csp).toContain(`'nonce-${nonce}'`)
+    expect(csp).toContain(`style-src-elem 'self' 'nonce-${nonce}'`)
+
+    const bodyText = bodyBuf!.toString("utf8")
+    expect(bodyText).toContain(`<meta property="csp-nonce" nonce="${nonce}" />`)
+    expect(bodyText).toContain(
+      `<script nonce="${nonce}" type="module" src="/assets/app.js"></script>`,
+    )
   })
 
   test("public allowlist strictly limits unauthenticated routes", () => {

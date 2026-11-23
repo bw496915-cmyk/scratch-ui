@@ -4106,10 +4106,8 @@ export function App(): React.ReactElement {
         data-ribbon-collapsed={commandRibbonCollapsed ? "true" : "false"}
         style={{
           display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: commandRibbonCollapsed ? "6px 12px" : "8px 14px",
+          flexDirection: "column",
+          alignItems: "stretch",
           padding: commandRibbonCollapsed ? "4px 20px" : "8px 20px",
           backgroundColor: "#0b1120",
           borderBottom: "1px solid #1e293b",
@@ -4117,55 +4115,537 @@ export function App(): React.ReactElement {
           color: "#cbd5e1",
         }}
       >
-        {commandRibbonCollapsed ? (
-          <>
-            <div
+        <div className="sd-quickjump-collapsed-bar" aria-hidden={!commandRibbonCollapsed}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              minWidth: 0,
+            }}
+          >
+            <span
+              className="sd-quickjump-label"
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                minWidth: 0,
+                fontWeight: 700,
+                color: "#38bdf8",
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
               }}
             >
-              <span
-                className="sd-quickjump-label"
-                style={{
-                  fontWeight: 700,
-                  color: "#38bdf8",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.04em",
-                  whiteSpace: "nowrap",
-                  flexShrink: 0,
-                }}
-              >
-                🧭 Desk Quick-Jump
-              </span>
-              <span
-                style={{
-                  color: "#94a3b8",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                Collapsed · ${tapeRiskUsd.toLocaleString()} ({tapeTicketCount} tickets) ·{" "}
-                {quickJumpFeed.label}
-                {quickJumpFeed.stale ? " ⚠" : ""}
-              </span>
-            </div>
+              🧭 Desk Quick-Jump
+            </span>
+            <span
+              style={{
+                color: "#94a3b8",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              Collapsed · ${tapeRiskUsd.toLocaleString()} ({tapeTicketCount} tickets) ·{" "}
+              {quickJumpFeed.label}
+              {quickJumpFeed.stale ? " ⚠" : ""}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="sd-quickjump-pill sd-quickjump-pill--neutral"
+            data-command-ribbon-toggle="true"
+            aria-expanded={!commandRibbonCollapsed}
+            aria-controls="sd-command-ribbon-body"
+            tabIndex={commandRibbonCollapsed ? 0 : -1}
+            onClick={toggleCommandRibbon}
+            title="Expand Operations Command Ribbon surveillance bar"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+              padding: "2px 9px",
+              borderRadius: "999px",
+              border: "1px solid rgba(148, 163, 184, 0.35)",
+              backgroundColor: "rgba(148, 163, 184, 0.12)",
+              color: "#cbd5e1",
+              fontSize: "11px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            <ChevronDown size={12} aria-hidden="true" />
+            <span>Show Ribbon</span>
+          </button>
+        </div>
+        <div
+          id="sd-command-ribbon-body"
+          className="sd-quickjump-body"
+          aria-hidden={commandRibbonCollapsed}
+        >
+          <div className="sd-quickjump-strip">
+            <span
+              className="sd-quickjump-label"
+              style={{
+                fontWeight: 700,
+                color: "#38bdf8",
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+            >
+              🧭 Desk Quick-Jump:
+            </span>
             <button
               type="button"
+              className={`sd-quickjump-pill ${shadowSliceHasTapeFocus(activeShadowSlice) ? "sd-quickjump-pill--amber" : "sd-quickjump-pill--sky"}`}
+              data-desk-quickjump="active-risk"
+              onClick={openWagersForShadowSlice}
+              style={{
+                padding: "3px 9px",
+                borderRadius: "999px",
+                border: shadowSliceHasTapeFocus(activeShadowSlice)
+                  ? "1px solid rgba(251, 191, 36, 0.45)"
+                  : "1px solid rgba(56, 189, 248, 0.35)",
+                backgroundColor: shadowSliceHasTapeFocus(activeShadowSlice)
+                  ? "rgba(251, 191, 36, 0.14)"
+                  : "rgba(56, 189, 248, 0.1)",
+                color: shadowSliceHasTapeFocus(activeShadowSlice) ? "#fde68a" : "#7dd3fc",
+                fontSize: "11px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+              title={
+                shadowSliceHasTapeFocus(activeShadowSlice)
+                  ? `Filter Live Wagers to URL shadow slice: ${buildDashboardShadowSliceUrl(activeShadowSlice, { matrix: showBuildMatrix })}`
+                  : "Open full Live Wagers tape"
+              }
+            >
+              ⚡{" "}
+              {shadowSliceHasTapeFocus(activeShadowSlice)
+                ? `Slice Risk (${formatShadowSliceRibbonLabel(activeShadowSlice)}):`
+                : "Active Risk:"}{" "}
+              ${tapeRiskUsd.toLocaleString()} ({tapeTicketCount} tickets
+              {shadowSliceTape.criticalOrSteam > 0
+                ? ` · ${shadowSliceTape.criticalOrSteam} crit/steam`
+                : ""}
+              )
+              <span
+                data-quickjump-feed-age="true"
+                className="sd-quickjump-feed-age"
+                style={{
+                  marginLeft: "4px",
+                  color: quickJumpFeed.stale ? "#fbbf24" : "#64748b",
+                  fontWeight: 400,
+                }}
+                title={feedFreshnessTitle(quickJumpFeed, wagersProvenance.label)}
+              >
+                {" "}
+                · {quickJumpFeed.label}
+                {quickJumpFeed.stale ? " ⚠" : ""}
+              </span>
+            </button>
+            <button
+              type="button"
+              className="sd-quickjump-pill sd-quickjump-pill--amber"
+              data-desk-quickjump="nfl-1h-pregame"
+              onClick={() => {
+                applyShadowSliceToLocation(NFL_1H_PREGAME_SLICE, {
+                  matrix: showBuildMatrix,
+                })
+                setActiveTab("shadow")
+              }}
+              style={{
+                padding: "3px 9px",
+                borderRadius: "999px",
+                border: "1px solid rgba(234, 179, 8, 0.4)",
+                backgroundColor: "rgba(234, 179, 8, 0.12)",
+                color: "#facc15",
+                fontSize: "11px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+              title="Shadow matrix: NFL · 1H · Pregame (matches ?matrix=1&sport=Football&subSport=NFL&period=1h&regime=pregame)"
+            >
+              🏈 NFL 1H Pregame
+            </button>
+            <a
+              href={buildBookdeskopsTokensDeskHref(
+                shadowSliceHasTapeFocus(activeShadowSlice) ? activeShadowSlice : undefined,
+              )}
+              target="_blank"
+              rel="noreferrer"
               className="sd-quickjump-pill sd-quickjump-pill--neutral"
-              data-command-ribbon-toggle="true"
-              aria-expanded={false}
-              aria-controls="sd-command-ribbon-body"
-              onClick={toggleCommandRibbon}
-              title="Expand Operations Command Ribbon surveillance bar"
+              data-desk-quickjump="bookdeskops-tokens"
+              style={{
+                padding: "3px 9px",
+                borderRadius: "999px",
+                border: "1px solid rgba(148, 163, 184, 0.35)",
+                backgroundColor: "rgba(148, 163, 184, 0.1)",
+                color: "#e2e8f0",
+                fontSize: "11px",
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+              title="BookDeskOps serve-local tokens desk (DCE compile-time anchor)"
+            >
+              📎 BookDeskOps tokens
+            </a>
+            <a
+              href={buildBookdeskopsDirectoryRouteHref()}
+              target="_blank"
+              rel="noreferrer"
+              className="sd-quickjump-pill sd-quickjump-pill--sky"
+              data-desk-quickjump="bookdeskops-directory"
+              style={{
+                padding: "3px 9px",
+                borderRadius: "999px",
+                border: "1px solid rgba(56, 189, 248, 0.35)",
+                backgroundColor: "rgba(56, 189, 248, 0.1)",
+                color: "#38bdf8",
+                fontSize: "11px",
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+              title="BookDeskOps serve-local /static/* directory route inspector & HTTP probes"
+            >
+              📁 /static/* Dir
+            </a>
+            <button
+              type="button"
+              className="sd-quickjump-pill sd-quickjump-pill--amber"
+              data-desk-quickjump="ncaab"
+              data-quickjump-active={quickJumpNcaabActive ? "true" : undefined}
+              aria-current={quickJumpNcaabActive ? "page" : undefined}
+              onClick={() => {
+                setWagerSportFilter("NCAAB")
+                setWagerSearch("")
+                setWagerChannelFilter("ALL")
+                setActiveTab("wagers")
+              }}
+              style={{
+                padding: "3px 9px",
+                borderRadius: "999px",
+                border: quickJumpNcaabActive
+                  ? "1px solid #fbbf24"
+                  : "1px solid rgba(245, 158, 11, 0.35)",
+                backgroundColor: quickJumpNcaabActive
+                  ? "rgba(245, 158, 11, 0.26)"
+                  : "rgba(245, 158, 11, 0.12)",
+                color: "#fbbf24",
+                fontSize: "11px",
+                fontWeight: 600,
+                cursor: "pointer",
+                boxShadow: quickJumpNcaabActive ? "0 0 0 1px rgba(251, 191, 36, 0.35)" : undefined,
+              }}
+              title="Filter Live Wagers to College Basketball (NCAAB 1H & Game)"
+            >
+              🏀 NCAAB Slice ({liveWagers.filter((w) => w.sport.toUpperCase() === "NCAAB").length})
+            </button>
+            {(
+              [
+                {
+                  id: "GSLIVE",
+                  label: "🔴 GSLIVE",
+                  title: "Filter Live Wagers to GSLIVE (Partner 118 in-play)",
+                },
+                {
+                  id: "GSBUILDER",
+                  label: "🧩 GS Builder",
+                  title: "Filter Live Wagers to GS Builder (Partner 118 SGP builder)",
+                },
+              ] as const
+            ).map((channel) => {
+              const count = liveWagers.filter(
+                (w) => (w.writer ?? wagerChannelOf(w.ticketWriter)) === channel.id.toLowerCase(),
+              ).length
+              const channelActive = activeTab === "wagers" && quickJumpChannelFilter === channel.id
+              return (
+                <button
+                  key={channel.id}
+                  type="button"
+                  className="sd-quickjump-pill sd-quickjump-pill--violet"
+                  data-desk-quickjump={channel.id.toLowerCase()}
+                  data-quickjump-active={channelActive ? "true" : undefined}
+                  aria-current={channelActive ? "page" : undefined}
+                  onClick={() => {
+                    setWagerSportFilter("ALL")
+                    setWagerSearch("")
+                    setWagerChannelFilter(channel.id)
+                    setActiveTab("wagers")
+                  }}
+                  style={{
+                    padding: "3px 9px",
+                    borderRadius: "999px",
+                    border: channelActive
+                      ? "1px solid #d8b4fe"
+                      : "1px solid rgba(192, 132, 252, 0.35)",
+                    backgroundColor: channelActive
+                      ? "rgba(192, 132, 252, 0.26)"
+                      : "rgba(192, 132, 252, 0.12)",
+                    color: "#d8b4fe",
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    boxShadow: channelActive ? "0 0 0 1px rgba(216, 180, 254, 0.35)" : undefined,
+                  }}
+                  title={channel.title}
+                >
+                  {channel.label} ({count})
+                </button>
+              )
+            })}
+            <button
+              type="button"
+              className="sd-quickjump-pill sd-quickjump-pill--green"
+              data-desk-quickjump="audit"
+              data-quickjump-active={quickJumpAuditActive ? "true" : undefined}
+              aria-current={quickJumpAuditActive ? "page" : undefined}
+              onClick={() => {
+                handleSelectCustomerById("BRT106")
+              }}
+              style={{
+                padding: "3px 9px",
+                borderRadius: "999px",
+                border: quickJumpAuditActive
+                  ? "1px solid #4ade80"
+                  : "1px solid rgba(34, 197, 94, 0.38)",
+                backgroundColor: quickJumpAuditActive
+                  ? "rgba(34, 197, 94, 0.26)"
+                  : "rgba(34, 197, 94, 0.12)",
+                color: "#4ade80",
+                fontSize: "11px",
+                fontWeight: 600,
+                cursor: "pointer",
+                boxShadow: quickJumpAuditActive ? "0 0 0 1px rgba(74, 222, 128, 0.35)" : undefined,
+              }}
+              title="Inspect BRT106 (BGMASTER / BILLY666) 3-endpoint portal & figureDate reconciliation"
+            >
+              🧾 Figure-Date Audit: BRT106
+            </button>
+            <div
+              role="group"
+              aria-label="System Logs Quick-Jump Status Filters"
+              className="sd-quickjump-group-logs"
+              data-desk-quickjump="system-logs"
+              data-quickjump-active={activeTab === "system-logs" ? "true" : undefined}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "4px",
-                padding: "2px 9px",
+                padding: "2px 4px 2px 8px",
+                borderRadius: "999px",
+                border:
+                  activeTab === "system-logs"
+                    ? "1px solid rgba(56, 189, 248, 0.7)"
+                    : "1px solid rgba(56, 189, 248, 0.34)",
+                backgroundColor:
+                  activeTab === "system-logs"
+                    ? "rgba(56, 189, 248, 0.16)"
+                    : "rgba(15, 23, 42, 0.78)",
+                boxShadow:
+                  activeTab === "system-logs" ? "0 0 0 1px rgba(56, 189, 248, 0.28)" : undefined,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setSystemLogSeverityFilter("ALL")
+                  navigatePrimaryRoute("system-logs")
+                }}
+                aria-current={
+                  activeTab === "system-logs" && systemLogSeverityFilter === "ALL"
+                    ? "page"
+                    : undefined
+                }
+                title="Open System Logs & Weblogs Inspector (all statuses)"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  background: "none",
+                  border: "none",
+                  padding: "1px 4px 1px 0",
+                  color: activeTab === "system-logs" ? "#e0f2fe" : "#7dd3fc",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <ScrollText size={11} aria-hidden="true" />
+                <span>System Logs</span>
+              </button>
+              {(
+                [
+                  {
+                    id: "CRITICAL",
+                    short: "CRIT",
+                    toneClass: "sd-quickjump-pill--red",
+                    fg: "#fca5a5",
+                    bg: "rgba(239, 68, 68, 0.18)",
+                    activeBg: "rgba(239, 68, 68, 0.36)",
+                    border: "rgba(239, 68, 68, 0.45)",
+                  },
+                  {
+                    id: "HIGH",
+                    short: "HIGH",
+                    toneClass: "sd-quickjump-pill--amber",
+                    fg: "#fcd34d",
+                    bg: "rgba(245, 158, 11, 0.16)",
+                    activeBg: "rgba(245, 158, 11, 0.34)",
+                    border: "rgba(245, 158, 11, 0.45)",
+                  },
+                  {
+                    id: "WATCH",
+                    short: "WATCH",
+                    toneClass: "sd-quickjump-pill--sky",
+                    fg: "#7dd3fc",
+                    bg: "rgba(56, 189, 248, 0.14)",
+                    activeBg: "rgba(56, 189, 248, 0.32)",
+                    border: "rgba(56, 189, 248, 0.42)",
+                  },
+                  {
+                    id: "NORMAL",
+                    short: "NORM",
+                    toneClass: "sd-quickjump-pill--green",
+                    fg: "#86efac",
+                    bg: "rgba(34, 197, 94, 0.14)",
+                    activeBg: "rgba(34, 197, 94, 0.3)",
+                    border: "rgba(34, 197, 94, 0.42)",
+                  },
+                ] as const
+              ).map((sev) => {
+                const isSelected = activeTab === "system-logs" && systemLogSeverityFilter === sev.id
+                const count = systemLogSeverityCounts?.[sev.id]
+                return (
+                  <button
+                    key={sev.id}
+                    type="button"
+                    className={`sd-quickjump-pill ${sev.toneClass}`}
+                    data-desk-quickjump={`system-logs-${sev.short.toLowerCase()}`}
+                    aria-pressed={isSelected}
+                    onClick={() => {
+                      const next: WebLogSeverityFilter = isSelected ? "ALL" : sev.id
+                      setSystemLogSeverityFilter(next)
+                      navigatePrimaryRoute("system-logs")
+                    }}
+                    title={`Jump to System Logs filtered by ${sev.id}${typeof count === "number" ? ` (${count} entries)` : ""}`}
+                    style={{
+                      padding: "1px 6px",
+                      borderRadius: "999px",
+                      border: `1px solid ${isSelected ? sev.fg : sev.border}`,
+                      backgroundColor: isSelected ? sev.activeBg : sev.bg,
+                      color: sev.fg,
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      fontFamily:
+                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                      fontVariantNumeric: "tabular-nums",
+                      lineHeight: 1.4,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                      boxShadow: isSelected ? `0 0 0 1px ${sev.border}` : undefined,
+                    }}
+                  >
+                    {sev.short}
+                    {typeof count === "number" ? `:${count}` : ""}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <div
+            className="sd-quickjump-meta"
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: "8px 12px",
+              color: "#94a3b8",
+            }}
+          >
+            <span>
+              Bridge 3a Watermark:{" "}
+              <code style={{ color: "#e2e8f0" }}>
+                {betTickerData?.bridge3aR2.watermark ?? "pending"}
+              </code>
+            </span>
+            <span>·</span>
+            <span>
+              Top Conduit:{" "}
+              {rankings?.conduits[0] ? (
+                <button
+                  type="button"
+                  onClick={() => setSelectedAgentId(rankings.conduits[0]?.agentId ?? null)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    color: "#38bdf8",
+                    fontWeight: 600,
+                    fontSize: "11px",
+                    cursor: "pointer",
+                  }}
+                >
+                  {rankings.conduits[0].agentId} ({rankings.conduits[0].concPct.toFixed(1)}%) ↗
+                </button>
+              ) : (
+                <code style={{ color: "#94a3b8" }} title={rankingsError ?? ""}>
+                  {rankingsStatus === "pending"
+                    ? "pending"
+                    : rankingsStatus === "ready"
+                      ? "none flagged"
+                      : "unavailable"}
+                </code>
+              )}
+            </span>
+            <span>·</span>
+            <span
+              data-quickjump-feed="true"
+              style={quickJumpFeed.stale ? { color: "#fbbf24", fontWeight: 600 } : undefined}
+              title={feedFreshnessTitle(quickJumpFeed, wagersProvenance.label)}
+            >
+              feed: {wagersProvenance.label} · {quickJumpFeed.label}
+              {quickJumpFeed.stale ? " ⚠" : ""}
+            </span>
+            <button
+              type="button"
+              className="sd-quickjump-pill sd-quickjump-pill--neutral"
+              data-desk-quickjump="copy-link"
+              onClick={handleCopyQuickLink}
+              style={{
+                padding: "3px 9px",
+                borderRadius: "999px",
+                border: "1px solid rgba(148, 163, 184, 0.35)",
+                backgroundColor: "rgba(148, 163, 184, 0.12)",
+                color: "#cbd5e1",
+                fontSize: "11px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+              title="Copy this exact view — tab, filters and shadow slice — as a deep link"
+            >
+              {quickLinkCopyState === "copied"
+                ? "✓ Copied"
+                : quickLinkCopyState === "failed"
+                  ? "⚠ Copy blocked"
+                  : "⧉ Copy link"}
+            </button>
+            <button
+              type="button"
+              className="sd-quickjump-pill sd-quickjump-pill--neutral"
+              data-command-ribbon-toggle="true"
+              aria-expanded={!commandRibbonCollapsed}
+              aria-controls="sd-command-ribbon-body"
+              tabIndex={commandRibbonCollapsed ? -1 : 0}
+              onClick={toggleCommandRibbon}
+              title="Collapse Operations Command Ribbon to declutter dashboard"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                padding: "3px 9px",
                 borderRadius: "999px",
                 border: "1px solid rgba(148, 163, 184, 0.35)",
                 backgroundColor: "rgba(148, 163, 184, 0.12)",
@@ -4175,508 +4655,11 @@ export function App(): React.ReactElement {
                 cursor: "pointer",
               }}
             >
-              <ChevronDown size={12} aria-hidden="true" />
-              <span>Show Ribbon</span>
+              <ChevronUp size={12} aria-hidden="true" />
+              <span>Hide</span>
             </button>
-          </>
-        ) : (
-          <div
-            id="sd-command-ribbon-body"
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "8px 14px",
-              width: "100%",
-              minWidth: 0,
-            }}
-          >
-            <div className="sd-quickjump-strip">
-              <span
-                className="sd-quickjump-label"
-                style={{
-                  fontWeight: 700,
-                  color: "#38bdf8",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.04em",
-                  whiteSpace: "nowrap",
-                  flexShrink: 0,
-                }}
-              >
-                🧭 Desk Quick-Jump:
-              </span>
-              <button
-                type="button"
-                className={`sd-quickjump-pill ${shadowSliceHasTapeFocus(activeShadowSlice) ? "sd-quickjump-pill--amber" : "sd-quickjump-pill--sky"}`}
-                data-desk-quickjump="active-risk"
-                onClick={openWagersForShadowSlice}
-                style={{
-                  padding: "3px 9px",
-                  borderRadius: "999px",
-                  border: shadowSliceHasTapeFocus(activeShadowSlice)
-                    ? "1px solid rgba(251, 191, 36, 0.45)"
-                    : "1px solid rgba(56, 189, 248, 0.35)",
-                  backgroundColor: shadowSliceHasTapeFocus(activeShadowSlice)
-                    ? "rgba(251, 191, 36, 0.14)"
-                    : "rgba(56, 189, 248, 0.1)",
-                  color: shadowSliceHasTapeFocus(activeShadowSlice) ? "#fde68a" : "#7dd3fc",
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-                title={
-                  shadowSliceHasTapeFocus(activeShadowSlice)
-                    ? `Filter Live Wagers to URL shadow slice: ${buildDashboardShadowSliceUrl(activeShadowSlice, { matrix: showBuildMatrix })}`
-                    : "Open full Live Wagers tape"
-                }
-              >
-                ⚡{" "}
-                {shadowSliceHasTapeFocus(activeShadowSlice)
-                  ? `Slice Risk (${formatShadowSliceRibbonLabel(activeShadowSlice)}):`
-                  : "Active Risk:"}{" "}
-                ${tapeRiskUsd.toLocaleString()} ({tapeTicketCount} tickets
-                {shadowSliceTape.criticalOrSteam > 0
-                  ? ` · ${shadowSliceTape.criticalOrSteam} crit/steam`
-                  : ""}
-                )
-                <span
-                  data-quickjump-feed-age="true"
-                  className="sd-quickjump-feed-age"
-                  style={{
-                    marginLeft: "4px",
-                    color: quickJumpFeed.stale ? "#fbbf24" : "#64748b",
-                    fontWeight: 400,
-                  }}
-                  title={feedFreshnessTitle(quickJumpFeed, wagersProvenance.label)}
-                >
-                  {" "}
-                  · {quickJumpFeed.label}
-                  {quickJumpFeed.stale ? " ⚠" : ""}
-                </span>
-              </button>
-              <button
-                type="button"
-                className="sd-quickjump-pill sd-quickjump-pill--amber"
-                data-desk-quickjump="nfl-1h-pregame"
-                onClick={() => {
-                  applyShadowSliceToLocation(NFL_1H_PREGAME_SLICE, {
-                    matrix: showBuildMatrix,
-                  })
-                  setActiveTab("shadow")
-                }}
-                style={{
-                  padding: "3px 9px",
-                  borderRadius: "999px",
-                  border: "1px solid rgba(234, 179, 8, 0.4)",
-                  backgroundColor: "rgba(234, 179, 8, 0.12)",
-                  color: "#facc15",
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-                title="Shadow matrix: NFL · 1H · Pregame (matches ?matrix=1&sport=Football&subSport=NFL&period=1h&regime=pregame)"
-              >
-                🏈 NFL 1H Pregame
-              </button>
-              <a
-                href={buildBookdeskopsTokensDeskHref(
-                  shadowSliceHasTapeFocus(activeShadowSlice) ? activeShadowSlice : undefined,
-                )}
-                target="_blank"
-                rel="noreferrer"
-                className="sd-quickjump-pill sd-quickjump-pill--neutral"
-                data-desk-quickjump="bookdeskops-tokens"
-                style={{
-                  padding: "3px 9px",
-                  borderRadius: "999px",
-                  border: "1px solid rgba(148, 163, 184, 0.35)",
-                  backgroundColor: "rgba(148, 163, 184, 0.1)",
-                  color: "#e2e8f0",
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  textDecoration: "none",
-                }}
-                title="BookDeskOps serve-local tokens desk (DCE compile-time anchor)"
-              >
-                📎 BookDeskOps tokens
-              </a>
-              <a
-                href={buildBookdeskopsDirectoryRouteHref()}
-                target="_blank"
-                rel="noreferrer"
-                className="sd-quickjump-pill sd-quickjump-pill--sky"
-                data-desk-quickjump="bookdeskops-directory"
-                style={{
-                  padding: "3px 9px",
-                  borderRadius: "999px",
-                  border: "1px solid rgba(56, 189, 248, 0.35)",
-                  backgroundColor: "rgba(56, 189, 248, 0.1)",
-                  color: "#38bdf8",
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  textDecoration: "none",
-                }}
-                title="BookDeskOps serve-local /static/* directory route inspector & HTTP probes"
-              >
-                📁 /static/* Dir
-              </a>
-              <button
-                type="button"
-                className="sd-quickjump-pill sd-quickjump-pill--amber"
-                data-desk-quickjump="ncaab"
-                data-quickjump-active={quickJumpNcaabActive ? "true" : undefined}
-                aria-current={quickJumpNcaabActive ? "page" : undefined}
-                onClick={() => {
-                  setWagerSportFilter("NCAAB")
-                  setWagerSearch("")
-                  setWagerChannelFilter("ALL")
-                  setActiveTab("wagers")
-                }}
-                style={{
-                  padding: "3px 9px",
-                  borderRadius: "999px",
-                  border: quickJumpNcaabActive
-                    ? "1px solid #fbbf24"
-                    : "1px solid rgba(245, 158, 11, 0.35)",
-                  backgroundColor: quickJumpNcaabActive
-                    ? "rgba(245, 158, 11, 0.26)"
-                    : "rgba(245, 158, 11, 0.12)",
-                  color: "#fbbf24",
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  boxShadow: quickJumpNcaabActive
-                    ? "0 0 0 1px rgba(251, 191, 36, 0.35)"
-                    : undefined,
-                }}
-                title="Filter Live Wagers to College Basketball (NCAAB 1H & Game)"
-              >
-                🏀 NCAAB Slice ({liveWagers.filter((w) => w.sport.toUpperCase() === "NCAAB").length}
-                )
-              </button>
-              {(
-                [
-                  {
-                    id: "GSLIVE",
-                    label: "🔴 GSLIVE",
-                    title: "Filter Live Wagers to GSLIVE (Partner 118 in-play)",
-                  },
-                  {
-                    id: "GSBUILDER",
-                    label: "🧩 GS Builder",
-                    title: "Filter Live Wagers to GS Builder (Partner 118 SGP builder)",
-                  },
-                ] as const
-              ).map((channel) => {
-                const count = liveWagers.filter(
-                  (w) => (w.writer ?? wagerChannelOf(w.ticketWriter)) === channel.id.toLowerCase(),
-                ).length
-                const channelActive =
-                  activeTab === "wagers" && quickJumpChannelFilter === channel.id
-                return (
-                  <button
-                    key={channel.id}
-                    type="button"
-                    className="sd-quickjump-pill sd-quickjump-pill--violet"
-                    data-desk-quickjump={channel.id.toLowerCase()}
-                    data-quickjump-active={channelActive ? "true" : undefined}
-                    aria-current={channelActive ? "page" : undefined}
-                    onClick={() => {
-                      setWagerSportFilter("ALL")
-                      setWagerSearch("")
-                      setWagerChannelFilter(channel.id)
-                      setActiveTab("wagers")
-                    }}
-                    style={{
-                      padding: "3px 9px",
-                      borderRadius: "999px",
-                      border: channelActive
-                        ? "1px solid #d8b4fe"
-                        : "1px solid rgba(192, 132, 252, 0.35)",
-                      backgroundColor: channelActive
-                        ? "rgba(192, 132, 252, 0.26)"
-                        : "rgba(192, 132, 252, 0.12)",
-                      color: "#d8b4fe",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      boxShadow: channelActive ? "0 0 0 1px rgba(216, 180, 254, 0.35)" : undefined,
-                    }}
-                    title={channel.title}
-                  >
-                    {channel.label} ({count})
-                  </button>
-                )
-              })}
-              <button
-                type="button"
-                className="sd-quickjump-pill sd-quickjump-pill--green"
-                data-desk-quickjump="audit"
-                data-quickjump-active={quickJumpAuditActive ? "true" : undefined}
-                aria-current={quickJumpAuditActive ? "page" : undefined}
-                onClick={() => {
-                  handleSelectCustomerById("BRT106")
-                }}
-                style={{
-                  padding: "3px 9px",
-                  borderRadius: "999px",
-                  border: quickJumpAuditActive
-                    ? "1px solid #4ade80"
-                    : "1px solid rgba(34, 197, 94, 0.38)",
-                  backgroundColor: quickJumpAuditActive
-                    ? "rgba(34, 197, 94, 0.26)"
-                    : "rgba(34, 197, 94, 0.12)",
-                  color: "#4ade80",
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  boxShadow: quickJumpAuditActive
-                    ? "0 0 0 1px rgba(74, 222, 128, 0.35)"
-                    : undefined,
-                }}
-                title="Inspect BRT106 (BGMASTER / BILLY666) 3-endpoint portal & figureDate reconciliation"
-              >
-                🧾 Figure-Date Audit: BRT106
-              </button>
-              <div
-                role="group"
-                aria-label="System Logs Quick-Jump Status Filters"
-                className="sd-quickjump-group-logs"
-                data-desk-quickjump="system-logs"
-                data-quickjump-active={activeTab === "system-logs" ? "true" : undefined}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  padding: "2px 4px 2px 8px",
-                  borderRadius: "999px",
-                  border:
-                    activeTab === "system-logs"
-                      ? "1px solid rgba(56, 189, 248, 0.7)"
-                      : "1px solid rgba(56, 189, 248, 0.34)",
-                  backgroundColor:
-                    activeTab === "system-logs"
-                      ? "rgba(56, 189, 248, 0.16)"
-                      : "rgba(15, 23, 42, 0.78)",
-                  boxShadow:
-                    activeTab === "system-logs" ? "0 0 0 1px rgba(56, 189, 248, 0.28)" : undefined,
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSystemLogSeverityFilter("ALL")
-                    navigatePrimaryRoute("system-logs")
-                  }}
-                  aria-current={
-                    activeTab === "system-logs" && systemLogSeverityFilter === "ALL"
-                      ? "page"
-                      : undefined
-                  }
-                  title="Open System Logs & Weblogs Inspector (all statuses)"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    background: "none",
-                    border: "none",
-                    padding: "1px 4px 1px 0",
-                    color: activeTab === "system-logs" ? "#e0f2fe" : "#7dd3fc",
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <ScrollText size={11} aria-hidden="true" />
-                  <span>System Logs</span>
-                </button>
-                {(
-                  [
-                    {
-                      id: "CRITICAL",
-                      short: "CRIT",
-                      toneClass: "sd-quickjump-pill--red",
-                      fg: "#fca5a5",
-                      bg: "rgba(239, 68, 68, 0.18)",
-                      activeBg: "rgba(239, 68, 68, 0.36)",
-                      border: "rgba(239, 68, 68, 0.45)",
-                    },
-                    {
-                      id: "HIGH",
-                      short: "HIGH",
-                      toneClass: "sd-quickjump-pill--amber",
-                      fg: "#fcd34d",
-                      bg: "rgba(245, 158, 11, 0.16)",
-                      activeBg: "rgba(245, 158, 11, 0.34)",
-                      border: "rgba(245, 158, 11, 0.45)",
-                    },
-                    {
-                      id: "WATCH",
-                      short: "WATCH",
-                      toneClass: "sd-quickjump-pill--sky",
-                      fg: "#7dd3fc",
-                      bg: "rgba(56, 189, 248, 0.14)",
-                      activeBg: "rgba(56, 189, 248, 0.32)",
-                      border: "rgba(56, 189, 248, 0.42)",
-                    },
-                    {
-                      id: "NORMAL",
-                      short: "NORM",
-                      toneClass: "sd-quickjump-pill--green",
-                      fg: "#86efac",
-                      bg: "rgba(34, 197, 94, 0.14)",
-                      activeBg: "rgba(34, 197, 94, 0.3)",
-                      border: "rgba(34, 197, 94, 0.42)",
-                    },
-                  ] as const
-                ).map((sev) => {
-                  const isSelected =
-                    activeTab === "system-logs" && systemLogSeverityFilter === sev.id
-                  const count = systemLogSeverityCounts?.[sev.id]
-                  return (
-                    <button
-                      key={sev.id}
-                      type="button"
-                      className={`sd-quickjump-pill ${sev.toneClass}`}
-                      data-desk-quickjump={`system-logs-${sev.short.toLowerCase()}`}
-                      aria-pressed={isSelected}
-                      onClick={() => {
-                        const next: WebLogSeverityFilter = isSelected ? "ALL" : sev.id
-                        setSystemLogSeverityFilter(next)
-                        navigatePrimaryRoute("system-logs")
-                      }}
-                      title={`Jump to System Logs filtered by ${sev.id}${typeof count === "number" ? ` (${count} entries)` : ""}`}
-                      style={{
-                        padding: "1px 6px",
-                        borderRadius: "999px",
-                        border: `1px solid ${isSelected ? sev.fg : sev.border}`,
-                        backgroundColor: isSelected ? sev.activeBg : sev.bg,
-                        color: sev.fg,
-                        fontSize: "10px",
-                        fontWeight: 700,
-                        fontFamily:
-                          "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                        fontVariantNumeric: "tabular-nums",
-                        lineHeight: 1.4,
-                        cursor: "pointer",
-                        whiteSpace: "nowrap",
-                        boxShadow: isSelected ? `0 0 0 1px ${sev.border}` : undefined,
-                      }}
-                    >
-                      {sev.short}
-                      {typeof count === "number" ? `:${count}` : ""}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-            <div
-              className="sd-quickjump-meta"
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                alignItems: "center",
-                gap: "8px 12px",
-                color: "#94a3b8",
-              }}
-            >
-              <span>
-                Bridge 3a Watermark:{" "}
-                <code style={{ color: "#e2e8f0" }}>
-                  {betTickerData?.bridge3aR2.watermark ?? "pending"}
-                </code>
-              </span>
-              <span>·</span>
-              <span>
-                Top Conduit:{" "}
-                {rankings?.conduits[0] ? (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedAgentId(rankings.conduits[0]?.agentId ?? null)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      padding: 0,
-                      color: "#38bdf8",
-                      fontWeight: 600,
-                      fontSize: "11px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {rankings.conduits[0].agentId} ({rankings.conduits[0].concPct.toFixed(1)}%) ↗
-                  </button>
-                ) : (
-                  <code style={{ color: "#94a3b8" }} title={rankingsError ?? ""}>
-                    {rankingsStatus === "pending"
-                      ? "pending"
-                      : rankingsStatus === "ready"
-                        ? "none flagged"
-                        : "unavailable"}
-                  </code>
-                )}
-              </span>
-              <span>·</span>
-              <span
-                data-quickjump-feed="true"
-                style={quickJumpFeed.stale ? { color: "#fbbf24", fontWeight: 600 } : undefined}
-                title={feedFreshnessTitle(quickJumpFeed, wagersProvenance.label)}
-              >
-                feed: {wagersProvenance.label} · {quickJumpFeed.label}
-                {quickJumpFeed.stale ? " ⚠" : ""}
-              </span>
-              <button
-                type="button"
-                className="sd-quickjump-pill sd-quickjump-pill--neutral"
-                data-desk-quickjump="copy-link"
-                onClick={handleCopyQuickLink}
-                style={{
-                  padding: "3px 9px",
-                  borderRadius: "999px",
-                  border: "1px solid rgba(148, 163, 184, 0.35)",
-                  backgroundColor: "rgba(148, 163, 184, 0.12)",
-                  color: "#cbd5e1",
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-                title="Copy this exact view — tab, filters and shadow slice — as a deep link"
-              >
-                {quickLinkCopyState === "copied"
-                  ? "✓ Copied"
-                  : quickLinkCopyState === "failed"
-                    ? "⚠ Copy blocked"
-                    : "⧉ Copy link"}
-              </button>
-              <button
-                type="button"
-                className="sd-quickjump-pill sd-quickjump-pill--neutral"
-                data-command-ribbon-toggle="true"
-                aria-expanded={true}
-                aria-controls="sd-command-ribbon-body"
-                onClick={toggleCommandRibbon}
-                title="Collapse Operations Command Ribbon to declutter dashboard"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  padding: "3px 9px",
-                  borderRadius: "999px",
-                  border: "1px solid rgba(148, 163, 184, 0.35)",
-                  backgroundColor: "rgba(148, 163, 184, 0.12)",
-                  color: "#cbd5e1",
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                <ChevronUp size={12} aria-hidden="true" />
-                <span>Hide</span>
-              </button>
-            </div>
           </div>
-        )}
+        </div>
       </section>
 
       {/* Main View Area */}
