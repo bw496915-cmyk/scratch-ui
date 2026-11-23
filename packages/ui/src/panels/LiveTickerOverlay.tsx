@@ -7,11 +7,12 @@ import { ArrowUpRight, Dock, Filter, Radio, X } from "lucide-react"
 import type React from "react"
 import { useMemo, useState } from "react"
 
-import type { LiveWager } from "../types.ts"
+import type { HealthData, LiveWager } from "../types.ts"
 
 export interface LiveTickerOverlayProps {
   readonly open: boolean
   readonly wagers: readonly LiveWager[]
+  readonly healthData?: HealthData | null | undefined
   readonly onClose: () => void
   readonly onSelectWager: (wager: LiveWager) => void
   readonly onSelectCustomerById?: ((customerId: string) => void) | undefined
@@ -46,6 +47,7 @@ function formatTickerTime(raw: string): string {
 export function LiveTickerOverlay({
   open,
   wagers,
+  healthData = null,
   onClose,
   onSelectWager,
   onSelectCustomerById,
@@ -63,6 +65,29 @@ export function LiveTickerOverlay({
 
   const sharpCount = useMemo(() => wagers.filter((w) => isSharpWager(w)).length, [wagers])
   const whaleCount = useMemo(() => wagers.filter((w) => isWhaleWager(w)).length, [wagers])
+  const healthAlertSummary = useMemo(() => {
+    const dead = typeof healthData?.alerts?.dead === "number" ? healthData.alerts.dead : 0
+    const backlog = typeof healthData?.alerts?.backlog === "number" ? healthData.alerts.backlog : 0
+    const warnings = healthData?.degradedReasons?.length ?? 0
+    const total = dead + backlog + warnings
+    const isCritical =
+      dead > 0 ||
+      healthData?.alerts?.status === "degraded" ||
+      healthData?.operationalStatus === "down" ||
+      healthData?.status === "down"
+    const parts: string[] = []
+    if (dead > 0) parts.push(`${dead} dead`)
+    if (backlog > 0) parts.push(`${backlog} queued`)
+    if (warnings > 0) parts.push(`${warnings} warning${warnings === 1 ? "" : "s"}`)
+    return {
+      total,
+      severity: isCritical ? ("critical" as const) : ("warning" as const),
+      title:
+        total > 0
+          ? `System Active Alerts (${total}): ${parts.join(" · ")}`
+          : "No active system health alerts",
+    }
+  }, [healthData])
 
   if (!open) return null
 
@@ -79,9 +104,22 @@ export function LiveTickerOverlay({
           <Radio size={13} aria-hidden="true" className="sd-ticker-overlay__icon" />
           <span className="sd-ticker-overlay__title">Live Ticker</span>
           <span className="sd-ticker-overlay__counts sd-tabular">
-            {rows.length}/{wagers.length}
-            {sharpCount > 0 ? ` · ${sharpCount} sharp` : ""}
-            {whaleCount > 0 ? ` · ${whaleCount} whale` : ""}
+            <span>
+              {rows.length}/{wagers.length}
+              {sharpCount > 0 ? ` · ${sharpCount} sharp` : ""}
+              {whaleCount > 0 ? ` · ${whaleCount} whale` : ""}
+            </span>
+            {healthAlertSummary.total > 0 ? (
+              <span
+                className={`sd-surveillance-alert-badge sd-surveillance-alert-badge--${healthAlertSummary.severity} sd-tabular`}
+                data-surveillance-active-alerts={healthAlertSummary.total}
+                data-severity={healthAlertSummary.severity}
+                title={healthAlertSummary.title}
+                aria-label={`${healthAlertSummary.total} Active Alerts`}
+              >
+                {healthAlertSummary.total} Active Alerts
+              </span>
+            ) : null}
           </span>
         </div>
 

@@ -3233,6 +3233,25 @@ export function App(): React.ReactElement {
     ?.map((r) => r.message)
     .slice(0, 3)
     .join("; ")
+  const healthDeadAlerts = typeof healthData?.alerts?.dead === "number" ? healthData.alerts.dead : 0
+  const healthBacklogAlerts =
+    typeof healthData?.alerts?.backlog === "number" ? healthData.alerts.backlog : 0
+  const healthDegradedWarnings = healthData?.degradedReasons?.length ?? 0
+  const healthActiveAlertCount = healthDeadAlerts + healthBacklogAlerts + healthDegradedWarnings
+  const healthActiveAlertSeverity: "critical" | "warning" =
+    healthDeadAlerts > 0 || isHealthError ? "critical" : "warning"
+  const healthActiveAlertParts: string[] = []
+  if (healthDeadAlerts > 0) healthActiveAlertParts.push(`${healthDeadAlerts} dead`)
+  if (healthBacklogAlerts > 0) healthActiveAlertParts.push(`${healthBacklogAlerts} queued`)
+  if (healthDegradedWarnings > 0) {
+    healthActiveAlertParts.push(
+      `${healthDegradedWarnings} warning${healthDegradedWarnings === 1 ? "" : "s"}`,
+    )
+  }
+  const healthActiveAlertSummary =
+    healthActiveAlertCount > 0
+      ? `Active Alerts (${healthActiveAlertCount}): ${healthActiveAlertParts.join(" · ")}${degradedReasonSummary ? ` — ${degradedReasonSummary}` : ""}`
+      : "No active system health alerts"
   const systemHealthUi = isHealthError
     ? {
         border: "#ef4444",
@@ -3282,9 +3301,26 @@ export function App(): React.ReactElement {
           setActiveTab("surveillance")
           if (closeDrawerOnSelect) setMobileNavOpen(false)
         }}
-        title="Bun.dns latency benchmarks and surveillance markdown (Ctrl+2)"
+        title={
+          healthActiveAlertCount > 0
+            ? `Bun.dns latency benchmarks and surveillance markdown · ${healthActiveAlertSummary} (Ctrl+2)`
+            : "Bun.dns latency benchmarks and surveillance markdown (Ctrl+2)"
+        }
       >
-        <span>📊 Telemetry</span>
+        <span className="sd-surveillance-tab-label">
+          <span>📊 Telemetry</span>
+          {healthActiveAlertCount > 0 ? (
+            <span
+              className={`sd-surveillance-alert-badge sd-surveillance-alert-badge--${healthActiveAlertSeverity} sd-tabular`}
+              data-surveillance-active-alerts={healthActiveAlertCount}
+              data-severity={healthActiveAlertSeverity}
+              title={healthActiveAlertSummary}
+              aria-label={`${healthActiveAlertCount} Active Alerts`}
+            >
+              {healthActiveAlertCount} Active Alerts
+            </span>
+          ) : null}
+        </span>
         <kbd className="sd-kbd-shortcut" style={styles.keyShortcutBadge}>
           Ctrl+2
         </kbd>
@@ -5730,6 +5766,7 @@ export function App(): React.ReactElement {
       <LiveTickerOverlay
         open={tickerOverlayOpen}
         wagers={liveWagers}
+        healthData={healthData}
         onClose={() => setTickerOverlayOpen(false)}
         onSelectWager={(wager) => {
           setWagerSportFilter("ALL")

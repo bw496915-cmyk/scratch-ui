@@ -7217,6 +7217,9 @@ button.sd-badge {
 }
 
 .sd-ticker-overlay__counts {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 10px;
   color: #94a3b8;
   white-space: nowrap;
@@ -8265,9 +8268,320 @@ button.sd-badge {
   color: #065f46;
 }
 
+/* --- Real-Time Surveillance Summary Bar (`.profiles-wrap`) & Sizing Header --- */
+.sd-surveillance-summary-bar {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-default, #1e293b);
+  background: linear-gradient(90deg, rgba(15, 23, 42, 0.94) 0%, rgba(17, 24, 39, 0.88) 100%);
+}
+
+.sd-surveillance-summary-bar__metrics {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+  flex: 1 1 auto;
+}
+
+.sd-surveillance-stat {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 124px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-default, #1e293b);
+  border-left-width: 3px;
+  background-color: rgba(11, 17, 32, 0.84);
+  color: #e2e8f0;
+  text-align: left;
+  font-family: inherit;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+button.sd-surveillance-stat {
+  cursor: pointer;
+}
+
+button.sd-surveillance-stat:hover {
+  background-color: rgba(30, 41, 59, 0.78);
+  border-color: var(--border-strong, #334155);
+}
+
+button.sd-surveillance-stat:focus-visible {
+  outline: 2px solid var(--accent-primary, #38bdf8);
+  outline-offset: 1px;
+}
+
+.sd-surveillance-stat--alert {
+  border-left-color: color-mix(in oklch, var(--color-green) 78%, transparent);
+}
+
+.sd-surveillance-stat--alert.sd-surveillance-stat--elevated {
+  border-left-color: var(--color-red);
+  background-color: color-mix(in oklch, var(--color-red) 11%, #0b1120);
+}
+
+.sd-surveillance-stat--velocity {
+  border-left-color: var(--color-blue);
+  background-color: color-mix(in oklch, var(--color-blue) 9%, #0b1120);
+}
+
+.sd-surveillance-stat--risk {
+  border-left-color: var(--color-amber);
+  background-color: color-mix(in oklch, var(--color-amber) 9%, #0b1120);
+}
+
+.sd-surveillance-stat--sizing {
+  border-left-color: var(--color-violet);
+  background-color: color-mix(in oklch, var(--color-violet) 9%, #0b1120);
+}
+
+.sd-surveillance-stat--active {
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--color-violet) 60%, transparent);
+}
+
+.sd-surveillance-stat__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  line-height: 1.2;
+}
+
+.sd-surveillance-stat__value {
+  font-size: 13.5px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #f8fafc;
+}
+
+.sd-surveillance-stat--alert.sd-surveillance-stat--elevated .sd-surveillance-stat__value {
+  color: var(--color-red);
+}
+
+.sd-surveillance-stat--velocity .sd-surveillance-stat__value {
+  color: var(--color-blue);
+}
+
+.sd-surveillance-stat--risk .sd-surveillance-stat__value {
+  color: var(--color-amber);
+}
+
+.sd-surveillance-stat--sizing .sd-surveillance-stat__value {
+  color: var(--color-violet);
+}
+
+.sd-surveillance-stat__sub {
+  font-size: 10px;
+  color: #94a3b8;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.sd-surveillance-summary-bar__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--border-default, #1e293b);
+  background-color: rgba(15, 23, 42, 0.72);
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sd-surveillance-summary-bar__status--live {
+  border-color: color-mix(in oklch, var(--color-green) 42%, transparent);
+  background-color: color-mix(in oklch, var(--color-green) 12%, #0b1120);
+  color: var(--color-green);
+}
+
+.sd-surveillance-summary-bar__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background-color: #64748b;
+  flex-shrink: 0;
+}
+
+.sd-surveillance-summary-bar__status--live .sd-surveillance-summary-bar__dot {
+  background-color: var(--color-green);
+  box-shadow: 0 0 6px color-mix(in oklch, var(--color-green) 70%, transparent);
+}
+
+.sd-th-sizing-strategy__inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.sd-th-sizing-strategy__metric {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid color-mix(in oklch, var(--color-violet) 38%, transparent);
+  background-color: color-mix(in oklch, var(--color-violet) 14%, transparent);
+  color: #ddd6fe;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.sd-th-sizing-strategy--active {
+  color: var(--accent-primary, #38bdf8) !important;
+}
+
+[data-dashboard-theme="light"] .sd-surveillance-summary-bar {
+  background: linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom-color: #cbd5e1;
+}
+
+[data-dashboard-theme="light"] .sd-surveillance-stat {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+[data-dashboard-theme="light"] button.sd-surveillance-stat:hover {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+}
+
+[data-dashboard-theme="light"] .sd-surveillance-stat--alert.sd-surveillance-stat--elevated {
+  background-color: #fef2f2;
+}
+
+[data-dashboard-theme="light"] .sd-surveillance-stat--velocity {
+  background-color: #f0f9ff;
+}
+
+[data-dashboard-theme="light"] .sd-surveillance-stat--risk {
+  background-color: #fffbeb;
+}
+
+[data-dashboard-theme="light"] .sd-surveillance-stat--sizing {
+  background-color: #f5f3ff;
+}
+
+[data-dashboard-theme="light"] .sd-surveillance-stat__label,
+[data-dashboard-theme="light"] .sd-surveillance-stat__sub {
+  color: #475569;
+}
+
+[data-dashboard-theme="light"] .sd-surveillance-stat__value {
+  color: #0f172a;
+}
+
+[data-dashboard-theme="light"]
+  .sd-surveillance-stat--alert.sd-surveillance-stat--elevated
+  .sd-surveillance-stat__value {
+  color: #b91c1c;
+}
+
+[data-dashboard-theme="light"] .sd-surveillance-stat--velocity .sd-surveillance-stat__value {
+  color: #0369a1;
+}
+
+[data-dashboard-theme="light"] .sd-surveillance-stat--risk .sd-surveillance-stat__value {
+  color: #b45309;
+}
+
+[data-dashboard-theme="light"] .sd-surveillance-stat--sizing .sd-surveillance-stat__value {
+  color: #6d28d9;
+}
+
+[data-dashboard-theme="light"] .sd-surveillance-summary-bar__status {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+[data-dashboard-theme="light"] .sd-surveillance-summary-bar__status--live {
+  background-color: #ecfdf5;
+  border-color: #6ee7b7;
+  color: #047857;
+}
+
+[data-dashboard-theme="light"] .sd-th-sizing-strategy__metric {
+  background-color: #f5f3ff;
+  border-color: #c4b5fd;
+  color: #5b21b6;
+}
+
+/* --- Surveillance Tab & Ticker Active Alerts Count Badge --- */
+.sd-surveillance-tab-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.sd-surveillance-alert-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.sd-surveillance-alert-badge--warning {
+  background-color: color-mix(in oklch, var(--color-amber) 18%, transparent);
+  border-color: color-mix(in oklch, var(--color-amber) 52%, transparent);
+  color: var(--color-amber);
+}
+
+.sd-surveillance-alert-badge--critical {
+  background-color: color-mix(in oklch, var(--color-red) 20%, transparent);
+  border-color: color-mix(in oklch, var(--color-red) 55%, transparent);
+  color: var(--color-red);
+}
+
+[data-dashboard-theme="light"] .sd-surveillance-alert-badge--warning {
+  background-color: #fef3c7;
+  border-color: #f59e0b;
+  color: #92400e;
+}
+
+[data-dashboard-theme="light"] .sd-surveillance-alert-badge--critical {
+  background-color: #fee2e2;
+  border-color: #ef4444;
+  color: #991b1b;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sd-profile-row,
-  .sd-profile-row--sharp {
+  .sd-profile-row--sharp,
+  .sd-surveillance-stat {
     transition: none;
   }
 }

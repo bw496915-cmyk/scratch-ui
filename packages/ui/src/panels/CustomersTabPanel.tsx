@@ -208,6 +208,141 @@ function summarizeDisplayedCustomers(rows: readonly ShowcaseCustomer[]): Custome
   }
 }
 
+export interface SurveillancePulseSummary {
+  readonly activeAlertsTotal: number
+  readonly cohortAlertCount: number
+  readonly liveAlertTicketCount: number
+  readonly criticalTicketCount: number
+  readonly steamTicketCount: number
+  readonly ticketVelocityValue: string
+  readonly ticketVelocitySub: string
+  readonly liveTicketCount: number
+  readonly openTapeRiskUsd: number
+  readonly profiledActiveOnTape: number
+  readonly avgGini: number | null
+  readonly skewedSizingCount: number
+  readonly topAlertCustomer: ShowcaseCustomer | null
+}
+
+/**
+ * Derive real-time surveillance summary statistics (Active Alerts, Ticket Velocity,
+ * Open Tape Risk, and Sizing Gini concentration) directly from live in-memory props.
+ */
+export function summarizeSurveillancePulse(
+  rows: readonly ShowcaseCustomer[],
+  liveWagers: readonly LiveWager[],
+): SurveillancePulseSummary {
+  let cohortAlertCount = 0
+  let topAlertCustomer: ShowcaseCustomer | null = null
+  let giniSum = 0
+  let giniCount = 0
+  let skewedSizingCount = 0
+  const displayedIds = new Set<string>()
+
+  for (const row of rows) {
+    displayedIds.add(row.id.toUpperCase())
+    const unknown = row.unknown ?? []
+    if (!unknown.includes("gini") && Number.isFinite(row.gini)) {
+      giniSum += row.gini
+      giniCount += 1
+      if (row.gini >= 0.45) {
+        skewedSizingCount += 1
+      }
+    }
+    if (row.action.includes("ALERT")) {
+      cohortAlertCount += 1
+      if (
+        topAlertCustomer === null ||
+        row.score > topAlertCustomer.score ||
+        (row.score === topAlertCustomer.score && row.var95Usd > topAlertCustomer.var95Usd)
+      ) {
+        topAlertCustomer = row
+      }
+    }
+  }
+
+  let liveAlertTicketCount = 0
+  let criticalTicketCount = 0
+  let steamTicketCount = 0
+  let openTapeRiskUsd = 0
+  const activeCustomerIds = new Set<string>()
+  const timestamps: number[] = []
+
+  for (const wager of liveWagers) {
+    if (
+      wager.alertTier === "CRITICAL" ||
+      wager.alertTier === "STEAM" ||
+      wager.alertTier === "LATENCY"
+    ) {
+      liveAlertTicketCount += 1
+    }
+    if (wager.alertTier === "CRITICAL") criticalTicketCount += 1
+    if (wager.alertTier === "STEAM") steamTicketCount += 1
+    if (Number.isFinite(wager.riskUsd)) {
+      openTapeRiskUsd += wager.riskUsd
+    }
+    const custUpper = wager.customerId.toUpperCase()
+    if (displayedIds.has(custUpper)) {
+      activeCustomerIds.add(custUpper)
+    }
+    const parsedTs = Date.parse(wager.timestamp)
+    if (Number.isFinite(parsedTs)) {
+      timestamps.push(parsedTs)
+    }
+  }
+
+  let ticketVelocityValue = "0.0 / min"
+  let ticketVelocitySub = "awaiting live tape"
+
+  if (liveWagers.length > 0) {
+    if (timestamps.length >= 2) {
+      let minTs = timestamps[0]!
+      let maxTs = timestamps[0]!
+      for (let i = 1; i < timestamps.length; i += 1) {
+        const ts = timestamps[i]!
+        if (ts < minTs) minTs = ts
+        if (ts > maxTs) maxTs = ts
+      }
+      const spanMin = Math.max(1, (maxTs - minTs) / 60_000)
+      if (spanMin <= 60) {
+        const ratePerMin = liveWagers.length / spanMin
+        ticketVelocityValue = `${ratePerMin.toFixed(1)} / min`
+        ticketVelocitySub = `${liveWagers.length} tix · ${Math.round(spanMin)}m span`
+      } else {
+        const recent15m = timestamps.filter((ts) => maxTs - ts <= 15 * 60_000).length
+        if (recent15m > 0) {
+          ticketVelocityValue = `${(recent15m / 15).toFixed(1)} / min`
+          ticketVelocitySub = `${recent15m} in 15m · ${liveWagers.length} total`
+        } else {
+          const ratePerHr = liveWagers.length / (spanMin / 60)
+          ticketVelocityValue = `${ratePerHr.toFixed(1)} / hr`
+          ticketVelocitySub = `${liveWagers.length} open tickets`
+        }
+      }
+    } else {
+      ticketVelocityValue = `${liveWagers.length} open`
+      ticketVelocitySub =
+        liveWagers.length === 1 ? "1 live ticket" : `${liveWagers.length} live tickets`
+    }
+  }
+
+  return {
+    activeAlertsTotal: cohortAlertCount + liveAlertTicketCount,
+    cohortAlertCount,
+    liveAlertTicketCount,
+    criticalTicketCount,
+    steamTicketCount,
+    ticketVelocityValue,
+    ticketVelocitySub,
+    liveTicketCount: liveWagers.length,
+    openTapeRiskUsd,
+    profiledActiveOnTape: activeCustomerIds.size,
+    avgGini: giniCount > 0 ? giniSum / giniCount : null,
+    skewedSizingCount,
+    topAlertCustomer,
+  }
+}
+
 interface RadarAxisSpec {
   readonly label: string
   readonly valueKey: "clvScore" | "skillScore" | "sizingScore" | "sigScore" | "timingScore"
@@ -1234,6 +1369,7 @@ export function CustomersTabPanel({
           )
         }
         const cohortSummary = summarizeDisplayedCustomers(sortedCustomers)
+        const surveillancePulse = summarizeSurveillancePulse(sortedCustomers, liveWagers)
         const hasActiveFilter =
           searchQuery.trim() !== "" ||
           filterTier !== "ALL" ||
@@ -1382,6 +1518,151 @@ export function CustomersTabPanel({
                 </div>
               )}
               <div className="profiles-wrap">
+                <div
+                  className="sd-surveillance-summary-bar sd-tabular"
+                  data-surveillance-summary-bar="true"
+                  role="region"
+                  aria-label="Real-time surveillance summary statistics"
+                >
+                  <div className="sd-surveillance-summary-bar__metrics">
+                    {surveillancePulse.topAlertCustomer ? (
+                      <button
+                        type="button"
+                        className={`sd-surveillance-stat sd-surveillance-stat--alert${surveillancePulse.activeAlertsTotal > 0 ? " sd-surveillance-stat--elevated" : ""}`}
+                        data-surveillance-stat="active-alerts"
+                        onClick={() => {
+                          if (surveillancePulse.topAlertCustomer) {
+                            onSelectCustomer(surveillancePulse.topAlertCustomer)
+                            onClearForensicResult()
+                          }
+                        }}
+                        title={`Focus highest-priority alerted account (${surveillancePulse.topAlertCustomer.id}) · ${surveillancePulse.cohortAlertCount} alerted profiles, ${surveillancePulse.liveAlertTicketCount} flagged tape tickets`}
+                      >
+                        <span className="sd-surveillance-stat__label">
+                          <ShieldAlert size={11} aria-hidden="true" />
+                          <span>Active Alerts</span>
+                        </span>
+                        <span className="sd-surveillance-stat__value">
+                          {surveillancePulse.activeAlertsTotal}
+                        </span>
+                        <span className="sd-surveillance-stat__sub">
+                          {surveillancePulse.cohortAlertCount} profiles ·{" "}
+                          {surveillancePulse.liveAlertTicketCount} tape
+                          {surveillancePulse.criticalTicketCount > 0
+                            ? ` (${surveillancePulse.criticalTicketCount} crit)`
+                            : ""}
+                        </span>
+                      </button>
+                    ) : (
+                      <div
+                        className={`sd-surveillance-stat sd-surveillance-stat--alert${surveillancePulse.activeAlertsTotal > 0 ? " sd-surveillance-stat--elevated" : ""}`}
+                        data-surveillance-stat="active-alerts"
+                        title={`${surveillancePulse.cohortAlertCount} alerted profiles · ${surveillancePulse.liveAlertTicketCount} flagged tape tickets`}
+                      >
+                        <span className="sd-surveillance-stat__label">
+                          <ShieldAlert size={11} aria-hidden="true" />
+                          <span>Active Alerts</span>
+                        </span>
+                        <span className="sd-surveillance-stat__value">
+                          {surveillancePulse.activeAlertsTotal}
+                        </span>
+                        <span className="sd-surveillance-stat__sub">
+                          {surveillancePulse.cohortAlertCount} profiles ·{" "}
+                          {surveillancePulse.liveAlertTicketCount} tape
+                        </span>
+                      </div>
+                    )}
+
+                    {onToggleTickerOverlay ? (
+                      <button
+                        type="button"
+                        className="sd-surveillance-stat sd-surveillance-stat--velocity"
+                        data-surveillance-stat="ticket-velocity"
+                        aria-pressed={tickerOverlayOpen}
+                        onClick={onToggleTickerOverlay}
+                        title="Toggle docked live wager ticker to inspect incoming ticket flow"
+                      >
+                        <span className="sd-surveillance-stat__label">
+                          <Activity size={11} aria-hidden="true" />
+                          <span>Ticket Velocity</span>
+                        </span>
+                        <span className="sd-surveillance-stat__value">
+                          {surveillancePulse.ticketVelocityValue}
+                        </span>
+                        <span className="sd-surveillance-stat__sub">
+                          {surveillancePulse.ticketVelocitySub}
+                        </span>
+                      </button>
+                    ) : (
+                      <div
+                        className="sd-surveillance-stat sd-surveillance-stat--velocity"
+                        data-surveillance-stat="ticket-velocity"
+                      >
+                        <span className="sd-surveillance-stat__label">
+                          <Activity size={11} aria-hidden="true" />
+                          <span>Ticket Velocity</span>
+                        </span>
+                        <span className="sd-surveillance-stat__value">
+                          {surveillancePulse.ticketVelocityValue}
+                        </span>
+                        <span className="sd-surveillance-stat__sub">
+                          {surveillancePulse.ticketVelocitySub}
+                        </span>
+                      </div>
+                    )}
+
+                    <div
+                      className="sd-surveillance-stat sd-surveillance-stat--risk"
+                      data-surveillance-stat="open-tape-risk"
+                      title={`Total open risk across ${surveillancePulse.liveTicketCount} live tape tickets (${surveillancePulse.profiledActiveOnTape} matched to visible profiles)`}
+                    >
+                      <span className="sd-surveillance-stat__label">
+                        <Radio size={11} aria-hidden="true" />
+                        <span>Open Tape Risk</span>
+                      </span>
+                      <span className="sd-surveillance-stat__value">
+                        ${Math.round(surveillancePulse.openTapeRiskUsd).toLocaleString()}
+                      </span>
+                      <span className="sd-surveillance-stat__sub">
+                        {surveillancePulse.profiledActiveOnTape} profiled on tape
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      className={`sd-surveillance-stat sd-surveillance-stat--sizing${customerSort.key === "gini" ? " sd-surveillance-stat--active" : ""}`}
+                      data-surveillance-stat="sizing-gini"
+                      onClick={() => onCustomerSort("gini")}
+                      title="Sort table by Sizing Strategy (Gini stake-concentration index)"
+                    >
+                      <span className="sd-surveillance-stat__label">
+                        <Flame size={11} aria-hidden="true" />
+                        <span>Sizing Gini</span>
+                      </span>
+                      <span className="sd-surveillance-stat__value">
+                        {surveillancePulse.avgGini !== null
+                          ? surveillancePulse.avgGini.toFixed(2)
+                          : "—"}
+                      </span>
+                      <span className="sd-surveillance-stat__sub">
+                        {surveillancePulse.skewedSizingCount} skewed (&ge;0.45)
+                      </span>
+                    </button>
+                  </div>
+
+                  <div
+                    className={`sd-surveillance-summary-bar__status${telemetryRefresh?.wsConnected ? " sd-surveillance-summary-bar__status--live" : ""}`}
+                    data-surveillance-stream={telemetryRefresh?.wsConnected ? "live" : "snapshot"}
+                    title={
+                      telemetryRefresh?.wsConnected
+                        ? "Live WebSocket telemetry stream connected"
+                        : "Summary reflects latest captured snapshot"
+                    }
+                  >
+                    <span className="sd-surveillance-summary-bar__dot" aria-hidden="true" />
+                    <span>{telemetryRefresh?.wsConnected ? "Live Pulse" : "Snapshot"}</span>
+                  </div>
+                </div>
                 <table style={styles.table}>
                   <thead>
                     <tr style={styles.thRow}>
@@ -1406,13 +1687,29 @@ export function CustomersTabPanel({
                         </span>
                       </th>
                       <th
-                        className="sortable"
+                        className={`sortable sd-th-sizing-strategy${customerSort.key === "gini" ? " sd-th-sizing-strategy--active" : ""}`}
                         style={styles.th}
                         onClick={() => onCustomerSort("gini")}
+                        title={
+                          surveillancePulse.avgGini !== null
+                            ? `Sort by Sizing Strategy · Cohort mean Gini ${surveillancePulse.avgGini.toFixed(2)} (${surveillancePulse.skewedSizingCount} high-conviction skewed accounts)`
+                            : "Sort by Sizing Strategy (Gini stake-concentration index)"
+                        }
                       >
-                        Sizing Strategy
-                        <span className="sort-arrow">
-                          {customerSort.key === "gini" ? (customerSort.dir === 1 ? "▲" : "▼") : ""}
+                        <span className="sd-th-sizing-strategy__inner">
+                          <span>Sizing Strategy</span>
+                          {surveillancePulse.avgGini !== null && (
+                            <span className="sd-th-sizing-strategy__metric sd-tabular">
+                              μ {surveillancePulse.avgGini.toFixed(2)}
+                            </span>
+                          )}
+                          <span className="sort-arrow">
+                            {customerSort.key === "gini"
+                              ? customerSort.dir === 1
+                                ? "▲"
+                                : "▼"
+                              : ""}
+                          </span>
                         </span>
                       </th>
                       <th style={styles.th}>Specialization</th>
