@@ -52,6 +52,12 @@ import {
   wagerSearchHintForSlice,
 } from "./desk_quick_jump.ts"
 import {
+  buildCanonicalDashboardHref,
+  type DiscoveryDimensionId,
+  parseDashboardHash,
+  serializeDashboardHash,
+} from "./discovery_hash.ts"
+import {
   buildFastSignInBookmarkUrl,
   extractAndScrubFastSignInToken,
   extractFastSignInTokenFromInput,
@@ -307,6 +313,8 @@ export function App(): React.ReactElement {
   const buildInfo = getDashboardBuildInfo()
   const initialUrl = initialDashboardUrlState()
   const [activeTab, setActiveTab] = useState<DashboardTabId>(() => initialUrl.tab)
+  const [activeDiscoveryDimension, setActiveDiscoveryDimension] =
+    useState<DiscoveryDimensionId | null>(() => initialUrl.discovery ?? null)
   const [showBuildMatrix, setShowBuildMatrix] = useState<boolean>(() => initialUrl.matrix)
   const [buildMatrixRows, setBuildMatrixRows] = useState<readonly BuildMatrixRow[] | null>(null)
   const [buildMatrixLoading, setBuildMatrixLoading] = useState<boolean>(false)
@@ -3016,6 +3024,18 @@ export function App(): React.ReactElement {
     if (typeof window === "undefined") return
     const tabChanged = previousTabRef.current !== activeTab
     previousTabRef.current = activeTab
+    const canonicalHash = serializeDashboardHash({
+      activeTab,
+      selectedCustomerId: focusedCustomerId ?? selectedCustomer?.id ?? null,
+      customerTierFilter: filterTier,
+      selectedWagerTicketId: selectedWager?.ticketId ?? null,
+      wagerChannelFilter,
+      wagerSportFilter,
+      selectedAgentId,
+      alertFilter,
+      systemLogSeverityFilter,
+      discoveryDimension: activeDiscoveryDimension,
+    })
     writeDashboardUrl(
       {
         tab: activeTab,
@@ -3024,6 +3044,7 @@ export function App(): React.ReactElement {
         downlineAgents: selectedDownlineAgentIds,
         rankingsHeatmap: rankingsHeatMapEnabled,
         customer: focusedCustomerId ?? "",
+        discovery: activeDiscoveryDimension,
         wSport: wagerSportFilter,
         wAlert: wagerAlertFilter,
         wType: wagerTypeFilter,
@@ -3035,15 +3056,21 @@ export function App(): React.ReactElement {
         survHost: benchHost,
       },
       window,
-      { push: tabChanged },
+      { push: tabChanged, hash: canonicalHash },
     )
   }, [
     activeTab,
+    activeDiscoveryDimension,
     showBuildMatrix,
     selectedAgentId,
     selectedDownlineAgentIds,
     rankingsHeatMapEnabled,
     focusedCustomerId,
+    selectedCustomer?.id,
+    filterTier,
+    selectedWager?.ticketId,
+    alertFilter,
+    systemLogSeverityFilter,
     wagerSportFilter,
     wagerAlertFilter,
     wagerTypeFilter,
@@ -3063,7 +3090,9 @@ export function App(): React.ReactElement {
         window.location.pathname,
         window.location.hash,
       )
+      const parsedHash = parseDashboardHash(window.location.hash, next.tab)
       setActiveTab(next.tab)
+      setActiveDiscoveryDimension(next.discovery ?? null)
       setShowBuildMatrix(next.matrix)
       setWagerSportFilter(next.wSport)
       setWagerAlertFilter(next.wAlert)
@@ -3071,6 +3100,15 @@ export function App(): React.ReactElement {
       setWagerChannelFilter(next.wChannel)
       setWagerSortField(next.wSort)
       setWagerSortDir(next.wDir)
+      if (parsedHash?.customerTierFilter) {
+        setFilterTier(parsedHash.customerTierFilter)
+      }
+      if (parsedHash?.alertFilter) {
+        setAlertFilter(parsedHash.alertFilter as AlertFilter)
+      }
+      if (parsedHash?.systemLogSeverityFilter) {
+        setSystemLogSeverityFilter(parsedHash.systemLogSeverityFilter as WebLogSeverityFilter)
+      }
       setSelectedAgentId(next.agent ? next.agent.toUpperCase() : null)
       setSelectedDownlineAgentIds(next.downlineAgents ?? [])
       if (next.rankingsHeatmap !== undefined) {
@@ -3096,7 +3134,7 @@ export function App(): React.ReactElement {
         setCustomerLookupNotice(null)
       }
       const params = new URLSearchParams(window.location.search)
-      const ticketId = params.get("ticket")?.trim() ?? ""
+      const ticketId = params.get("ticket")?.trim() || parsedHash?.selectedWagerTicketId || ""
       if (ticketId !== "") {
         const pick = findWagerByTicketParam(liveWagers, ticketId)
         if (pick !== null) setSelectedWager(pick)
@@ -3105,8 +3143,39 @@ export function App(): React.ReactElement {
     const applyHash = () => {
       const hash = window.location.hash
       if (!hash) return
-      const resolved = resolveDashboardTabId(hash, activeTab)
-      setActiveTab(resolved)
+      const parsed = parseDashboardHash(hash, activeTab)
+      if (!parsed) {
+        const resolved = resolveDashboardTabId(hash, activeTab)
+        setActiveTab(resolved)
+        return
+      }
+      setActiveTab(parsed.tab)
+      setActiveDiscoveryDimension(parsed.discoveryDimension)
+      if (parsed.isStructured) {
+        if (parsed.tab === "customers") {
+          setFilterTier(parsed.customerTierFilter ?? "ALL")
+          const custId = parsed.selectedCustomerId?.trim().toUpperCase() ?? ""
+          appliedCustomerFocusRef.current = custId || null
+          setFocusedCustomerId(custId || null)
+          if (custId) {
+            const found = profileCustomers.find((c) => c.id.toUpperCase() === custId)
+            setSelectedCustomer(found ?? null)
+          }
+        } else if (parsed.tab === "wagers") {
+          if (parsed.wagerChannelFilter) setWagerChannelFilter(parsed.wagerChannelFilter)
+          if (parsed.wagerSportFilter) setWagerSportFilter(parsed.wagerSportFilter)
+          if (parsed.selectedWagerTicketId) {
+            const pick = findWagerByTicketParam(liveWagers, parsed.selectedWagerTicketId)
+            if (pick !== null) setSelectedWager(pick)
+          }
+        } else if (parsed.tab === "rankings") {
+          setSelectedAgentId(parsed.selectedAgentId ? parsed.selectedAgentId.toUpperCase() : null)
+        } else if (parsed.tab === "alerts" && parsed.alertFilter) {
+          setAlertFilter(parsed.alertFilter as AlertFilter)
+        } else if (parsed.tab === "system-logs" && parsed.systemLogSeverityFilter) {
+          setSystemLogSeverityFilter(parsed.systemLogSeverityFilter as WebLogSeverityFilter)
+        }
+      }
     }
     const onStorage = (event: StorageEvent) => {
       if (event.key !== RANKINGS_HEATMAP_STORAGE_KEY) return
@@ -3129,10 +3198,12 @@ export function App(): React.ReactElement {
     routeId: "risk-overview" | "churn-simulation" | "system-logs" | "status-dashboard",
   ) => {
     setActiveTab(routeId)
+    setActiveDiscoveryDimension(null)
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href)
       url.searchParams.set("tab", routeId)
-      url.hash = `#${routeId}`
+      url.searchParams.delete("dim")
+      url.hash = serializeDashboardHash({ activeTab: routeId })
       window.history.pushState(null, "", `${url.pathname}${url.search}${url.hash}`)
     }
   }
@@ -3533,13 +3604,19 @@ export function App(): React.ReactElement {
         {/* Row 1: Compact 1-row App Title Bar (logo, title, theme toggle, mobile menu button) */}
         <div className="sd-header-title-row" data-header-title-row="true">
           <a
-            href="#risk-overview"
+            href={buildCanonicalDashboardHref(
+              { activeTab: "risk-overview" },
+              typeof window !== "undefined" ? window.location.search : "",
+            )}
             className="sd-logo-home-link"
+            data-canonical-home-hash="#/risk-exposure/risk-overview"
             onClick={(e) => {
-              e.preventDefault()
-              navigatePrimaryRoute("risk-overview")
+              if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+                e.preventDefault()
+                navigatePrimaryRoute("risk-overview")
+              }
             }}
-            title="SportsDesk & Fantasy402 Operations — Risk Overview"
+            title="SportsDesk & Fantasy402 Operations — Risk Overview (#/risk-exposure/risk-overview)"
           >
             <img
               src={BRAND_ASSETS.emblemWebp}
@@ -4710,6 +4787,7 @@ export function App(): React.ReactElement {
           selectedAgentId={selectedAgentId}
           alertFilter={alertFilter}
           systemLogSeverityFilter={systemLogSeverityFilter}
+          discoveryDimension={activeDiscoveryDimension}
           onBreadcrumbAction={(action: BreadcrumbAction) => {
             switch (action.kind) {
               case "navigate-tab":
@@ -4723,6 +4801,7 @@ export function App(): React.ReactElement {
                   setSelectedAgentId(null)
                   setAlertFilter("ALL")
                   setSystemLogSeverityFilter("ALL")
+                  setActiveDiscoveryDimension(null)
                 }
                 setActiveTab(action.tab)
                 break
@@ -4748,6 +4827,12 @@ export function App(): React.ReactElement {
                 break
               case "clear-log-severity":
                 setSystemLogSeverityFilter("ALL")
+                break
+              case "select-discovery-dimension":
+                setActiveDiscoveryDimension(action.dimension)
+                break
+              case "clear-discovery-dimension":
+                setActiveDiscoveryDimension(null)
                 break
             }
           }}
@@ -4912,6 +4997,8 @@ export function App(): React.ReactElement {
                 syncTicketInspectorToLocation(wager.ticketId)
                 setActiveTab("wagers")
               }}
+              activeDiscoveryDimension={activeDiscoveryDimension}
+              onSelectDiscoveryDimension={(dim) => setActiveDiscoveryDimension(dim)}
             />
           ) : activeTab === "surveillance" ? (
             <SurveillanceTabPanel

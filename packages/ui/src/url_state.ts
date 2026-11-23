@@ -11,6 +11,12 @@
 
 import { DASHBOARD_DEFAULT_TAB } from "./config/dashboard.ts"
 import { WAGERS_DEFAULTS } from "./config/wagers.ts"
+import {
+  type DiscoveryDimensionId,
+  isDiscoveryDimensionId,
+  parseDashboardHash,
+  resolveDiscoveryDimensionId,
+} from "./discovery_hash.ts"
 import { resolveInitialTab } from "./tab_routes.ts"
 import {
   type DashboardTabId,
@@ -38,6 +44,8 @@ export interface DashboardUrlState {
   readonly rankingsHeatmap?: boolean | undefined
   /** Explicitly focused customer id (only written on customer-aware tabs when set). */
   readonly customer?: string | undefined
+  /** Active SoA Discovery Dimension estimator (`?dim=` or `#/.../dim:`). */
+  readonly discovery?: DiscoveryDimensionId | null | undefined
   readonly wSport: string
   readonly wAlert: string
   readonly wType: string
@@ -55,6 +63,7 @@ export const DEFAULT_DASHBOARD_URL_STATE: DashboardUrlState = Object.freeze({
   agent: "",
   downlineAgents: [],
   customer: "",
+  discovery: null,
   wSport: "ALL",
   wAlert: "ALL",
   wType: "ALL",
@@ -75,6 +84,8 @@ const P = {
   agents: "agents",
   heatmap: "heatmap",
   customer: "customer",
+  dim: "dim",
+  discovery: "discovery",
   wSport: "wSport",
   wAlert: "wAlert",
   wType: "wType",
@@ -153,6 +164,8 @@ function resolveTab(
     return "rankings"
   }
   if (hash !== "") {
+    const parsedHash = parseDashboardHash(hash, DASHBOARD_DEFAULT_TAB)
+    if (parsedHash) return parsedHash.tab
     return resolveDashboardTabId(hash, DASHBOARD_DEFAULT_TAB)
   }
   return resolveInitialTab(search, pathname)
@@ -161,21 +174,30 @@ function resolveTab(
 /** Read and validate shareable state from a location search/path/hash. */
 export function readDashboardUrlState(search = "", pathname = "/", hash = ""): DashboardUrlState {
   const params = paramsOf(search)
+  const parsedHash = hash ? parseDashboardHash(hash, DASHBOARD_DEFAULT_TAB) : null
   const sort = params.get(P.wSort)
   const dir = params.get(P.wDir)
   const survIpRaw = text(params.get(P.survIp))
   const survHostRaw = text(params.get(P.survHost))
+  const queryDim =
+    resolveDiscoveryDimensionId(params.get(P.dim)) ??
+    resolveDiscoveryDimensionId(params.get(P.discovery))
+  const queryAgent = text(params.get(P.agent))
+  const queryCustomer = text(params.get(P.customer))
+  const queryWSport = text(params.get(P.wSport))
+  const queryWChannel = text(params.get(P.wChannel))
   return {
     tab: resolveTab(params, search, pathname, hash),
     matrix: params.get(P.matrix) === "1",
-    agent: text(params.get(P.agent)),
+    agent: queryAgent || parsedHash?.selectedAgentId || "",
     downlineAgents: parseAgentList(params),
     rankingsHeatmap: parseOptionalBooleanFlag(params.get(P.heatmap)),
-    customer: text(params.get(P.customer)),
-    wSport: filter(params.get(P.wSport)),
+    customer: queryCustomer || parsedHash?.selectedCustomerId || "",
+    discovery: queryDim ?? parsedHash?.discoveryDimension ?? null,
+    wSport: filter(queryWSport || parsedHash?.wagerSportFilter || null),
     wAlert: filter(params.get(P.wAlert)),
     wType: filter(params.get(P.wType)),
-    wChannel: filter(params.get(P.wChannel)),
+    wChannel: filter(queryWChannel || parsedHash?.wagerChannelFilter || null),
     wSort: isWagerSortField(sort) ? sort : WAGERS_DEFAULTS.sort_field,
     wDir: dir === "asc" || dir === "desc" ? dir : WAGERS_DEFAULTS.sort_dir,
     survView: resolveSurveillanceView(params.get(P.survView)),
@@ -246,6 +268,13 @@ export function buildDashboardSearch(
     }
   }
 
+  if (state.discovery && isDiscoveryDimensionId(state.discovery)) {
+    params.set(P.dim, state.discovery)
+  } else {
+    params.delete(P.dim)
+  }
+  params.delete(P.discovery)
+
   const wagerFilters: ReadonlyArray<[string, string]> = [
     [P.wSport, state.wSport],
     [P.wAlert, state.wAlert],
@@ -307,15 +336,23 @@ export function buildDashboardUrlObject(
   state: DashboardUrlState,
   currentHref = "/",
   originBase = "http://dashboard.local",
+  canonicalHash?: string,
 ): URL {
   const url = new URL(currentHref, originBase)
   url.search = buildDashboardSearch(state, url.search, url.pathname)
+  if (canonicalHash !== undefined) {
+    url.hash = canonicalHash.startsWith("#") || canonicalHash === "" ? canonicalHash : `#${canonicalHash}`
+  }
   return url
 }
 
 /** Relative URL (path + query + hash) for a state, preserving unknown params. */
-export function dashboardUrl(state: DashboardUrlState, currentHref = "/"): string {
-  const url = buildDashboardUrlObject(state, currentHref)
+export function dashboardUrl(
+  state: DashboardUrlState,
+  currentHref = "/",
+  canonicalHash?: string,
+): string {
+  const url = buildDashboardUrlObject(state, currentHref, "http://dashboard.local", canonicalHash)
   return `${url.pathname}${url.search}${url.hash}`
 }
 
@@ -336,6 +373,8 @@ export interface DashboardHistoryWindow {
 export interface DashboardWriteOptions {
   /** Add a history entry (tab navigation) instead of replacing the current one. */
   readonly push?: boolean
+  /** Optional canonical structured hash (`#/{section}/{tab}/...`) to synchronize. */
+  readonly hash?: string
 }
 
 function defaultHistoryWindow(): DashboardHistoryWindow | null {
@@ -357,7 +396,7 @@ export function writeDashboardUrl(
     win.location.origin && win.location.origin !== "null"
       ? win.location.origin
       : "http://dashboard.local"
-  const nextUrl = buildDashboardUrlObject(state, win.location.href, baseOrigin)
+  const nextUrl = buildDashboardUrlObject(state, win.location.href, baseOrigin, options.hash)
   const next = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`
   const current = `${win.location.pathname}${win.location.search}${win.location.hash}`
   if (next === current) return false

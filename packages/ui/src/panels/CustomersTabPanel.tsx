@@ -32,6 +32,13 @@ import {
   type NormalizedRankingsResult,
   PENDING_COHORTS_PROVENANCE,
 } from "../hydration.ts"
+import {
+  buildCanonicalDashboardHref,
+  DISCOVERY_DIMENSION_LIST,
+  DISCOVERY_DIMENSIONS,
+  type DiscoveryDimensionId,
+  serializeDashboardHash,
+} from "../discovery_hash.ts"
 import { getLocalAgentHref } from "../links.ts"
 import {
   buildFantasy402PortalEntryUrl,
@@ -150,6 +157,10 @@ export interface CustomersTabPanelProps {
   readonly tickerOverlayOpen?: boolean | undefined
   /** Toggle the dockable Live Ticker Overlay without leaving Profiles context. */
   readonly onToggleTickerOverlay?: (() => void) | undefined
+  /** Active SoA Discovery Dimension synced with breadcrumb trail & canonical URL hash. */
+  readonly activeDiscoveryDimension?: DiscoveryDimensionId | null | undefined
+  /** Pin or clear a Discovery Dimension for canonical hashed deep-linking. */
+  readonly onSelectDiscoveryDimension?: ((dim: DiscoveryDimensionId | null) => void) | undefined
 }
 
 type ProfileDrilldownTab = "overview" | "formulas" | "activity" | "reconciliation" | "tags"
@@ -516,6 +527,8 @@ export function CustomersTabPanel({
   rankings = null,
   tickerOverlayOpen = false,
   onToggleTickerOverlay,
+  activeDiscoveryDimension = null,
+  onSelectDiscoveryDimension,
 }: CustomersTabPanelProps): React.ReactElement {
   const [profilePage, setProfilePage] = useState(0)
   const [drilldownTab, setDrilldownTab] = useState<ProfileDrilldownTab>("overview")
@@ -745,6 +758,50 @@ export function CustomersTabPanel({
               {cohortsReport.provenance.sourcePath}
             </span>
           ) : null}
+          {(() => {
+            const cohortRouteCtx = {
+              activeTab: "customers" as const,
+              customerTierFilter: filterTier,
+              selectedCustomerId: selectedCustomer?.id ?? null,
+              discoveryDimension: activeDiscoveryDimension,
+            }
+            const cohortHref = buildCanonicalDashboardHref(
+              cohortRouteCtx,
+              typeof window !== "undefined" ? window.location.search : "",
+            )
+            const cohortHash = serializeDashboardHash(cohortRouteCtx)
+            const activeSpec = activeDiscoveryDimension
+              ? DISCOVERY_DIMENSIONS[activeDiscoveryDimension]
+              : null
+            return (
+              <a
+                href={cohortHref}
+                className="sd-cohort-hash-anchor"
+                data-cohort-canonical-hash={cohortHash}
+                onClick={(e) => {
+                  if (
+                    e.button === 0 &&
+                    !e.metaKey &&
+                    !e.ctrlKey &&
+                    !e.shiftKey &&
+                    !e.altKey &&
+                    activeSpec &&
+                    onSelectDiscoveryDimension
+                  ) {
+                    e.preventDefault()
+                    onSelectDiscoveryDimension(null)
+                  }
+                }}
+                title={
+                  activeSpec
+                    ? `${activeSpec.dimension}: ${activeSpec.formula} — click to clear dimension or Ctrl/Cmd+click to open in new tab`
+                    : `Canonical cohort hash (${cohortHash})`
+                }
+              >
+                <code>{activeSpec ? `${activeSpec.symbol} · ${cohortHash}` : cohortHash}</code>
+              </a>
+            )
+          })()}
         </div>
         <button
           type="button"
@@ -2471,6 +2528,55 @@ export function CustomersTabPanel({
                       >
                         Portal ↗
                       </a>
+                    </div>
+
+                    {/* Per-Account SoA Discovery Dimension Hashed Deep-Link Strip */}
+                    <div
+                      className="sd-inspector-discovery-strip"
+                      data-inspector-discovery-links={selectedCustomer.id}
+                      role="navigation"
+                      aria-label={`SoA Discovery dimension links for ${selectedCustomer.id}`}
+                    >
+                      <span className="sd-inspector-discovery-strip__label">SoA Discovery</span>
+                      {DISCOVERY_DIMENSION_LIST.map((spec) => {
+                        const isPinned = activeDiscoveryDimension === spec.id
+                        const linkCtx = {
+                          activeTab: "customers" as const,
+                          customerTierFilter: filterTier,
+                          selectedCustomerId: selectedCustomer.id,
+                          discoveryDimension: spec.id,
+                        }
+                        const href = buildCanonicalDashboardHref(
+                          linkCtx,
+                          typeof window !== "undefined" ? window.location.search : "",
+                        )
+                        const hashStr = serializeDashboardHash(linkCtx)
+                        return (
+                          <a
+                            key={spec.id}
+                            href={href}
+                            className={`sd-inspector-dim-link sd-dim-pill--${spec.tone}${isPinned ? " sd-inspector-dim-link--active" : ""}`}
+                            data-inspector-dim={spec.id}
+                            onClick={(e) => {
+                              if (
+                                e.button === 0 &&
+                                !e.metaKey &&
+                                !e.ctrlKey &&
+                                !e.shiftKey &&
+                                !e.altKey &&
+                                onSelectDiscoveryDimension
+                              ) {
+                                e.preventDefault()
+                                onSelectDiscoveryDimension(isPinned ? null : spec.id)
+                              }
+                            }}
+                            title={`${spec.dimension} (${spec.estimator}) · ${spec.formula} — ${spec.whatItSurfaces} [${hashStr}]`}
+                          >
+                            <span className="sd-tabular">{spec.symbol}</span>
+                            <span>{spec.dimension}</span>
+                          </a>
+                        )
+                      })}
                     </div>
                   </div>
 

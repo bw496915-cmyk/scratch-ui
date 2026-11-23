@@ -19,8 +19,9 @@ export * from "./config/dashboard.ts"
 export * from "./config/slab.ts"
 export * from "./config/wagers.ts"
 
-// 4. Hydration, Provenance Badges, Route Sanitizers, ANSI & Runtime Flags
+// 4. Hydration, Provenance Badges, Route Sanitizers, ANSI, Discovery Hashing & Runtime Flags
 export * from "./ansi.tsx"
+export * from "./discovery_hash.ts"
 export * from "./hydration.ts"
 export * from "./links.ts"
 export * from "./runtime_flags.ts"
