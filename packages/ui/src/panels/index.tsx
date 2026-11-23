@@ -37,6 +37,10 @@ export {
   type RuntimeSurfaceSubTab,
 } from "./BunRuntimeSurfaceSection.tsx"
 export {
+  BunUtilitiesDecouplePanel,
+  type BunUtilitiesDecouplePanelProps,
+} from "./BunUtilitiesDecouplePanel.tsx"
+export {
   buildRegistryRootCss,
   HOUDINI_TOKENS,
   TOKEN_ALIAS_SPECS,

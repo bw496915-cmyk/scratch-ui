@@ -23,6 +23,7 @@ import {
   type SportFilter,
   type SubSportFilter,
 } from "../../contracts/src/index.ts"
+import { validateRequestApiBaseParam } from "./api_base_validation.ts"
 import {
   DASHBOARD_ROUTES,
   extractRawRouteParam,
@@ -1814,6 +1815,24 @@ export function createDashboardApi<TWs extends WsLike = WsLike>(
 
   /** Dispatch a dashboard API/health `Request` completely in-memory with zero port bind. */
   const fetch = async (req: Request): Promise<Response> => {
+    const isLocalDev = (deps.env?.NODE_ENV ?? process.env.NODE_ENV) !== "production"
+    const apiBaseCheck = validateRequestApiBaseParam(req, isLocalDev)
+    if (apiBaseCheck && !apiBaseCheck.ok) {
+      return Response.json(
+        {
+          error: "Invalid or untrusted apiBase query parameter",
+          code: apiBaseCheck.code,
+        },
+        {
+          status: 400,
+          headers: {
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+          },
+        },
+      )
+    }
+
     const url = new URL(req.url)
     const method = req.method.toUpperCase() as HttpMethod
 

@@ -21,6 +21,7 @@ import { resolve } from "node:path"
 import type { BunRuntimeSurfaceAuditSnapshot } from "../../contracts/src/bun_runtime_surface.ts"
 import type { WorkspaceYamlConfigSummary } from "../../contracts/src/bun_yaml.ts"
 import type { RedactedNpmrcStatusSummary } from "../../contracts/src/npmrc.ts"
+import { validateConfigHttpUrl } from "./api_base_validation.ts"
 import { loadBunRuntimeSurfaceAudit } from "./bun_runtime_surface_loader.ts"
 import { loadRedactedNpmrcStatusSummary } from "./npmrc_loader.ts"
 import { loadWorkspaceYamlConfigSummary } from "./yaml_loader.ts"
@@ -1737,21 +1738,31 @@ function validateTypedConfigValue(
   }
 
   if (spec.valueType === "url") {
-    try {
-      const parsed = new URL(value)
-      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-        return {
-          ok: false,
-          error: `${spec.key} must use http:// or https://`,
-        }
-      }
-      return { ok: true, normalized: value }
-    } catch {
+    const checked = validateConfigHttpUrl(value)
+    if (!checked.ok) {
       return {
         ok: false,
-        error: `${spec.key} must be a valid http(s) URL`,
+        error: `${spec.key} must be a valid http(s) URL without credentials, query, hash, or backslashes (${checked.code})`,
       }
     }
+    return { ok: true, normalized: checked.normalized }
+  }
+
+  if (spec.key === "SPORTSDESK_ALLOWED_ORIGINS") {
+    const normalizedOrigins: string[] = []
+    for (const part of value.split(",")) {
+      const origin = part.trim()
+      if (origin === "") continue
+      const checked = validateConfigHttpUrl(origin, { originOnly: true })
+      if (!checked.ok) {
+        return {
+          ok: false,
+          error: `${spec.key} contains invalid origin "${origin}" (${checked.code})`,
+        }
+      }
+      normalizedOrigins.push(checked.normalized)
+    }
+    return { ok: true, normalized: normalizedOrigins.join(",") }
   }
 
   return { ok: true, normalized: value }

@@ -22,6 +22,7 @@ export * from "./config/wagers.ts"
 // 4. Hydration, Provenance Badges, Route Sanitizers, ANSI, Discovery Hashing & Runtime Flags
 export * from "./ansi.tsx"
 export * from "./api_base_validation.ts"
+export * from "./bun_utilities.ts"
 export * from "./discovery_hash.ts"
 export * from "./hydration.ts"
 export * from "./links.ts"

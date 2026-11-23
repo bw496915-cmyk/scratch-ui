@@ -1,6 +1,7 @@
 export { CONTRACTS_PACKAGE } from "../../contracts/src/index.ts"
 
 export * from "./types.ts"
+export * from "./api_base_validation.ts"
 export * from "./bun_routes.ts"
 export * from "./config_status.ts"
 export * from "./npmrc_loader.ts"

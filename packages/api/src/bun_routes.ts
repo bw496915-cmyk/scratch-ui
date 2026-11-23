@@ -5,6 +5,12 @@
  * decoding, and typed `buildApiUrl` builders.
  */
 
+import {
+  MAX_API_BASE_INPUT,
+  normalizeApiBaseUrl,
+  normalizeUrlPathSlashes,
+} from "./api_base_validation.ts"
+
 /**
  * Canonical route path registry (`as const`) shared across Bun's radix-tree
  * `routes` map, typed request handlers, and URL builders.
@@ -145,7 +151,16 @@ export function buildApiUrl<TPath extends string>(
   params?: Partial<Record<keyof ExtractRouteParams<TPath>, string | number>>,
   query?: Record<string, ApiQueryValue>,
 ): string {
-  const base = String(baseUrl).replace(/\/+$/, "")
+  const rawBase = String(baseUrl).trim()
+  if (rawBase.length === 0 || rawBase.length > MAX_API_BASE_INPUT || rawBase.includes("\\")) {
+    throw new Error("Invalid API base URL (empty, oversized, or contains backslash)")
+  }
+  let base: string
+  try {
+    base = normalizeApiBaseUrl(new URL(rawBase))
+  } catch {
+    base = rawBase.replace(/\/+$/, "")
+  }
   const resolvedPath = route.replace(/:([A-Za-z0-9_]+)/g, (_match, key: string) => {
     const rawValue = (params as Record<string, string | number | undefined> | undefined)?.[key]
     if (rawValue === undefined || rawValue === null) {
@@ -154,7 +169,8 @@ export function buildApiUrl<TPath extends string>(
     return encodeURIComponent(String(rawValue))
   })
 
-  const normalizedPath = resolvedPath.startsWith("/") ? resolvedPath : `/${resolvedPath}`
+  const collapsedPath = normalizeUrlPathSlashes(resolvedPath)
+  const normalizedPath = collapsedPath.startsWith("/") ? collapsedPath : `/${collapsedPath}`
 
   if (!query) {
     return `${base}${normalizedPath}`

@@ -35,6 +35,7 @@ import {
   trackedFetch,
 } from "./api_usage.ts"
 import { getDashboardBuildInfo } from "./build_info.ts"
+import { resolveSpaDecoupleStatus } from "./bun_utilities.ts"
 import { DASHBOARD_API, DASHBOARD_META, dashboardApiUrl } from "./config/dashboard.ts"
 import { applyGraphForensicsToProfiles, indexGraphLiveFeedForensics } from "./customer_forensics.ts"
 import { styles } from "./dashboard_styles.ts"
@@ -86,6 +87,7 @@ import {
   type BreadcrumbAction,
   BuildMatrixDrawer,
   BunAssetsTabPanel,
+  BunUtilitiesDecouplePanel,
   CustomersTabPanel,
   DashboardAuthShellSkeleton,
   DashboardBreadcrumbs,
@@ -406,6 +408,8 @@ export function App(): React.ReactElement {
   const [reverseForensics, setReverseForensics] = useState<ReverseDnsForensicsView | null>(null)
   const [surveillanceHeaderSync, setSurveillanceHeaderSync] =
     useState<SurveillanceHeaderSyncRecord | null>(null)
+  const [spaUtilitiesOpen, setSpaUtilitiesOpen] = useState(false)
+  const spaDecoupleStatus = useMemo(() => resolveSpaDecoupleStatus(), [])
 
   // Global Header & Bet Ticker Search state
   const [globalSearch, setGlobalSearch] = useState<string>("")
@@ -3687,12 +3691,50 @@ export function App(): React.ReactElement {
           role="region"
           aria-label="Live telemetry status strip"
         >
-          <span
+          <button
+            type="button"
             className="sd-telemetry-item sd-tabular"
-            style={{ color: "#38bdf8", fontWeight: 600 }}
+            data-spa-decouple-utilities-trigger="true"
+            data-spa-decouple-mode={spaDecoupleStatus.mode}
+            onClick={() => setSpaUtilitiesOpen(true)}
+            title={`${spaDecoupleStatus.summary} — click to inspect decoupled API base & 19 Bun utilities`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "3px 9px",
+              borderRadius: "6px",
+              fontSize: "11px",
+              fontWeight: 600,
+              cursor: "pointer",
+              background:
+                spaDecoupleStatus.mode === "override-rejected"
+                  ? "rgba(239, 68, 68, 0.14)"
+                  : "rgba(56, 189, 248, 0.12)",
+              color: spaDecoupleStatus.mode === "override-rejected" ? "#f87171" : "#38bdf8",
+              border:
+                spaDecoupleStatus.mode === "override-rejected"
+                  ? "1px solid rgba(239, 68, 68, 0.35)"
+                  : "1px solid rgba(56, 189, 248, 0.3)",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+            }}
           >
-            ● Local :4022 SPA
-          </span>
+            <span>
+              ● Local :4022 SPA
+              {spaDecoupleStatus.badgeSuffix ? ` · ${spaDecoupleStatus.badgeSuffix}` : ""}
+            </span>
+            <span
+              style={{
+                fontSize: "10px",
+                opacity: 0.85,
+                paddingLeft: "5px",
+                borderLeft: "1px solid currentColor",
+              }}
+            >
+              Utilities
+            </span>
+          </button>
           <span className="sd-telemetry-item">
             <WsSyncStatusIndicator
               wsConnected={connected}
@@ -4211,6 +4253,13 @@ export function App(): React.ReactElement {
           onRefresh={() => fetchBuildMatrix(true)}
         />
       ) : null}
+
+      <BunUtilitiesDecouplePanel
+        open={spaUtilitiesOpen}
+        onClose={() => setSpaUtilitiesOpen(false)}
+        status={spaDecoupleStatus}
+        serverRuntimeEngine={surveillanceHeaderSync?.runtimeEngine ?? null}
+      />
 
       {/* Cross-Desk Operations Command Ribbon */}
       <section
