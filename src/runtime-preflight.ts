@@ -717,8 +717,12 @@ export interface RuntimePreflightAuditReport {
 export function runRuntimePreflightAudit(
   options: RuntimePreflightAuditOptions = {},
 ): RuntimePreflightAuditReport {
+  const processBunVersion =
+    typeof process !== "undefined" && typeof process.versions?.bun === "string"
+      ? process.versions.bun
+      : null
   const globalBun = getGlobalBun()
-  const isBun = Boolean(globalBun)
+  const isBun = Boolean(processBunVersion || globalBun)
   const failures: string[] = []
 
   // 1. ExecArgv / BUN_OPTIONS --env-file bleed guard
@@ -785,7 +789,7 @@ export function runRuntimePreflightAudit(
   const report: RuntimePreflightAuditReport = {
     ok,
     runtime: isBun ? "bun" : "node",
-    runtimeVersion: isBun ? (globalBun?.version ?? "unknown") : process.version,
+    runtimeVersion: isBun ? (processBunVersion ?? globalBun?.version ?? "unknown") : process.version,
     checkedAt: new Date().toISOString(),
     checks: {
       execArgv: execArgvCheck,

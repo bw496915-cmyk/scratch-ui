@@ -235,6 +235,9 @@ function getBunRuntimeProbe(): BunRuntimeProbe | undefined {
 }
 
 function resolveRuntimeEngineHeader(): string {
+  if (typeof process !== "undefined" && typeof process.versions?.bun === "string") {
+    return `bun/${process.versions.bun}`
+  }
   const bunGlobal = getBunRuntimeProbe()
   if (bunGlobal && typeof bunGlobal.version === "string") {
     return `bun/${bunGlobal.version}`

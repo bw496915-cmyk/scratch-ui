@@ -1,6 +1,13 @@
 import { describe, expect, test } from "bun:test"
 
 import {
+  extractSingleApiBaseParam,
+  hasCompiledApiBasePatterns,
+  hasEmptySearchParams,
+  isURLSearchParams,
+  MAX_API_BASE_INPUT,
+  sanitizeApiBaseParam,
+  stripApiBaseParam,
   validateApiBase,
   validateApiBaseFallback,
   validateApiBaseWithPattern,
@@ -15,18 +22,48 @@ import { buildCanonicalDashboardHref } from "../../packages/ui/src/discovery_has
 import { buildDashboardSearch, DEFAULT_DASHBOARD_URL_STATE } from "../../packages/ui/src/url_state.ts"
 
 describe("URLPattern apiBase Validation (Production & Local Dev)", () => {
-  test("accepts valid single-label https://<sub >.bookdeskops.com origins and normalizes trailing slashes", () => {
+  test("compiles both prod and dev URLPatterns with active custom regex groups at startup", () => {
+    expect(hasCompiledApiBasePatterns()).toBe(true)
+
+    // A runtime stub whose URLPattern reports hasRegExpGroups: false must fail closed.
+    class FakeNoRegexURLPattern {
+      readonly hasRegExpGroups = false
+      exec() {
+        return null
+      }
+      test() {
+        return false
+      }
+    }
+    expect(
+      hasCompiledApiBasePatterns(FakeNoRegexURLPattern as unknown as typeof URLPattern),
+    ).toBe(false)
+    expect(
+      validateApiBaseWithPattern(
+        "https://api.bookdeskops.com",
+        false,
+        FakeNoRegexURLPattern as unknown as typeof URLPattern,
+      ),
+    ).toEqual({
+      ok: false,
+      code: "ERR_API_BASE_PATTERN_UNAVAILABLE",
+    })
+  })
+
+  test("accepts valid single-label https://<sub >.bookdeskops.com origins and collapses repeated/trailing slashes", () => {
     expect(validateApiBaseWithPattern("https://api.bookdeskops.com", false)).toEqual({
       ok: true,
       normalized: "https://api.bookdeskops.com",
       sub: "api",
     })
-    expect(validateApiBaseWithPattern("https://desk-01.bookdeskops.com/v2///", false)).toEqual({
-      ok: true,
-      normalized: "https://desk-01.bookdeskops.com/v2",
-      sub: "desk-01",
-    })
-    expect(validateApiBaseWithPattern("https://A.BOOKDESKOPS.COM/", false)).toEqual({
+    expect(validateApiBaseWithPattern("https://desk-01.bookdeskops.com//v2///ops/", false)).toEqual(
+      {
+        ok: true,
+        normalized: "https://desk-01.bookdeskops.com/v2/ops",
+        sub: "desk-01",
+      },
+    )
+    expect(validateApiBaseWithPattern("https://A.BOOKDESKOPS.COM///", false)).toEqual({
       ok: true,
       normalized: "https://a.bookdeskops.com",
       sub: "a",
@@ -37,9 +74,15 @@ describe("URLPattern apiBase Validation (Production & Local Dev)", () => {
       normalized: "https://api.bookdeskops.com/ops",
       sub: "api",
     })
+    // Internal double-hyphen DNS label (non-xn--) is valid RFC 1123
+    expect(validateApiBaseWithPattern("https://a--b.bookdeskops.com", false)).toEqual({
+      ok: true,
+      normalized: "https://a--b.bookdeskops.com",
+      sub: "a--b",
+    })
   })
 
-  test("rejects denied, punycode, multi-label, non-https, credentialed, or parameterized origins", () => {
+  test("rejects denied, punycode, multi-label, non-https, and credentialed origins", () => {
     const untrustedCases = [
       "https://staging.bookdeskops.com",
       "https://STAGING.bookdeskops.com",
@@ -54,18 +97,69 @@ describe("URLPattern apiBase Validation (Production & Local Dev)", () => {
       "http://api.bookdeskops.com",
       "https://api.bookdeskops.com:8443",
       "https://user:pass@api.bookdeskops.com",
-      "https://api.bookdeskops.com?token=1",
-      "https://api.bookdeskops.com#frag",
       "https://evil.example.net",
       "javascript:alert(1)",
     ]
 
     for (const candidate of untrustedCases) {
-      const patternRes = validateApiBaseWithPattern(candidate, false)
-      expect(patternRes).toEqual({ ok: false, code: "ERR_API_BASE_ORIGIN_UNTRUSTED" })
-      const fallbackRes = validateApiBaseFallback(candidate, false)
-      expect(fallbackRes).toEqual({ ok: false, code: "ERR_API_BASE_ORIGIN_UNTRUSTED" })
+      expect(validateApiBaseWithPattern(candidate, false)).toEqual({
+        ok: false,
+        code: "ERR_API_BASE_ORIGIN_UNTRUSTED",
+      })
+      expect(validateApiBaseFallback(candidate, false)).toEqual({
+        ok: false,
+        code: "ERR_API_BASE_ORIGIN_UNTRUSTED",
+      })
     }
+  })
+
+  test("rejects query strings, hash fragments, backslashes, and oversized inputs before URLPattern matching", () => {
+    const queryOrHashCases = [
+      "https://api.bookdeskops.com?token=1",
+      "https://api.bookdeskops.com?",
+      "https://api.bookdeskops.com#frag",
+      "https://api.bookdeskops.com#",
+      "http://localhost:3000?a=1",
+    ]
+    for (const candidate of queryOrHashCases) {
+      expect(validateApiBaseWithPattern(candidate, true)).toEqual({
+        ok: false,
+        code: "ERR_API_BASE_QUERY_OR_HASH_FORBIDDEN",
+      })
+      expect(validateApiBaseFallback(candidate, true)).toEqual({
+        ok: false,
+        code: "ERR_API_BASE_QUERY_OR_HASH_FORBIDDEN",
+      })
+    }
+
+    // Backslash rejection closes WHATWG URL vs fetch parser differentials
+    const backslashCases = [
+      "https://api.bookdeskops.com\\v2",
+      "https://evil.example\\@api.bookdeskops.com",
+      "http://localhost:3000\\api",
+    ]
+    for (const candidate of backslashCases) {
+      expect(validateApiBaseWithPattern(candidate, true)).toEqual({
+        ok: false,
+        code: "ERR_API_BASE_INVALID_URL",
+      })
+      expect(validateApiBaseFallback(candidate, true)).toEqual({
+        ok: false,
+        code: "ERR_API_BASE_INVALID_URL",
+      })
+    }
+
+    // Input length cap prevents URLPattern backtracking DoS
+    const oversized = `https://api.bookdeskops.com/${"a".repeat(MAX_API_BASE_INPUT)}`
+    expect(oversized.length).toBeGreaterThan(MAX_API_BASE_INPUT)
+    expect(validateApiBaseWithPattern(oversized, false)).toEqual({
+      ok: false,
+      code: "ERR_API_BASE_INVALID_URL",
+    })
+    expect(validateApiBaseFallback(oversized, false)).toEqual({
+      ok: false,
+      code: "ERR_API_BASE_INVALID_URL",
+    })
   })
 
   test("handles local dev loopback targets only when isLocalDev is true and rejects invalid ports", () => {
@@ -73,9 +167,9 @@ describe("URLPattern apiBase Validation (Production & Local Dev)", () => {
       ok: true,
       normalized: "http://localhost:3000",
     })
-    expect(validateApiBaseWithPattern("http://127.0.0.1:4021/api/", true)).toEqual({
+    expect(validateApiBaseWithPattern("http://127.0.0.1:4021//api//v1/", true)).toEqual({
       ok: true,
-      normalized: "http://127.0.0.1:4021/api",
+      normalized: "http://127.0.0.1:4021/api/v1",
     })
     expect(validateApiBaseWithPattern("http://[::1]:4021", true)).toEqual({
       ok: true,
@@ -111,7 +205,11 @@ describe("URLPattern apiBase Validation (Production & Local Dev)", () => {
     })
     expect(validateApiBaseWithPattern("http://127.0.0.1:0", true)).toEqual({
       ok: false,
-      code: "ERR_API_BASE_INVALID_URL",
+      code: "ERR_API_BASE_INVALID_PORT",
+    })
+    expect(validateApiBaseFallback("http://127.0.0.1:0", true)).toEqual({
+      ok: false,
+      code: "ERR_API_BASE_INVALID_PORT",
     })
   })
 
@@ -139,7 +237,7 @@ describe("URLPattern apiBase Validation (Production & Local Dev)", () => {
     })
 
     // Pure URL fallback matches URLPattern behavior identically
-    expect(validateApiBaseFallback("https://api.bookdeskops.com/v1/", false)).toEqual({
+    expect(validateApiBaseFallback("https://api.bookdeskops.com//v1/", false)).toEqual({
       ok: true,
       normalized: "https://api.bookdeskops.com/v1",
       sub: "api",
@@ -149,6 +247,75 @@ describe("URLPattern apiBase Validation (Production & Local Dev)", () => {
       normalized: "https://api.bookdeskops.com/v1",
       sub: "api",
     })
+  })
+
+  test("enforces Bun/cross-runtime URLSearchParams semantics and blocks duplicate ?apiBase= smuggling", () => {
+    // Duck-typed URLSearchParams guard avoids instanceof failures across Web/node:url/polyfills
+    const realParams = new URLSearchParams("a=1")
+    expect(isURLSearchParams(realParams)).toBe(true)
+    expect(isURLSearchParams({ getAll: () => [], delete: () => {}, toString: () => "" })).toBe(true)
+    expect(isURLSearchParams(null)).toBe(false)
+    expect(isURLSearchParams("?apiBase=https://api.bookdeskops.com")).toBe(false)
+
+    // Polyfill-safe emptiness check (never depends on `.size`)
+    expect(hasEmptySearchParams(new URLSearchParams())).toBe(true)
+    expect(hasEmptySearchParams(realParams)).toBe(false)
+
+    // Duplicate-key query smuggling: get() would silently return the first (trusted) value,
+    // while getAll() exposes the second (untrusted) value and fails closed.
+    const smuggledQuery =
+      "?apiBase=https://api.bookdeskops.com&apiBase=https://evil.example&tab=customers"
+    expect(extractSingleApiBaseParam(smuggledQuery)).toEqual({
+      present: true,
+      ok: false,
+      code: "ERR_API_BASE_DUPLICATE_PARAM",
+    })
+
+    const smuggledParams = new URLSearchParams(smuggledQuery)
+    expect(smuggledParams.get("apiBase")).toBe("https://api.bookdeskops.com")
+    expect(smuggledParams.getAll("apiBase")).toEqual([
+      "https://api.bookdeskops.com",
+      "https://evil.example",
+    ])
+    stripApiBaseParam(smuggledParams)
+    expect(smuggledParams.getAll("apiBase")).toEqual([])
+    expect(smuggledParams.toString()).toBe("tab=customers")
+
+    // sanitizeApiBaseParam purges all duplicates in place and returns ERR_API_BASE_DUPLICATE_PARAM
+    const toSanitize = new URLSearchParams(smuggledQuery)
+    expect(sanitizeApiBaseParam(toSanitize, false)).toEqual({
+      ok: false,
+      code: "ERR_API_BASE_DUPLICATE_PARAM",
+    })
+    expect(toSanitize.getAll("apiBase")).toEqual([])
+    expect(toSanitize.toString()).toBe("tab=customers")
+
+    // End-to-end duplicate-key rejection in dashboard config, URL state, and canonical links
+    const smuggledWin = {
+      location: {
+        origin: "https://ops.example.com",
+        href: `https://ops.example.com/${smuggledQuery}`,
+        search: smuggledQuery,
+      },
+    }
+    expect(inspectApiBaseOverride(smuggledWin, false)).toEqual({
+      ok: false,
+      code: "ERR_API_BASE_DUPLICATE_PARAM",
+    })
+    expect(devApiBaseOverride(smuggledWin, false)).toBeNull()
+
+    const scrubbedSmuggledSearch = buildDashboardSearch(
+      DEFAULT_DASHBOARD_URL_STATE,
+      smuggledQuery,
+      "/",
+    )
+    expect(scrubbedSmuggledSearch).not.toContain("apiBase")
+
+    const scrubbedSmuggledHref = buildCanonicalDashboardHref(
+      { activeTab: "customers", discoveryDimension: "directional-asymmetry" },
+      smuggledQuery,
+    )
+    expect(scrubbedSmuggledHref).not.toContain("apiBase")
   })
 
   test("integrates with dashboard base URL resolution, URL state scrubbing, and canonical hashed links", () => {
@@ -202,7 +369,7 @@ describe("URLPattern apiBase Validation (Production & Local Dev)", () => {
 
     const trustedHref = buildCanonicalDashboardHref(
       { activeTab: "customers", discoveryDimension: "directional-asymmetry" },
-      "?apiBase=https://api.bookdeskops.com/v1/",
+      "?apiBase=https://api.bookdeskops.com//v1/",
     )
     expect(trustedHref).toContain("apiBase=https%3A%2F%2Fapi.bookdeskops.com%2Fv1")
   })

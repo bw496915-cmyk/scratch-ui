@@ -6,6 +6,7 @@ import { apiUsageKey, extractResponseHeaderTelemetry } from "../../packages/ui/s
 import {
   buildDashboardApiUrlObject,
   dashboardApiUrl,
+  isBunRuntime,
   readBunGlobals,
   resolveDashboardBaseUrl,
 } from "../../packages/ui/src/config/dashboard.ts"
@@ -173,11 +174,58 @@ describe("Surveillance Base URL, Separate URL Objects & Window State Management"
 })
 
 describe("Bun Globals, Blob Snapshot Export & Aligned Headers", () => {
-  test("readBunGlobals and inspectSurveillanceRuntimeGlobals detect Bun & Blob cleanly", () => {
+  test("readBunGlobals, isBunRuntime, and inspectSurveillanceRuntimeGlobals detect Bun via process.versions.bun and Bun global", () => {
+    expect(isBunRuntime()).toBe(true)
+
     const bunGlobals = readBunGlobals()
     expect(bunGlobals.available).toBe(true)
     expect(typeof bunGlobals.version).toBe("string")
+    expect(bunGlobals.processVersionsBun).toBe(process.versions.bun ?? null)
+    expect(bunGlobals.hasBunGlobal).toBe(true)
+    expect(bunGlobals.detectedVia).toBe("process.versions.bun")
     expect(bunGlobals.hasNanoseconds).toBe(true)
+
+    // Works with only process.versions.bun (no Bun global)
+    expect(isBunRuntime({ process: { versions: { bun: "1.4.4" } } })).toBe(true)
+    const viaProcessOnly = readBunGlobals({ process: { versions: { bun: "1.4.4" } } })
+    expect(viaProcessOnly).toEqual({
+      available: true,
+      version: "1.4.4",
+      revision: null,
+      hasDns: false,
+      hasNanoseconds: false,
+      processVersionsBun: "1.4.4",
+      hasBunGlobal: false,
+      detectedVia: "process.versions.bun",
+    })
+
+    // Falls back to globalThis.Bun when process is absent
+    expect(isBunRuntime({ Bun: { version: "1.4.4" } })).toBe(true)
+    const viaGlobalOnly = readBunGlobals({ Bun: { version: "1.4.4", revision: "abc123" } })
+    expect(viaGlobalOnly).toEqual({
+      available: true,
+      version: "1.4.4",
+      revision: "abc123",
+      hasDns: false,
+      hasNanoseconds: false,
+      processVersionsBun: null,
+      hasBunGlobal: true,
+      detectedVia: "globalThis.Bun",
+    })
+
+    // Browser / Node without Bun
+    expect(isBunRuntime({})).toBe(false)
+    expect(isBunRuntime({ process: { versions: {} } })).toBe(false)
+    expect(readBunGlobals({})).toEqual({
+      available: false,
+      version: null,
+      revision: null,
+      hasDns: false,
+      hasNanoseconds: false,
+      processVersionsBun: null,
+      hasBunGlobal: false,
+      detectedVia: "none",
+    })
 
     const runtime = inspectSurveillanceRuntimeGlobals({
       location: {
@@ -189,6 +237,7 @@ describe("Bun Globals, Blob Snapshot Export & Aligned Headers", () => {
     expect(runtime.hasWindow).toBe(true)
     expect(runtime.hasBlob).toBe(true)
     expect(runtime.bun.available).toBe(true)
+    expect(runtime.bun.detectedVia).toBe("process.versions.bun")
     expect(runtime.windowOrigin).toBe("http://127.0.0.1:3000")
   })
 

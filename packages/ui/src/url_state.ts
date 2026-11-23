@@ -9,7 +9,7 @@
  * are preserved untouched; free-text search stays out of the URL.
  */
 
-import { isLocalDevLocation, validateApiBase } from "./api_base_validation.ts"
+import { isLocalDevLocation, sanitizeApiBaseParam } from "./api_base_validation.ts"
 import { DASHBOARD_DEFAULT_TAB } from "./config/dashboard.ts"
 import { WAGERS_DEFAULTS } from "./config/wagers.ts"
 import {
@@ -323,17 +323,9 @@ export function buildDashboardSearch(
     params.delete(P.survHost)
   }
 
-  // Never re-emit a temporary fast sign-in credential or untrusted apiBase in shareable URLs.
+  // Never re-emit a temporary fast sign-in credential or duplicate/untrusted apiBase in shareable URLs.
   params.delete("fast_signin")
-  const rawApiBase = params.get("apiBase")
-  if (rawApiBase !== null) {
-    const validated = validateApiBase(rawApiBase, isLocalDevLocation())
-    if (validated.ok) {
-      params.set("apiBase", validated.normalized)
-    } else {
-      params.delete("apiBase")
-    }
-  }
+  sanitizeApiBaseParam(params, isLocalDevLocation())
 
   return params.toString()
 }

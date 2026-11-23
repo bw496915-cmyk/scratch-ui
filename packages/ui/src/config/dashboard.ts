@@ -10,6 +10,7 @@
 
 import {
   type ApiBaseValidation,
+  extractSingleApiBaseParam,
   isLocalDevLocation,
   validateApiBase,
 } from "../api_base_validation.ts"
@@ -99,44 +100,96 @@ export interface DashboardWindowLocationLike {
   }
 }
 
+export type BunDetectionSource = "process.versions.bun" | "globalThis.Bun" | "none"
+
+export interface BunRuntimeGlobalLike {
+  readonly process?: {
+    readonly versions?: {
+      readonly bun?: unknown
+    }
+  }
+  readonly Bun?: {
+    readonly version?: unknown
+    readonly revision?: unknown
+    readonly dns?: unknown
+    readonly nanoseconds?: unknown
+  }
+}
+
 export interface BunGlobalSnapshot {
   readonly available: boolean
   readonly version: string | null
   readonly revision: string | null
   readonly hasDns: boolean
   readonly hasNanoseconds: boolean
+  readonly processVersionsBun: string | null
+  readonly hasBunGlobal: boolean
+  readonly detectedVia: BunDetectionSource
 }
 
 /**
- * Safely inspect `globalThis.Bun` globals without breaking Vite browser bundles
- * or Node.js runtimes.
+ * Detect whether code is currently executing under Bun.
+ * Checks `process.versions.bun` first (requires no `@types/bun` definitions),
+ * then falls back to the `Bun` global, accessing both via `globalThis` so
+ * browser-scoped TypeScript programs (`types: ["vite/client"]`) compile cleanly.
  */
-export function readBunGlobals(): BunGlobalSnapshot {
-  const candidate = (
-    globalThis as unknown as {
-      Bun?: {
-        readonly version?: unknown
-        readonly revision?: unknown
-        readonly dns?: unknown
-        readonly nanoseconds?: unknown
-      }
-    }
-  ).Bun
-  if (!candidate || typeof candidate !== "object") {
+export function isBunRuntime(
+  runtimeGlobal: BunRuntimeGlobalLike = globalThis as unknown as BunRuntimeGlobalLike,
+): boolean {
+  const procBun = runtimeGlobal.process?.versions?.bun
+  if (typeof procBun === "string" && procBun.length > 0) {
+    return true
+  }
+  return typeof runtimeGlobal.Bun !== "undefined" && runtimeGlobal.Bun !== null
+}
+
+/**
+ * Safely inspect Bun runtime availability (`process.versions.bun` and
+ * `globalThis.Bun`) without breaking Vite browser bundles or Node.js runtimes.
+ */
+export function readBunGlobals(
+  runtimeGlobal: BunRuntimeGlobalLike = globalThis as unknown as BunRuntimeGlobalLike,
+): BunGlobalSnapshot {
+  const rawProcessBun = runtimeGlobal.process?.versions?.bun
+  const processVersionsBun =
+    typeof rawProcessBun === "string" && rawProcessBun.length > 0 ? rawProcessBun : null
+
+  const candidate = runtimeGlobal.Bun
+  const hasBunGlobal = Boolean(candidate && typeof candidate === "object")
+  const bunGlobalVersion =
+    hasBunGlobal && typeof candidate?.version === "string" && candidate.version.length > 0
+      ? candidate.version
+      : null
+
+  const available = processVersionsBun !== null || hasBunGlobal
+  const detectedVia: BunDetectionSource =
+    processVersionsBun !== null
+      ? "process.versions.bun"
+      : hasBunGlobal
+        ? "globalThis.Bun"
+        : "none"
+
+  if (!available) {
     return {
       available: false,
       version: null,
       revision: null,
       hasDns: false,
       hasNanoseconds: false,
+      processVersionsBun: null,
+      hasBunGlobal: false,
+      detectedVia: "none",
     }
   }
   return {
     available: true,
-    version: typeof candidate.version === "string" ? candidate.version : null,
-    revision: typeof candidate.revision === "string" ? candidate.revision : null,
-    hasDns: Boolean(candidate.dns && typeof candidate.dns === "object"),
-    hasNanoseconds: typeof candidate.nanoseconds === "function",
+    version: processVersionsBun ?? bunGlobalVersion,
+    revision: hasBunGlobal && typeof candidate?.revision === "string" ? candidate.revision : null,
+    hasDns: Boolean(hasBunGlobal && candidate?.dns && typeof candidate.dns === "object"),
+    hasNanoseconds: Boolean(hasBunGlobal && typeof candidate?.nanoseconds === "function"),
+    processVersionsBun,
+    hasBunGlobal,
+    detectedVia,
   }
 }
 
@@ -161,9 +214,10 @@ export function inspectApiBaseOverride(
 ): ApiBaseValidation | null {
   const search = win?.location?.search
   if (typeof search !== "string" || search === "") return null
-  const raw = new URLSearchParams(search).get("apiBase")
-  if (raw === null) return null
-  return validateApiBase(raw, isLocalDev)
+  const extracted = extractSingleApiBaseParam(search)
+  if (!extracted.present) return null
+  if (!extracted.ok) return { ok: false, code: extracted.code }
+  return validateApiBase(extracted.raw, isLocalDev)
 }
 
 /**

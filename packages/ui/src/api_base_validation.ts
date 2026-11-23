@@ -1,31 +1,53 @@
 /**
  * @file packages/ui/src/api_base_validation.ts
- * @description Strict `URLPattern`-backed allowlist validator for `?apiBase=`
- * overrides and external API base origins.
+ * @description Strict `URLPattern`-backed allowlist validator and cross-runtime
+ * `URLSearchParams` sanitizer for `?apiBase=` overrides and external API base origins.
  *
  * Production policy:
  *   - `https://<sub >.bookdeskops.com[/optional/path]` only
- *   - No credentials, no non-default ports, no query string, no hash fragment
+ *   - No credentials, no non-default ports, no query string, no hash fragment,
+ *     no backslashes, bounded input length (`MAX_API_BASE_INPUT = 2048`)
  *   - Single DNS label `<sub >` enforcing RFC 1123 (1–63 chars, alnum ends,
  *     no punycode `xn--`, and not in `DENIED_SUBS` such as `staging`)
  *
  * Local development policy (`isLocalDev === true`):
  *   - Also permits `http://localhost[:port]`, `http://127.0.0.1[:port]`,
  *     and `http://[::1][:port]` with valid ports `1..65535`
+ *
+ * Cross-runtime hardening (Bun / WebKit / V8 / Gecko / polyfills):
+ *   - Never uses `instanceof URLSearchParams` (Web global vs `node:url`)
+ *   - Never reads `URLSearchParams.prototype.size` (omitted in polyfills)
+ *   - Always reads `getAll("apiBase")` to block duplicate-key query smuggling
+ *   - Asserts `hasRegExpGroups === true` at `URLPattern` construction time
+ *   - Rejects backslashes and collapses repeated path slashes before emitting
+ *     normalized URLs to close `URL` vs `fetch` parser differentials
  */
+
+export const MAX_API_BASE_INPUT = 2048
 
 export type ApiBaseValidationCode =
   | "ERR_API_BASE_INVALID_URL"
   | "ERR_API_BASE_ORIGIN_UNTRUSTED"
   | "ERR_API_BASE_PATTERN_UNAVAILABLE"
+  | "ERR_API_BASE_INVALID_PORT"
+  | "ERR_API_BASE_QUERY_OR_HASH_FORBIDDEN"
+  | "ERR_API_BASE_DUPLICATE_PARAM"
 
 export type ApiBaseValidation =
   | { readonly ok: true; readonly normalized: string; readonly sub?: string }
   | { readonly ok: false; readonly code: ApiBaseValidationCode }
 
+export type ApiBaseParamExtraction =
+  | { readonly present: false }
+  | { readonly present: true; readonly ok: true; readonly raw: string }
+  | { readonly present: true; readonly ok: false; readonly code: "ERR_API_BASE_DUPLICATE_PARAM" }
+
 const DENIED_SUBS = new Set(["staging"])
 
 // Enforces 1–63 chars, alnum at both ends, no leading/trailing hyphen.
+// Escaped `\-` inside the character class compiles cleanly under Bun/WebKit's
+// Unicode-sets (`v`) URLPattern RegExp compiler as well as V8 and Gecko.
+const SUB_LABEL_PATTERN = "[a-z0-9](?:[a-z0-9\\-]{0,61}[a-z0-9])?"
 const SUB_LABEL_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/
 
 const LOCAL_DEV_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"])
@@ -43,15 +65,12 @@ function createPatterns(
   }
 
   try {
-    // Note: `:sub.bookdeskops.com` matches strictly a single DNS label (dots are
-    // hostname delimiters in WHATWG URLPattern) across Bun/JSC, V8, and Gecko,
-    // while `isValidSub()` enforces the exact RFC 1123 label, punycode, and denylist rules.
     const prod = new PatternCtor(
       {
         protocol: "https",
         username: "",
         password: "",
-        hostname: ":sub.bookdeskops.com",
+        hostname: `:sub(${SUB_LABEL_PATTERN}).bookdeskops.com`,
         port: "",
         pathname: "{/*}?",
         search: "",
@@ -75,6 +94,11 @@ function createPatterns(
       },
       { ignoreCase: true },
     )
+
+    // Startup invariant: fail closed if custom regex groups failed to compile.
+    if (!prod.hasRegExpGroups || !dev.hasRegExpGroups) {
+      return {}
+    }
 
     return { prod, dev }
   } catch {
@@ -101,6 +125,95 @@ function getPatterns(
   return built
 }
 
+/**
+ * Returns `true` when the active runtime's `URLPattern` compiled both the
+ * production and dev allowlist patterns with active custom regex groups.
+ */
+export function hasCompiledApiBasePatterns(
+  patternCtorOverride?: URLPatternConstructor | null,
+): boolean {
+  const { prod, dev } = getPatterns(patternCtorOverride)
+  return Boolean(prod?.hasRegExpGroups && dev?.hasRegExpGroups)
+}
+
+/**
+ * Duck-typed `URLSearchParams` guard that works identically across Web globals,
+ * `node:url`, Bun, browsers, and polyfills without relying on `instanceof`.
+ */
+export function isURLSearchParams(value: unknown): value is URLSearchParams {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as URLSearchParams).getAll === "function" &&
+    typeof (value as URLSearchParams).delete === "function" &&
+    typeof (value as URLSearchParams).toString === "function"
+  )
+}
+
+/**
+ * Polyfill-safe emptiness check for `URLSearchParams` (avoids `.size`).
+ */
+export function hasEmptySearchParams(params: URLSearchParams): boolean {
+  return [...params].length === 0
+}
+
+/**
+ * Extracts `?apiBase=` using `getAll("apiBase")` so duplicate-key smuggling
+ * (e.g. `?apiBase=https://good.bookdeskops.com&apiBase=https://evil.example`)
+ * is rejected fail-closed instead of silently trusting the first occurrence.
+ */
+export function extractSingleApiBaseParam(
+  searchOrParams: string | URLSearchParams,
+): ApiBaseParamExtraction {
+  const params = isURLSearchParams(searchOrParams)
+    ? searchOrParams
+    : new URLSearchParams(
+        searchOrParams.startsWith("?") ? searchOrParams.slice(1) : searchOrParams,
+      )
+  const values = params.getAll("apiBase")
+  if (values.length === 0) {
+    return { present: false }
+  }
+  if (values.length !== 1) {
+    return { present: true, ok: false, code: "ERR_API_BASE_DUPLICATE_PARAM" }
+  }
+  return { present: true, ok: true, raw: values[0]! }
+}
+
+/**
+ * Deletes every occurrence of `apiBase` from a `URLSearchParams` instance
+ * (`delete` removes all matching keys per the WHATWG URL spec).
+ */
+export function stripApiBaseParam(params: URLSearchParams): void {
+  params.delete("apiBase")
+}
+
+/**
+ * Validates and canonicalizes `?apiBase=` in place on a `URLSearchParams` object.
+ * - Duplicate `?apiBase=` keys are purged and rejected with `ERR_API_BASE_DUPLICATE_PARAM`.
+ * - Untrusted or malformed values are deleted completely.
+ * - Single valid values are replaced with their canonical normalized URL.
+ */
+export function sanitizeApiBaseParam(
+  params: URLSearchParams,
+  isLocalDev: boolean,
+): ApiBaseValidation | null {
+  const extracted = extractSingleApiBaseParam(params)
+  if (!extracted.present) {
+    return null
+  }
+  // Always delete all occurrences first so no duplicate key can survive re-serialization.
+  stripApiBaseParam(params)
+  if (!extracted.ok) {
+    return { ok: false, code: extracted.code }
+  }
+  const validated = validateApiBase(extracted.raw, isLocalDev)
+  if (validated.ok) {
+    params.set("apiBase", validated.normalized)
+  }
+  return validated
+}
+
 function isValidSub(rawSub: string): boolean {
   const sub = rawSub.toLowerCase()
   return (
@@ -113,7 +226,8 @@ function isValidSub(rawSub: string): boolean {
 }
 
 function normalize(url: URL): string {
-  return `${url.origin}${url.pathname.replace(/\/+$/, "")}`
+  const path = url.pathname.replace(/\/{2,}/g, "/").replace(/\/+$/, "")
+  return `${url.protocol}//${url.host}${path}`
 }
 
 function isValidOptionalPort(port: string): boolean {
@@ -123,10 +237,20 @@ function isValidOptionalPort(port: string): boolean {
   return Number.isInteger(num) && num >= 1 && num <= 65535
 }
 
+function hasForbiddenQueryOrHash(trimmed: string, url: URL): boolean {
+  return (
+    trimmed.includes("?") ||
+    trimmed.includes("#") ||
+    url.search !== "" ||
+    !hasEmptySearchParams(url.searchParams) ||
+    url.hash !== ""
+  )
+}
+
 /**
  * Validates an untrusted `apiBase` string strictly via WHATWG `URLPattern`.
  * Fails closed with `ERR_API_BASE_PATTERN_UNAVAILABLE` if `URLPattern` is not
- * available in the current runtime.
+ * available or did not compile custom regex groups in the current runtime.
  */
 export function validateApiBaseWithPattern(
   raw: string | null | undefined,
@@ -134,7 +258,7 @@ export function validateApiBaseWithPattern(
   patternCtorOverride?: URLPatternConstructor | null,
 ): ApiBaseValidation {
   const trimmed = typeof raw === "string" ? raw.trim() : ""
-  if (trimmed.length === 0) {
+  if (trimmed.length === 0 || trimmed.length > MAX_API_BASE_INPUT || trimmed.includes("\\")) {
     return { ok: false, code: "ERR_API_BASE_INVALID_URL" }
   }
 
@@ -148,8 +272,19 @@ export function validateApiBaseWithPattern(
     // consistently produce ERR_API_BASE_INVALID_URL across engines.
     const url = new URL(trimmed)
 
+    if (hasForbiddenQueryOrHash(trimmed, url)) {
+      return { ok: false, code: "ERR_API_BASE_QUERY_OR_HASH_FORBIDDEN" }
+    }
+
     const prodMatch = prod.exec(trimmed)
     if (prodMatch) {
+      if (
+        url.hostname !== prodMatch.hostname.input.toLowerCase() ||
+        url.username !== "" ||
+        url.password !== ""
+      ) {
+        return { ok: false, code: "ERR_API_BASE_INVALID_URL" }
+      }
       const sub = (prodMatch.hostname.groups.sub ?? "").toLowerCase()
       if (!isValidSub(sub)) {
         return { ok: false, code: "ERR_API_BASE_ORIGIN_UNTRUSTED" }
@@ -157,11 +292,22 @@ export function validateApiBaseWithPattern(
       return { ok: true, normalized: normalize(url), sub }
     }
 
-    if (isLocalDev && dev.test(trimmed)) {
-      if (!isValidOptionalPort(url.port)) {
-        return { ok: false, code: "ERR_API_BASE_INVALID_URL" }
+    if (isLocalDev) {
+      const devMatch = dev.exec(trimmed)
+      if (devMatch) {
+        if (
+          url.hostname !== devMatch.hostname.input.toLowerCase() ||
+          url.username !== "" ||
+          url.password !== ""
+        ) {
+          return { ok: false, code: "ERR_API_BASE_INVALID_URL" }
+        }
+        const matchedPort = devMatch.port.groups.port ?? url.port
+        if (!isValidOptionalPort(matchedPort) || !isValidOptionalPort(url.port)) {
+          return { ok: false, code: "ERR_API_BASE_INVALID_PORT" }
+        }
+        return { ok: true, normalized: normalize(url) }
       }
-      return { ok: true, normalized: normalize(url) }
     }
 
     return { ok: false, code: "ERR_API_BASE_ORIGIN_UNTRUSTED" }
@@ -181,7 +327,7 @@ export function validateApiBaseFallback(
   isLocalDev: boolean,
 ): ApiBaseValidation {
   const trimmed = typeof raw === "string" ? raw.trim() : ""
-  if (trimmed.length === 0) {
+  if (trimmed.length === 0 || trimmed.length > MAX_API_BASE_INPUT || trimmed.includes("\\")) {
     return { ok: false, code: "ERR_API_BASE_INVALID_URL" }
   }
 
@@ -192,7 +338,11 @@ export function validateApiBaseFallback(
     return { ok: false, code: "ERR_API_BASE_INVALID_URL" }
   }
 
-  if (url.username !== "" || url.password !== "" || url.search !== "" || url.hash !== "") {
+  if (hasForbiddenQueryOrHash(trimmed, url)) {
+    return { ok: false, code: "ERR_API_BASE_QUERY_OR_HASH_FORBIDDEN" }
+  }
+
+  if (url.username !== "" || url.password !== "") {
     return { ok: false, code: "ERR_API_BASE_ORIGIN_UNTRUSTED" }
   }
 
@@ -210,7 +360,7 @@ export function validateApiBaseFallback(
 
   if (isLocalDev && url.protocol === "http:" && LOCAL_DEV_HOSTS.has(hostname)) {
     if (!isValidOptionalPort(url.port)) {
-      return { ok: false, code: "ERR_API_BASE_INVALID_URL" }
+      return { ok: false, code: "ERR_API_BASE_INVALID_PORT" }
     }
     return { ok: true, normalized: normalize(url) }
   }
