@@ -771,3 +771,124 @@ export async function hashPasswordPreview(sampleInput: string): Promise<{
     serverSideNote: "Web Crypto unavailable; use Bun.password.hash() on the server.",
   }
 }
+
+export interface BunRuntimeReleaseEnhancement {
+  readonly id: string
+  readonly area: "Bundler" | "bun test" | "Runtime" | "Security" | "Types"
+  readonly title: string
+  readonly detail: string
+}
+
+/**
+ * Curated Bun runtime release guarantees relevant to SportsDesk Ops
+ * compiled builds, isolated tests, streaming I/O, and S3/R2 endpoint hardening.
+ */
+export const BUN_RUNTIME_RELEASE_ENHANCEMENTS: readonly BunRuntimeReleaseEnhancement[] =
+  Object.freeze([
+    {
+      id: "pre-encoded-text-imports",
+      area: "Bundler",
+      title: 'Zero-copy with { type: "text" } imports',
+      detail:
+        "Compiled executables embed text imports once in pre-encoded form—no startup module parse or heap copy (3 MB ASCII: ~3 MB binary, ~1 MB RAM).",
+    },
+    {
+      id: "esm-node-addon-fix",
+      area: "Bundler",
+      title: "ESM .node addon bundling fix",
+      detail: 'import addon from "./x.node" no longer throws __require is not defined in ESM bundles.',
+    },
+    {
+      id: "test-isolate-no-leak",
+      area: "bun test",
+      title: "bun test --isolate flat memory & env isolation",
+      detail:
+        "Mocks, spyOn, mock.module, Bun.plugin, process.env.TZ, proxy, TLS settings, and monitorEventLoopDelay() no longer leak across files.",
+    },
+    {
+      id: "s3-endpoint-new-url",
+      area: "Security",
+      title: "Hardened Bun.S3Client endpoint parsing",
+      detail:
+        "Bun.S3Client endpoint parsing matches new URL(), paired with SealedR2Handle's strict HTTPS/backslash/length checks.",
+    },
+    {
+      id: "oom-error-code",
+      area: "Runtime",
+      title: "ERR_MEMORY_ALLOCATION_FAILED on text reads",
+      detail:
+        "Blob.text(), Response.text(), and TextDecoder.decode() throw ERR_MEMORY_ALLOCATION_FAILED on OOM, matching Node.",
+    },
+    {
+      id: "compile-cache-isolation",
+      area: "Security",
+      title: "Compiled binaries ignore NODE_COMPILE_CACHE",
+      detail:
+        "bun build --compile executables ignore NODE_COMPILE_CACHE from the environment; permessage-deflate WS uses ~12 KB less RAM/conn.",
+    },
+    {
+      id: "text-decoder-labels",
+      area: "Types",
+      title: 'Full TextDecoder labels (e.g. "windows-1251")',
+      detail:
+        "@types/bun accepts every WHATWG TextDecoder encoding label the runtime supports, plus faster ReadableStream.from() & async-iterable Response bodies.",
+    },
+  ])
+
+export function isMemoryAllocationError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false
+  const code = (error as { readonly code?: unknown }).code
+  return code === "ERR_MEMORY_ALLOCATION_FAILED"
+}
+
+export type SafeTextDecodeResult =
+  | { readonly ok: true; readonly encoding: string; readonly text: string }
+  | { readonly ok: false; readonly code: "ERR_MEMORY_ALLOCATION_FAILED" | "ERR_TEXT_DECODE_FAILED"; readonly error: string }
+
+/**
+ * Decodes raw bytes using any runtime-supported `TextDecoder` label (e.g.
+ * `"utf-8"`, `"windows-1251"`, `"iso-8859-1"`) and surfaces
+ * `ERR_MEMORY_ALLOCATION_FAILED` explicitly when allocation fails.
+ */
+export function safeDecodeTextBytes(
+  bytes: Uint8Array,
+  encoding: string = "utf-8",
+): SafeTextDecodeResult {
+  try {
+    const decoder = new TextDecoder(encoding)
+    return {
+      ok: true,
+      encoding: decoder.encoding,
+      text: decoder.decode(bytes),
+    }
+  } catch (err) {
+    return {
+      ok: false,
+      code: isMemoryAllocationError(err) ? "ERR_MEMORY_ALLOCATION_FAILED" : "ERR_TEXT_DECODE_FAILED",
+      error: err instanceof Error ? err.message : String(err),
+    }
+  }
+}
+
+/**
+ * Reads a `Blob` or `Response` body as UTF-8 text while classifying
+ * `ERR_MEMORY_ALLOCATION_FAILED` explicitly.
+ */
+export async function safeReadBlobText(
+  source: Pick<Blob, "text">,
+): Promise<
+  | { readonly ok: true; readonly text: string }
+  | { readonly ok: false; readonly code: "ERR_MEMORY_ALLOCATION_FAILED" | "ERR_TEXT_READ_FAILED"; readonly error: string }
+> {
+  try {
+    const text = await source.text()
+    return { ok: true, text }
+  } catch (err) {
+    return {
+      ok: false,
+      code: isMemoryAllocationError(err) ? "ERR_MEMORY_ALLOCATION_FAILED" : "ERR_TEXT_READ_FAILED",
+      error: err instanceof Error ? err.message : String(err),
+    }
+  }
+}
+

@@ -71,8 +71,49 @@ export type S3StorageClass = (typeof ALLOWED_S3_STORAGE_CLASSES)[number]
 
 const ALLOWED_S3_STORAGE_CLASS_SET = new Set<string>(ALLOWED_S3_STORAGE_CLASSES)
 const MAX_S3_WRITE_BYTES = 5 * 1024 * 1024 // 5 MiB
+const MAX_S3_ENDPOINT_LENGTH = 2048
 const MAX_S3_PRESIGN_EXPIRES_SEC = 900
 const DEFAULT_S3_PRESIGN_EXPIRES_SEC = 60
+
+/**
+ * Hardened `Bun.S3Client` endpoint parser matching WHATWG `new URL()` semantics.
+ * Rejects oversized strings, control chars, backslashes, bare `?`/`#`, embedded
+ * credentials, non-HTTPS schemes, invalid ports, and non-root path prefixes.
+ */
+export function parseHardenedS3Endpoint(raw: string): URL {
+  if (
+    typeof raw !== "string" ||
+    raw.length === 0 ||
+    raw.length > MAX_S3_ENDPOINT_LENGTH ||
+    hasControlChars(raw) ||
+    /[\t\n\\?#]/.test(raw)
+  ) {
+    throw new Error("Invalid explicit R2 client configuration")
+  }
+  let endpoint: URL
+  try {
+    endpoint = new URL(raw)
+  } catch {
+    throw new Error("Invalid explicit R2 client configuration")
+  }
+  if (
+    endpoint.protocol !== "https:" ||
+    endpoint.username !== "" ||
+    endpoint.password !== "" ||
+    endpoint.search !== "" ||
+    endpoint.hash !== "" ||
+    endpoint.pathname !== "/"
+  ) {
+    throw new Error("Invalid explicit R2 client configuration")
+  }
+  if (endpoint.port !== "") {
+    const portNum = Number(endpoint.port)
+    if (!Number.isInteger(portNum) || portNum < 1 || portNum > 65535) {
+      throw new Error("Invalid explicit R2 client configuration")
+    }
+  }
+  return endpoint
+}
 
 export function isAllowedS3StorageClass(value: unknown): value is S3StorageClass {
   return typeof value === "string" && ALLOWED_S3_STORAGE_CLASS_SET.has(value)
@@ -297,17 +338,8 @@ export class SealedR2Handle {
   readonly #client: S3Client
 
   constructor(options: R2ClientOptions) {
-    const endpoint = URL.parse(options.endpoint)
+    const endpoint = parseHardenedS3Endpoint(options.endpoint)
     if (
-      !endpoint ||
-      hasControlChars(options.endpoint) ||
-      /[\t\n]/.test(options.endpoint) ||
-      endpoint.protocol !== "https:" ||
-      endpoint.username ||
-      endpoint.password ||
-      endpoint.search ||
-      endpoint.hash ||
-      endpoint.pathname !== "/" ||
       hasControlChars(options.bucket) ||
       /[\t\n]/.test(options.bucket) ||
       !/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(options.bucket) ||

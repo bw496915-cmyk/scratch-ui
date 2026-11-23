@@ -3,6 +3,7 @@ import { Check, Copy, Play, RefreshCw, ShieldCheck, Terminal, X } from "lucide-r
 
 import { validateApiBase } from "../api_base_validation.ts"
 import {
+  BUN_RUNTIME_RELEASE_ENHANCEMENTS,
   BUN_UTILITIES_CATALOG,
   type BunUtilityCategory,
   type CompressionProbeResult,
@@ -899,6 +900,65 @@ export function BunUtilitiesDecouplePanel({
                 </div>
                 <div style={{ fontSize: "10px", color: "var(--sd-text-secondary, #cbd5e1)" }}>
                   Fallback: {util.browserFallback}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Section 4: Bun Runtime Release Guarantees (Bundler, --isolate, S3, Streams, TextDecoder) */}
+        <section
+          aria-label="Bun runtime release guarantees"
+          data-bun-runtime-release-guarantees="true"
+          style={{
+            borderTop: "1px solid var(--sd-border-subtle, #1e293b)",
+            paddingTop: "12px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+          }}
+        >
+          <div style={{ fontSize: "12px", fontWeight: 700 }}>
+            Bun Runtime Release Guarantees ({BUN_RUNTIME_RELEASE_ENHANCEMENTS.length})
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+              gap: "8px",
+            }}
+          >
+            {BUN_RUNTIME_RELEASE_ENHANCEMENTS.map((item) => (
+              <div
+                key={item.id}
+                data-bun-release-item={item.id}
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: "7px",
+                  border: "1px solid var(--sd-border-subtle, #1e293b)",
+                  backgroundColor: "var(--sd-surface-elevated, rgba(15, 23, 42, 0.45))",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "3px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      padding: "1px 6px",
+                      borderRadius: "4px",
+                      backgroundColor: "rgba(56, 189, 248, 0.14)",
+                      color: "#38bdf8",
+                    }}
+                  >
+                    {item.area}
+                  </span>
+                  <span style={{ fontSize: "11px", fontWeight: 700 }}>{item.title}</span>
+                </div>
+                <div style={{ fontSize: "11px", color: "var(--sd-text-muted, #94a3b8)" }}>
+                  {item.detail}
                 </div>
               </div>
             ))}

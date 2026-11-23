@@ -42,6 +42,7 @@
     "clean": "rm -rf dist server.js server.mjs",
     "lint": "tsc --noEmit && tsc --noEmit --project scripts/tsconfig.runtime.json && tsc --noEmit --project packages/ui/tsconfig.json",
     "test": "bun test",
+    "test:isolate": "bun test --isolate",
     "test:update-snapshots": "TZ=UTC bun test --update-snapshots",
     "check:lockfile": "bun scripts/check_lockfile_integrity.ts",
     "check:registry-parity": "bun scripts/check_registry_parity.ts",

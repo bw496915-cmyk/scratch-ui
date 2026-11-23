@@ -31,3 +31,14 @@ declare module "*.toml" {
   export const period_filters: any
   export const sport_filters: any
 }
+
+declare module "*.md" {
+  const content: string
+  export default content
+}
+
+declare module "*.txt" {
+  const content: string
+  export default content
+}
+
