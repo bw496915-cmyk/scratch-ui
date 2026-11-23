@@ -13,6 +13,7 @@
  * hashes on navigation.
  */
 
+import { isLocalDevLocation, validateApiBase } from "./api_base_validation.ts"
 import { type DashboardTabId, resolveDashboardTabId } from "./types.ts"
 
 // ---------------------------------------------------------------------------
@@ -724,9 +725,12 @@ export function buildCanonicalDashboardHref(
     params.set("dim", ctx.discoveryDimension)
   }
 
-  const apiBase = existing.get("apiBase")?.trim()
-  if (apiBase) {
-    params.set("apiBase", apiBase)
+  const rawApiBase = existing.get("apiBase")?.trim()
+  if (rawApiBase) {
+    const validated = validateApiBase(rawApiBase, isLocalDevLocation())
+    if (validated.ok) {
+      params.set("apiBase", validated.normalized)
+    }
   }
 
   const hash = serializeDashboardHash(ctx)

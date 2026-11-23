@@ -8,6 +8,11 @@
  * while active keys (`thresholds.sharp`) are inlined.
  */
 
+import {
+  type ApiBaseValidation,
+  isLocalDevLocation,
+  validateApiBase,
+} from "../api_base_validation.ts"
 import { type DashboardTabId, resolveDashboardTabId } from "../types.ts"
 import { api, freshness, leagues, meta, panels, thresholds } from "./dashboard.toml"
 
@@ -84,8 +89,6 @@ export const DASHBOARD_DEFAULT_TAB: DashboardTabId = resolveDashboardTabId(
   DASHBOARD_PANELS.default_tab,
 )
 
-/** Loopback hosts allowed to override `[api].base` via `?apiBase=...` in local dev. */
-const DEV_OVERRIDE_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"])
 const DEFAULT_BASE_ORIGIN = "http://localhost:3000"
 
 export interface DashboardWindowLocationLike {
@@ -148,22 +151,32 @@ function defaultWindowLike(): DashboardWindowLocationLike | null {
 }
 
 /**
- * `?apiBase=http://127.0.0.1:4021` overrides `[api].base` at runtime for loopback
- * dev servers without mutating `dashboard.toml`. Non-loopback hosts are ignored.
+ * Validates `?apiBase=` against the URLPattern allowlist:
+ *   - Production: `https://<sub >.bookdeskops.com[/path]` (excluding denied/punycode labels)
+ *   - Local dev: also permits `http://localhost|127.0.0.1|[::1][:port][/path]`
  */
-export function devApiBaseOverride(
+export function inspectApiBaseOverride(
   win: DashboardWindowLocationLike | null = defaultWindowLike(),
-): string | null {
+  isLocalDev: boolean = isLocalDevLocation(win),
+): ApiBaseValidation | null {
   const search = win?.location?.search
   if (typeof search !== "string" || search === "") return null
   const raw = new URLSearchParams(search).get("apiBase")
-  if (!raw) return null
-  try {
-    const url = new URL(raw)
-    return DEV_OVERRIDE_HOSTS.has(url.hostname) ? url.origin : null
-  } catch {
-    return null
-  }
+  if (raw === null) return null
+  return validateApiBase(raw, isLocalDev)
+}
+
+/**
+ * `?apiBase=...` overrides `[api].base` at runtime when validated against trusted
+ * `https://<sub >.bookdeskops.com` origins or loopback dev servers (`isLocalDev`).
+ * Untrusted or malformed overrides are rejected fail-closed.
+ */
+export function devApiBaseOverride(
+  win: DashboardWindowLocationLike | null = defaultWindowLike(),
+  isLocalDev: boolean = isLocalDevLocation(win),
+): string | null {
+  const result = inspectApiBaseOverride(win, isLocalDev)
+  return result?.ok ? result.normalized : null
 }
 
 /**
@@ -221,7 +234,12 @@ export function buildDashboardApiUrlObject(
   win: DashboardWindowLocationLike | null = defaultWindowLike(),
 ): URL {
   const { baseUrl } = resolveDashboardBaseUrl(base, win)
-  const url = new URL(path, baseUrl)
+  const basePrefix = baseUrl.pathname.replace(/\/+$/, "")
+  const joinedPath =
+    basePrefix !== "" && path.startsWith("/") && !path.startsWith(`${basePrefix}/`)
+      ? `${basePrefix}${path}`
+      : path
+  const url = new URL(joinedPath, baseUrl)
   if (searchParams) {
     for (const [key, value] of Object.entries(searchParams)) {
       if (value === undefined || value === null) continue
