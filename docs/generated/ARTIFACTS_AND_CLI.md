@@ -57,7 +57,7 @@ Every local link across all **10** tracked Markdown documents is checked by `bun
 | Document                                                                                 | Title                                                       | Lines | Local Links | SHA-256 (12)   |
 | :--------------------------------------------------------------------------------------- | :---------------------------------------------------------- | ----: | ----------: | :------------- |
 | [`dashboard.md`](../../dashboard.md)                                                     | 📊 SportsDesk & Fantasy402 Real-Time Surveillance Dashboard |   176 |           3 | `d8d12427b7ff` |
-| [`design/README.md`](../../design/README.md)                                             | Design Token SSOT                                           |    27 |           8 | `b845052bf706` |
+| [`design/README.md`](../../design/README.md)                                             | Design Token SSOT                                           |   187 |          33 | `15ef42e1eb18` |
 | [`docs/live-customer-sources.md`](../../docs/live-customer-sources.md)                   | Local live customer identities                              |    85 |           0 | `bbd69062bfb8` |
 | [`LOCAL_DEVELOPMENT.md`](../../LOCAL_DEVELOPMENT.md)                                     | Local SportsDesk development                                |   537 |           0 | `77030b6e8e26` |
 | [`packages/contracts/README.md`](../../packages/contracts/README.md)                     | `@sportsdesk-ops/contracts`                                 |    47 |           0 | `b4d230a7bcb7` |

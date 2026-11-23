@@ -13,8 +13,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 
-import { sha256HexBytes } from "../lib/binary.ts"
-import { parseToml } from "../lib/bun_toml.ts"
+import { sha256Hex } from "../lib/brand.ts"
 import {
   buildSportsdeskProvenanceXmp,
   type ImageProvenanceContextInput,
@@ -185,7 +184,7 @@ function mimeForFormat(format: "webp" | "png" | "jpeg"): string {
 export function loadBrandingSpec(rootDir: string): BrandingTomlSpec {
   const fullPath = resolve(rootDir, SPEC_REL_PATH)
   const raw = readFileSync(fullPath, "utf8")
-  return parseToml(raw) as unknown as BrandingTomlSpec
+  return Bun.TOML.parse(raw) as unknown as BrandingTomlSpec
 }
 
 function buildPaletteSignature(palette: Readonly<Record<string, string>>): string {
@@ -318,7 +317,7 @@ export async function generateBrandingAssets(rootDir: string): Promise<{
     if (!cached) {
       const masterFull = resolve(rootDir, masterRelPath)
       const bytes = new Uint8Array(readFileSync(masterFull))
-      cached = { bytes, sha256: sha256HexBytes(bytes) }
+      cached = { bytes, sha256: sha256Hex(bytes) }
       masterCache.set(masterRelPath, cached)
     }
 
@@ -351,7 +350,7 @@ export async function generateBrandingAssets(rootDir: string): Promise<{
     writeFileSync(outFull, outBytes)
     writtenFiles.push(asset.output_path)
 
-    const outSha256 = sha256HexBytes(outBytes)
+    const outSha256 = sha256Hex(outBytes)
     entries.push({
       id: asset.id,
       slug: asset.slug,
@@ -498,7 +497,7 @@ export async function auditBrandingAssetsMetadata(rootDir: string): Promise<Bran
     }
 
     const bytes = new Uint8Array(readFileSync(fullPath))
-    const actualSha = sha256HexBytes(bytes)
+    const actualSha = sha256Hex(bytes)
     if (bytes.byteLength !== asset.bytes) {
       const msg = `${asset.repoPath}: byte size drift (actual=${bytes.byteLength}, catalog=${asset.bytes})`
       itemIssues.push(msg)

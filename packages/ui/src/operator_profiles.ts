@@ -42,10 +42,13 @@ export const BRAND_ASSETS = {
   palette: {
     canvasBg: "#070b14",
     surfaceElevated: "#0b1120",
+    borderSubtle: "#243247",
     accentPrimary: "#38bdf8",
     accentEmerald: "#34d399",
     accentAmber: "#fbbf24",
-    accentDanger: "#f87171",
+    accentDanger: "#ff7878",
+    textPrimary: "#f1f5f9",
+    textMuted: "#94a3b8",
   },
 } as const
 

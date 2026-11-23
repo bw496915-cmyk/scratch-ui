@@ -173,10 +173,10 @@
     {
       "path": "design/README.md",
       "title": "Design Token SSOT",
-      "lines": 27,
-      "bytes": 2153,
-      "sha256": "b845052bf7068991dc675b06730b5f4b3c190f30405367c1d39b06bebc9802f7",
-      "localLinksChecked": 8
+      "lines": 187,
+      "bytes": 12580,
+      "sha256": "15ef42e1eb18e039474129f90aa975225a3289a4498ccea492b39b101812ed0a",
+      "localLinksChecked": 33
     },
     {
       "path": "docs/live-customer-sources.md",

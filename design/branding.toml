@@ -39,12 +39,12 @@ keywords = [
 [palette]
 canvas_bg = "#070b14"
 surface_elevated = "#0b1120"
-border_subtle = "#1e293b"
+border_subtle = "#243247"
 accent_primary = "#38bdf8"
 accent_emerald = "#34d399"
 accent_amber = "#fbbf24"
-accent_danger = "#f87171"
-text_primary = "#f8fafc"
+accent_danger = "#ff7878"
+text_primary = "#f1f5f9"
 text_muted = "#94a3b8"
 
 [sources]

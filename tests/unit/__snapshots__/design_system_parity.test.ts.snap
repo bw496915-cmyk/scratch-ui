@@ -1,0 +1,144 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`7. bun:test snapshots pinning generated manifests & XMP-stamped asset digests pins generated branding manifest, XMP-stamped asset hashes, and web app manifest: branding-assets-and-xmp-digests 1`] = `
+{
+  "assets": [
+    {
+      "bytes": 7814,
+      "id": "SD-BRAND-01-EMBLEM-WEBP",
+      "metadataBearing": true,
+      "repoPath": "public/assets/branding/sportsdesk-emblem.webp",
+      "sha256": "9c74d06e5cf352e8852cdd9930e06e5635ceef88064c87411108e726b939a74d",
+      "xmpChannels": [
+        "webp-xmp",
+      ],
+    },
+    {
+      "bytes": 7803,
+      "id": "SD-BRAND-02-EMBLEM-64",
+      "metadataBearing": true,
+      "repoPath": "public/assets/branding/sportsdesk-emblem-64.png",
+      "sha256": "0bd6b0ad9d40ddd3999deac95ecfdbfc3ce9f906410e6de196be529742881163",
+      "xmpChannels": [
+        "png-xmp",
+      ],
+    },
+    {
+      "bytes": 43150,
+      "id": "SD-BRAND-03-EMBLEM-180",
+      "metadataBearing": true,
+      "repoPath": "public/assets/branding/sportsdesk-emblem-180.png",
+      "sha256": "973f73bfa8df0dfa30940da7052040d27105bc4d404efa38e98e6711596fbe6f",
+      "xmpChannels": [
+        "png-xmp",
+      ],
+    },
+    {
+      "bytes": 268573,
+      "id": "SD-BRAND-04-EMBLEM-512",
+      "metadataBearing": true,
+      "repoPath": "public/assets/branding/sportsdesk-emblem-512.png",
+      "sha256": "2d90fbaf90fcf36e35252552a5fa9df9ca33733724efbbfb404bc5e5fbdb7106",
+      "xmpChannels": [
+        "png-xmp",
+      ],
+    },
+    {
+      "bytes": 28864,
+      "id": "SD-BRAND-05-OG-CARD-WEBP",
+      "metadataBearing": true,
+      "repoPath": "public/assets/branding/sportsdesk-og-card.webp",
+      "sha256": "f36fc0f724372794e2b16686c1aac26fec4b7f917045e0be714e58cf469e9dd0",
+      "xmpChannels": [
+        "webp-xmp",
+      ],
+    },
+    {
+      "bytes": 63150,
+      "id": "SD-BRAND-06-OG-CARD-JPG",
+      "metadataBearing": false,
+      "repoPath": "public/assets/branding/sportsdesk-og-card.jpg",
+      "sha256": "18d290e6110a7e705c4fa8e7a2826d93ee3ac7941dcbef122770541a46c85b43",
+      "xmpChannels": [],
+    },
+  ],
+  "palette": {
+    "accent_amber": "#fbbf24",
+    "accent_danger": "#ff7878",
+    "accent_emerald": "#34d399",
+    "accent_primary": "#38bdf8",
+    "border_subtle": "#243247",
+    "canvas_bg": "#070b14",
+    "surface_elevated": "#0b1120",
+    "text_muted": "#94a3b8",
+    "text_primary": "#f1f5f9",
+  },
+  "schema": "sportsdesk-branding/v1",
+  "version": "1.5.0",
+}
+`;
+
+exports[`7. bun:test snapshots pinning generated manifests & XMP-stamped asset digests pins generated branding manifest, XMP-stamped asset hashes, and web app manifest: web-app-manifest 1`] = `
+{
+  "background_color": "#070b14",
+  "categories": [
+    "finance",
+    "analytics",
+    "utilities",
+  ],
+  "description": "Unified SportsDesk & Fantasy402 surveillance console for real-time wager telemetry, downline risk exposure, sharp profiling, and threshold alerting.",
+  "display": "standalone",
+  "icons": [
+    {
+      "purpose": "any",
+      "sizes": "64x64",
+      "src": "/assets/branding/sportsdesk-emblem-64.png",
+      "type": "image/png",
+    },
+    {
+      "purpose": "any",
+      "sizes": "180x180",
+      "src": "/assets/branding/sportsdesk-emblem-180.png",
+      "type": "image/png",
+    },
+    {
+      "purpose": "any",
+      "sizes": "256x256",
+      "src": "/assets/branding/sportsdesk-emblem.webp",
+      "type": "image/webp",
+    },
+    {
+      "purpose": "any maskable",
+      "sizes": "512x512",
+      "src": "/assets/branding/sportsdesk-emblem-512.png",
+      "type": "image/png",
+    },
+  ],
+  "id": "/",
+  "name": "SportsDesk Ops Surveillance Dashboard-v1.01.23-next",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "SportsDesk & Fantasy402 Operations",
+  "start_url": "/",
+  "theme_color": "#070b14",
+}
+`;
+
+exports[`7. bun:test snapshots pinning generated manifests & XMP-stamped asset digests pins generated branding manifest, XMP-stamped asset hashes, and web app manifest: compiled-design-token-digests 1`] = `
+{
+  "bakedPaletteHex": {
+    "accent_amber": "#fbbf24",
+    "accent_danger": "#ff7878",
+    "accent_emerald": "#34d399",
+    "accent_primary": "#38bdf8",
+    "border_subtle": "#243247",
+    "canvas_bg": "#070b14",
+    "surface_elevated": "#0b1120",
+    "text_muted": "#94a3b8",
+    "text_primary": "#f1f5f9",
+  },
+  "registryTsSha256": "6698daa6543d8bd8a61448c7131baf79827a41e400693828d266960422dacf5a",
+  "tokensCssSha256": "0f923d447d57825072741d6ddaffe27d3e788e32f66dda939c9c3132dc2c7363",
+  "version": "1.5.0",
+}
+`;

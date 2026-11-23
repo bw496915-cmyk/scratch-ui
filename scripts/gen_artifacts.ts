@@ -17,11 +17,10 @@
  *   bun scripts/gen_artifacts.ts --tokens-only --check
  */
 
-import { createHash } from "node:crypto"
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
-import { dirname, join, relative, resolve } from "node:path"
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { dirname, resolve } from "node:path"
 
-import { parseToml } from "../lib/bun_toml.ts"
+import { sha256Hex } from "../lib/brand.ts"
 import { extractPngMetadata, extractWebpXmp } from "../lib/xmp_container.ts"
 
 export interface CanonicalTokenEntry {
@@ -228,25 +227,8 @@ const STALE_DOC_RULES: readonly { readonly label: string; readonly regex: RegExp
   },
 ]
 
-function sha256Hex(content: string | Uint8Array): string {
-  const bunObj = (globalThis as Record<string, unknown>).Bun as
-    | {
-        readonly CryptoHasher?: new (alg: string) => {
-          update(data: string | Uint8Array): unknown
-          digest(enc: "hex"): string
-        }
-      }
-    | undefined
-  if (typeof bunObj?.CryptoHasher === "function") {
-    const h = new bunObj.CryptoHasher("sha256")
-    h.update(content)
-    return h.digest("hex")
-  }
-  return createHash("sha256").update(content).digest("hex")
-}
-
 function parseTomlDocument(raw: string): Record<string, unknown> {
-  return parseToml<Record<string, unknown>>(raw)
+  return Bun.TOML.parse(raw) as Record<string, unknown>
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -818,33 +800,31 @@ export function auditBrandingAssetsSync(rootDir: string): {
   }
 }
 
-function discoverMarkdownFiles(rootDir: string): string[] {
-  const out: string[] = []
-  const SKIP_DIRS = new Set([
-    "node_modules",
-    ".git",
-    "dist",
-    ".aistudio",
-    ".wrangler",
-    ".local",
-    ".ci",
-    "tools",
-  ])
+const SKIP_MARKDOWN_DIRS = new Set([
+  "node_modules",
+  ".git",
+  "dist",
+  ".aistudio",
+  ".wrangler",
+  ".local",
+  ".ci",
+  "tools",
+])
 
-  const walk = (dir: string): void => {
-    for (const entry of readdirSync(dir)) {
-      if (SKIP_DIRS.has(entry)) continue
-      const full = join(dir, entry)
-      const st = statSync(full)
-      if (st.isDirectory()) {
-        walk(full)
-      } else if (entry.toLowerCase().endsWith(".md")) {
-        out.push(relative(rootDir, full).replace(/\\/g, "/"))
-      }
+function isSkippedMarkdownPath(relPath: string): boolean {
+  const parts = relPath.split("/")
+  return parts.some((segment) => SKIP_MARKDOWN_DIRS.has(segment))
+}
+
+function discoverMarkdownFiles(rootDir: string): string[] {
+  const glob = new Bun.Glob("**/*.md")
+  const out: string[] = []
+  for (const rel of glob.scanSync({ cwd: rootDir, dot: false })) {
+    const normalized = rel.replace(/\\/g, "/")
+    if (!isSkippedMarkdownPath(normalized)) {
+      out.push(normalized)
     }
   }
-
-  walk(rootDir)
   return out.sort((a, b) => a.localeCompare(b))
 }
 
@@ -853,8 +833,43 @@ function extractFirstHeading(markdown: string, fallback: string): string {
   return match ? match[1]!.trim() : fallback
 }
 
+function extractMarkdownLinksWithHtmlRewriter(markdown: string): readonly string[] {
+  const html = Bun.markdown.html(markdown)
+  const hrefs: string[] = []
+  const rewriter = new HTMLRewriter().on("a[href]", {
+    element(el) {
+      const href = el.getAttribute("href")
+      if (href) {
+        hrefs.push(href.trim())
+      }
+    },
+  })
+  rewriter.transform(html)
+  return hrefs
+}
+
+function isExternalOrVirtualHref(href: string): boolean {
+  return (
+    !href ||
+    href.startsWith("http://") ||
+    href.startsWith("https://") ||
+    href.startsWith("mailto:") ||
+    href.startsWith("#") ||
+    href.startsWith("/agent/") ||
+    href.startsWith("/api/")
+  )
+}
+
+function resolveCandidatePaths(rootDir: string, fullDocPath: string, cleanPath: string): string[] {
+  const baseDir = dirname(fullDocPath)
+  return cleanPath.startsWith("/")
+    ? [resolve(rootDir, cleanPath.slice(1))]
+    : [resolve(baseDir, cleanPath), resolve(rootDir, cleanPath)]
+}
+
 /**
- * Audits all repository Markdown files for broken local links and stale collector-only references.
+ * Audits all repository Markdown files for broken local links (via `Bun.Glob` + `HTMLRewriter`)
+ * and stale collector-only references.
  */
 export function auditMarkdownDocs(
   rootDir: string,
@@ -876,35 +891,112 @@ export function auditMarkdownDocs(
     const sha256 = sha256Hex(content)
     const title = extractFirstHeading(content, relPath)
 
-    // Strip fenced code blocks when checking markdown links
-    const withoutFences = content.replace(/```[\s\S]*?```/g, "")
-    const linkMatches = [...withoutFences.matchAll(/(?<!!)\[[^\]]+\]\(([^)]+)\)/g)]
+    const hrefs = extractMarkdownLinksWithHtmlRewriter(content)
     let localLinksChecked = 0
     const brokenLinks: string[] = []
 
-    for (const m of linkMatches) {
-      const rawTarget = (m[1] ?? "").trim().replace(/^<|>$/g, "")
-      if (
-        !rawTarget ||
-        rawTarget.startsWith("http://") ||
-        rawTarget.startsWith("https://") ||
-        rawTarget.startsWith("mailto:") ||
-        rawTarget.startsWith("#") ||
-        rawTarget.startsWith("/agent/") ||
-        rawTarget.startsWith("/api/")
-      ) {
+    for (const rawTarget of hrefs) {
+      if (isExternalOrVirtualHref(rawTarget)) {
         continue
       }
       const cleanPath = rawTarget.split("#")[0]?.split("?")[0] ?? ""
       if (!cleanPath) continue
       localLinksChecked += 1
 
-      const baseDir = dirname(fullPath)
-      const candidates = cleanPath.startsWith("/")
-        ? [resolve(rootDir, cleanPath.slice(1))]
-        : [resolve(baseDir, cleanPath), resolve(rootDir, cleanPath)]
-
+      const candidates = resolveCandidatePaths(rootDir, fullPath, cleanPath)
       if (!candidates.some((c) => existsSync(c))) {
+        brokenLinks.push(rawTarget)
+        issues.push(`${relPath}: broken local link -> ${rawTarget}`)
+      }
+    }
+
+    const staleReferences: string[] = []
+    for (const rule of STALE_DOC_RULES) {
+      if (rule.regex.test(content)) {
+        staleReferences.push(rule.label)
+        issues.push(`${relPath}: stale reference (${rule.label})`)
+      }
+    }
+
+    docs.push({
+      path: relPath,
+      title,
+      lines,
+      bytes,
+      sha256,
+      localLinksChecked,
+      brokenLinks,
+      staleReferences,
+    })
+  }
+
+  return { docs, issues }
+}
+
+/**
+ * Async Markdown link auditor using `Bun.Glob.scan()`, `HTMLRewriter` over `Response`,
+ * and `Bun.file().exists()` for every local link target.
+ */
+export async function auditMarkdownDocsAsync(
+  rootDir: string,
+  options?: { readonly excludePaths?: readonly string[] | undefined },
+): Promise<{
+  readonly docs: readonly MarkdownDocAuditEntry[]
+  readonly issues: readonly string[]
+}> {
+  const excluded = new Set(options?.excludePaths ?? [])
+  const glob = new Bun.Glob("**/*.md")
+  const mdFiles: string[] = []
+  for await (const rel of glob.scan({ cwd: rootDir, dot: false })) {
+    const normalized = rel.replace(/\\/g, "/")
+    if (!isSkippedMarkdownPath(normalized) && !excluded.has(normalized)) {
+      mdFiles.push(normalized)
+    }
+  }
+  mdFiles.sort((a, b) => a.localeCompare(b))
+
+  const docs: MarkdownDocAuditEntry[] = []
+  const issues: string[] = []
+
+  for (const relPath of mdFiles) {
+    const fullPath = resolve(rootDir, relPath)
+    const content = await Bun.file(fullPath).text()
+    const lines = content.split(/\r?\n/).length
+    const bytes = Buffer.byteLength(content, "utf8")
+    const sha256 = sha256Hex(content)
+    const title = extractFirstHeading(content, relPath)
+
+    const html = Bun.markdown.html(content)
+    const hrefs: string[] = []
+    const rewriter = new HTMLRewriter().on("a[href]", {
+      element(el) {
+        const href = el.getAttribute("href")
+        if (href) {
+          hrefs.push(href.trim())
+        }
+      },
+    })
+    await rewriter.transform(new Response(html)).text()
+
+    let localLinksChecked = 0
+    const brokenLinks: string[] = []
+    for (const rawTarget of hrefs) {
+      if (isExternalOrVirtualHref(rawTarget)) {
+        continue
+      }
+      const cleanPath = rawTarget.split("#")[0]?.split("?")[0] ?? ""
+      if (!cleanPath) continue
+      localLinksChecked += 1
+
+      const candidates = resolveCandidatePaths(rootDir, fullPath, cleanPath)
+      let found = false
+      for (const candidate of candidates) {
+        if ((await Bun.file(candidate).exists()) || existsSync(candidate)) {
+          found = true
+          break
+        }
+      }
+      if (!found) {
         brokenLinks.push(rawTarget)
         issues.push(`${relPath}: broken local link -> ${rawTarget}`)
       }
@@ -1076,8 +1168,9 @@ function syncFile(
   driftedFiles: string[],
 ): void {
   const fullPath = resolve(rootDir, relPath)
-  const existing = existsSync(fullPath) ? readFileSync(fullPath, "utf8") : null
-  if (existing === expectedContent) return
+  const expectedHash = sha256Hex(expectedContent)
+  const existingHash = existsSync(fullPath) ? sha256Hex(readFileSync(fullPath)) : null
+  if (existingHash === expectedHash) return
 
   if (checkOnly) {
     driftedFiles.push(relPath)
