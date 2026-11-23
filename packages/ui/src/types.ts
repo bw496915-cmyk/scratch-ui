@@ -741,8 +741,25 @@ export type TerminalCategory = (typeof TERMINAL_CATEGORIES)[number]
 export const ALERT_FILTERS = ["ALL", "DEAD", "QUEUED", "DELIVERED", "ACKNOWLEDGED"] as const
 export type AlertFilter = (typeof ALERT_FILTERS)[number]
 
-export const CUSTOMER_SORT_KEYS = ["id", "score", "gini", "var95Usd", "holdPct"] as const
+export const CUSTOMER_SORT_KEYS = [
+  "id",
+  "score",
+  "clvScore",
+  "gini",
+  "meanStake",
+  "var95Usd",
+  "holdPct",
+  "ltvUsd",
+  "syndicateProb",
+  "recommendedLimitUsd",
+] as const
 export type CustomerSortKey = (typeof CUSTOMER_SORT_KEYS)[number]
+
+const CUSTOMER_SORT_KEY_SET: ReadonlySet<string> = new Set(CUSTOMER_SORT_KEYS)
+
+export function isCustomerSortKey(value: unknown): value is CustomerSortKey {
+  return typeof value === "string" && CUSTOMER_SORT_KEY_SET.has(value)
+}
 
 export const WAGER_SORT_FIELDS = [
   "timestamp",
@@ -790,13 +807,47 @@ export const PROFILE_TYPE_IDS = [
   "UNMEASURED",
   "ORIGINATOR",
   "STEAM_SYNDICATE",
+  "CORRELATED_PARLAY_EXPLOITER",
   "SHARP_DISCIPLINED",
+  "BONUS_ARB_SCALPER",
   "SEMI_SHARP",
   "HIGH_HOLD_WHALE",
   "RECREATIONAL",
 ] as const
 
 export type ProfileTypeId = (typeof PROFILE_TYPE_IDS)[number]
+
+const PROFILE_TYPE_ID_SET: ReadonlySet<string> = new Set(PROFILE_TYPE_IDS)
+
+export function isProfileTypeId(value: unknown): value is ProfileTypeId {
+  return typeof value === "string" && PROFILE_TYPE_ID_SET.has(value)
+}
+
+export const PROFILE_UNKNOWN_FIELDS = [
+  "sharpness",
+  "clv",
+  "skill",
+  "sizing",
+  "gini",
+  "meanStake",
+  "var95",
+  "holdPct",
+  "ltv",
+  "limit",
+  "delay",
+  "syndicate",
+  "correlation",
+  "specialization",
+  "tickets",
+  "shade",
+  "copy",
+] as const
+
+export type ProfileUnknownField = (typeof PROFILE_UNKNOWN_FIELDS)[number]
+
+export type ProfileRiskBand = "CRITICAL" | "HIGH" | "ELEVATED" | "MODERATE" | "LOW" | "UNMEASURED"
+
+export type ProfileAxisKey = "clvScore" | "skillScore" | "sizingScore" | "sigScore" | "timingScore"
 
 export const PROFILE_TAG_CATEGORIES = ["RISK", "BEHAVIOR", "NETWORK", "POLICY", "CUSTOM"] as const
 
@@ -810,6 +861,11 @@ export interface ProfileTypeSpec {
   readonly shortLabel: string
   readonly icon: string
   readonly description: string
+  readonly riskBand: ProfileRiskBand
+  readonly defaultAction: string
+  readonly defaultDelaySec: number
+  readonly defaultShadeCents: number
+  readonly limitMultiplier: number
   readonly fg: string
   readonly bg: string
   readonly border: string

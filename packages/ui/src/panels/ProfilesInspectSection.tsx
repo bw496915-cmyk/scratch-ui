@@ -70,13 +70,21 @@ function mapSortKey(sortField: CustomerSortKey): string {
     case "id":
       return "id"
     case "score":
+    case "clvScore":
       return "score"
     case "gini":
       return "gini"
+    case "meanStake":
+      return "meanStake"
     case "var95Usd":
       return "var95Usd"
     case "holdPct":
+    case "ltvUsd":
       return "holdPct"
+    case "syndicateProb":
+      return "syndicateProb"
+    case "recommendedLimitUsd":
+      return "limit"
     default:
       return "score"
   }

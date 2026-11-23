@@ -1,11 +1,14 @@
 import { isSentinelWager, parseWagerTimestampMs } from "./handle_volume_series.ts"
+import { computeDeskExposureModel, type TailSeverity } from "./profile_formulas.ts"
 import type { LiveWager, ShowcaseCustomer } from "./types.ts"
 
 export interface CustomerSportExposureRow {
   readonly sport: string
   readonly riskUsd: number
+  readonly toWinUsd: number
   readonly ticketCount: number
   readonly criticalCount: number
+  readonly avgClvCents: number | null
   readonly sharePct: number
 }
 
@@ -13,6 +16,7 @@ export interface CustomerChannelExposureRow {
   readonly channel: string
   readonly riskUsd: number
   readonly ticketCount: number
+  readonly sharePct: number
 }
 
 export interface CustomerLiveActivitySummary {
@@ -21,10 +25,13 @@ export interface CustomerLiveActivitySummary {
   readonly ticketCount: number
   readonly totalRiskUsd: number
   readonly totalToWinUsd: number
+  readonly avgRiskUsd: number
+  readonly avgToWinRatio: number | null
   readonly criticalCount: number
   readonly liveInPlayCount: number
   readonly avgClvCents: number | null
   readonly maxSingleStakeUsd: number
+  readonly dominantChannel: string | null
   readonly sportBreakdown: readonly CustomerSportExposureRow[]
   readonly channelBreakdown: readonly CustomerChannelExposureRow[]
 }
@@ -32,6 +39,10 @@ export interface CustomerLiveActivitySummary {
 export interface ProfileRiskHeadroom {
   readonly varToCapPct: number | null
   readonly isVarOverCap: boolean
+  readonly cvarToVarRatio: number | null
+  readonly tailSeverity: TailSeverity
+  readonly policyGapCount: number
+  readonly suggestedCapUsd: number
   readonly hasMeasuredVar: boolean
   readonly hasMeasuredLimit: boolean
   readonly hasMeasuredHold: boolean
@@ -77,7 +88,14 @@ export function summarizeCustomerLiveActivity(
 
   const sportMap = new Map<
     string,
-    { riskUsd: number; ticketCount: number; criticalCount: number }
+    {
+      riskUsd: number
+      toWinUsd: number
+      ticketCount: number
+      criticalCount: number
+      clvSum: number
+      clvSamples: number
+    }
   >()
   const channelMap = new Map<string, { riskUsd: number; ticketCount: number }>()
 
@@ -92,20 +110,29 @@ export function summarizeCustomerLiveActivity(
     if (isCrit) criticalCount += 1
     if (isLiveInPlayWager(w)) liveInPlayCount += 1
 
-    if (typeof w.clvCents === "number" && Number.isFinite(w.clvCents)) {
-      clvSum += w.clvCents
+    const hasClv = typeof w.clvCents === "number" && Number.isFinite(w.clvCents)
+    if (hasClv) {
+      clvSum += w.clvCents!
       clvSamples += 1
     }
 
     const sport = (w.sport || "OTHER").trim().toUpperCase()
     const sportEntry = sportMap.get(sport) ?? {
       riskUsd: 0,
+      toWinUsd: 0,
       ticketCount: 0,
       criticalCount: 0,
+      clvSum: 0,
+      clvSamples: 0,
     }
     sportEntry.riskUsd += risk
+    sportEntry.toWinUsd += toWin
     sportEntry.ticketCount += 1
     if (isCrit) sportEntry.criticalCount += 1
+    if (hasClv) {
+      sportEntry.clvSum += w.clvCents!
+      sportEntry.clvSamples += 1
+    }
     sportMap.set(sport, sportEntry)
 
     const channel = (w.writer ?? w.ticketWriter ?? "DIRECT").trim() || "DIRECT"
@@ -119,8 +146,10 @@ export function summarizeCustomerLiveActivity(
     .map(([sport, entry]) => ({
       sport,
       riskUsd: entry.riskUsd,
+      toWinUsd: entry.toWinUsd,
       ticketCount: entry.ticketCount,
       criticalCount: entry.criticalCount,
+      avgClvCents: entry.clvSamples > 0 ? entry.clvSum / entry.clvSamples : null,
       sharePct: totalRiskUsd > 0 ? (entry.riskUsd / totalRiskUsd) * 100 : 0,
     }))
     .sort((a, b) => b.riskUsd - a.riskUsd || b.ticketCount - a.ticketCount)
@@ -130,6 +159,7 @@ export function summarizeCustomerLiveActivity(
       channel,
       riskUsd: entry.riskUsd,
       ticketCount: entry.ticketCount,
+      sharePct: totalRiskUsd > 0 ? (entry.riskUsd / totalRiskUsd) * 100 : 0,
     }))
     .sort((a, b) => b.riskUsd - a.riskUsd || b.ticketCount - a.ticketCount)
 
@@ -139,40 +169,30 @@ export function summarizeCustomerLiveActivity(
     ticketCount: matched.length,
     totalRiskUsd,
     totalToWinUsd,
+    avgRiskUsd: matched.length > 0 ? Math.round((totalRiskUsd / matched.length) * 100) / 100 : 0,
+    avgToWinRatio: totalRiskUsd > 0 ? Math.round((totalToWinUsd / totalRiskUsd) * 100) / 100 : null,
     criticalCount,
     liveInPlayCount,
     avgClvCents: clvSamples > 0 ? clvSum / clvSamples : null,
     maxSingleStakeUsd,
+    dominantChannel: channelBreakdown[0]?.channel ?? null,
     sportBreakdown,
     channelBreakdown,
   }
 }
 
 export function computeProfileRiskHeadroom(customer: ShowcaseCustomer): ProfileRiskHeadroom {
-  const unknown = customer.unknown ?? []
-  const hasMeasuredVar = !unknown.includes("var95")
-  const hasMeasuredLimit = !unknown.includes("limit")
-  const hasMeasuredHold = !unknown.includes("holdPct")
-  const hasMeasuredLtv = !unknown.includes("ltv")
-
-  if (!hasMeasuredVar || !hasMeasuredLimit || customer.recommendedLimitUsd <= 0) {
-    return {
-      varToCapPct: null,
-      isVarOverCap: false,
-      hasMeasuredVar,
-      hasMeasuredLimit,
-      hasMeasuredHold,
-      hasMeasuredLtv,
-    }
-  }
-
-  const varToCapPct = Math.round((customer.var95Usd / customer.recommendedLimitUsd) * 100)
+  const exposure = computeDeskExposureModel(customer)
   return {
-    varToCapPct,
-    isVarOverCap: customer.var95Usd > customer.recommendedLimitUsd,
-    hasMeasuredVar,
-    hasMeasuredLimit,
-    hasMeasuredHold,
-    hasMeasuredLtv,
+    varToCapPct: exposure.varToCapPct,
+    isVarOverCap: exposure.isVarOverCap,
+    cvarToVarRatio: exposure.cvarToVarRatio,
+    tailSeverity: exposure.tailSeverity,
+    policyGapCount: exposure.policyGapCount,
+    suggestedCapUsd: exposure.suggestedCapUsd,
+    hasMeasuredVar: exposure.hasMeasuredVar,
+    hasMeasuredLimit: exposure.hasMeasuredLimit,
+    hasMeasuredHold: exposure.hasMeasuredHold,
+    hasMeasuredLtv: exposure.hasMeasuredLtv,
   }
 }

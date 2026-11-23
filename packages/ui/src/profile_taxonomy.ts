@@ -1,3 +1,4 @@
+import { computeDeskExposureModel } from "./profile_formulas.ts"
 import type {
   CustomerProfileClassification,
   ProfileTag,
@@ -15,6 +16,11 @@ export const PROFILE_TYPE_SPECS: Readonly<Record<ProfileTypeId, ProfileTypeSpec>
     shortLabel: "Unmeasured",
     icon: "○",
     description: "Account identity observed; risk classification has not been measured.",
+    riskBand: "UNMEASURED",
+    defaultAction: "UNMEASURED",
+    defaultDelaySec: 0,
+    defaultShadeCents: 0,
+    limitMultiplier: 1.0,
     fg: "#cbd5e1",
     bg: "rgba(148, 163, 184, 0.14)",
     border: "rgba(148, 163, 184, 0.34)",
@@ -26,6 +32,11 @@ export const PROFILE_TYPE_SPECS: Readonly<Record<ProfileTypeId, ProfileTypeSpec>
     icon: "🎯",
     description:
       "Primary market-moving sharp originating opening/key-number steam before broader consensus.",
+    riskBand: "CRITICAL",
+    defaultAction: "SHADOW_AND_SHADE",
+    defaultDelaySec: 8,
+    defaultShadeCents: 15,
+    limitMultiplier: 0.35,
     fg: "#fca5a5",
     bg: "rgba(239, 68, 68, 0.16)",
     border: "rgba(248, 113, 113, 0.45)",
@@ -37,9 +48,30 @@ export const PROFILE_TYPE_SPECS: Readonly<Record<ProfileTypeId, ProfileTypeSpec>
     icon: "⚡",
     description:
       "Coordinated multi-seat syndicate or rapid steam-chasing flow exploiting stale lines.",
+    riskBand: "CRITICAL",
+    defaultAction: "ALERT_OPERATOR",
+    defaultDelaySec: 8,
+    defaultShadeCents: 12,
+    limitMultiplier: 0.4,
     fg: "#fbbf24",
     bg: "rgba(245, 158, 11, 0.16)",
     border: "rgba(251, 191, 36, 0.42)",
+  },
+  CORRELATED_PARLAY_EXPLOITER: {
+    id: "CORRELATED_PARLAY_EXPLOITER",
+    label: "Correlated Parlay",
+    shortLabel: "Parlay-Corr",
+    icon: "🧩",
+    description:
+      "Exploits correlated same-game, alt-spread, or Probit-linked parlay subsets against static pricing.",
+    riskBand: "CRITICAL",
+    defaultAction: "PROBIT_GUARD_BLOCK",
+    defaultDelaySec: 6,
+    defaultShadeCents: 10,
+    limitMultiplier: 0.35,
+    fg: "#fb7185",
+    bg: "rgba(244, 63, 94, 0.16)",
+    border: "rgba(251, 113, 133, 0.44)",
   },
   SHARP_DISCIPLINED: {
     id: "SHARP_DISCIPLINED",
@@ -48,9 +80,30 @@ export const PROFILE_TYPE_SPECS: Readonly<Record<ProfileTypeId, ProfileTypeSpec>
     icon: "📐",
     description:
       "Consistent positive-CLV specialist with disciplined stake sizing and controlled variance.",
+    riskBand: "HIGH",
+    defaultAction: "THROTTLE_LIMIT",
+    defaultDelaySec: 5,
+    defaultShadeCents: 8,
+    limitMultiplier: 0.65,
     fg: "#7dd3fc",
     bg: "rgba(56, 189, 248, 0.15)",
     border: "rgba(56, 189, 248, 0.42)",
+  },
+  BONUS_ARB_SCALPER: {
+    id: "BONUS_ARB_SCALPER",
+    label: "Arb / Latency Scalper",
+    shortLabel: "Arb/Scalp",
+    icon: "⏱",
+    description:
+      "Targets cross-book arbitrage, court-siding latency gaps, or promo/derivative pricing lags.",
+    riskBand: "ELEVATED",
+    defaultAction: "INPLAY_DELAY_THROTTLE",
+    defaultDelaySec: 6,
+    defaultShadeCents: 6,
+    limitMultiplier: 0.55,
+    fg: "#f472b6",
+    bg: "rgba(236, 72, 153, 0.14)",
+    border: "rgba(244, 114, 182, 0.4)",
   },
   SEMI_SHARP: {
     id: "SEMI_SHARP",
@@ -59,6 +112,11 @@ export const PROFILE_TYPE_SPECS: Readonly<Record<ProfileTypeId, ProfileTypeSpec>
     icon: "⚖️",
     description:
       "Selective edge in niche markets or live derivatives mixed with recreational action.",
+    riskBand: "MODERATE",
+    defaultAction: "MONITOR",
+    defaultDelaySec: 3,
+    defaultShadeCents: 4,
+    limitMultiplier: 1.0,
     fg: "#c4b5fd",
     bg: "rgba(167, 139, 250, 0.15)",
     border: "rgba(167, 139, 250, 0.4)",
@@ -70,6 +128,11 @@ export const PROFILE_TYPE_SPECS: Readonly<Record<ProfileTypeId, ProfileTypeSpec>
     icon: "🐋",
     description:
       "High-volume VIP or positive-hold account generating strong desk LTV with low CLV toxicity.",
+    riskBand: "LOW",
+    defaultAction: "ACCEPT_VIP_FULL",
+    defaultDelaySec: 0,
+    defaultShadeCents: 0,
+    limitMultiplier: 2.5,
     fg: "#34d399",
     bg: "rgba(16, 185, 129, 0.16)",
     border: "rgba(52, 211, 153, 0.42)",
@@ -81,6 +144,11 @@ export const PROFILE_TYPE_SPECS: Readonly<Record<ProfileTypeId, ProfileTypeSpec>
     icon: "✅",
     description:
       "Standard recreational profile suitable for full limits and promotional retention.",
+    riskBand: "LOW",
+    defaultAction: "ACCEPT_NORMAL",
+    defaultDelaySec: 0,
+    defaultShadeCents: 0,
+    limitMultiplier: 2.0,
     fg: "#cbd5e1",
     bg: "rgba(148, 163, 184, 0.14)",
     border: "rgba(148, 163, 184, 0.34)",
@@ -91,7 +159,9 @@ export const PROFILE_TYPE_ORDER: readonly ProfileTypeId[] = [
   "UNMEASURED",
   "ORIGINATOR",
   "STEAM_SYNDICATE",
+  "CORRELATED_PARLAY_EXPLOITER",
   "SHARP_DISCIPLINED",
+  "BONUS_ARB_SCALPER",
   "SEMI_SHARP",
   "HIGH_HOLD_WHALE",
   "RECREATIONAL",
@@ -240,13 +310,35 @@ export function saveCustomProfileTagsMap(map: Readonly<Record<string, readonly s
 
 export function classifyCustomerProfileType(cust: ShowcaseCustomer): ProfileTypeSpec {
   const unknown = cust.unknown ?? []
-  if (cust.source === "book" && unknown.includes("sharpness") && unknown.includes("holdPct"))
+  if (cust.source === "book" && unknown.includes("sharpness") && unknown.includes("holdPct")) {
     return PROFILE_TYPE_SPECS.UNMEASURED
+  }
   if (cust.tier === "TIER_1_ELITE_ORIGINATOR") {
     return PROFILE_TYPE_SPECS.ORIGINATOR
   }
-  if (cust.tier === "TIER_2_STEAM_SYNDICATE" || cust.syndicateRisk === "HIGH") {
+  if (cust.syndicateRisk === "HIGH" || cust.syndicateProb >= 0.7) {
     return PROFILE_TYPE_SPECS.STEAM_SYNDICATE
+  }
+  const probitRho = cust.forensicDossier?.parlayBacktest?.probitRho ?? null
+  const hasCriticalParlay =
+    !unknown.includes("correlation") &&
+    (cust.correlatedRisk === "CRITICAL" || (probitRho !== null && probitRho >= 0.65))
+  if (hasCriticalParlay && (cust.holdPct < 0 || unknown.includes("holdPct"))) {
+    return PROFILE_TYPE_SPECS.CORRELATED_PARLAY_EXPLOITER
+  }
+  if (cust.tier === "TIER_2_STEAM_SYNDICATE") {
+    return PROFILE_TYPE_SPECS.STEAM_SYNDICATE
+  }
+  const timingUpper = cust.timingArchetype.toUpperCase()
+  const specUpper = cust.specialization.toUpperCase()
+  if (
+    timingUpper.includes("ARB") ||
+    timingUpper.includes("SCALP") ||
+    timingUpper.includes("LATENCY") ||
+    timingUpper.includes("BONUS") ||
+    (cust.clvScore >= 1.8 && !unknown.includes("gini") && cust.gini <= 0.14 && specUpper.includes("LIVE"))
+  ) {
+    return PROFILE_TYPE_SPECS.BONUS_ARB_SCALPER
   }
   if (cust.tier === "TIER_3_SHARP_DISCIPLINED") {
     return PROFILE_TYPE_SPECS.SHARP_DISCIPLINED
@@ -483,6 +575,25 @@ export function deriveCustomerProfileTags(
       description: `Shadow copy multiplier ${cust.shadowCopyMultiplier.toFixed(2)}x active.`,
     })
   }
+  const exposure = computeDeskExposureModel(cust)
+  if (exposure.tailSeverity === "EXTREME" && exposure.cvarToVarRatio !== null) {
+    pushTag({
+      id: "risk:tail-heavy",
+      label: "TAIL-HEAVY",
+      category: "RISK",
+      tone: "amber",
+      description: `CVaR95/VaR95 tail ratio ${exposure.cvarToVarRatio.toFixed(2)}x indicates heavy upper-tail stake risk.`,
+    })
+  }
+  if (exposure.policyGapCount >= 2 && cust.score >= 7.0) {
+    pushTag({
+      id: "policy:countermeasure-gap",
+      label: `POLICY-GAP(${exposure.policyGapCount})`,
+      category: "POLICY",
+      tone: "amber",
+      description: `${exposure.policyGapCount} desk countermeasures (cap/delay/shade) are looser than formula targets.`,
+    })
+  }
   if (cust.portalReconciliation?.postureFlags) {
     for (const flag of cust.portalReconciliation.postureFlags) {
       const normalized = normalizeCustomTagLabel(flag)
@@ -605,6 +716,16 @@ export function matchesProfileTypeFilter(
   }
   if (filterTier === "SYNDICATE") {
     return cust.syndicateRisk === "HIGH" || profileTypeId === "STEAM_SYNDICATE"
+  }
+  if (filterTier === "PARLAY") {
+    return (
+      profileTypeId === "CORRELATED_PARLAY_EXPLOITER" ||
+      cust.correlatedRisk === "CRITICAL" ||
+      cust.correlatedRisk === "HIGH"
+    )
+  }
+  if (filterTier === "ARB") {
+    return profileTypeId === "BONUS_ARB_SCALPER"
   }
   if (filterTier === "STEAM") {
     return cust.timingArchetype.toUpperCase().includes("STEAM")

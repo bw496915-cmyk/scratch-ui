@@ -7427,3 +7427,589 @@ button.sd-badge {
 [data-dashboard-theme="light"] .sd-risk-gauge {
   background-color: #e2e8f0;
 }
+
+/* --- Profiled Bettors Formula, Policy Gap & What-If Drilldown --- */
+.sd-profile-sort-select {
+  background-color: #0b1120;
+  color: #cbd5e1;
+  border: 1px solid #243247;
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sd-profile-sort-select:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 1px;
+}
+
+.sd-formula-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sd-formula-card {
+  background-color: rgba(11, 17, 32, 0.72);
+  border: 1px solid #1e293b;
+  border-radius: 7px;
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.sd-formula-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sd-formula-card__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.sd-formula-bench-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .sd-formula-bench-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.sd-formula-bench-cell {
+  background-color: rgba(15, 23, 42, 0.7);
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 7px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sd-formula-bench-label {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.sd-formula-bench-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.25;
+}
+
+.sd-formula-bench-sub {
+  font-size: 10px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sd-driver-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border-top: 1px solid #1e293b;
+  padding-top: 8px;
+}
+
+.sd-driver-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background-color: rgba(15, 23, 42, 0.55);
+  border: 1px solid #1e293b;
+  border-radius: 5px;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: #e2e8f0;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.sd-driver-row:hover {
+  background-color: rgba(30, 41, 59, 0.72);
+  border-color: #334155;
+}
+
+.sd-driver-row--critical {
+  border-color: rgba(248, 113, 113, 0.36);
+}
+
+.sd-driver-row--warning {
+  border-color: rgba(251, 191, 36, 0.34);
+}
+
+.sd-driver-row--positive {
+  border-color: rgba(52, 211, 153, 0.34);
+}
+
+.sd-driver-row__main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.sd-driver-row__label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.sd-driver-row__note {
+  font-size: 10px;
+  color: #94a3b8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sd-driver-row__metric {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  font-size: 11px;
+}
+
+.sd-driver-row__metric > strong {
+  color: #f8fafc;
+}
+
+.sd-driver-row__metric > span {
+  font-size: 9.5px;
+  color: #64748b;
+}
+
+.sd-axis-audit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sd-axis-audit-item {
+  border: 1px solid #1e293b;
+  border-radius: 5px;
+  background-color: rgba(15, 23, 42, 0.5);
+  overflow: hidden;
+}
+
+.sd-axis-audit-row {
+  display: grid;
+  grid-template-columns: minmax(115px, 1.3fr) minmax(60px, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  font-size: 11px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sd-axis-audit-row:hover {
+  background-color: rgba(30, 41, 59, 0.65);
+}
+
+.sd-axis-audit-row__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sd-axis-audit-row__bar {
+  display: block;
+  height: 5px;
+  background-color: #0b1120;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.sd-axis-audit-row__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+}
+
+.sd-axis-audit-row__val {
+  font-size: 10.5px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.sd-axis-audit-detail {
+  padding: 6px 10px 8px 24px;
+  border-top: 1px solid #1e293b;
+  background-color: rgba(2, 6, 23, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 10.5px;
+  color: #cbd5e1;
+}
+
+.sd-axis-audit-detail__k {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.sd-axis-audit-detail code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  color: #7dd3fc;
+}
+
+.sd-ci-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 4px;
+}
+
+.sd-ci-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #64748b;
+}
+
+.sd-ci-track {
+  position: relative;
+  height: 14px;
+  border-radius: 4px;
+  background-color: #0f172a;
+  border: 1px solid #1e293b;
+}
+
+.sd-ci-breakeven {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #fbbf24;
+  transform: translateX(-1px);
+  z-index: 1;
+}
+
+.sd-ci-range {
+  position: absolute;
+  top: 4px;
+  height: 6px;
+  border-radius: 3px;
+  background-color: rgba(56, 189, 248, 0.45);
+  z-index: 2;
+}
+
+.sd-ci-point {
+  position: absolute;
+  top: 2px;
+  width: 4px;
+  height: 10px;
+  border-radius: 2px;
+  background-color: #f8fafc;
+  transform: translateX(-2px);
+  z-index: 3;
+}
+
+.sd-ci-caption {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.sd-formula-equation {
+  padding: 8px 10px;
+  border-radius: 5px;
+  background-color: #020617;
+  border: 1px solid #1e293b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10.5px;
+  color: #7dd3fc;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sd-formula-empty {
+  font-size: 11.5px;
+  color: #94a3b8;
+  padding: 6px 2px;
+}
+
+.sd-policy-matrix-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.sd-policy-matrix-meta strong {
+  color: #e2e8f0;
+}
+
+.sd-policy-table-wrap {
+  overflow-x: auto;
+}
+
+.sd-policy-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.sd-policy-table th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  padding: 5px 6px;
+  border-bottom: 1px solid #1e293b;
+}
+
+.sd-policy-table td {
+  padding: 6px;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.7);
+  color: #cbd5e1;
+  vertical-align: middle;
+}
+
+.sd-policy-table__label {
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.sd-policy-table__rationale {
+  font-size: 10px;
+  color: #64748b;
+}
+
+.sd-policy-status {
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sd-policy-status--critical {
+  color: #f87171;
+}
+
+.sd-policy-status--warning {
+  color: #fbbf24;
+}
+
+.sd-policy-status--ok {
+  color: #4ade80;
+}
+
+.sd-sim-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .sd-sim-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sd-sim-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.sd-sim-slider__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sd-sim-slider__head strong {
+  color: #f8fafc;
+}
+
+.sd-sim-slider input[type="range"] {
+  width: 100%;
+  accent-color: #38bdf8;
+  cursor: pointer;
+}
+
+.sd-sim-checkbox {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: #cbd5e1;
+  cursor: pointer;
+}
+
+.sd-peer-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+@media (max-width: 900px) {
+  .sd-peer-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sd-peer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  border: 1px solid #1e293b;
+  background-color: rgba(15, 23, 42, 0.55);
+  color: #e2e8f0;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.sd-peer-row:hover:not(:disabled) {
+  background-color: rgba(30, 41, 59, 0.78);
+  border-color: #38bdf8;
+}
+
+.sd-peer-row__id {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.sd-peer-row__id strong {
+  font-size: 11.5px;
+  color: #7dd3fc;
+}
+
+.sd-peer-row__id span {
+  font-size: 10px;
+  color: #94a3b8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sd-peer-row__metrics {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.sd-peer-row__metrics strong {
+  font-size: 12px;
+  color: #f8fafc;
+}
+
+.sd-peer-row__metrics span {
+  font-size: 10px;
+  color: #64748b;
+}
+
+.sd-activity-sport-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 5px 6px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-size: 11px;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.sd-activity-sport-btn:hover {
+  background-color: rgba(30, 41, 59, 0.55);
+}
+
+.sd-activity-sport-btn--active {
+  background-color: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.45);
+}
+
+[data-dashboard-theme="light"] .sd-profile-sort-select {
+  background-color: #ffffff;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+[data-dashboard-theme="light"] .sd-formula-card {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+}
+
+[data-dashboard-theme="light"] .sd-formula-card__title,
+[data-dashboard-theme="light"] .sd-formula-bench-val,
+[data-dashboard-theme="light"] .sd-driver-row__label,
+[data-dashboard-theme="light"] .sd-axis-audit-row__name,
+[data-dashboard-theme="light"] .sd-policy-table__label,
+[data-dashboard-theme="light"] .sd-sim-slider__head strong,
+[data-dashboard-theme="light"] .sd-peer-row__metrics strong {
+  color: #0f172a;
+}
+
+[data-dashboard-theme="light"] .sd-formula-bench-cell,
+[data-dashboard-theme="light"] .sd-driver-row,
+[data-dashboard-theme="light"] .sd-axis-audit-item,
+[data-dashboard-theme="light"] .sd-peer-row {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+[data-dashboard-theme="light"] .sd-formula-equation,
+[data-dashboard-theme="light"] .sd-axis-audit-detail {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+[data-dashboard-theme="light"] .sd-ci-track {
+  background-color: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+[data-dashboard-theme="light"] .sd-ci-point {
+  background-color: #0f172a;
+}
+

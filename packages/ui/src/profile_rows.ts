@@ -10,6 +10,7 @@ import { parseCustomerRetainedHistory } from "@sportsdesk-ops/contracts"
  * left at their explicit zero/none values rather than guessed.
  */
 import { extractBacktestParlayMetrics, mergeForensicDossiers } from "./customer_forensics.ts"
+import { computeStakeDistribution, reconcileSharpnessAxes } from "./profile_formulas.ts"
 import type { LiveWager, RankedPlayer30d, ShowcaseCustomer } from "./types.ts"
 
 type Row = Record<string, unknown>
@@ -45,15 +46,6 @@ const round = (value: number, places = 2): number => {
 function stakesOf(row: Row): number[] {
   const tickets = Array.isArray(row.recent_tickets) ? row.recent_tickets : []
   return tickets.map((ticket) => num((ticket as Row).risk_usd)).filter((risk) => risk > 0)
-}
-
-function gini(values: readonly number[]): number {
-  if (values.length < 2) return 0
-  const sorted = [...values].sort((a, b) => a - b)
-  const sum = sorted.reduce((acc, v) => acc + v, 0)
-  if (sum === 0) return 0
-  const weighted = sorted.reduce((acc, v, i) => acc + (i + 1) * v, 0)
-  return (2 * weighted) / (sorted.length * sum) - (sorted.length + 1) / sorted.length
 }
 
 function topKey(tickets: readonly Row[], key: string): string {
@@ -134,22 +126,31 @@ export function bookRowsToProfiles(
       source === "book" ? parseCustomerRetainedHistory(row.retained_history) : null
     const tickets = Array.isArray(row.recent_tickets) ? (row.recent_tickets as Row[]) : []
     const stakes = stakesOf(row)
-    const meanStake = stakes.length ? stakes.reduce((acc, v) => acc + v, 0) / stakes.length : 0
-    const variance = stakes.length
-      ? stakes.reduce((acc, v) => acc + (v - meanStake) ** 2, 0) / stakes.length
-      : 0
-    const sd = Math.sqrt(variance)
-    const cv = meanStake > 0 ? sd / meanStake : 0
+    const dist = computeStakeDistribution(stakes)
+    const meanStake = dist.meanUsd
+    const cv = dist.cv
     const rawSharp = Number(row.sharp_score)
     const sharpKnown = Number.isFinite(rawSharp)
-    const score = sharpKnown ? clamp(rawSharp / 10, 0, 10) : 0
-    const clvScore = clamp(num(row.clv_bps) / 100, -10, 10)
+    const score = sharpKnown ? round(clamp(rawSharp / 10, 0, 10), 2) : 0
+    const rawClvBps = row.clv_bps != null && Number.isFinite(Number(row.clv_bps)) ? Number(row.clv_bps) : null
+    const rawHoldPct = row.hold_pct != null && Number.isFinite(Number(row.hold_pct)) ? Number(row.hold_pct) : null
     const rawDelay = nonNegativeFinite(row.delay_seconds)
     const delayKnown = rawDelay !== null
     const delay = rawDelay ?? 0
     const league = topKey(tickets, "league")
     const market = topKey(tickets, "market")
     const sizingKnown = stakes.length >= 2
+
+    const axes = sharpKnown
+      ? reconcileSharpnessAxes(score, {
+          clvBps: rawClvBps,
+          holdPct: rawHoldPct,
+          meanStakeUsd: retainedHistory?.meanStakeUsd ?? (meanStake > 0 ? meanStake : null),
+          stakeCv: sizingKnown ? cv : null,
+          gini: retainedHistory?.stakeGini ?? (sizingKnown ? dist.gini : null),
+          delaySec: delayKnown ? delay : null,
+        })
+      : { clvScore: 0, skillScore: 0, sizingScore: 0, sigScore: 0, timingScore: 0 }
 
     const unknown: string[] = []
     if (!sharpKnown) unknown.push("sharpness")
@@ -178,12 +179,12 @@ export function bookRowsToProfiles(
       masterAgent: String(row.master_agent ?? row.masterAgent ?? "—"),
       tier: tierFromRow(row, score),
       ...(!sharpKnown ? { tierLabel: "Unmeasured" } : {}),
-      score: round(score, 2),
-      clvScore: round(clvScore, 2),
-      skillScore: clvScore,
-      sizingScore: sizingKnown ? round(clamp(1 - cv, 0, 2), 2) : 0,
-      sigScore: 0,
-      timingScore: delayKnown && delay > 0 ? 1 : 0,
+      score,
+      clvScore: axes.clvScore,
+      skillScore: axes.skillScore,
+      sizingScore: axes.sizingScore,
+      sigScore: axes.sigScore,
+      timingScore: axes.timingScore,
       retainedHistory: retainedHistory ?? undefined,
       sizingStrategy: retainedHistory
         ? "STRATEGY_UNMEASURED"
@@ -192,8 +193,8 @@ export function bookRowsToProfiles(
             ? "FLAT_UNIT"
             : "PROPORTIONAL_KELLY"
           : "PENDING_TICKETS",
-      gini: retainedHistory?.stakeGini ?? (sizingKnown ? round(gini(stakes), 4) : 0),
-      meanStake: retainedHistory?.meanStakeUsd ?? round(meanStake, 2),
+      gini: retainedHistory?.stakeGini ?? (sizingKnown ? dist.gini : 0),
+      meanStake: retainedHistory?.meanStakeUsd ?? meanStake,
       specialization:
         [league, market].filter(Boolean).join(" ") || String(row.context_type ?? "UNKNOWN"),
       timingArchetype: String(row.context_type ?? "UNKNOWN"),
@@ -202,8 +203,8 @@ export function bookRowsToProfiles(
       syndicateRisk: "LOW",
       syndicateProb: 0,
       subAccountIndex: null,
-      var95Usd: sizingKnown ? round(meanStake + 1.645 * sd, 2) : 0,
-      cvar95Usd: sizingKnown ? round(meanStake + 2 * sd, 2) : 0,
+      var95Usd: sizingKnown ? dist.var95Usd : 0,
+      cvar95Usd: sizingKnown ? dist.cvar95Usd : 0,
       holdPct: num(row.hold_pct),
       ltvUsd: num(row.lifetime_net_usd),
       recommendedLimitUsd: num(row.wager_limit_usd),
@@ -276,22 +277,17 @@ export function backtestRowsToProfiles(rows: ReadonlyArray<Row>): ShowcaseCustom
             : "MODERATE"
     }
 
-    // Proportional decomposition anchored to real backtest signals (CLV bps, sharp score, stake, legs/ticket, rho)
-    const skillScore = sharpKnown ? clamp(score * 0.25, 0, 2.5) : clamp(clvScore * 0.8, 0, 2.5)
-    const sizingScore = meanStake > 0 ? clamp(Math.log10(meanStake / 100) * 0.72, 0.2, 1.5) : 0
-    const avgLegs = tickets > 0 && legs > 0 ? legs / tickets : 0
-    const sigScore =
-      avgLegs > 0
-        ? clamp(0.8 + (avgLegs - 1.5) * 0.9 + (score >= 8 ? 0.35 : 0), 0.3, 2.0)
-        : sharpKnown
-          ? clamp(score * 0.18, 0, 2.0)
-          : 0
-    const timingScore =
-      probitRho !== null
-        ? clamp(probitRho * 1.15, 0.2, 1.0)
-        : hasCorrelationSignal
-          ? clamp(score * 0.09, 0.2, 1.0)
-          : 0
+    const avgLegs = tickets > 0 && legs > 0 ? legs / tickets : null
+    const roundedScore = round(score, 2)
+    const axes = sharpKnown
+      ? reconcileSharpnessAxes(roundedScore, {
+          clvBps,
+          holdPct: hasBaselineHold ? holdPct : null,
+          meanStakeUsd: meanStake > 0 ? meanStake : null,
+          avgParlayLegs: avgLegs,
+          probitRho,
+        })
+      : { clvScore: 0, skillScore: 0, sizingScore: 0, sigScore: 0, timingScore: 0 }
 
     const unknown: string[] = ["syndicate", "gini", "sizing", "var95", "limit", "delay", "tickets"]
     if (!hasCorrelationSignal) unknown.push("correlation")
@@ -305,13 +301,13 @@ export function backtestRowsToProfiles(rows: ReadonlyArray<Row>): ShowcaseCustom
       name: id,
       agentId: String(row.agentId ?? row.agent_id ?? "—"),
       masterAgent: String(row.masterAgent ?? row.master_agent ?? "—"),
-      tier: tierFor(score),
-      score: round(score, 2),
-      clvScore: round(clvScore, 2),
-      skillScore: round(skillScore, 2),
-      sizingScore: round(sizingScore, 2),
-      sigScore: round(sigScore, 2),
-      timingScore: round(timingScore, 2),
+      tier: tierFor(roundedScore),
+      score: roundedScore,
+      clvScore: axes.clvScore,
+      skillScore: axes.skillScore,
+      sizingScore: axes.sizingScore,
+      sigScore: axes.sigScore,
+      timingScore: axes.timingScore,
       sizingStrategy:
         meanStake >= 4000
           ? "HIGH_STAKE_PARLAY"
@@ -335,7 +331,7 @@ export function backtestRowsToProfiles(rows: ReadonlyArray<Row>): ShowcaseCustom
       inPlayDelaySec: 0,
       lineShadeCents: 0,
       shadowCopyMultiplier: 1,
-      action: score >= 7 || correlatedRisk === "CRITICAL" ? "ALERT_OPERATOR" : "ACCEPT_NORMAL",
+      action: roundedScore >= 7 || correlatedRisk === "CRITICAL" ? "ALERT_OPERATOR" : "ACCEPT_NORMAL",
       ipAddress: String(row.ipSubnet ?? row.ip_subnet ?? "—"),
       unknown,
       source: "backtest",
@@ -395,8 +391,16 @@ export function selectProfileRows(payload: {
 /** 30d batch rankings → Profiles shape; tier and score come from the ranking payload. */
 export function rankingsPlayersToProfiles(players: readonly RankedPlayer30d[]): ShowcaseCustomer[] {
   return players.map((player) => {
-    const score = clamp(player.score, 0, 10)
+    const score = round(clamp(player.score, 0, 10), 2)
     const mappedTier = mapRankingTierCode(player.tier) ?? tierFor(score)
+    const meanStake = player.wagers > 0 ? round(player.handleUsd / player.wagers, 2) : 0
+    const axes = reconcileSharpnessAxes(score, {
+      clvBps: player.clvBps ?? null,
+      gini: player.gini,
+      meanStakeUsd: meanStake > 0 ? meanStake : null,
+      alertRate: player.alertRate / 100,
+      isProxy: player.isProxy,
+    })
     const unknown: string[] = ["holdPct", "ltv", "tickets"]
     if (player.handleUsd <= 0) unknown.push("meanStake")
     return {
@@ -406,15 +410,15 @@ export function rankingsPlayersToProfiles(players: readonly RankedPlayer30d[]): 
       masterAgent: player.masterAgent,
       tier: mappedTier,
       tierLabel: player.tierLabel,
-      score: round(score, 2),
-      clvScore: round(clamp(player.alertRate / 40, 0, 3), 2),
-      skillScore: round(clamp(score * 0.26, 0, 2.5), 2),
-      sizingScore: round(clamp(1.5 - player.gini * 0.8, 0, 1.5), 2),
-      sigScore: round(clamp(1 + player.alertRate / 100, 0, 2), 2),
-      timingScore: player.isProxy ? 0.9 : 0.6,
+      score,
+      clvScore: axes.clvScore,
+      skillScore: axes.skillScore,
+      sizingScore: axes.sizingScore,
+      sigScore: axes.sigScore,
+      timingScore: axes.timingScore,
       sizingStrategy: player.gini > 0.35 ? "VARIABLE_STAKE" : "FLAT_UNIT",
       gini: round(player.gini, 4),
-      meanStake: player.wagers > 0 ? round(player.handleUsd / player.wagers, 2) : 0,
+      meanStake,
       specialization: player.dominantSport || "MIXED",
       timingArchetype: player.tierLabel,
       correlatedRisk: player.isProxy ? "HIGH" : "MODERATE",
@@ -423,7 +427,7 @@ export function rankingsPlayersToProfiles(players: readonly RankedPlayer30d[]): 
       syndicateProb: player.isProxy ? 0.75 : 0.35,
       subAccountIndex: null,
       var95Usd: round(Math.max(500, player.handleUsd * 0.05), 2),
-      cvar95Usd: round(Math.max(750, player.handleUsd * 0.08), 2),
+      cvar95Usd: round(Math.max(625, player.handleUsd * 0.063), 2),
       holdPct: 0,
       ltvUsd: 0,
       recommendedLimitUsd: player.limitUsd,
@@ -475,10 +479,9 @@ export function liveOpenWagersToProfiles(wagers: readonly LiveWager[]): Showcase
 
   const out: ShowcaseCustomer[] = []
   for (const [id, acc] of byCustomer) {
-    const meanStake = acc.stakes.length
-      ? acc.stakes.reduce((s, v) => s + v, 0) / acc.stakes.length
-      : 0
-    const g = gini(acc.stakes)
+    const dist = computeStakeDistribution(acc.stakes)
+    const meanStake = dist.meanUsd
+    const g = dist.gini
     let topSport = "MIXED"
     let topCount = 0
     for (const [sport, count] of acc.sports) {
@@ -488,6 +491,12 @@ export function liveOpenWagersToProfiles(wagers: readonly LiveWager[]): Showcase
       }
     }
     const alertRate = acc.stakes.length > 0 ? acc.alerts / acc.stakes.length : 0
+    const score = round(clamp(alertRate * 6, 0, 10), 2)
+    const axes = reconcileSharpnessAxes(score, {
+      gini: g,
+      meanStakeUsd: meanStake > 0 ? meanStake : null,
+      alertRate,
+    })
     const unknown: string[] = [
       "holdPct",
       "ltv",
@@ -497,6 +506,7 @@ export function liveOpenWagersToProfiles(wagers: readonly LiveWager[]): Showcase
       "syndicate",
       "correlation",
     ]
+    if (acc.stakes.length < 2) unknown.push("var95")
 
     out.push({
       id,
@@ -505,15 +515,15 @@ export function liveOpenWagersToProfiles(wagers: readonly LiveWager[]): Showcase
       masterAgent: acc.masterAgent,
       tier: "TIER_5_RECREATIONAL",
       tierLabel: "Open book — tier pending 30d rank",
-      score: round(clamp(alertRate * 6, 0, 10), 2),
-      clvScore: 0,
-      skillScore: 0,
-      sizingScore: round(clamp(1.5 - g * 0.8, 0, 1.5), 2),
-      sigScore: round(alertRate, 2),
-      timingScore: 0.5,
+      score,
+      clvScore: axes.clvScore,
+      skillScore: axes.skillScore,
+      sizingScore: axes.sizingScore,
+      sigScore: axes.sigScore,
+      timingScore: axes.timingScore,
       sizingStrategy: g < 0.2 ? "FLAT_UNIT" : "VARIABLE_STAKE",
-      gini: round(g, 4),
-      meanStake: round(meanStake, 2),
+      gini: g,
+      meanStake,
       specialization: topSport,
       timingArchetype: "LIVE_OPEN",
       correlatedRisk: "MODERATE",
@@ -521,8 +531,8 @@ export function liveOpenWagersToProfiles(wagers: readonly LiveWager[]): Showcase
       syndicateRisk: "LOW",
       syndicateProb: 0,
       subAccountIndex: null,
-      var95Usd: round(meanStake + 1.645 * Math.sqrt(meanStake), 2),
-      cvar95Usd: round(meanStake * 1.35, 2),
+      var95Usd: dist.var95Usd,
+      cvar95Usd: dist.cvar95Usd,
       holdPct: 0,
       ltvUsd: 0,
       recommendedLimitUsd: 0,

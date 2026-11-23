@@ -36,6 +36,7 @@ import {
   FANTASY402_PORTAL_WINDOW_TARGET,
   getFantasy402PortalLinkProps,
 } from "../portal_link.ts"
+import { evaluateProfileQuantitativeModel } from "../profile_formulas.ts"
 import {
   classifyCustomerProfile,
   PROFILE_TAG_CATEGORY_META,
@@ -65,6 +66,10 @@ import {
   ParlayProtectionImpactPanel,
 } from "./CustomerForensicDossierSection.tsx"
 import { SkeletonBlock, SkeletonSplitWorkspace } from "./PanelSkeleton.tsx"
+import {
+  OverviewFormulaAuditStrip,
+  ProfileFormulaDrilldownPanel,
+} from "./ProfileFormulaDrilldownPanel.tsx"
 import { ProfilesInspectSection } from "./ProfilesInspectSection.tsx"
 import { ReverseDnsForensicsCard } from "./ReverseDnsForensicsCard.tsx"
 import { ProfileOnChainXrefCard, SharpestOnChainXrefPanel } from "./SharpestOnChainXrefPanel.tsx"
@@ -143,7 +148,20 @@ export interface CustomersTabPanelProps {
   readonly onToggleTickerOverlay?: (() => void) | undefined
 }
 
-type ProfileDrilldownTab = "overview" | "activity" | "reconciliation" | "tags"
+type ProfileDrilldownTab = "overview" | "formulas" | "activity" | "reconciliation" | "tags"
+
+const SORT_KEY_LABELS: Readonly<Record<CustomerSortKey, string>> = {
+  score: "Sharp Score",
+  clvScore: "CLV Margin",
+  var95Usd: "7d VaR 95%",
+  holdPct: "Lifetime Hold %",
+  ltvUsd: "Desk LTV ($)",
+  gini: "Stake Gini",
+  meanStake: "Mean Stake ($)",
+  syndicateProb: "Syndicate Prob",
+  recommendedLimitUsd: "Wager Cap ($)",
+  id: "Customer ID",
+}
 
 interface CustomerCohortSummary {
   readonly totalVarUsd: number
@@ -239,8 +257,11 @@ function resolveBadgeModifier(raw: string): string {
   if (key.includes("parlay") || key.includes("sgp") || key.includes("corr")) {
     return "parlay-critical"
   }
+  if (key.includes("arb") || key.includes("scalp") || key.includes("latency")) {
+    return "syndicate-link"
+  }
   if (key.includes("whale") || key.includes("vip") || key.includes("high_hold")) return "whale"
-  if (key.includes("alert") || key.includes("restrict") || key.includes("shadow")) {
+  if (key.includes("alert") || key.includes("restrict") || key.includes("shadow") || key.includes("gap")) {
     return "alert-operator"
   }
   return "sharp"
@@ -353,6 +374,7 @@ export function CustomersTabPanel({
 }: CustomersTabPanelProps): React.ReactElement {
   const [profilePage, setProfilePage] = useState(0)
   const [drilldownTab, setDrilldownTab] = useState<ProfileDrilldownTab>("overview")
+  const [activitySportFilter, setActivitySportFilter] = useState<string>("ALL")
   const [filtersExpanded, setFiltersExpanded] = useState<boolean>(false)
   const [showRowSparklines, setShowRowSparklines] = useState<boolean>(true)
   const pageSize = 100
@@ -360,6 +382,9 @@ export function CustomersTabPanel({
   useEffect(() => {
     setProfilePage(0)
   }, [searchQuery, filterTier, activeProfileTagIds])
+  useEffect(() => {
+    setActivitySportFilter("ALL")
+  }, [selectedCustomer?.id])
   const [customTagInput, setCustomTagInput] = useState("")
   const sourceProfiles = allProfileCustomers ?? sortedCustomers
 
@@ -372,6 +397,14 @@ export function CustomersTabPanel({
   const selectedRiskHeadroom = useMemo(
     () => (selectedCustomer ? computeProfileRiskHeadroom(selectedCustomer) : null),
     [selectedCustomer],
+  )
+
+  const selectedQuantModel = useMemo(
+    () =>
+      selectedCustomer
+        ? evaluateProfileQuantitativeModel(selectedCustomer, sourceProfiles, selectedLiveActivity)
+        : null,
+    [selectedCustomer, sourceProfiles, selectedLiveActivity],
   )
 
   const selectedOnChainXref = useMemo(
@@ -390,7 +423,9 @@ export function CustomersTabPanel({
       UNMEASURED: 0,
       ORIGINATOR: 0,
       STEAM_SYNDICATE: 0,
+      CORRELATED_PARLAY_EXPLOITER: 0,
       SHARP_DISCIPLINED: 0,
+      BONUS_ARB_SCALPER: 0,
       SEMI_SHARP: 0,
       HIGH_HOLD_WHALE: 0,
       RECREATIONAL: 0,
@@ -1221,6 +1256,19 @@ export function CustomersTabPanel({
                   </span>
                 </div>
                 <div className="sd-profile-list__controls">
+                  <select
+                    aria-label="Sort profiled bettors by metric"
+                    className="sd-profile-sort-select"
+                    value={customerSort.key}
+                    onChange={(e) => onCustomerSort(e.target.value as CustomerSortKey)}
+                    title="Sort Profiled Bettors by quantitative metric"
+                  >
+                    {(Object.keys(SORT_KEY_LABELS) as CustomerSortKey[]).map((key) => (
+                      <option key={key} value={key}>
+                        Sort: {SORT_KEY_LABELS[key]}
+                      </option>
+                    ))}
+                  </select>
                   <button
                     type="button"
                     className={`sd-action-btn ${showRowSparklines ? "sd-action-btn--active" : ""}`}
@@ -2247,6 +2295,13 @@ export function CustomersTabPanel({
                       [
                         { id: "overview", label: "Overview & Risk" },
                         {
+                          id: "formulas",
+                          label:
+                            selectedQuantModel && selectedQuantModel.exposure.policyGapCount > 0
+                              ? `Formulas & Sim (${selectedQuantModel.exposure.policyGapCount})`
+                              : "Formulas & Sim",
+                        },
+                        {
                           id: "activity",
                           label: `Live Activity (${(selectedLiveActivity?.ticketCount ?? 0) + (selectedCustomer.forensicDossier?.flaggedTickets.length ?? 0)})`,
                         },
@@ -2291,6 +2346,15 @@ export function CustomersTabPanel({
                           dossier={selectedCustomer.forensicDossier}
                           onOpenForensicsTab={() => setDrilldownTab("reconciliation")}
                           onJumpToCustomer={onSelectCustomerById}
+                        />
+                      )}
+
+                      {selectedQuantModel && selectedClassification && (
+                        <OverviewFormulaAuditStrip
+                          customer={selectedCustomer}
+                          model={selectedQuantModel}
+                          typeSpec={selectedClassification.type}
+                          onNavigateTab={(nextTab) => setDrilldownTab(nextTab)}
                         />
                       )}
 
@@ -2461,7 +2525,18 @@ export function CustomersTabPanel({
                     </div>
                   )}
 
-                  {/* TAB 2: Live Activity & Exposure Breakdown */}
+                  {/* TAB 2: Quantitative Formulas, Policy Gaps & Countermeasure Simulator */}
+                  {drilldownTab === "formulas" && selectedQuantModel && selectedClassification && (
+                    <ProfileFormulaDrilldownPanel
+                      customer={selectedCustomer}
+                      model={selectedQuantModel}
+                      typeSpec={selectedClassification.type}
+                      onSelectCustomerById={onSelectCustomerById}
+                      onRunTerminalCommand={onRunTerminalCommand}
+                    />
+                  )}
+
+                  {/* TAB 3: Live Activity & Exposure Breakdown */}
                   {drilldownTab === "activity" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                       {selectedLiveActivity && selectedLiveActivity.ticketCount > 0 ? (
@@ -2527,65 +2602,142 @@ export function CustomersTabPanel({
                             </div>
                           </div>
 
-                          {/* Sport Exposure Breakdown */}
-                          {selectedLiveActivity.sportBreakdown.length > 0 && (
-                            <div style={styles.detailCard}>
-                              <h4 style={styles.cardHeader}>Sport Exposure Mix</h4>
-                              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                                {selectedLiveActivity.sportBreakdown.slice(0, 5).map((row) => (
-                                  <div
-                                    key={row.sport}
+                          {/* Live vs Historical Stake Context */}
+                          {!isUnknown(selectedCustomer, "meanStake") &&
+                            selectedCustomer.meanStake > 0 &&
+                            selectedLiveActivity.avgRiskUsd > 0 && (
+                              <div className="sd-policy-matrix-meta sd-tabular">
+                                <span>
+                                  Live Avg Stake:{" "}
+                                  <strong>${selectedLiveActivity.avgRiskUsd.toLocaleString()}</strong>
+                                </span>
+                                <span>·</span>
+                                <span>
+                                  vs Hist Mean:{" "}
+                                  <strong
                                     style={{
-                                      display: "flex",
-                                      flexDirection: "column",
-                                      gap: "3px",
-                                      fontSize: "11px",
-                                      fontVariantNumeric: "tabular-nums",
+                                      color:
+                                        selectedLiveActivity.avgRiskUsd / selectedCustomer.meanStake >=
+                                        1.5
+                                          ? "#f87171"
+                                          : "#7dd3fc",
                                     }}
                                   >
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        justifyContent: "space-between",
-                                        color: "#cbd5e1",
-                                      }}
-                                    >
-                                      <span>
-                                        <b>{row.sport}</b> · {row.ticketCount} ticket
-                                        {row.ticketCount === 1 ? "" : "s"}
-                                        {row.criticalCount > 0 ? (
-                                          <span style={{ color: "#f87171", marginLeft: "6px" }}>
-                                            ({row.criticalCount} crit)
-                                          </span>
-                                        ) : null}
-                                      </span>
-                                      <span
-                                        style={{
-                                          fontFamily:
-                                            "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                                        }}
-                                      >
-                                        ${row.riskUsd.toLocaleString()} ({row.sharePct.toFixed(0)}%)
-                                      </span>
-                                    </div>
-                                    <div
-                                      style={{
-                                        height: "5px",
-                                        borderRadius: "3px",
-                                        backgroundColor: "#0f172a",
-                                        overflow: "hidden",
-                                      }}
+                                    {(
+                                      selectedLiveActivity.avgRiskUsd / selectedCustomer.meanStake
+                                    ).toFixed(2)}
+                                    ×
+                                  </strong>
+                                </span>
+                                {selectedLiveActivity.avgToWinRatio !== null && (
+                                  <>
+                                    <span>·</span>
+                                    <span>
+                                      To-Win / Risk:{" "}
+                                      <strong>{selectedLiveActivity.avgToWinRatio.toFixed(2)}×</strong>
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            )}
+
+                          {/* Sport & Channel Exposure Breakdowns (Interactive Sport Filter) */}
+                          {selectedLiveActivity.sportBreakdown.length > 0 && (
+                            <div style={styles.detailCard}>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  marginBottom: "8px",
+                                }}
+                              >
+                                <h4 style={{ ...styles.cardHeader, margin: 0 }}>
+                                  Sport Exposure Mix (Click to Filter Tickets)
+                                </h4>
+                                {activitySportFilter !== "ALL" && (
+                                  <button
+                                    type="button"
+                                    className="sd-drilldown-inline-link"
+                                    onClick={() => setActivitySportFilter("ALL")}
+                                  >
+                                    Clear {activitySportFilter} filter
+                                  </button>
+                                )}
+                              </div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                {selectedLiveActivity.sportBreakdown.slice(0, 6).map((row) => {
+                                  const isSportActive = activitySportFilter === row.sport
+                                  return (
+                                    <button
+                                      key={row.sport}
+                                      type="button"
+                                      onClick={() =>
+                                        setActivitySportFilter(isSportActive ? "ALL" : row.sport)
+                                      }
+                                      className={`sd-activity-sport-btn${isSportActive ? " sd-activity-sport-btn--active" : ""}`}
                                     >
                                       <div
                                         style={{
-                                          width: `${Math.max(4, Math.min(100, row.sharePct))}%`,
-                                          height: "100%",
-                                          backgroundColor:
-                                            row.criticalCount > 0 ? "#ef4444" : "#38bdf8",
+                                          display: "flex",
+                                          justifyContent: "space-between",
+                                          color: "#cbd5e1",
+                                          width: "100%",
                                         }}
-                                      />
-                                    </div>
-                                  </div>
+                                      >
+                                        <span>
+                                          <b>{row.sport}</b> · {row.ticketCount} ticket
+                                          {row.ticketCount === 1 ? "" : "s"}
+                                          {row.criticalCount > 0 ? (
+                                            <span style={{ color: "#f87171", marginLeft: "6px" }}>
+                                              ({row.criticalCount} crit)
+                                            </span>
+                                          ) : null}
+                                          {row.avgClvCents !== null ? (
+                                            <span style={{ color: "#94a3b8", marginLeft: "6px" }}>
+                                              CLV {row.avgClvCents >= 0 ? "+" : ""}
+                                              {row.avgClvCents.toFixed(1)}¢
+                                            </span>
+                                          ) : null}
+                                        </span>
+                                        <span className="sd-tabular">
+                                          ${row.riskUsd.toLocaleString()} ({row.sharePct.toFixed(0)}%)
+                                        </span>
+                                      </div>
+                                      <div
+                                        style={{
+                                          height: "5px",
+                                          borderRadius: "3px",
+                                          backgroundColor: "#0f172a",
+                                          overflow: "hidden",
+                                          width: "100%",
+                                        }}
+                                      >
+                                        <div
+                                          style={{
+                                            width: `${Math.max(4, Math.min(100, row.sharePct))}%`,
+                                            height: "100%",
+                                            backgroundColor:
+                                              row.criticalCount > 0 ? "#ef4444" : "#38bdf8",
+                                          }}
+                                        />
+                                      </div>
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {selectedLiveActivity.channelBreakdown.length > 0 && (
+                            <div style={styles.detailCard}>
+                              <h4 style={styles.cardHeader}>Submission Channel Mix</h4>
+                              <div className="sd-policy-matrix-meta sd-tabular">
+                                {selectedLiveActivity.channelBreakdown.map((ch) => (
+                                  <span key={ch.channel}>
+                                    <strong>{ch.channel}</strong>: ${ch.riskUsd.toLocaleString()} (
+                                    {ch.ticketCount} · {ch.sharePct.toFixed(0)}%)
+                                  </span>
                                 ))}
                               </div>
                             </div>
@@ -2602,7 +2754,13 @@ export function CustomersTabPanel({
                               }}
                             >
                               <h4 style={{ ...styles.cardHeader, margin: 0 }}>
-                                Open Wagers ({selectedLiveActivity.ticketCount})
+                                Open Wagers (
+                                {activitySportFilter === "ALL"
+                                  ? selectedLiveActivity.ticketCount
+                                  : selectedLiveActivity.tickets.filter(
+                                      (t) => (t.sport || "OTHER").trim().toUpperCase() === activitySportFilter,
+                                    ).length}
+                                {activitySportFilter !== "ALL" ? ` · ${activitySportFilter}` : ""})
                               </h4>
                               {onViewCustomerWagers && (
                                 <button
@@ -2616,7 +2774,14 @@ export function CustomersTabPanel({
                               )}
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                              {selectedLiveActivity.tickets.slice(0, 8).map((wager) => {
+                              {selectedLiveActivity.tickets
+                                .filter(
+                                  (w) =>
+                                    activitySportFilter === "ALL" ||
+                                    (w.sport || "OTHER").trim().toUpperCase() === activitySportFilter,
+                                )
+                                .slice(0, 10)
+                                .map((wager) => {
                                 const isCrit =
                                   wager.alertTier === "CRITICAL" || wager.alertTier === "STEAM"
                                 return (
