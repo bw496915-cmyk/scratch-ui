@@ -26,6 +26,14 @@ import {
   formatInspectTable,
   renderBunMarkdownStudio,
 } from "../packages/contracts/src/bun_runtime_surface.ts"
+import {
+  isValidSemver,
+  isValidSemverRange,
+  maxSatisfying,
+  safeSatisfies,
+  safeSemverOrder,
+  sortSemver,
+} from "../packages/contracts/src/bun_semver.ts"
 import { assertSafeExecArgv } from "../src/cli/preflight_guard.ts"
 import {
   auditMarkdownDocs,
@@ -33,6 +41,7 @@ import {
   runArtifactPipeline,
   UNIFIED_CLI_COMMANDS,
 } from "./gen_artifacts.ts"
+import { auditUnifiedVersions, bumpWorkspaceVersions } from "./version_manager.ts"
 
 const ROOT_DIR = process.cwd()
 
@@ -260,17 +269,176 @@ function handleSurface(subArgs: readonly string[]): number {
   return 0
 }
 
+function handleVersion(subArgs: readonly string[]): number {
+  const action = subArgs[0] ?? "status"
+  const asJson = subArgs.includes("--json")
+
+  if (action === "status" || action === "check") {
+    const report = auditUnifiedVersions({ rootDir: ROOT_DIR })
+    if (asJson) {
+      console.log(JSON.stringify(report, null, 2))
+      return action === "check" && !report.ok ? 1 : 0
+    }
+    const rows = report.records.map((r) => ({
+      track: r.track,
+      target: r.target,
+      version: r.version,
+      expected: r.expected,
+      status: r.ok ? "OK" : "DRIFT",
+      source: r.source,
+    }))
+    console.log(
+      `Unified Versioning Matrix (engine: ${report.engine} · workspace: ${report.workspaceVersion ?? "unset"} · design: ${report.designVersion ?? "unset"} · bun: ${report.bunVersionPin ?? "unset"})`,
+    )
+    console.log(
+      formatInspectTable(rows, ["track", "target", "version", "expected", "status", "source"]),
+    )
+    if (!report.ok) {
+      console.error(`FAIL: Found ${report.violations.length} SemVer parity violation(s):`)
+      for (const v of report.violations) {
+        console.error(`  - ${v}`)
+      }
+      return 1
+    }
+    if (action === "check") {
+      console.log(
+        `PASS: All ${report.records.length} version pins verified via ${report.engine} (zero drift).`,
+      )
+    }
+    return 0
+  }
+
+  if (action === "satisfies") {
+    const version = subArgs[1]
+    const range = subArgs[2]
+    if (!version || !range) {
+      console.error("Usage: bun run cli version satisfies <version> <range>")
+      return 2
+    }
+    if (!isValidSemver(version) || !isValidSemverRange(range)) {
+      console.error(`Invalid SemVer version or range: version='${version}', range='${range}'`)
+      return 2
+    }
+    const matched = safeSatisfies(version, range)
+    console.log(
+      asJson
+        ? JSON.stringify({ version, range, satisfies: matched })
+        : `${version} ${matched ? "satisfies" : "does NOT satisfy"} ${range}`,
+    )
+    return matched ? 0 : 1
+  }
+
+  if (action === "order") {
+    const a = subArgs[1]
+    const b = subArgs[2]
+    if (!a || !b) {
+      console.error("Usage: bun run cli version order <versionA> <versionB>")
+      return 2
+    }
+    const ord = safeSemverOrder(a, b)
+    if (ord === null) {
+      console.error(`Invalid SemVer input(s): '${a}', '${b}'`)
+      return 2
+    }
+    const rel = ord === 0 ? "==" : ord === 1 ? ">" : "<"
+    console.log(
+      asJson ? JSON.stringify({ a, b, order: ord, relation: rel }) : `${ord} (${a} ${rel} ${b})`,
+    )
+    return 0
+  }
+
+  if (action === "sort") {
+    const desc = subArgs.includes("--desc")
+    const versions = subArgs.slice(1).filter((arg) => !arg.startsWith("--"))
+    if (versions.length === 0) {
+      console.error("Usage: bun run cli version sort [--desc] [--json] <v1> <v2> ...")
+      return 2
+    }
+    try {
+      const sorted = sortSemver(versions, desc ? "desc" : "asc")
+      console.log(asJson ? JSON.stringify(sorted) : sorted.join("\n"))
+      return 0
+    } catch (err) {
+      console.error(err instanceof Error ? err.message : String(err))
+      return 2
+    }
+  }
+
+  if (action === "max") {
+    const positional = subArgs.slice(1).filter((arg) => !arg.startsWith("--"))
+    const [range, ...versions] = positional
+    if (!range || versions.length === 0) {
+      console.error("Usage: bun run cli version max [--json] <range> <v1> <v2> ...")
+      return 2
+    }
+    if (!isValidSemverRange(range)) {
+      console.error(`Invalid SemVer range: '${range}'`)
+      return 2
+    }
+    const best = maxSatisfying(versions, range)
+    console.log(asJson ? JSON.stringify({ range, max: best }) : (best ?? "none"))
+    return best ? 0 : 1
+  }
+
+  if (action === "bump") {
+    const target = subArgs[1]
+    if (!target) {
+      console.error(
+        "Usage: bun run cli version bump <major|minor|patch|premajor|preminor|prepatch|prerelease|x.y.z> [--preid <tag>] [--dry-run] [--json]",
+      )
+      return 2
+    }
+    const dryRun = subArgs.includes("--dry-run")
+    const preidIdx = subArgs.indexOf("--preid")
+    const preid = preidIdx >= 0 ? subArgs[preidIdx + 1] : undefined
+    const res = bumpWorkspaceVersions({
+      rootDir: ROOT_DIR,
+      target,
+      preid,
+      dryRun,
+    })
+    if (asJson) {
+      console.log(JSON.stringify(res, null, 2))
+      return res.ok ? 0 : 1
+    }
+    if (!res.ok) {
+      console.error(`FAIL: ${res.error ?? "Version bump failed"}`)
+      return 1
+    }
+    const rows = res.changes.map((c) => ({
+      package: c.name,
+      file: c.path,
+      previous: c.previous,
+      next: c.next,
+      mode: dryRun ? "DRY-RUN" : c.written ? "UPDATED" : "UNCHANGED",
+    }))
+    console.log(
+      `${dryRun ? "DRY-RUN" : "PASS"}: Workspace version ${res.previousVersion} -> ${res.nextVersion}`,
+    )
+    console.log(formatInspectTable(rows, ["package", "file", "previous", "next", "mode"]))
+    return 0
+  }
+
+  console.error(
+    `Unknown version subcommand: ${action} (expected status|check|satisfies|order|sort|max|bump)`,
+  )
+  return 2
+}
+
 function handleCheck(subArgs: readonly string[]): number {
   const target = subArgs[0] ?? "all"
 
   if (target === "docs") {
     return handleDocs(["check"])
   }
+  if (target === "versions" || target === "version") {
+    return handleVersion(["check"])
+  }
   if (target !== "all") {
     const script = CHECK_GATE_SCRIPTS[target]
     if (!script) {
       console.error(
-        `Unknown check gate: ${target} (expected all|${Object.keys(CHECK_GATE_SCRIPTS).join("|")}|docs)`,
+        `Unknown check gate: ${target} (expected all|versions|${Object.keys(CHECK_GATE_SCRIPTS).join("|")}|docs)`,
       )
       return 2
     }
@@ -278,6 +446,7 @@ function handleCheck(subArgs: readonly string[]): number {
   }
 
   const order = [
+    "versions",
     "lockfile",
     "registry-parity",
     "snapshots",
@@ -288,7 +457,12 @@ function handleCheck(subArgs: readonly string[]): number {
   ] as const
   for (const gate of order) {
     console.log(`\n▶ [cli check] ${gate}`)
-    const code = gate === "docs" ? handleDocs(["check"]) : runBunScript(CHECK_GATE_SCRIPTS[gate]!)
+    const code =
+      gate === "docs"
+        ? handleDocs(["check"])
+        : gate === "versions"
+          ? handleVersion(["check"])
+          : runBunScript(CHECK_GATE_SCRIPTS[gate]!)
     if (code !== 0) return code
   }
   console.log("\nPASS: All unified Bun CLI gates passed.")
@@ -317,6 +491,10 @@ export function runSportsdeskCli(argv: readonly string[]): number {
     case "-h":
       printHelp()
       return 0
+    case "version":
+    case "versions":
+    case "semver":
+      return handleVersion(rest)
     case "artifacts":
       return handleArtifacts(rest)
     case "docs":

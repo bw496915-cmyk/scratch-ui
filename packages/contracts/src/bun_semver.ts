@@ -469,3 +469,185 @@ export function safeSatisfies(version: string, range: string): boolean {
     )
   })
 }
+
+export type SemverBumpType =
+  "major" | "minor" | "patch" | "premajor" | "preminor" | "prepatch" | "prerelease"
+
+/** Returns `true` when the native `Bun.semver` runtime API is active. */
+export function bunSemverAvailable(): boolean {
+  return getBunSemverEngine() !== null
+}
+
+/**
+ * Normalizes display version strings such as `v1.01.23-next` into canonical
+ * SemVer 2.0 (`1.1.23-next`) verified by `parseSemver` / `Bun.semver`.
+ */
+export function normalizeSemver(raw: string): string | null {
+  if (typeof raw !== "string") {
+    return null
+  }
+  const trimmed = raw.trim()
+  if (!trimmed || !ASCII_PRINTABLE_RE.test(trimmed)) {
+    return null
+  }
+  const match = STRICT_VERSION_RE.exec(trimmed)
+  if (!match) {
+    return null
+  }
+  const major = parseUint64Segment(match[1]!)
+  const minor = parseUint64Segment(match[2]!)
+  const patch = parseUint64Segment(match[3]!)
+  const prerelease = parsePrereleaseParts(match[4])
+  if (major === null || minor === null || patch === null || prerelease === null) {
+    return null
+  }
+  const preSuffix = prerelease.length > 0 ? `-${prerelease.map(String).join(".")}` : ""
+  const buildSuffix = match[5] ? `+${match[5]}` : ""
+  const canonical = `${major}.${minor}.${patch}${preSuffix}${buildSuffix}`
+  return parseSemver(canonical) ? canonical : null
+}
+
+/**
+ * Sorts valid SemVer strings using `Bun.semver.order` (via `safeSemverOrder`).
+ * Throws a descriptive error if any entry is not a valid SemVer 2.0 string.
+ */
+export function sortSemver(
+  versions: readonly string[],
+  direction: "asc" | "desc" = "asc",
+): string[] {
+  for (const v of versions) {
+    if (!isValidSemver(v)) {
+      throw new Error(`Invalid SemVer string in sortSemver: '${v}'`)
+    }
+  }
+  const mult = direction === "desc" ? -1 : 1
+  return [...versions].sort((a, b) => {
+    const ord = safeSemverOrder(a, b)
+    return (ord ?? 0) * mult
+  })
+}
+
+/**
+ * Returns the highest version in `versions` satisfying `range` using
+ * `Bun.semver.satisfies` and `Bun.semver.order`, or `null` if none match.
+ */
+export function maxSatisfying(versions: readonly string[], range: string): string | null {
+  const matching = versions.filter((v) => safeSatisfies(v, range))
+  if (matching.length === 0) {
+    return null
+  }
+  const sorted = sortSemver(matching, "desc")
+  return sorted[0] ?? null
+}
+
+/**
+ * Returns the lowest version in `versions` satisfying `range` using
+ * `Bun.semver.satisfies` and `Bun.semver.order`, or `null` if none match.
+ */
+export function minSatisfying(versions: readonly string[], range: string): string | null {
+  const matching = versions.filter((v) => safeSatisfies(v, range))
+  if (matching.length === 0) {
+    return null
+  }
+  const sorted = sortSemver(matching, "asc")
+  return sorted[0] ?? null
+}
+
+/**
+ * Computes the next SemVer 2.0 version for a release bump (`major`, `minor`,
+ * `patch`, `premajor`, `preminor`, `prepatch`, `prerelease`) and asserts
+ * strict monotonic progression via `Bun.semver.order(next, version) === 1`.
+ */
+export function bumpSemver(
+  version: string,
+  release: SemverBumpType,
+  prereleaseId = "next",
+): string | null {
+  const parsed = parseSemver(version)
+  if (!parsed) {
+    return null
+  }
+  const cleanId = prereleaseId.trim()
+  if (
+    (release === "premajor" ||
+      release === "preminor" ||
+      release === "prepatch" ||
+      release === "prerelease") &&
+    !/^[0-9A-Za-z-]+$/.test(cleanId)
+  ) {
+    return null
+  }
+
+  let nextMajor = parsed.major
+  let nextMinor = parsed.minor
+  let nextPatch = parsed.patch
+  let nextPre: (bigint | string)[] = []
+
+  switch (release) {
+    case "major":
+      if (parsed.minor === 0n && parsed.patch === 0n && parsed.prerelease.length > 0) {
+        nextPre = []
+      } else {
+        nextMajor += 1n
+        nextMinor = 0n
+        nextPatch = 0n
+      }
+      break
+    case "minor":
+      if (parsed.patch === 0n && parsed.prerelease.length > 0) {
+        nextPre = []
+      } else {
+        nextMinor += 1n
+        nextPatch = 0n
+      }
+      break
+    case "patch":
+      if (parsed.prerelease.length > 0) {
+        nextPre = []
+      } else {
+        nextPatch += 1n
+      }
+      break
+    case "premajor":
+      nextMajor += 1n
+      nextMinor = 0n
+      nextPatch = 0n
+      nextPre = [cleanId, 0n]
+      break
+    case "preminor":
+      nextMinor += 1n
+      nextPatch = 0n
+      nextPre = [cleanId, 0n]
+      break
+    case "prepatch":
+      nextPatch += 1n
+      nextPre = [cleanId, 0n]
+      break
+    case "prerelease": {
+      if (parsed.prerelease.length === 0) {
+        nextPatch += 1n
+        nextPre = [cleanId, 0n]
+      } else {
+        const copy = [...parsed.prerelease]
+        const last = copy[copy.length - 1]
+        if (typeof last === "bigint") {
+          copy[copy.length - 1] = last + 1n
+        } else {
+          copy.push(0n)
+        }
+        nextPre = copy
+      }
+      break
+    }
+  }
+
+  const candidate =
+    nextPre.length > 0
+      ? `${nextMajor}.${nextMinor}.${nextPatch}-${nextPre.map(String).join(".")}`
+      : `${nextMajor}.${nextMinor}.${nextPatch}`
+
+  if (safeSemverOrder(candidate, parsed.raw) !== 1) {
+    return null
+  }
+  return candidate
+}

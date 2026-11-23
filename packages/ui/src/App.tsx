@@ -10,17 +10,7 @@ import {
 import { copyText } from "./clipboard.ts"
 import { stripAnsi } from "./terminal_transcript.ts"
 import "./desk.css"
-import {
-  Activity,
-  AlertTriangle,
-  Menu,
-  RefreshCw,
-  ScrollText,
-  ShieldAlert,
-  ShieldCheck,
-  SlidersHorizontal,
-  X,
-} from "lucide-react"
+import { Activity, Menu, ScrollText, ShieldAlert, SlidersHorizontal, X } from "lucide-react"
 
 import type { ReverseDnsClassification } from "../../../lib/bun_dns.ts"
 import {
@@ -87,6 +77,7 @@ import {
   type DashboardTheme,
   GlobalHeaderSearch,
   HeaderThemeToggle,
+  LiveTickerOverlay,
   LiveWagersTabPanel,
   OperatorProfileMenu,
   PanelErrorBoundary,
@@ -109,6 +100,7 @@ import {
   SurveillanceTabPanel,
   SystemLogsPanel,
   TerminalTabPanel,
+  UnifiedStatusBar,
   type WebLogSeverityCounts,
   type WebLogSeverityFilter,
   writeStoredR2AutoRefreshSeconds,
@@ -131,7 +123,7 @@ import {
   saveCustomProfileTagsMap,
 } from "./profile_taxonomy.ts"
 import { feedFreshnessTitle, quickJumpFeedState } from "./quick_jump_feed.ts"
-import { buildRolling60MinRiskSeries, formatRiskCompactUsd } from "./risk_exposure_series.ts"
+import { buildRolling60MinRiskSeries } from "./risk_exposure_series.ts"
 import {
   evaluateRiskExposureThreshold,
   readStoredRiskExposureThresholds,
@@ -356,6 +348,7 @@ export function App(): React.ReactElement {
   const [wagerChannelFilter, setWagerChannelFilter] = useState<string>(() => initialUrl.wChannel)
   const [copiedTicketId, setCopiedTicketId] = useState<string | null>(null)
   const [selectedWager, setSelectedWager] = useState<LiveWager | null>(null)
+  const [tickerOverlayOpen, setTickerOverlayOpen] = useState<boolean>(false)
   // Default sort comes from packages/ui/src/config/wagers.toml ([table] table).
   const [wagerSortField, setWagerSortField] = useState<WagerSortField>(() => initialUrl.wSort)
   const [wagerSortDir, setWagerSortDir] = useState<"asc" | "desc">(() => initialUrl.wDir)
@@ -3326,10 +3319,7 @@ export function App(): React.ReactElement {
           }}
         >
           🚨{" "}
-          {
-            liveWagers.filter((w) => w.alertTier === "CRITICAL" || w.alertTier === "STEAM")
-              .length
-          }
+          {liveWagers.filter((w) => w.alertTier === "CRITICAL" || w.alertTier === "STEAM").length}
         </span>
         <kbd className="sd-kbd-shortcut" style={styles.keyShortcutBadge}>
           Ctrl+5
@@ -3515,7 +3505,11 @@ export function App(): React.ReactElement {
                 display: "block",
               }}
             />
-            <h1 className="sd-app-title" style={styles.title} data-brand-version={BRAND_ASSETS.version}>
+            <h1
+              className="sd-app-title"
+              style={styles.title}
+              data-brand-version={BRAND_ASSETS.version}
+            >
               {BRAND_ASSETS.shortName}
             </h1>
           </a>
@@ -3531,7 +3525,9 @@ export function App(): React.ReactElement {
               data-mobile-nav-trigger="true"
               aria-expanded={mobileNavOpen}
               aria-controls="sd-mobile-nav-drawer"
-              aria-label={mobileNavOpen ? "Close workspace navigation menu" : "Open workspace navigation menu"}
+              aria-label={
+                mobileNavOpen ? "Close workspace navigation menu" : "Open workspace navigation menu"
+              }
               onClick={() => setMobileNavOpen((prev) => !prev)}
             >
               {mobileNavOpen ? (
@@ -3551,158 +3547,12 @@ export function App(): React.ReactElement {
           role="region"
           aria-label="Live telemetry status strip"
         >
-          <span className="sd-telemetry-item" style={{ color: "#38bdf8", fontWeight: 600 }}>
+          <span
+            className="sd-telemetry-item sd-tabular"
+            style={{ color: "#38bdf8", fontWeight: 600 }}
+          >
             ● Local :4022 SPA
           </span>
-          <span className="sd-telemetry-sep" aria-hidden="true">
-            ·
-          </span>
-          <span className="sd-status-tip-wrap sd-telemetry-item">
-            <span
-              tabIndex={0}
-              style={{
-                color: daemonPill.color,
-                fontWeight: 600,
-                cursor: "help",
-              }}
-              title={daemonPill.title}
-            >
-              {daemonPill.label}
-            </span>
-            <span role="tooltip" className="sd-status-tip-popover">
-              <span className="sd-status-tip-title">
-                <span>Daemon :4020</span>
-                <span style={{ color: daemonPill.color }}>{daemonPill.statusText}</span>
-              </span>
-              <span className="sd-status-tip-row">
-                <span className="sd-status-tip-label">Last success</span>
-                <span className="sd-status-tip-value">{daemonUpdateInfo.clock}</span>
-              </span>
-              <span className="sd-status-tip-meta">
-                {daemon4020LastUpdatedAt
-                  ? `Updated ${daemonUpdateInfo.relative}${daemonState === "online" || daemonState === "degraded" ? ` · Latency ${daemonLatency}ms` : ""}`
-                  : daemon4020LastProbedAt
-                    ? `No successful response yet · Last probe ${daemonProbeInfo.clock} (${daemonProbeInfo.relative})`
-                    : "Awaiting first :4020 probe"}
-              </span>
-              {daemonState === "offline" && daemon4020?.reason && (
-                <span
-                  className="sd-status-tip-meta"
-                  style={{ display: "block", color: "#fbbf24" }}
-                >
-                  {daemon4020.reason}
-                </span>
-              )}
-            </span>
-          </span>
-          <span className="sd-telemetry-sep" aria-hidden="true">
-            ·
-          </span>
-          <span className="sd-status-tip-wrap sd-telemetry-item">
-            <button
-              type="button"
-              onClick={() => setActiveTab("r2")}
-              style={{
-                background: "none",
-                border: "none",
-                padding: 0,
-                cursor: "pointer",
-                fontSize: "11px",
-                fontWeight: 600,
-                whiteSpace: "nowrap",
-                color:
-                  r2PipelineData?.overallStatus === "fresh"
-                    ? "#4ade80"
-                    : r2PipelineData?.overallStatus === "stale"
-                      ? "#fbbf24"
-                      : r2PipelineData
-                        ? "#f87171"
-                        : "#94a3b8",
-              }}
-              title={`Open R2 Pipeline Monitor · Last successful update: ${r2UpdateInfo.summary}`}
-            >
-              {r2PipelineData
-                ? `☁️ R2 ${r2PipelineData.freshCount}/${r2PipelineData.totalCount} Fresh`
-                : "☁️ R2 Probing..."}
-            </button>
-            <span role="tooltip" className="sd-status-tip-popover">
-              <span className="sd-status-tip-title">
-                <span>R2 Pipeline</span>
-                <span
-                  style={{
-                    color:
-                      r2PipelineData?.overallStatus === "fresh"
-                        ? "#4ade80"
-                        : r2PipelineData?.overallStatus === "stale"
-                          ? "#fbbf24"
-                          : "#f87171",
-                  }}
-                >
-                  {(r2PipelineData?.overallStatus ?? "probing").toUpperCase()}
-                </span>
-              </span>
-              <span className="sd-status-tip-row">
-                <span className="sd-status-tip-label">Last success</span>
-                <span className="sd-status-tip-value">{r2UpdateInfo.clock}</span>
-              </span>
-              <span className="sd-status-tip-meta">
-                {r2PipelineData
-                  ? `Updated ${r2UpdateInfo.relative} · ${r2PipelineData.freshCount}/${r2PipelineData.totalCount} sinks fresh · Click to inspect`
-                  : "Awaiting first R2 pipeline snapshot"}
-              </span>
-            </span>
-          </span>
-          <button
-            type="button"
-            className="sd-refresh-telemetry-btn sd-telemetry-item"
-            onClick={() => {
-              void handleRefreshTelemetry()
-            }}
-            disabled={telemetryRefreshing}
-            aria-label="Refresh Telemetry"
-            title={
-              telemetryRefreshSnapshot.lastProbedAt
-                ? `Force immediate probe of :4020 daemon status, R2 pipeline freshness, health & profiles · Last probe: ${new Date(telemetryRefreshSnapshot.lastProbedAt).toLocaleTimeString()}${telemetryRefreshSnapshot.lastProbeMs ? ` (${telemetryRefreshSnapshot.lastProbeMs}ms)` : ""}`
-                : "Force immediate probe of :4020 daemon status, R2 pipeline freshness, health & profiles"
-            }
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "5px",
-              padding: "2px 8px",
-              borderRadius: "5px",
-              fontSize: "10.5px",
-              fontWeight: 600,
-              letterSpacing: "0.01em",
-              backgroundColor: telemetryRefreshing
-                ? "rgba(56, 189, 248, 0.16)"
-                : "rgba(15, 23, 42, 0.86)",
-              borderWidth: "1px",
-              borderStyle: "solid",
-              borderColor: telemetryRefreshing
-                ? "rgba(56, 189, 248, 0.55)"
-                : "rgba(56, 189, 248, 0.28)",
-              color: telemetryRefreshing ? "#e0f2fe" : "#7dd3fc",
-              cursor: telemetryRefreshing ? "wait" : "pointer",
-              whiteSpace: "nowrap",
-              flexShrink: 0,
-            }}
-          >
-            <RefreshCw size={11} className={telemetryRefreshing ? "sd-spin" : undefined} />
-            <span>{telemetryRefreshing ? "Probing..." : "Refresh Telemetry"}</span>
-            {telemetryRefreshSnapshot.lastProbeMs !== null && !telemetryRefreshing && (
-              <span
-                style={{
-                  fontSize: "9.5px",
-                  color: "#64748b",
-                  fontFamily:
-                    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                }}
-              >
-                {telemetryRefreshSnapshot.lastProbeMs}ms
-              </span>
-            )}
-          </button>
           <span className="sd-telemetry-item">
             <WsSyncStatusIndicator
               wsConnected={connected}
@@ -3710,256 +3560,51 @@ export function App(): React.ReactElement {
               latencyMs={wsLatencyMs}
             />
           </span>
-          <span className="sd-status-tip-wrap sd-telemetry-item">
-            <span
-              tabIndex={0}
-              data-ws-status-pill="true"
-              style={{
-                ...styles.badge(connected),
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                whiteSpace: "nowrap",
-                cursor: "help",
-              }}
-              title={
-                connected
-                  ? wsLatencyMs !== null
-                    ? `WebSocket stream connected · RTT ${wsLatencyMs}ms · Jitter ±${wsJitterMs ?? 0}ms`
-                    : "WebSocket stream connected · Measuring latency…"
-                  : "WebSocket stream disconnected"
-              }
-            >
-              <span>{connected ? "● Live Hot-Reload Connected" : "○ Disconnected"}</span>
-              {connected ? (
-                <span
-                  data-ws-latency-indicator="true"
-                  style={{
-                    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                    fontVariantNumeric: "tabular-nums",
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    color:
-                      wsLatencyMs === null
-                        ? "#94a3b8"
-                        : wsLatencyMs > 200 || (wsJitterMs ?? 0) > 60
-                          ? "#f87171"
-                          : wsLatencyMs > 80 || (wsJitterMs ?? 0) > 25
-                            ? "#fbbf24"
-                            : "#86efac",
-                    borderLeftWidth: "1px",
-                    borderLeftStyle: "solid",
-                    borderLeftColor: "rgba(74, 222, 128, 0.28)",
-                    paddingLeft: "6px",
-                  }}
-                >
-                  {wsLatencyMs !== null ? `${wsLatencyMs}ms · ±${wsJitterMs ?? 0}ms` : "probing…"}
-                </span>
-              ) : null}
-            </span>
-            <span role="tooltip" className="sd-status-tip-popover">
-              <span className="sd-status-tip-title">
-                <span>WebSocket Stream</span>
-                <span
-                  style={{
-                    color: !connected
-                      ? "#f87171"
-                      : wsLatencyMs !== null && (wsLatencyMs > 200 || (wsJitterMs ?? 0) > 60)
-                        ? "#f87171"
-                        : wsLatencyMs !== null && (wsLatencyMs > 80 || (wsJitterMs ?? 0) > 25)
-                          ? "#fbbf24"
-                          : "#4ade80",
-                  }}
-                >
-                  {!connected
-                    ? "OFFLINE"
-                    : wsLatencyMs === null
-                      ? "PROBING"
-                      : wsLatencyMs > 200 || (wsJitterMs ?? 0) > 60
-                        ? "DEGRADED"
-                        : wsLatencyMs > 80 || (wsJitterMs ?? 0) > 25
-                          ? "ELEVATED"
-                          : "OPTIMAL"}
-                </span>
-              </span>
-              <span className="sd-status-tip-row">
-                <span className="sd-status-tip-label">RTT Latency</span>
-                <span className="sd-status-tip-value">
-                  {connected && wsLatencyMs !== null ? `${wsLatencyMs} ms` : "—"}
-                </span>
-              </span>
-              <span className="sd-status-tip-row">
-                <span className="sd-status-tip-label">Stream Jitter</span>
-                <span className="sd-status-tip-value">
-                  {connected && wsJitterMs !== null ? `±${wsJitterMs} ms` : "—"}
-                </span>
-              </span>
-              <span className="sd-status-tip-meta">
-                {connected && wsLastPongAt
-                  ? `Last pong ${new Date(wsLastPongAt).toLocaleTimeString([], { hour12: false })} · 5s heartbeat`
-                  : connected
-                    ? "Awaiting initial WebSocket pong heartbeat"
-                    : "Reconnecting to /ws stream"}
-              </span>
-            </span>
-          </span>
-          {/* Live Alert Health Pill */}
-          <span className="sd-status-tip-wrap sd-telemetry-item">
-            <button
-              type="button"
-              onClick={() => {
-                openShiftHandoffModal()
-              }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "4px 10px",
-                borderRadius: "6px",
-                fontSize: "11px",
-                fontWeight: 600,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                border: `1px solid ${systemHealthUi.border}`,
-                background: systemHealthUi.bg,
-                color: systemHealthUi.color,
-              }}
-              title={
-                degradedReasonSummary
-                  ? `Health probe: ${degradedReasonSummary} · Last successful update: ${healthUpdateInfo.summary} · Click to view Shift Handoff Summary`
-                  : `Surveillance Alert Health (O(1) in-memory probe) · Last successful update: ${healthUpdateInfo.summary} · Click to view Shift Handoff Summary`
-              }
-            >
-              <span>{systemHealthUi.label}</span>
-              {healthData?.alerts && (
-                <span style={{ color: "#94a3b8", fontSize: "10px" }}>
-                  (DLQ: {healthData.alerts.dead} · Backlog: {healthData.alerts.backlog})
-                </span>
-              )}
-            </button>
-            <span role="tooltip" className="sd-status-tip-popover sd-status-tip-popover--right">
-              <span className="sd-status-tip-title">
-                <span>Health Probe</span>
-                <span style={{ color: systemHealthUi.color }}>{systemHealthUi.statusText}</span>
-              </span>
-              <span className="sd-status-tip-row">
-                <span className="sd-status-tip-label">Last success</span>
-                <span className="sd-status-tip-value">{healthUpdateInfo.clock}</span>
-              </span>
-              <span className="sd-status-tip-meta">
-                {healthLastUpdatedAt
-                  ? `Updated ${healthUpdateInfo.relative}${typeof healthData?.uptimeSeconds === "number" ? ` · Uptime ${Math.floor(healthData.uptimeSeconds)}s` : ""}`
-                  : "Awaiting first /health response"}
-              </span>
-              {degradedReasonSummary && (
-                <span className="sd-status-tip-meta" style={{ display: "block", color: "#fbbf24" }}>
-                  {degradedReasonSummary}
-                </span>
-              )}
-            </span>
-          </span>
-          {/* Persistent 60-Minute Aggregate Risk Exposure Threshold Indicator */}
-          <span className="sd-status-tip-wrap sd-telemetry-item">
-            <button
-              type="button"
-              data-risk-threshold-indicator="true"
-              data-risk-threshold-status={riskThresholdEvaluation.status}
-              aria-live="polite"
-              onClick={() => {
-                navigatePrimaryRoute("risk-overview")
-              }}
-              className={`sd-risk-threshold-pill sd-risk-threshold-pill--${riskThresholdEvaluation.status}`}
-              title={
-                riskThresholdEvaluation.isBreached
-                  ? `60m aggregate risk (${formatRiskCompactUsd(riskThresholdEvaluation.totalRiskUsd)}) exceeds ${formatRiskCompactUsd(riskThresholdEvaluation.limitUsd)} limit by +${formatRiskCompactUsd(riskThresholdEvaluation.excessUsd)} — click to open Risk Overview`
-                  : `60m aggregate risk: ${formatRiskCompactUsd(riskThresholdEvaluation.totalRiskUsd)} / ${formatRiskCompactUsd(riskThresholdEvaluation.limitUsd)} limit — click to configure in Risk Overview`
-              }
-            >
-              {riskThresholdEvaluation.isBreached || riskThresholdEvaluation.isWarning ? (
-                <AlertTriangle size={13} aria-hidden="true" />
-              ) : (
-                <ShieldCheck size={13} aria-hidden="true" />
-              )}
-              <span>
-                {riskThresholdEvaluation.status === "breach"
-                  ? "60m Risk Breach"
-                  : riskThresholdEvaluation.status === "warn"
-                    ? "60m Risk High"
-                    : "60m Risk"}
-              </span>
-              <span className="sd-risk-threshold-pill-val">
-                {riskThresholdEvaluation.status === "idle"
-                  ? `Limit ${formatRiskCompactUsd(riskThresholdEvaluation.limitUsd)}`
-                  : `${formatRiskCompactUsd(riskThresholdEvaluation.totalRiskUsd)} / ${formatRiskCompactUsd(riskThresholdEvaluation.limitUsd)}`}
-                {riskThresholdEvaluation.isBreached
-                  ? ` (+${Math.round(riskThresholdEvaluation.utilizationPct - 100)}%)`
-                  : riskThresholdEvaluation.isWarning
-                    ? ` (${Math.round(riskThresholdEvaluation.utilizationPct)}%)`
-                    : ""}
-              </span>
-            </button>
-            <span role="tooltip" className="sd-status-tip-popover sd-status-tip-popover--right">
-              <span className="sd-status-tip-title">
-                <span>60m Risk Threshold</span>
-                <span
-                  style={{
-                    color:
-                      riskThresholdEvaluation.status === "breach"
-                        ? "#f87171"
-                        : riskThresholdEvaluation.status === "warn"
-                          ? "#fbbf24"
-                          : riskThresholdEvaluation.status === "ok"
-                            ? "#4ade80"
-                            : "#38bdf8",
-                  }}
-                >
-                  {riskThresholdEvaluation.status === "breach"
-                    ? "BREACHED"
-                    : riskThresholdEvaluation.status === "warn"
-                      ? "APPROACHING"
-                      : riskThresholdEvaluation.status === "ok"
-                        ? "WITHIN LIMIT"
-                        : "ARMED"}
-                </span>
-              </span>
-              <span className="sd-status-tip-row">
-                <span className="sd-status-tip-label">60m Exposure</span>
-                <span className="sd-status-tip-value">
-                  ${Math.round(riskThresholdEvaluation.totalRiskUsd).toLocaleString()}
-                </span>
-              </span>
-              <span className="sd-status-tip-row">
-                <span className="sd-status-tip-label">Warning Limit</span>
-                <span className="sd-status-tip-value">
-                  ${riskThresholdEvaluation.warningLimitUsd.toLocaleString()}
-                </span>
-              </span>
-              <span className="sd-status-tip-row">
-                <span className="sd-status-tip-label">Breach Limit</span>
-                <span className="sd-status-tip-value">
-                  ${riskThresholdEvaluation.limitUsd.toLocaleString()}
-                </span>
-              </span>
-              <span className="sd-status-tip-row">
-                <span className="sd-status-tip-label">
-                  {riskThresholdEvaluation.isBreached ? "Over Limit By" : "Headroom Left"}
-                </span>
-                <span
-                  className="sd-status-tip-value"
-                  style={{
-                    color: riskThresholdEvaluation.isBreached ? "#f87171" : undefined,
-                  }}
-                >
-                  {riskThresholdEvaluation.isBreached
-                    ? `+$${Math.round(riskThresholdEvaluation.excessUsd).toLocaleString()}`
-                    : `$${Math.round(riskThresholdEvaluation.remainingUsd).toLocaleString()}`}
-                </span>
-              </span>
-              <span className="sd-status-tip-meta">
-                Click to inspect 60m chart &amp; adjust threshold in Risk Overview
-              </span>
-            </span>
-          </span>
+          <UnifiedStatusBar
+            daemonState={daemonState}
+            daemonLatencyMs={daemon4020?.latencyMs ?? null}
+            daemonReason={daemon4020?.reason ?? null}
+            daemonUpdateInfo={daemonUpdateInfo}
+            daemonProbeInfo={daemonProbeInfo}
+            daemonHasSuccess={Boolean(daemon4020LastUpdatedAt)}
+            daemonHasProbe={Boolean(daemon4020LastProbedAt)}
+            r2PipelineData={r2PipelineData}
+            r2UpdateInfo={r2UpdateInfo}
+            wsConnected={connected}
+            wsLatencyMs={wsLatencyMs}
+            wsJitterMs={wsJitterMs}
+            wsLastPongAt={wsLastPongAt}
+            healthData={healthData}
+            healthLastUpdatedAt={healthLastUpdatedAt}
+            healthUpdateInfo={healthUpdateInfo}
+            systemHealthStatusText={systemHealthUi.statusText}
+            systemHealthLabel={systemHealthUi.label}
+            degradedReasonSummary={degradedReasonSummary}
+            riskThresholdEvaluation={riskThresholdEvaluation}
+            portalBannerActive={!bannerDismissed}
+            telemetryRefreshing={telemetryRefreshing}
+            telemetryRefreshSnapshot={telemetryRefreshSnapshot}
+            refreshLabel="Refresh Telemetry"
+            liveWagerCount={liveWagers.length}
+            sharpWagerCount={
+              liveWagers.filter(
+                (w) =>
+                  w.alertTier === "CRITICAL" ||
+                  w.alertTier === "STEAM" ||
+                  w.riskUsd >= 2500 ||
+                  (typeof w.clvCents === "number" && w.clvCents > 0),
+              ).length
+            }
+            tickerOverlayOpen={tickerOverlayOpen}
+            onToggleTickerOverlay={() => setTickerOverlayOpen((prev) => !prev)}
+            onOpenR2={() => setActiveTab("r2")}
+            onOpenStatus={() => navigatePrimaryRoute("status-dashboard")}
+            onOpenRiskOverview={() => navigatePrimaryRoute("risk-overview")}
+            onOpenShiftHandoff={() => openShiftHandoffModal()}
+            onRefreshAll={() => {
+              void handleRefreshTelemetry()
+            }}
+          />
           <button
             type="button"
             className="sd-telemetry-item"
@@ -4118,8 +3763,7 @@ export function App(): React.ReactElement {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: "6px",
-                  fontFamily:
-                    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
                   fontVariantNumeric: "tabular-nums",
                   color: "#f1f5f9",
                 }}
@@ -4362,11 +4006,7 @@ export function App(): React.ReactElement {
         </div>
 
         {/* Row 4: Desktop (>= 1024px) 10-Item Workspace Navigation + Operator Session Pill */}
-        <div
-          className="sd-desktop-tab-bar"
-          data-desktop-workspace-nav="true"
-          style={styles.tabNav}
-        >
+        <div className="sd-desktop-tab-bar" data-desktop-workspace-nav="true" style={styles.tabNav}>
           {renderWorkspaceNavItems(false)}
           {renderOperatorMenu()}
         </div>
@@ -5100,6 +4740,8 @@ export function App(): React.ReactElement {
                 setActiveTab("wagers")
               }}
               liveWagers={liveWagers}
+              tickerOverlayOpen={tickerOverlayOpen}
+              onToggleTickerOverlay={() => setTickerOverlayOpen((prev) => !prev)}
               onSelectWager={(wager) => {
                 setWagerSportFilter("ALL")
                 setWagerAlertFilter("ALL")
@@ -5961,6 +5603,29 @@ export function App(): React.ReactElement {
             </form>
           </div>
         )}
+      <LiveTickerOverlay
+        open={tickerOverlayOpen}
+        wagers={liveWagers}
+        onClose={() => setTickerOverlayOpen(false)}
+        onSelectWager={(wager) => {
+          setWagerSportFilter("ALL")
+          setWagerAlertFilter("ALL")
+          setWagerTypeFilter("ALL")
+          setWagerChannelFilter("ALL")
+          setWagerSearch(wager.ticketId)
+          setSelectedWager(wager)
+          syncTicketInspectorToLocation(wager.ticketId)
+          setActiveTab("wagers")
+        }}
+        onSelectCustomerById={(customerId) => {
+          handleSelectCustomerById(customerId)
+          setActiveTab("customers")
+        }}
+        onOpenFullTicker={() => {
+          setTickerOverlayOpen(false)
+          setActiveTab("bet-ticker")
+        }}
+      />
     </div>
   )
 }

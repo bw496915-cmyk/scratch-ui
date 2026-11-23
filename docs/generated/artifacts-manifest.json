@@ -273,8 +273,36 @@
       "description": "Run read-only live Bun Runtime Surface audit (Bun.* kinds, bun:* modules, namespaces, classes)"
     },
     {
+      "command": "bun run cli version status [--json]",
+      "description": "Inspect unified SemVer matrix across workspace packages, design tokens/branding, and Bun runtime pin"
+    },
+    {
+      "command": "bun run cli version check [--json]",
+      "description": "Fail-closed Bun.semver parity gate verifying workspace, design system, and Bun version alignment"
+    },
+    {
+      "command": "bun run cli version satisfies <version> <range>",
+      "description": "Evaluate Bun.semver.satisfies(version, range) with strict ASCII/uint64 guards"
+    },
+    {
+      "command": "bun run cli version order <versionA> <versionB>",
+      "description": "Compare two SemVer strings with Bun.semver.order (-1 | 0 | 1)"
+    },
+    {
+      "command": "bun run cli version sort [--desc] <v1> <v2> ...",
+      "description": "Sort semantic versions using Bun.semver.order"
+    },
+    {
+      "command": "bun run cli version max <range> <v1> <v2> ...",
+      "description": "Select the highest version satisfying a SemVer range via Bun.semver"
+    },
+    {
+      "command": "bun run cli version bump <release|x.y.z> [--preid <tag>] [--dry-run]",
+      "description": "Bump all workspace package manifests in lockstep with Bun.semver monotonic validation"
+    },
+    {
       "command": "bun run cli check [gate|all]",
-      "description": "Execute repository integrity gates under Bun (lockfile, route-surface, bundle-hygiene, shell-boundary, snapshots, artifacts, docs)"
+      "description": "Execute repository integrity gates under Bun (versions, lockfile, registry-parity, route-surface, bundle-hygiene, shell-boundary, snapshots, artifacts, docs)"
     },
     {
       "command": "bun run cli scripts [filter]",
@@ -290,6 +318,9 @@
     "registry:start": "bun run --cwd tools/registry start",
     "registry:check": "bun scripts/check_local_registry.ts",
     "cli": "bun scripts/sportsdesk_cli.ts",
+    "version:status": "bun scripts/sportsdesk_cli.ts version status",
+    "version:check": "bun scripts/sportsdesk_cli.ts version check",
+    "version:bump": "bun scripts/sportsdesk_cli.ts version bump",
     "gen:tokens": "bun scripts/gen_artifacts.ts --tokens-only",
     "gen:tokens:gate": "bun scripts/gen_artifacts.ts --tokens-only --check",
     "artifacts:generate": "bun scripts/gen_artifacts.ts",
@@ -314,6 +345,6 @@
     "check:runtime": "bun scripts/verify_runtime_connections.ts",
     "check:shell-boundary": "bun scripts/check_shell_boundary.ts",
     "check:snapshots": "bun scripts/check_snapshot_hygiene.ts",
-    "check:ci": "bun run format:check && bun run format:debug && bun run check:lockfile && bun run check:registry-parity && bun run artifacts:check && bun run docs:check && bun test && bun run check:snapshots && bun run check:route-surface && bun run check:bundle-hygiene && bun run check:shell-boundary"
+    "check:ci": "bun run format:check && bun run format:debug && bun run version:check && bun run check:lockfile && bun run check:registry-parity && bun run artifacts:check && bun run docs:check && bun test && bun run check:snapshots && bun run check:route-surface && bun run check:bundle-hygiene && bun run check:shell-boundary"
   }
 }

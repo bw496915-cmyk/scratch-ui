@@ -105,29 +105,31 @@ export interface ArtifactsManifest {
       readonly webpSha256: string
     }[]
   }
-  readonly brandingAssets?: {
-    readonly specPath: string
-    readonly catalogPath: string
-    readonly manifestPath: string
-    readonly brandVersion: string
-    readonly totalAssets: number
-    readonly verifiedFiles: number
-    readonly xmpVerifiedFiles: number
-    readonly entries: readonly {
-      readonly id: string
-      readonly slug: string
-      readonly repoPath: string
-      readonly format: string
-      readonly width: number
-      readonly height: number
-      readonly bytes: number
-      readonly sha256: string
-      readonly metadataBearing: boolean
-      readonly assetRole: string
-      readonly surfaceContext: string
-      readonly streamId: string
-    }[]
-  } | undefined
+  readonly brandingAssets?:
+    | {
+        readonly specPath: string
+        readonly catalogPath: string
+        readonly manifestPath: string
+        readonly brandVersion: string
+        readonly totalAssets: number
+        readonly verifiedFiles: number
+        readonly xmpVerifiedFiles: number
+        readonly entries: readonly {
+          readonly id: string
+          readonly slug: string
+          readonly repoPath: string
+          readonly format: string
+          readonly width: number
+          readonly height: number
+          readonly bytes: number
+          readonly sha256: string
+          readonly metadataBearing: boolean
+          readonly assetRole: string
+          readonly surfaceContext: string
+          readonly streamId: string
+        }[]
+      }
+    | undefined
   readonly markdownDocs: readonly {
     readonly path: string
     readonly title: string
@@ -193,9 +195,40 @@ export const UNIFIED_CLI_COMMANDS: readonly {
       "Run read-only live Bun Runtime Surface audit (Bun.* kinds, bun:* modules, namespaces, classes)",
   },
   {
+    command: "bun run cli version status [--json]",
+    description:
+      "Inspect unified SemVer matrix across workspace packages, design tokens/branding, and Bun runtime pin",
+  },
+  {
+    command: "bun run cli version check [--json]",
+    description:
+      "Fail-closed Bun.semver parity gate verifying workspace, design system, and Bun version alignment",
+  },
+  {
+    command: "bun run cli version satisfies <version> <range>",
+    description: "Evaluate Bun.semver.satisfies(version, range) with strict ASCII/uint64 guards",
+  },
+  {
+    command: "bun run cli version order <versionA> <versionB>",
+    description: "Compare two SemVer strings with Bun.semver.order (-1 | 0 | 1)",
+  },
+  {
+    command: "bun run cli version sort [--desc] <v1> <v2> ...",
+    description: "Sort semantic versions using Bun.semver.order",
+  },
+  {
+    command: "bun run cli version max <range> <v1> <v2> ...",
+    description: "Select the highest version satisfying a SemVer range via Bun.semver",
+  },
+  {
+    command: "bun run cli version bump <release|x.y.z> [--preid <tag>] [--dry-run]",
+    description:
+      "Bump all workspace package manifests in lockstep with Bun.semver monotonic validation",
+  },
+  {
     command: "bun run cli check [gate|all]",
     description:
-      "Execute repository integrity gates under Bun (lockfile, route-surface, bundle-hygiene, shell-boundary, snapshots, artifacts, docs)",
+      "Execute repository integrity gates under Bun (versions, lockfile, registry-parity, route-surface, bundle-hygiene, shell-boundary, snapshots, artifacts, docs)",
   },
   {
     command: "bun run cli scripts [filter]",

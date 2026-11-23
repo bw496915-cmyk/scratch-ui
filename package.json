@@ -1,7 +1,7 @@
 {
   "name": "sportsdesk-ops",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "packageManager": "bun@1.4.4",
   "engines": {
@@ -23,6 +23,9 @@
     "registry:start": "bun run --cwd tools/registry start",
     "registry:check": "bun scripts/check_local_registry.ts",
     "cli": "bun scripts/sportsdesk_cli.ts",
+    "version:status": "bun scripts/sportsdesk_cli.ts version status",
+    "version:check": "bun scripts/sportsdesk_cli.ts version check",
+    "version:bump": "bun scripts/sportsdesk_cli.ts version bump",
     "gen:tokens": "bun scripts/gen_artifacts.ts --tokens-only",
     "gen:tokens:gate": "bun scripts/gen_artifacts.ts --tokens-only --check",
     "artifacts:generate": "bun scripts/gen_artifacts.ts",
@@ -47,7 +50,7 @@
     "check:runtime": "bun scripts/verify_runtime_connections.ts",
     "check:shell-boundary": "bun scripts/check_shell_boundary.ts",
     "check:snapshots": "bun scripts/check_snapshot_hygiene.ts",
-    "check:ci": "bun run format:check && bun run format:debug && bun run check:lockfile && bun run check:registry-parity && bun run artifacts:check && bun run docs:check && bun test && bun run check:snapshots && bun run check:route-surface && bun run check:bundle-hygiene && bun run check:shell-boundary"
+    "check:ci": "bun run format:check && bun run format:debug && bun run version:check && bun run check:lockfile && bun run check:registry-parity && bun run artifacts:check && bun run docs:check && bun test && bun run check:snapshots && bun run check:route-surface && bun run check:bundle-hygiene && bun run check:shell-boundary"
   },
   "dependencies": {
     "@cloudflare/workers-types": "^5.20261119.1",

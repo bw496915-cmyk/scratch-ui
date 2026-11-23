@@ -1,12 +1,17 @@
 import {
   Activity,
+  AlertTriangle,
   ArrowUpRight,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Globe,
   Plus,
+  Radio,
   RefreshCw,
   ShieldAlert,
+  SlidersHorizontal,
   Tag,
   X,
 } from "lucide-react"
@@ -132,6 +137,10 @@ export interface CustomersTabPanelProps {
   readonly onSelectWager?: ((wager: LiveWager) => void) | undefined
   /** Sharpest profiles cross-referenced against live on-chain wager tracking and bridge leads. */
   readonly sharpestOnChainXref?: SharpestOnChainXrefReport | null | undefined
+  /** Whether the dockable Live Ticker Overlay is open. */
+  readonly tickerOverlayOpen?: boolean | undefined
+  /** Toggle the dockable Live Ticker Overlay without leaving Profiles context. */
+  readonly onToggleTickerOverlay?: (() => void) | undefined
 }
 
 type ProfileDrilldownTab = "overview" | "activity" | "reconciliation" | "tags"
@@ -220,6 +229,77 @@ const KPI_TONE_ACCENT: Record<CustomerCohortKpiTone, string> = {
   violet: "#a78bfa",
 }
 
+function resolveBadgeModifier(raw: string): string {
+  const key = raw.toLowerCase()
+  if (key.includes("originator")) return "originator"
+  if (key.includes("syndicate") || key.includes("bridge") || key.includes("beard")) {
+    return "syndicate-link"
+  }
+  if (key.includes("clv")) return "clv-leader"
+  if (key.includes("parlay") || key.includes("sgp") || key.includes("corr")) {
+    return "parlay-critical"
+  }
+  if (key.includes("whale") || key.includes("vip") || key.includes("high_hold")) return "whale"
+  if (key.includes("alert") || key.includes("restrict") || key.includes("shadow")) {
+    return "alert-operator"
+  }
+  return "sharp"
+}
+
+function resolveProfileRowStatus(cust: ShowcaseCustomer): "critical" | "warning" | "healthy" {
+  if (cust.score >= 7.5 || cust.action.includes("ALERT")) return "critical"
+  if (
+    cust.score >= 5.5 ||
+    cust.action.includes("MONITOR") ||
+    cust.action.includes("THROTTLE") ||
+    cust.action.includes("RESTRICT")
+  ) {
+    return "warning"
+  }
+  return "healthy"
+}
+
+function ProfileScoreSparkline({
+  cust,
+  status,
+}: {
+  readonly cust: ShowcaseCustomer
+  readonly status: "critical" | "warning" | "healthy"
+}): React.ReactElement {
+  const normalized = [
+    Math.min(1, Math.max(0, cust.clvScore / 3.0)),
+    Math.min(1, Math.max(0, cust.skillScore / 2.5)),
+    Math.min(1, Math.max(0, cust.sizingScore / 1.5)),
+    Math.min(1, Math.max(0, cust.sigScore / 2.0)),
+    Math.min(1, Math.max(0, cust.timingScore / 1.0)),
+  ]
+  const width = 54
+  const height = 16
+  const step = width / (normalized.length - 1)
+  const points = normalized
+    .map((v, idx) => `${(idx * step).toFixed(1)},${(height - 2 - v * (height - 4)).toFixed(1)}`)
+    .join(" ")
+  const stroke = status === "critical" ? "#f87171" : status === "warning" ? "#fbbf24" : "#38bdf8"
+  return (
+    <svg
+      className="sd-profile-row__sparkline"
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      aria-hidden="true"
+    >
+      <polyline
+        fill="none"
+        stroke={stroke}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={points}
+      />
+    </svg>
+  )
+}
+
 export function CustomersTabPanel({
   bannerDismissed,
   onDismissBanner,
@@ -268,9 +348,13 @@ export function CustomersTabPanel({
   liveWagers = [],
   onSelectWager,
   sharpestOnChainXref = null,
+  tickerOverlayOpen = false,
+  onToggleTickerOverlay,
 }: CustomersTabPanelProps): React.ReactElement {
   const [profilePage, setProfilePage] = useState(0)
   const [drilldownTab, setDrilldownTab] = useState<ProfileDrilldownTab>("overview")
+  const [filtersExpanded, setFiltersExpanded] = useState<boolean>(false)
+  const [showRowSparklines, setShowRowSparklines] = useState<boolean>(true)
   const pageSize = 100
   const page = Math.min(profilePage, Math.max(0, Math.ceil(sortedCustomers.length / pageSize) - 1))
   useEffect(() => {
@@ -382,67 +466,40 @@ export function CustomersTabPanel({
     <div>
       {/* Session Notice Banner (Dismissible) */}
       {!bannerDismissed && (
-        <div
-          className="sd-portal-session-notice"
-          data-portal-session-notice="true"
-          style={{
-            marginBottom: "16px",
-            padding: "10px 14px",
-            borderRadius: "8px",
-            background: "rgba(245, 158, 11, 0.1)",
-            border: "1px solid rgba(245, 158, 11, 0.2)",
-            fontSize: "12px",
-            color: "#fbbf24",
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: "10px",
-            minWidth: 0,
-          }}
-        >
+        <div className="sd-portal-session-notice" data-portal-session-notice="true">
           <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "10px",
-              minWidth: 0,
-            }}
+            className="sd-alert-banner sd-alert-banner--session-expired"
+            data-alert="session-expired"
+            data-severity="warning"
+            data-status="warning"
+            role="status"
           >
-            <span style={{ fontSize: "16px", lineHeight: "1", flexShrink: 0 }}>⚠️</span>
-            <div style={{ minWidth: 0 }}>
-              <b>Fantasy402 Portal Session Notice:</b> Direct portal links reuse a single named
-              Fantasy402 manager tab so your active portal session stays intact across customer
-              jumps. If you see <i>"Your session has expired"</i>,{" "}
+            <div className="sd-alert-banner__body">
+              <AlertTriangle size={14} className="sd-alert-banner__icon" aria-hidden="true" />
+              <span className="sd-alert-banner__text">
+                <strong>Portal Session:</strong> Direct jumps reuse a single Fantasy402 manager tab.
+                If expired, re-authenticate before opening customer portal links.
+              </span>
+            </div>
+            <div className="sd-alert-banner__actions">
               <a
                 href={buildFantasy402PortalEntryUrl()}
                 target={FANTASY402_PORTAL_WINDOW_TARGET}
                 className="sd-portal-session-notice-link"
-                style={{ color: "#fde68a", fontWeight: 700, textDecoration: "underline" }}
               >
-                sign in to the Fantasy402 session tab ↗
-              </a>{" "}
-              first, then click any customer portal link. For instant local telemetry, click any
-              row/ID below or use <b>📋 Copy CLI</b>.
+                Re-Auth Portal ↗
+              </a>
+              <button
+                type="button"
+                className="sd-portal-session-notice-dismiss"
+                onClick={onDismissBanner}
+                title="Dismiss portal session notice"
+                aria-label="Dismiss portal session notice"
+              >
+                <X size={14} aria-hidden="true" />
+              </button>
             </div>
           </div>
-          <button
-            type="button"
-            className="sd-portal-session-notice-dismiss"
-            style={{
-              background: "none",
-              border: "none",
-              color: "#fbbf24",
-              fontSize: "16px",
-              cursor: "pointer",
-              padding: "0 4px",
-              lineHeight: "1",
-              flexShrink: 0,
-            }}
-            onClick={onDismissBanner}
-            title="Dismiss notice"
-          >
-            ✕
-          </button>
         </div>
       )}
 
@@ -747,234 +804,205 @@ export function CustomersTabPanel({
         </div>
       )}
 
-      {/* Refactored Filter Bar: Search + Profile Types + Categorized Profile Tags */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px",
-          marginBottom: "14px",
-          padding: "12px",
-          borderRadius: "8px",
-          backgroundColor: "rgba(15, 23, 42, 0.65)",
-          borderWidth: "1px",
-          borderStyle: "solid",
-          borderColor: "#1e293b",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: "10px",
-          }}
-        >
+      {/* Collapsible Filter Bar: Search + Profile Types + Categorized Profile Tags */}
+      <div className="sd-filter-drawer" data-type="profile-filters">
+        <div className="sd-filter-drawer__top">
           <input
             style={{
               ...styles.searchInput,
               flex: "1 1 260px",
               minWidth: "220px",
             }}
-            placeholder="🔍 Search Customer ID, Name, Agent, Profile Type, IP, or Tag..."
+            placeholder="Search Customer ID, Name, Agent, Profile Type, IP, or Tag..."
             value={searchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
           />
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              gap: "6px",
-            }}
+          <button
+            type="button"
+            className={`sd-action-btn ${filtersExpanded || filterTier !== "ALL" || activeProfileTagIds.length > 0 ? "sd-action-btn--active" : ""}`}
+            aria-expanded={filtersExpanded}
+            onClick={() => setFiltersExpanded((prev) => !prev)}
+            title="Expand or collapse Profile Type and Tag filters"
           >
-            <span
-              style={{
-                fontSize: "10px",
-                fontWeight: 700,
-                color: "#64748b",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                marginRight: "2px",
-              }}
-            >
-              Types:
-            </span>
+            <SlidersHorizontal size={12} aria-hidden="true" />
+            <span>Filters</span>
+            {(filterTier !== "ALL" || activeProfileTagIds.length > 0) && (
+              <span className="sd-tabular sd-filter-drawer__count">
+                {(filterTier !== "ALL" ? 1 : 0) + activeProfileTagIds.length}
+              </span>
+            )}
+            {filtersExpanded ? (
+              <ChevronUp size={12} aria-hidden="true" />
+            ) : (
+              <ChevronDown size={12} aria-hidden="true" />
+            )}
+          </button>
+          {filterTier !== "ALL" && (
             <button
               type="button"
-              style={styles.pill(filterTier === "ALL")}
+              className="sd-badge sd-badge--originator"
               onClick={() => onFilterTierChange("ALL")}
+              title="Clear active profile type filter"
             >
-              All ({sourceProfiles.length})
+              <span>Type: {filterTier}</span>
+              <span aria-hidden="true">×</span>
             </button>
-            {PROFILE_TYPE_ORDER.map((typeId) => {
-              const spec = PROFILE_TYPE_SPECS[typeId]
-              const count = profileTypeCounts[typeId]
-              const isActive = filterTier === typeId
-              return (
-                <button
-                  key={typeId}
-                  type="button"
-                  onClick={() => onFilterTierChange(isActive ? "ALL" : typeId)}
-                  title={spec.description}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "5px",
-                    padding: "5px 10px",
-                    borderRadius: "6px",
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    backgroundColor: isActive ? spec.bg : "#0f172a",
-                    color: isActive ? spec.fg : "#94a3b8",
-                    borderWidth: "1px",
-                    borderStyle: "solid",
-                    borderColor: isActive ? spec.border : "#1e293b",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <span>{spec.icon}</span>
-                  <span>{spec.shortLabel}</span>
-                  <span
-                    style={{
-                      fontSize: "10px",
-                      opacity: 0.85,
-                      fontFamily:
-                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                    }}
-                  >
-                    {count}
-                  </span>
-                </button>
-              )
-            })}
-            {matrixMode ? (
-              <>
-                {(["TIER_1", "TIER_2", "TIER_3", "TIER_4", "TIER_5"] as const).map((tier) => (
-                  <button
-                    key={tier}
-                    type="button"
-                    style={styles.pill(filterTier === tier)}
-                    onClick={() => onFilterTierChange(tier)}
-                    title={`Filter by data tier ${tier} (30d rankings)`}
-                  >
-                    {tier.replace("TIER_", "T")}
-                  </button>
-                ))}
-              </>
-            ) : null}
-          </div>
-        </div>
-
-        {/* Categorized Profile Tags Filter Row */}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: "6px",
-            paddingTop: "8px",
-            borderTopWidth: "1px",
-            borderTopStyle: "solid",
-            borderTopColor: "rgba(30, 41, 59, 0.8)",
-          }}
-        >
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "4px",
-              fontSize: "10px",
-              fontWeight: 700,
-              color: "#64748b",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}
-          >
-            <Tag size={11} />
-            Tags:
-          </span>
-          {(["ALL", ...PROFILE_TAG_CATEGORIES] as const).map((cat) => {
-            const active = profileTagCategoryFilter === cat
-            const meta = cat === "ALL" ? null : PROFILE_TAG_CATEGORY_META[cat]
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => onProfileTagCategoryFilterChange?.(cat)}
-                style={{
-                  padding: "2px 7px",
-                  borderRadius: "4px",
-                  fontSize: "10px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  backgroundColor: active
-                    ? (meta?.bg ?? "rgba(56, 189, 248, 0.16)")
-                    : "transparent",
-                  color: active ? (meta?.fg ?? "#7dd3fc") : "#64748b",
-                  borderWidth: "1px",
-                  borderStyle: "solid",
-                  borderColor: active ? (meta?.border ?? "rgba(56, 189, 248, 0.4)") : "#1e293b",
-                }}
-              >
-                {cat === "ALL" ? "All" : meta?.label}
-              </button>
-            )
-          })}
-          <span style={{ color: "#334155", margin: "0 2px" }}>|</span>
-          {tagCatalog.slice(0, 14).map(({ tag, count }) => {
-            const isSelected = activeProfileTagIds.includes(tag.id)
-            const toneStyle = PROFILE_TAG_TONE_STYLES[tag.tone]
-            return (
-              <button
-                key={tag.id}
-                type="button"
-                onClick={() => onToggleProfileTag?.(tag.id)}
-                title={`${tag.category} · ${tag.description}`}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  padding: "2px 7px",
-                  borderRadius: "4px",
-                  fontSize: "10px",
-                  fontWeight: 600,
-                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                  cursor: "pointer",
-                  backgroundColor: isSelected ? toneStyle.bg : "rgba(15, 23, 42, 0.9)",
-                  color: isSelected ? toneStyle.fg : "#94a3b8",
-                  borderWidth: "1px",
-                  borderStyle: "solid",
-                  borderColor: isSelected ? toneStyle.border : "#1e293b",
-                }}
-              >
-                <span>{tag.label}</span>
-                <span style={{ fontSize: "9px", opacity: 0.75 }}>{count}</span>
-              </button>
-            )
-          })}
-          {(activeProfileTagIds.length > 0 || profileTagCategoryFilter !== "ALL") && (
+          )}
+          {activeProfileTagIds.slice(0, 4).map((tagId) => (
+            <button
+              key={tagId}
+              type="button"
+              className={`sd-badge sd-badge--${resolveBadgeModifier(tagId)}`}
+              onClick={() => onToggleProfileTag?.(tagId)}
+              title={`Remove ${tagId} tag filter`}
+            >
+              <span>{tagId}</span>
+              <span aria-hidden="true">×</span>
+            </button>
+          ))}
+          {(activeProfileTagIds.length > 0 ||
+            filterTier !== "ALL" ||
+            profileTagCategoryFilter !== "ALL") && (
             <button
               type="button"
-              onClick={() => onClearProfileTags?.()}
-              style={{
-                padding: "2px 7px",
-                borderRadius: "4px",
-                fontSize: "10px",
-                fontWeight: 600,
-                backgroundColor: "rgba(245, 158, 11, 0.14)",
-                borderWidth: "1px",
-                borderStyle: "solid",
-                borderColor: "rgba(251, 191, 36, 0.35)",
-                color: "#fbbf24",
-                cursor: "pointer",
+              className="sd-action-btn sd-action-btn--warning"
+              onClick={() => {
+                onFilterTierChange("ALL")
+                onClearProfileTags?.()
               }}
             >
-              ✕ Clear tags ({activeProfileTagIds.length})
+              Reset
             </button>
           )}
         </div>
+
+        {filtersExpanded && (
+          <div className="sd-filter-drawer__body">
+            <div className="sd-filter-drawer__row">
+              <span className="sd-filter-drawer__label">Types:</span>
+              <button
+                type="button"
+                style={styles.pill(filterTier === "ALL")}
+                onClick={() => onFilterTierChange("ALL")}
+              >
+                All (<span className="sd-tabular">{sourceProfiles.length}</span>)
+              </button>
+              {PROFILE_TYPE_ORDER.map((typeId) => {
+                const spec = PROFILE_TYPE_SPECS[typeId]
+                const count = profileTypeCounts[typeId]
+                const isActive = filterTier === typeId
+                return (
+                  <button
+                    key={typeId}
+                    type="button"
+                    onClick={() => onFilterTierChange(isActive ? "ALL" : typeId)}
+                    title={spec.description}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      padding: "4px 9px",
+                      borderRadius: "5px",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      backgroundColor: isActive ? spec.bg : "#0b1120",
+                      color: isActive ? spec.fg : "#94a3b8",
+                      borderWidth: "1px",
+                      borderStyle: "solid",
+                      borderColor: isActive ? spec.border : "#243247",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <span>{spec.icon}</span>
+                    <span>{spec.shortLabel}</span>
+                    <span className="sd-tabular" style={{ fontSize: "10px", opacity: 0.85 }}>
+                      {count}
+                    </span>
+                  </button>
+                )
+              })}
+              {matrixMode ? (
+                <>
+                  {(["TIER_1", "TIER_2", "TIER_3", "TIER_4", "TIER_5"] as const).map((tier) => (
+                    <button
+                      key={tier}
+                      type="button"
+                      style={styles.pill(filterTier === tier)}
+                      onClick={() => onFilterTierChange(tier)}
+                      title={`Filter by data tier ${tier} (30d rankings)`}
+                    >
+                      {tier.replace("TIER_", "T")}
+                    </button>
+                  ))}
+                </>
+              ) : null}
+            </div>
+
+            {/* Categorized Profile Tags Filter Row */}
+            <div className="sd-filter-drawer__row sd-filter-drawer__row--tags">
+              <span className="sd-filter-drawer__label">
+                <Tag size={11} aria-hidden="true" />
+                <span>Tags:</span>
+              </span>
+              {(["ALL", ...PROFILE_TAG_CATEGORIES] as const).map((cat) => {
+                const active = profileTagCategoryFilter === cat
+                const meta = cat === "ALL" ? null : PROFILE_TAG_CATEGORY_META[cat]
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => onProfileTagCategoryFilterChange?.(cat)}
+                    style={{
+                      padding: "2px 7px",
+                      borderRadius: "4px",
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      backgroundColor: active
+                        ? (meta?.bg ?? "rgba(56, 189, 248, 0.16)")
+                        : "transparent",
+                      color: active ? (meta?.fg ?? "#7dd3fc") : "#64748b",
+                      borderWidth: "1px",
+                      borderStyle: "solid",
+                      borderColor: active ? (meta?.border ?? "rgba(56, 189, 248, 0.4)") : "#1e293b",
+                    }}
+                  >
+                    {cat === "ALL" ? "All" : meta?.label}
+                  </button>
+                )
+              })}
+              <span style={{ color: "#334155", margin: "0 2px" }}>|</span>
+              {tagCatalog.slice(0, 14).map(({ tag, count }) => {
+                const isSelected = activeProfileTagIds.includes(tag.id)
+                const mod = resolveBadgeModifier(tag.id || tag.label)
+                return (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    className={`sd-badge sd-badge--${mod}${isSelected ? " sd-badge--selected" : ""}`}
+                    onClick={() => onToggleProfileTag?.(tag.id)}
+                    title={`${tag.category} · ${tag.description}`}
+                  >
+                    <span>{tag.label}</span>
+                    <span className="sd-tabular" style={{ opacity: 0.78 }}>
+                      {count}
+                    </span>
+                  </button>
+                )
+              })}
+              {(activeProfileTagIds.length > 0 || profileTagCategoryFilter !== "ALL") && (
+                <button
+                  type="button"
+                  className="sd-action-btn sd-action-btn--warning"
+                  onClick={() => onClearProfileTags?.()}
+                >
+                  ✕ Clear tags ({activeProfileTagIds.length})
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {matrixMode && matrixProfileOverlay ? (
@@ -1169,82 +1197,62 @@ export function CustomersTabPanel({
 
         return (
           <div style={styles.showcaseGrid}>
-            {/* Left Column: Customers Table */}
-            <div style={styles.tablePanel}>
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: "8px 12px",
-                  marginBottom: "10px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <h3 style={{ margin: 0, fontSize: "16px", color: "#f8fafc" }}>
-                    Profiled Bettors ({sortedCustomers.length})
+            {/* Left Column: Profiled Bettors List (.sd-profile-list) */}
+            <div className="sd-profile-list" style={styles.tablePanel} data-type="profile-list">
+              <div className="sd-profile-list__header">
+                <div className="sd-profile-list__title-group">
+                  <h3 className="sd-profile-list__title">
+                    Profiled Bettors{" "}
+                    <span className="sd-tabular sd-profile-list__count">
+                      ({sortedCustomers.length})
+                    </span>
                   </h3>
-                  <span
-                    style={{
-                      padding: "2px 7px",
-                      borderRadius: "4px",
-                      backgroundColor: "rgba(56, 189, 248, 0.12)",
-                      color: "#7dd3fc",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                    }}
-                  >
-                    Avg Sharp: {cohortSummary.avgSharpness}
+                  <span className="sd-badge sd-badge--sharp sd-tabular">
+                    Avg {cohortSummary.avgSharpness}
                   </span>
-                  <span
-                    style={{
-                      padding: "2px 7px",
-                      borderRadius: "4px",
-                      backgroundColor: "rgba(239, 68, 68, 0.14)",
-                      color: "#fca5a5",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                    }}
-                  >
+                  <span className="sd-badge sd-badge--alert-operator sd-tabular">
                     {cohortSummary.alertCount} Alerts
                   </span>
-                  <span style={{ fontSize: "11px", color: "#94a3b8" }}>
-                    Σ VaR ({cohortSummary.varRows}/{sortedCustomers.length}
-                    ): <b>${cohortSummary.totalVarUsd.toLocaleString()}</b> · Σ Caps (
-                    {cohortSummary.capRows}/{sortedCustomers.length}
-                    ): <b>${cohortSummary.totalCapUsd.toLocaleString()}</b>
+                  <span className="sd-profile-list__totals sd-tabular">
+                    Σ VaR ({cohortSummary.varRows}/{sortedCustomers.length}):{" "}
+                    <strong>${cohortSummary.totalVarUsd.toLocaleString()}</strong> · Σ Caps (
+                    {cohortSummary.capRows}/{sortedCustomers.length}):{" "}
+                    <strong>${cohortSummary.totalCapUsd.toLocaleString()}</strong>
                   </span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div className="sd-profile-list__controls">
+                  <button
+                    type="button"
+                    className={`sd-action-btn ${showRowSparklines ? "sd-action-btn--active" : ""}`}
+                    aria-pressed={showRowSparklines}
+                    onClick={() => setShowRowSparklines((prev) => !prev)}
+                    title="Toggle inline 5-axis sharpness sparklines in profile rows"
+                  >
+                    <Activity size={11} aria-hidden="true" />
+                    <span>Sparklines</span>
+                  </button>
+                  {onToggleTickerOverlay && (
+                    <button
+                      type="button"
+                      className={`sd-action-btn ${tickerOverlayOpen ? "sd-action-btn--primary" : ""}`}
+                      aria-pressed={tickerOverlayOpen}
+                      onClick={onToggleTickerOverlay}
+                      title="Dock live sharp/whale wager ticker without leaving Profiles"
+                    >
+                      <Radio size={11} aria-hidden="true" />
+                      <span>Ticker</span>
+                      <span className="sd-tabular">({liveWagers.length})</span>
+                    </button>
+                  )}
                   {hasActiveFilter && (
                     <button
                       type="button"
+                      className="sd-action-btn sd-action-btn--warning"
                       onClick={resetFilters}
-                      style={{
-                        padding: "2px 8px",
-                        borderRadius: "4px",
-                        backgroundColor: "rgba(245, 158, 11, 0.14)",
-                        border: "1px solid rgba(251, 191, 36, 0.35)",
-                        color: "#fbbf24",
-                        fontSize: "11px",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                      }}
                     >
-                      ✕ Reset filters
+                      ✕ Reset
                     </button>
                   )}
-                  <span style={{ fontSize: "11px", color: "#64748b" }}>
-                    Click header to sort · Pinned Directive
-                  </span>
                 </div>
               </div>
               <div className="profiles-wrap">
@@ -1323,6 +1331,11 @@ export function CustomersTabPanel({
                       const isSelected = selectedCustomer?.id === cust.id
                       const classification = getClassification(cust)
                       const typeSpec = classification.type
+                      const rowStatus = resolveProfileRowStatus(cust)
+                      const scorePct = isUnknown(cust, "sharpness")
+                        ? 0
+                        : Math.min(100, Math.max(4, Math.round((cust.score / 10) * 100)))
+                      const typeMod = resolveBadgeModifier(typeSpec.id || typeSpec.shortLabel)
 
                       const actionClass = cust.action.includes("ALERT")
                         ? "action-alert"
@@ -1333,6 +1346,9 @@ export function CustomersTabPanel({
                       return (
                         <tr
                           key={cust.id}
+                          className={`sd-profile-row${isSelected ? " sd-profile-row--selected" : ""}`}
+                          data-status={rowStatus}
+                          data-severity={rowStatus}
                           style={styles.tr(isSelected)}
                           onClick={() => {
                             onSelectCustomer(cust)
@@ -1403,41 +1419,20 @@ export function CustomersTabPanel({
                               </a>
                             </div>
                             {classification.tags.length > 0 && (
-                              <div
-                                style={{
-                                  display: "flex",
-                                  flexWrap: "wrap",
-                                  gap: "3px",
-                                  marginTop: "4px",
-                                }}
-                              >
+                              <div className="sd-profile-row__badges">
                                 {classification.tags.slice(0, 3).map((tag) => {
-                                  const tone = PROFILE_TAG_TONE_STYLES[tag.tone]
                                   const tagActive = activeProfileTagIds.includes(tag.id)
+                                  const badgeMod = resolveBadgeModifier(tag.id || tag.label)
                                   return (
                                     <button
                                       key={tag.id}
                                       type="button"
+                                      className={`sd-badge sd-badge--${badgeMod}${tagActive ? " sd-badge--selected" : ""}`}
                                       onClick={(e) => {
                                         e.stopPropagation()
                                         onToggleProfileTag?.(tag.id)
                                       }}
                                       title={`${tag.category}: ${tag.description} (click to filter)`}
-                                      style={{
-                                        padding: "1px 5px",
-                                        borderRadius: "3px",
-                                        fontSize: "9.5px",
-                                        fontWeight: 600,
-                                        fontFamily:
-                                          "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                                        backgroundColor: tone.bg,
-                                        color: tone.fg,
-                                        borderWidth: "1px",
-                                        borderStyle: "solid",
-                                        borderColor: tagActive ? "#38bdf8" : tone.border,
-                                        cursor: "pointer",
-                                        lineHeight: 1.35,
-                                      }}
                                     >
                                       {tag.label}
                                     </button>
@@ -1445,6 +1440,7 @@ export function CustomersTabPanel({
                                 })}
                                 {classification.tags.length > 3 && (
                                   <span
+                                    className="sd-tabular"
                                     style={{
                                       fontSize: "9.5px",
                                       color: "#64748b",
@@ -1458,31 +1454,34 @@ export function CustomersTabPanel({
                             )}
                           </td>
                           <td style={styles.td}>
-                            <span
-                              title={typeSpec.description}
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "4px",
-                                padding: "2px 7px",
-                                borderRadius: "5px",
-                                fontSize: "11px",
-                                fontWeight: 700,
-                                backgroundColor: typeSpec.bg,
-                                color: typeSpec.fg,
-                                borderWidth: "1px",
-                                borderStyle: "solid",
-                                borderColor: typeSpec.border,
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              <span>{typeSpec.icon}</span>
-                              <span>{typeSpec.shortLabel}</span>
-                              <span style={{ opacity: 0.75 }}>·</span>
-                              <span>
+                            <div className="sd-profile-row__score-cell">
+                              <span
+                                className={`sd-badge sd-badge--${typeMod}`}
+                                title={typeSpec.description}
+                              >
+                                <span>{typeSpec.icon}</span>
+                                <span>{typeSpec.shortLabel}</span>
+                              </span>
+                              <span
+                                className={`sd-profile-row__score sd-profile-row__score--${rowStatus} sd-tabular`}
+                                data-severity={rowStatus}
+                              >
                                 {isUnknown(cust, "sharpness") ? "—" : cust.score.toFixed(1)}
                               </span>
-                            </span>
+                              {showRowSparklines && !isUnknown(cust, "sharpness") && (
+                                <ProfileScoreSparkline cust={cust} status={rowStatus} />
+                              )}
+                            </div>
+                            <div
+                              className="sd-risk-gauge"
+                              data-severity={rowStatus}
+                              title={`Sharpness heat ${isUnknown(cust, "sharpness") ? "unmeasured" : `${cust.score.toFixed(1)} / 10.0`}`}
+                            >
+                              <div
+                                className={`sd-risk-gauge__fill sd-risk-gauge__fill--${rowStatus}`}
+                                style={{ width: `${scorePct}%` }}
+                              />
+                            </div>
                             <div
                               style={{
                                 fontSize: "10px",
@@ -1495,7 +1494,7 @@ export function CustomersTabPanel({
                           </td>
                           <td style={styles.td}>
                             <div>{cust.sizingStrategy}</div>
-                            <div style={styles.custSub}>
+                            <div className="sd-tabular" style={styles.custSub}>
                               {isUnknown(cust, "gini")
                                 ? "Gini: —"
                                 : `Gini: ${cust.gini.toFixed(3)}`}
@@ -1513,7 +1512,7 @@ export function CustomersTabPanel({
                             <div style={styles.custSub}>{cust.timingArchetype}</div>
                           </td>
                           {showOpenRisk ? (
-                            <td style={styles.td}>
+                            <td className="sd-tabular" style={styles.td}>
                               {(cust.openRiskUsd ?? 0) > 0
                                 ? `$${cust.openRiskUsd!.toLocaleString()}`
                                 : "—"}
@@ -1523,19 +1522,32 @@ export function CustomersTabPanel({
                             {isUnknown(cust, "correlation") ? (
                               <span style={{ color: "#64748b" }}>—</span>
                             ) : (
-                              <span style={styles.corrBadge(cust.correlatedRisk)}>
+                              <span
+                                className={
+                                  cust.correlatedRisk.toUpperCase().includes("HIGH") ||
+                                  cust.correlatedRisk.toUpperCase().includes("CRIT")
+                                    ? "sd-badge sd-badge--parlay-critical"
+                                    : undefined
+                                }
+                                style={
+                                  cust.correlatedRisk.toUpperCase().includes("HIGH") ||
+                                  cust.correlatedRisk.toUpperCase().includes("CRIT")
+                                    ? undefined
+                                    : styles.corrBadge(cust.correlatedRisk)
+                                }
+                              >
                                 {cust.correlatedRisk}
                               </span>
                             )}
                           </td>
                           <td style={styles.td}>
-                            <div>
+                            <div className="sd-tabular" style={{ fontWeight: 600 }}>
                               {isUnknown(cust, "var95")
                                 ? "—"
                                 : `$${cust.var95Usd.toLocaleString()}`}
                             </div>
                             <div
-                              className={cust.holdPct < 0 ? "hold-neg" : "hold-pos"}
+                              className={`sd-tabular ${cust.holdPct < 0 ? "hold-neg" : "hold-pos"}`}
                               style={{ fontSize: "11px" }}
                             >
                               {isUnknown(cust, "holdPct") ? "Hold: —" : `Hold: ${cust.holdPct}%`}
@@ -1543,7 +1555,7 @@ export function CustomersTabPanel({
                           </td>
                           <td className="directive" style={styles.td}>
                             <span className={`chip ${actionClass}`}>{cust.action}</span>
-                            <div style={styles.custSub}>
+                            <div className="sd-tabular" style={styles.custSub}>
                               {isUnknown(cust, "limit")
                                 ? "Cap: —"
                                 : `Cap: $${cust.recommendedLimitUsd.toLocaleString()}`}
@@ -1607,11 +1619,12 @@ export function CustomersTabPanel({
               </div>
             </div>
 
-            {/* Right Column: Structured Profile Drilldown Inspector */}
+            {/* Right Column: Structured Profile Drilldown Inspector (.sd-profile-detail) */}
             <div
-              className="detail-panel"
+              className="detail-panel sd-profile-detail"
               style={styles.inspectorPanel}
               data-profile-drilldown="true"
+              data-type="profile-detail"
             >
               {selectedCustomer?.source === "book" &&
               selectedCustomer.unknown?.includes("sharpness") &&
@@ -1808,16 +1821,8 @@ export function CustomersTabPanel({
                 </div>
               ) : selectedCustomer ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                  {/* 1. Pinned-style Drilldown Identity & Action Header */}
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "10px",
-                      paddingBottom: "12px",
-                      borderBottom: "1px solid #1e293b",
-                    }}
-                  >
+                  {/* 1. Sticky Drilldown Identity, Evidence Chips & Action Toolbar */}
+                  <div className="sd-profile-detail__header">
                     <div
                       style={{
                         display: "flex",
@@ -1838,27 +1843,14 @@ export function CustomersTabPanel({
                         >
                           <h2 style={styles.inspectorTitle}>{selectedCustomer.id}</h2>
                           {selectedIndex >= 0 && (
-                            <span className="sd-drilldown-rank">
+                            <span className="sd-drilldown-rank sd-tabular">
                               #{selectedIndex + 1} / {sortedCustomers.length}
                             </span>
                           )}
                           {selectedClassification ? (
                             <span
+                              className={`sd-badge sd-badge--${resolveBadgeModifier(selectedClassification.type.id || selectedClassification.type.shortLabel)}`}
                               title={selectedClassification.type.description}
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "5px",
-                                padding: "2px 8px",
-                                borderRadius: "5px",
-                                fontSize: "11px",
-                                fontWeight: 700,
-                                backgroundColor: selectedClassification.type.bg,
-                                color: selectedClassification.type.fg,
-                                borderWidth: "1px",
-                                borderStyle: "solid",
-                                borderColor: selectedClassification.type.border,
-                              }}
                             >
                               <span>{selectedClassification.type.icon}</span>
                               <span>{selectedClassification.type.label}</span>
@@ -1898,101 +1890,51 @@ export function CustomersTabPanel({
                           )}{" "}
                           (Master: <b>{selectedCustomer.masterAgent}</b>)
                         </div>
-                        {selectedCustomer.forensicDossier && (
-                          <div
-                            className="sd-forensic-meta-line"
-                            style={{ marginTop: "4px" }}
-                            data-forensic-header-summary="true"
-                          >
-                            {selectedCustomer.forensicDossier.parlayBacktest?.rank !== null &&
-                              selectedCustomer.forensicDossier.parlayBacktest?.rank !==
+                        {(selectedCustomer.forensicDossier || selectedOnChainXref) && (
+                          <div className="sd-evidence-strip" data-forensic-header-summary="true">
+                            {selectedCustomer.forensicDossier?.parlayBacktest?.rank !== null &&
+                              selectedCustomer.forensicDossier?.parlayBacktest?.rank !==
                                 undefined && (
-                                <>
-                                  <span>
-                                    Backtest Rank #
-                                    {selectedCustomer.forensicDossier.parlayBacktest.rank}
-                                  </span>
-                                  <span aria-hidden="true">·</span>
-                                </>
+                                <span className="sd-badge sd-badge--parlay-critical sd-tabular">
+                                  Backtest #{selectedCustomer.forensicDossier.parlayBacktest.rank}
+                                </span>
                               )}
-                            {selectedCustomer.forensicDossier.beardBridge && (
-                              <>
-                                <span className="sd-forensic-val--amber">
-                                  {selectedCustomer.forensicDossier.beardBridge.crossOfficeTwins
-                                    .length > 0
-                                    ? `Cross-Office Bridge w/ ${selectedCustomer.forensicDossier.beardBridge.crossOfficeTwins.map((t) => t.loginId).join(", ")}`
-                                    : selectedCustomer.forensicDossier.beardBridge
-                                        .matchClassification}
-                                </span>
-                                <span aria-hidden="true">·</span>
-                              </>
-                            )}
-                            {(selectedCustomer.forensicDossier.telemetryOverview
-                              ?.missingDataWarnings.length ?? 0) > 0 && (
-                              <span className="sd-forensic-val--amber">
-                                {
-                                  selectedCustomer.forensicDossier.telemetryOverview!
-                                    .missingDataWarnings.length
-                                }{" "}
-                                telemetry warning
-                                {selectedCustomer.forensicDossier.telemetryOverview!
-                                  .missingDataWarnings.length === 1
-                                  ? ""
-                                  : "s"}
+                            {selectedCustomer.forensicDossier?.parlayBacktest?.deskSavingsUsd ? (
+                              <span className="sd-badge sd-badge--clv-leader sd-tabular">
+                                +$
+                                {Math.round(
+                                  selectedCustomer.forensicDossier.parlayBacktest.deskSavingsUsd,
+                                ).toLocaleString()}{" "}
+                                savings
                               </span>
-                            )}
-                            {selectedCustomer.forensicDossier.parlayBacktest?.deskSavingsUsd ? (
-                              <>
-                                <span aria-hidden="true">·</span>
-                                <span className="sd-forensic-val--accent sd-forensic-mono">
-                                  +$
-                                  {Math.round(
-                                    selectedCustomer.forensicDossier.parlayBacktest.deskSavingsUsd,
-                                  ).toLocaleString()}{" "}
-                                  desk savings
-                                </span>
-                              </>
                             ) : null}
-                          </div>
-                        )}
-                        {selectedOnChainXref && (
-                          <div
-                            className="sd-forensic-meta-line"
-                            style={{ marginTop: "4px" }}
-                            data-onchain-xref-header="true"
-                          >
-                            <button
-                              type="button"
-                              onClick={() => setDrilldownTab("reconciliation")}
-                              className="sd-drilldown-inline-link"
-                              title="Open On-Chain Wager Tracking Cross-Reference checks"
-                            >
-                              <span
-                                className={`sd-xref-status-inline sd-xref-status--${selectedOnChainXref.status.toLowerCase()}`}
-                              >
-                                On-Chain Xref: {selectedOnChainXref.statusLabel}
+                            {selectedCustomer.forensicDossier?.beardBridge && (
+                              <span className="sd-badge sd-badge--syndicate-link">
+                                {selectedCustomer.forensicDossier.beardBridge.crossOfficeTwins
+                                  .length > 0
+                                  ? `Bridge: ${selectedCustomer.forensicDossier.beardBridge.crossOfficeTwins.map((t) => t.loginId).join(", ")}`
+                                  : selectedCustomer.forensicDossier.beardBridge
+                                      .matchClassification}
                               </span>
-                            </button>
-                            <span aria-hidden="true">·</span>
-                            <span className="sd-forensic-mono">
-                              {selectedOnChainXref.checksPassed}/{selectedOnChainXref.checksTotal}{" "}
-                              checks
-                            </span>
-                            {selectedOnChainXref.shortWallet && (
-                              <>
-                                <span aria-hidden="true">·</span>
-                                <code className="sd-forensic-code">
-                                  {selectedOnChainXref.shortWallet}
-                                </code>
-                              </>
                             )}
-                            {selectedOnChainXref.sharedWithCustomerIds.length > 0 && (
-                              <>
-                                <span aria-hidden="true">·</span>
-                                <span className="sd-xref-val--amber">
-                                  Shared w/ {selectedOnChainXref.sharedWithCustomerIds.join(", ")}
-                                </span>
-                              </>
+                            {selectedOnChainXref && (
+                              <button
+                                type="button"
+                                onClick={() => setDrilldownTab("reconciliation")}
+                                className={`sd-badge ${
+                                  selectedOnChainXref.status === "DIVERGENCE_ALERT"
+                                    ? "sd-badge--alert-operator"
+                                    : "sd-badge--sharp"
+                                } sd-tabular`}
+                                data-onchain-xref-header="true"
+                                title="Open On-Chain Wager Tracking Cross-Reference checks"
+                              >
+                                On-Chain {selectedOnChainXref.statusLabel} ·{" "}
+                                {selectedOnChainXref.checksPassed}/{selectedOnChainXref.checksTotal}
+                                {selectedOnChainXref.shortWallet
+                                  ? ` · ${selectedOnChainXref.shortWallet}`
+                                  : ""}
+                              </button>
                             )}
                           </div>
                         )}
@@ -2023,41 +1965,24 @@ export function CustomersTabPanel({
                       </div>
                     </div>
 
-                    {/* Action Toolbar */}
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        alignItems: "center",
-                        gap: "6px",
-                      }}
-                    >
+                    {/* Action Toolbar (.sd-action-bar) */}
+                    <div className="sd-action-bar" role="toolbar" aria-label="Profile actions">
                       {onViewCustomerWagers && (
                         <button
                           type="button"
-                          style={{
-                            ...styles.actionBtn,
-                            padding: "4px 9px",
-                            fontSize: "11px",
-                            cursor: "pointer",
-                          }}
+                          className="sd-action-btn sd-action-btn--primary"
                           onClick={() => onViewCustomerWagers(selectedCustomer.id)}
                           title="Filter Live Wagers tape to this customer"
                         >
-                          ⚡ Wager Tape
-                          {selectedLiveActivity && selectedLiveActivity.ticketCount > 0
-                            ? ` (${selectedLiveActivity.ticketCount})`
-                            : ""}
+                          <span>⚡ Wager Tape</span>
+                          {selectedLiveActivity && selectedLiveActivity.ticketCount > 0 ? (
+                            <span className="sd-tabular">({selectedLiveActivity.ticketCount})</span>
+                          ) : null}
                         </button>
                       )}
                       <button
                         type="button"
-                        style={{
-                          ...styles.actionBtn,
-                          padding: "4px 9px",
-                          fontSize: "11px",
-                          cursor: "pointer",
-                        }}
+                        className="sd-action-btn"
                         onClick={() => onOpenTerminalProfile(selectedCustomer.id)}
                         title="Inspect this customer in Bun.Terminal emulator"
                       >
@@ -2066,12 +1991,7 @@ export function CustomersTabPanel({
                       {onOpenTerminalRadar ? (
                         <button
                           type="button"
-                          style={{
-                            ...styles.actionBtn,
-                            padding: "4px 9px",
-                            fontSize: "11px",
-                            cursor: "pointer",
-                          }}
+                          className="sd-action-btn"
                           onClick={() => onOpenTerminalRadar(selectedCustomer.id)}
                           title="Run profile <id> --radar in Bun.Terminal"
                         >
@@ -2080,12 +2000,7 @@ export function CustomersTabPanel({
                       ) : null}
                       <button
                         type="button"
-                        style={{
-                          ...styles.actionBtn,
-                          padding: "4px 9px",
-                          fontSize: "11px",
-                          cursor: "pointer",
-                        }}
+                        className="sd-action-btn"
                         onClick={() => onCopyCli(selectedCustomer.id)}
                         title="Copy terminal CLI command to clipboard"
                       >
@@ -2093,13 +2008,7 @@ export function CustomersTabPanel({
                       </button>
                       <a
                         {...getFantasy402PortalLinkProps(selectedCustomer.id)}
-                        style={{
-                          ...styles.actionBtn,
-                          padding: "4px 9px",
-                          fontSize: "11px",
-                          textDecoration: "none",
-                          color: "#0f172a",
-                        }}
+                        className="sd-action-btn"
                         title="Open in active Fantasy402 Manager session tab (reuses logged-in portal tab)"
                       >
                         Portal ↗
@@ -2107,12 +2016,72 @@ export function CustomersTabPanel({
                     </div>
                   </div>
 
+                  {/* Elevated Divergence / Cross-Office Bridge Alert */}
+                  {(selectedOnChainXref?.status === "DIVERGENCE_ALERT" ||
+                    (selectedCustomer.forensicDossier?.beardBridge?.crossOfficeTwins.length ?? 0) >
+                      0) && (
+                    <div
+                      className="sd-profile-detail__alert--divergence sd-alert-banner sd-alert-banner--divergence"
+                      data-alert="divergence"
+                      data-severity="critical"
+                      data-status="critical"
+                      role="alert"
+                    >
+                      <div className="sd-alert-banner__body">
+                        <AlertTriangle
+                          size={15}
+                          className="sd-alert-banner__icon"
+                          aria-hidden="true"
+                        />
+                        <div className="sd-alert-banner__stack">
+                          <div className="sd-alert-banner__title">
+                            DIVERGENCE ALERT — ELEVATED FORENSIC SIGNAL
+                          </div>
+                          <div className="sd-alert-banner__evidence sd-tabular">
+                            {selectedOnChainXref?.status === "DIVERGENCE_ALERT" && (
+                              <span>
+                                On-Chain Xref: {selectedOnChainXref.checksPassed}/
+                                {selectedOnChainXref.checksTotal} checks
+                                {selectedOnChainXref.shortWallet
+                                  ? ` · Wallet ${selectedOnChainXref.shortWallet}`
+                                  : ""}
+                                {selectedOnChainXref.sharedWithCustomerIds.length > 0
+                                  ? ` · Shared w/ ${selectedOnChainXref.sharedWithCustomerIds.join(", ")}`
+                                  : ""}
+                              </span>
+                            )}
+                            {(selectedCustomer.forensicDossier?.beardBridge?.crossOfficeTwins
+                              .length ?? 0) > 0 && (
+                              <span>
+                                Cross-Office Bridge Twins:{" "}
+                                {selectedCustomer
+                                  .forensicDossier!.beardBridge!.crossOfficeTwins.map(
+                                    (t) => `${t.loginId} (${t.officeAgentId})`,
+                                  )
+                                  .join(", ")}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="sd-alert-banner__actions">
+                        <button
+                          type="button"
+                          className="sd-action-btn sd-action-btn--critical"
+                          onClick={() => setDrilldownTab("reconciliation")}
+                        >
+                          Inspect Evidence ↗
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* 2. Executive Tabular KPI Strip (4 compact single-elevation cells) */}
                   <div className="sd-drilldown-kpi-strip">
                     <div className="sd-drilldown-kpi-cell">
                       <span className="sd-drilldown-kpi-label">Sharp Score</span>
                       <span
-                        className="sd-drilldown-kpi-val"
+                        className="sd-drilldown-kpi-val sd-tabular"
                         style={{
                           color:
                             selectedCustomer.score >= 7.5
@@ -2127,6 +2096,17 @@ export function CustomersTabPanel({
                           /10
                         </span>
                       </span>
+                      <div
+                        className="sd-risk-gauge"
+                        data-severity={resolveProfileRowStatus(selectedCustomer)}
+                      >
+                        <div
+                          className={`sd-risk-gauge__fill sd-risk-gauge__fill--${resolveProfileRowStatus(selectedCustomer)}`}
+                          style={{
+                            width: `${Math.min(100, Math.max(4, Math.round((selectedCustomer.score / 10) * 100)))}%`,
+                          }}
+                        />
+                      </div>
                       <span className="sd-drilldown-kpi-sub">
                         {selectedCustomer.timingArchetype}
                       </span>
@@ -2135,7 +2115,7 @@ export function CustomersTabPanel({
                     <div className="sd-drilldown-kpi-cell">
                       <span className="sd-drilldown-kpi-label">7d 95% VaR</span>
                       <span
-                        className="sd-drilldown-kpi-val"
+                        className="sd-drilldown-kpi-val sd-tabular"
                         style={{
                           color: selectedRiskHeadroom?.isVarOverCap ? "#f87171" : "#f1f5f9",
                         }}
@@ -2145,7 +2125,7 @@ export function CustomersTabPanel({
                           : "—"}
                       </span>
                       <span
-                        className="sd-drilldown-kpi-sub"
+                        className="sd-drilldown-kpi-sub sd-tabular"
                         style={{
                           color: selectedRiskHeadroom?.isVarOverCap ? "#fca5a5" : "#94a3b8",
                         }}
@@ -2160,7 +2140,7 @@ export function CustomersTabPanel({
                     <div className="sd-drilldown-kpi-cell">
                       <span className="sd-drilldown-kpi-label">Lifetime Hold</span>
                       <span
-                        className="sd-drilldown-kpi-val"
+                        className="sd-drilldown-kpi-val sd-tabular"
                         style={{
                           color: !selectedRiskHeadroom?.hasMeasuredHold
                             ? "#94a3b8"
@@ -2173,7 +2153,7 @@ export function CustomersTabPanel({
                           ? `${selectedCustomer.holdPct}%`
                           : "—"}
                       </span>
-                      <span className="sd-drilldown-kpi-sub">
+                      <span className="sd-drilldown-kpi-sub sd-tabular">
                         {selectedRiskHeadroom?.hasMeasuredLtv
                           ? `$${Math.abs(selectedCustomer.ltvUsd).toLocaleString()} ${selectedCustomer.ltvUsd < 0 ? "Loss" : "Hold"}`
                           : "LTV unmeasured"}
@@ -2188,7 +2168,7 @@ export function CustomersTabPanel({
                     >
                       <span className="sd-drilldown-kpi-label">Live Open Tape</span>
                       <span
-                        className="sd-drilldown-kpi-val"
+                        className="sd-drilldown-kpi-val sd-tabular"
                         style={{
                           color:
                             (selectedLiveActivity?.criticalCount ?? 0) > 0
@@ -2200,7 +2180,7 @@ export function CustomersTabPanel({
                       >
                         ${(selectedLiveActivity?.totalRiskUsd ?? 0).toLocaleString()}
                       </span>
-                      <span className="sd-drilldown-kpi-sub">
+                      <span className="sd-drilldown-kpi-sub sd-tabular">
                         {selectedLiveActivity?.ticketCount ?? 0} ticket
                         {selectedLiveActivity?.ticketCount === 1 ? "" : "s"}
                         {(selectedLiveActivity?.criticalCount ?? 0) > 0
@@ -2313,6 +2293,71 @@ export function CustomersTabPanel({
                           onJumpToCustomer={onSelectCustomerById}
                         />
                       )}
+
+                      {/* Compact Activity Timeline Strip */}
+                      <div className="sd-activity-timeline" data-type="activity-timeline">
+                        <div className="sd-activity-timeline__header">
+                          <span className="sd-activity-timeline__title">
+                            Recent Activity Timeline
+                          </span>
+                          <button
+                            type="button"
+                            className="sd-drilldown-inline-link sd-tabular"
+                            onClick={() => setDrilldownTab("activity")}
+                          >
+                            {selectedLiveActivity && selectedLiveActivity.ticketCount > 0
+                              ? `All ${selectedLiveActivity.ticketCount} live tickets ↗`
+                              : "Activity tab ↗"}
+                          </button>
+                        </div>
+                        {selectedLiveActivity && selectedLiveActivity.tickets.length > 0 ? (
+                          <div className="sd-activity-timeline__list">
+                            {selectedLiveActivity.tickets.slice(0, 4).map((ticket) => {
+                              const isWhale = ticket.riskUsd >= 2500
+                              const isSharp =
+                                ticket.alertTier === "CRITICAL" ||
+                                ticket.alertTier === "STEAM" ||
+                                (typeof ticket.clvCents === "number" && ticket.clvCents > 0)
+                              return (
+                                <button
+                                  key={ticket.ticketId}
+                                  type="button"
+                                  className="sd-activity-timeline__row"
+                                  onClick={() =>
+                                    onSelectWager
+                                      ? onSelectWager(ticket)
+                                      : onViewCustomerWagers?.(selectedCustomer.id)
+                                  }
+                                >
+                                  <span className="sd-activity-timeline__time sd-tabular">
+                                    {ticket.timestamp ? ticket.timestamp.slice(11, 19) : "LIVE"}
+                                  </span>
+                                  <span className="sd-activity-timeline__market">
+                                    <strong>{ticket.sport}</strong> ·{" "}
+                                    {ticket.selection || ticket.event}
+                                  </span>
+                                  <span className="sd-activity-timeline__flags">
+                                    {isWhale && (
+                                      <span className="sd-badge sd-badge--whale">WHALE</span>
+                                    )}
+                                    {isSharp && (
+                                      <span className="sd-badge sd-badge--sharp">SHARP</span>
+                                    )}
+                                  </span>
+                                  <span className="sd-activity-timeline__amount sd-tabular">
+                                    ${Math.round(ticket.riskUsd).toLocaleString()}
+                                  </span>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        ) : (
+                          <div className="sd-activity-timeline__empty sd-tabular">
+                            No open live tickets in current window · Last backtest sample:{" "}
+                            {selectedCustomer.timingArchetype} ({selectedCustomer.specialization})
+                          </div>
+                        )}
+                      </div>
 
                       {/* Decomposed Sharpness Radar */}
                       <div style={{ ...styles.radarCard, marginBottom: 0 }}>

@@ -219,3 +219,10 @@ export {
   LOG_SEVERITY_SERIES_META,
   type SystemLogSeverityBarChartProps,
 } from "./SystemLogSeverityBarChart.tsx"
+export {
+  UnifiedStatusBar,
+  type StatusBarState,
+  type StatusTimeInfo,
+  type UnifiedStatusBarProps,
+} from "./UnifiedStatusBar.tsx"
+export { LiveTickerOverlay, type LiveTickerOverlayProps } from "./LiveTickerOverlay.tsx"
