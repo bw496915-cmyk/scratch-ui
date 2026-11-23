@@ -32,20 +32,20 @@ and verified from this directory.
 
 ## Authoritative Files & Generated Outputs
 
-| Artifact | Role | Status |
-| --- | --- | --- |
-| [`tokens.toml`](tokens.toml) | Authoritative design tokens, surfaces, ingestion lanes, routes, SLA/CAS states, bitmasks, keymap, and UI chrome (`v1.5.0`) | Source (SSOT) |
-| [`branding.toml`](branding.toml) | Brand identity, palette bindings, operational context, and derivative matrix (`sportsdesk-branding/v1`) | Source (SSOT) |
-| [`color.ts`](color.ts) | `Bun.color` normalizer (`hex`, `number`, `{rgb}`, `hsl`) for cross-artifact palette comparison | Source (SSOT) |
-| [`domain-branded-types.ts`](domain-branded-types.ts) | 16 core nominal domain brands, transport bit layouts, and typed token registries | Source (SSOT) |
-| [`index.ts`](index.ts) | Unified facade using Bun built-in `.toml` imports, `Bun.color`, and `validateDesignSystemParity()` | Source (SSOT) |
-| [`macros.ts`](macros.ts) | Bun compile-time macros (`bakeDesignSystemSnapshot()`, `bakeCanonicalColorHex()`) | Source (SSOT) |
-| [`baked.ts`](baked.ts) | Zero-runtime-TOML baked bundle entrypoint (`with { type: "macro" }`) | Source (SSOT) |
-| [`lib/brand.ts`](../lib/brand.ts) | Canonical `Brand<T, Tag>` engine, `Bun.CryptoHasher("sha256")`, and live `bun:sqlite` schema-verified SQL brands | Source (SSOT) |
-| [`packages/ui/src/tokens.registry.generated.ts`](../packages/ui/src/tokens.registry.generated.ts) | Compiled palette, alias, and CAS registry consumed by the Build-Matrix drawer and dashboard footer | Generated |
-| [`src/dashboard/tokens.generated.css`](../src/dashboard/tokens.generated.css) | Compiled CSS Houdini `@property` declarations, `:root` tokens, and `prefers-contrast: more` overrides | Generated |
-| [`public/assets/branding/branding-metadata.json`](../public/assets/branding/branding-metadata.json) | Generated brand asset catalog with `Sha256Hex` digests and embedded XMP context verification | Generated |
-| [`public/manifest.webmanifest`](../public/manifest.webmanifest) | Generated Web App Manifest synchronized with `design/branding.toml` palette and icons | Generated |
+| Artifact                                                                                            | Role                                                                                                                       | Status        |
+| --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| [`tokens.toml`](tokens.toml)                                                                        | Authoritative design tokens, surfaces, ingestion lanes, routes, SLA/CAS states, bitmasks, keymap, and UI chrome (`v1.5.0`) | Source (SSOT) |
+| [`branding.toml`](branding.toml)                                                                    | Brand identity, palette bindings, operational context, and derivative matrix (`sportsdesk-branding/v1`)                    | Source (SSOT) |
+| [`color.ts`](color.ts)                                                                              | `Bun.color` normalizer (`hex`, `number`, `{rgb}`, `hsl`) for cross-artifact palette comparison                             | Source (SSOT) |
+| [`domain-branded-types.ts`](domain-branded-types.ts)                                                | 16 core nominal domain brands, transport bit layouts, and typed token registries                                           | Source (SSOT) |
+| [`index.ts`](index.ts)                                                                              | Unified facade using Bun built-in `.toml` imports, `Bun.color`, and `validateDesignSystemParity()`                         | Source (SSOT) |
+| [`macros.ts`](macros.ts)                                                                            | Bun compile-time macros (`bakeDesignSystemSnapshot()`, `bakeCanonicalColorHex()`)                                          | Source (SSOT) |
+| [`baked.ts`](baked.ts)                                                                              | Zero-runtime-TOML baked bundle entrypoint (`with { type: "macro" }`)                                                       | Source (SSOT) |
+| [`lib/brand.ts`](../lib/brand.ts)                                                                   | Canonical `Brand<T, Tag>` engine, `Bun.CryptoHasher("sha256")`, and live `bun:sqlite` schema-verified SQL brands           | Source (SSOT) |
+| [`packages/ui/src/tokens.registry.generated.ts`](../packages/ui/src/tokens.registry.generated.ts)   | Compiled palette, alias, and CAS registry consumed by the Build-Matrix drawer and dashboard footer                         | Generated     |
+| [`src/dashboard/tokens.generated.css`](../src/dashboard/tokens.generated.css)                       | Compiled CSS Houdini `@property` declarations, `:root` tokens, and `prefers-contrast: more` overrides                      | Generated     |
+| [`public/assets/branding/branding-metadata.json`](../public/assets/branding/branding-metadata.json) | Generated brand asset catalog with `Sha256Hex` digests and embedded XMP context verification                               | Generated     |
+| [`public/manifest.webmanifest`](../public/manifest.webmanifest)                                     | Generated Web App Manifest synchronized with `design/branding.toml` palette and icons                                      | Generated     |
 
 ## Bun-Native Pipeline Architecture
 
@@ -113,20 +113,31 @@ into four decoupled axes plus shared structural primitives:
      `tty_narrow`, `r2_telemetry_stream`, `pipe_ascii`) locked to `light = false`
      so ambient `COLORFGBG` never drifts contrast on `#04070e`.
 
+## Deterministic CLI `Bun.markdown.AnsiTheme` Profiles (`[cli.markdown_ansi.*]`)
+
+All `[cli.markdown_ansi.*]` blocks in [`tokens.toml`](tokens.toml) map 1:1 to `Bun.markdown.AnsiTheme` (`{ colors, columns, hyperlinks, kittyGraphics, light }`) with `light = false` pinned explicitly against `SURFACE.CLI` (`#04070e`) so ambient `COLORFGBG` never alters contrast:
+
+| Profile Key           | Profile ID                 | Colors  | Columns | Hyperlinks |  Light  | Intended Surface / CLI Flag                                    |
+| :-------------------- | :------------------------- | :-----: | :-----: | :--------: | :-----: | :------------------------------------------------------------- |
+| `ghostty_interactive` | `ANSI_GHOSTTY_INTERACTIVE` | `true`  |  `120`  |   `true`   | `false` | Interactive TrueColor TTY (`--profile ghostty_interactive`)    |
+| `tty_narrow`          | `ANSI_TTY_NARROW`          | `true`  |  `88`   |   `true`   | `false` | Split-pane TTY tables (`--profile tty_narrow`)                 |
+| `r2_telemetry_stream` | `ANSI_R2_TELEMETRY_STREAM` | `true`  |   `0`   |  `false`   | `false` | Unwrapped R2 ANSI log stream (`--profile r2_telemetry_stream`) |
+| `pipe_ascii`          | `ANSI_PIPE_ASCII`          | `false` |   `0`   |  `false`   | `false` | Plain ASCII pipe / `NO_COLOR` CI (`--profile pipe_ascii`)      |
+
 ## Perceptual & Accessibility Gates (`[gates]`)
 
 Every palette change must satisfy integer milli-unit perceptual and contrast
 gates mirrored between `[gates]` in [`tokens.toml`](tokens.toml) and
 `TOKEN_GATES` in [`domain-branded-types.ts`](domain-branded-types.ts):
 
-| Gate Key | Floor | Standard |
-| --- | --- | --- |
-| `min_body_contrast_ratio_milli` | `4.50:1` (`4500`) | WCAG 2.1 AA body copy on all dashboard surfaces |
-| `min_aaa_slate_contrast_milli` | `7.00:1` (`7000`) | WCAG 2.1 AAA muted slate (`#94a3b8` on `#0b1120`) |
-| `min_ui_component_contrast_milli` | `3.00:1` (`3000`) | WCAG 1.4.11 focus rings, active borders, and badges |
-| `min_cross_state_delta_e00_milli` | `7.00 ΔE00` (`7000`) | Perceptual separation across `card → hover → selected` |
-| `min_fresh_vs_stale_delta_e00_milli` | `40.00 ΔE00` (`40000`) | High-contrast separation between `SLA_FRESH` and `SLA_STALE` |
-| `min_adjacent_channel_delta_e00_milli` | `10.00 ΔE00` (`10000`) | Distinctiveness between adjacent ingestion channel badges |
+| Gate Key                               | Floor                  | Standard                                                     |
+| -------------------------------------- | ---------------------- | ------------------------------------------------------------ |
+| `min_body_contrast_ratio_milli`        | `4.50:1` (`4500`)      | WCAG 2.1 AA body copy on all dashboard surfaces              |
+| `min_aaa_slate_contrast_milli`         | `7.00:1` (`7000`)      | WCAG 2.1 AAA muted slate (`#94a3b8` on `#0b1120`)            |
+| `min_ui_component_contrast_milli`      | `3.00:1` (`3000`)      | WCAG 1.4.11 focus rings, active borders, and badges          |
+| `min_cross_state_delta_e00_milli`      | `7.00 ΔE00` (`7000`)   | Perceptual separation across `card → hover → selected`       |
+| `min_fresh_vs_stale_delta_e00_milli`   | `40.00 ΔE00` (`40000`) | High-contrast separation between `SLA_FRESH` and `SLA_STALE` |
+| `min_adjacent_channel_delta_e00_milli` | `10.00 ΔE00` (`10000`) | Distinctiveness between adjacent ingestion channel badges    |
 
 ## `:root` Alias Layer
 
@@ -182,5 +193,8 @@ bun run branding:check        # audit branding assets, XMP context & SHA-256 dig
 bun run artifacts:generate    # regenerate tokens + docs/generated manifest & CLI guide
 bun run artifacts:check       # full artifact, branding & HTMLRewriter doc drift gate
 bun run docs:check            # verify local Markdown links via Bun.Glob + HTMLRewriter
+bun run cli docs list --ids --ansi
+bun run cli docs ids SD-DOC-DESIGN-TOKENS --ansi --profile tty_narrow
+bun run cli docs render SD-DOC-DESIGN-TOKENS --mode ansi --profile ghostty_interactive --ids
 bun run test:update-snapshots # refresh bun:test snapshots for generated manifests
 ```

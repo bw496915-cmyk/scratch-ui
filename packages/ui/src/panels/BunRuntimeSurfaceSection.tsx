@@ -21,11 +21,13 @@ import { useMemo, useState } from "react"
 
 import {
   BUN_ANSI_THEME_PRESETS,
+  BUN_CLI_ANSI_PROFILES,
   BUN_CORE_API_DOMAINS,
   BUN_GLOBAL_TIERS,
   BUN_MARKDOWN_CALLBACK_SPECS,
   BUN_UTILITIES_CATALOG,
   BUN_UTILITY_CATEGORIES,
+  type BunCliAnsiProfileId,
   bunDeepEquals,
   type BunDeepInspectionCategory,
   type BunExportKind,
@@ -158,9 +160,11 @@ export function BunRuntimeSurfaceSection({
   const [mdSource, setMdSource] = useState<string>(DEFAULT_BUN_MARKDOWN_STUDIO_SAMPLE)
   const [mdMode, setMdMode] = useState<BunMarkdownRenderMode>("render-callbacks")
   const [mdPresetId, setMdPresetId] = useState<BunMarkdownRenderPresetId>("obsidian-desk")
+  const [mdProfileId, setMdProfileId] = useState<BunCliAnsiProfileId | "">("")
   const [mdColors, setMdColors] = useState<boolean>(true)
   const [mdLight, setMdLight] = useState<boolean>(false)
   const [mdHyperlinks, setMdHyperlinks] = useState<boolean>(true)
+  const [mdShowHeadingIds, setMdShowHeadingIds] = useState<boolean>(true)
   const [mdColumns, setMdColumns] = useState<number>(76)
   const [mdOutputView, setMdOutputView] = useState<"terminal" | "raw-ansi" | "html">("terminal")
 
@@ -417,6 +421,8 @@ export function BunRuntimeSurfaceSection({
       renderBunMarkdownStudio(mdSource, {
         mode: mdMode,
         presetId: mdPresetId,
+        profileId: mdProfileId || undefined,
+        showHeadingIds: mdShowHeadingIds,
         theme: {
           colors: mdColors,
           light: mdLight,
@@ -424,17 +430,40 @@ export function BunRuntimeSurfaceSection({
           columns: mdColumns,
         },
       }),
-    [mdSource, mdMode, mdPresetId, mdColors, mdLight, mdHyperlinks, mdColumns],
+    [
+      mdSource,
+      mdMode,
+      mdPresetId,
+      mdProfileId,
+      mdShowHeadingIds,
+      mdColors,
+      mdLight,
+      mdHyperlinks,
+      mdColumns,
+    ],
   )
 
   const handleSelectMdPreset = (presetId: BunMarkdownRenderPresetId) => {
     setMdPresetId(presetId)
+    setMdProfileId("")
     const preset = BUN_ANSI_THEME_PRESETS.find((p) => p.id === presetId)
     if (preset) {
       setMdLight(preset.defaultTheme.light)
       setMdColumns(preset.defaultTheme.columns)
       setMdColors(preset.defaultTheme.colors)
       setMdHyperlinks(preset.defaultTheme.hyperlinks)
+    }
+  }
+
+  const handleSelectCliProfile = (profileId: BunCliAnsiProfileId) => {
+    setMdProfileId(profileId)
+    const spec = BUN_CLI_ANSI_PROFILES.find((p) => p.id === profileId)
+    if (spec) {
+      setMdPresetId(spec.presetId)
+      setMdColors(spec.ansiTheme.colors)
+      setMdLight(spec.ansiTheme.light)
+      setMdHyperlinks(spec.ansiTheme.hyperlinks)
+      setMdColumns(spec.ansiTheme.columns)
     }
   }
 
@@ -2662,6 +2691,8 @@ export function BunRuntimeSurfaceSection({
                 >
                   engine {mdStudioResult.engine} · mode {mdStudioResult.mode} ·{" "}
                   {mdStudioResult.lineCount} lines · max {mdStudioResult.maxColumns} cols ·{" "}
+                  {mdStudioResult.tableCount} tables · {mdStudioResult.headingIds.length} #ids ·{" "}
+                  {mdStudioResult.taskSummary.checked}/{mdStudioResult.taskSummary.total} tasks ·{" "}
                   {mdStudioResult.ansiByteLength} B
                 </div>
               </div>
@@ -2854,6 +2885,25 @@ export function BunRuntimeSurfaceSection({
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
+                    gap: "4px",
+                    fontSize: "11px",
+                    fontFamily: MONO_FONT,
+                    color: "#cbd5e1",
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={mdShowHeadingIds}
+                    onChange={(e) => setMdShowHeadingIds(e.target.checked)}
+                  />
+                  #ids
+                </label>
+
+                <label
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
                     gap: "5px",
                     fontSize: "11px",
                     fontFamily: MONO_FONT,
@@ -2877,9 +2927,49 @@ export function BunRuntimeSurfaceSection({
                       fontSize: "11px",
                     }}
                   >
-                    {[56, 72, 76, 80, 100].map((c) => (
+                    {[0, 56, 72, 76, 80, 88, 100, 120].map((c) => (
                       <option key={c} value={c}>
-                        {c}
+                        {c === 0 ? "0 (nowrap)" : c}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    fontSize: "11px",
+                    fontFamily: MONO_FONT,
+                    color: "#94a3b8",
+                  }}
+                >
+                  <span>CLI profile</span>
+                  <select
+                    aria-label="CLI AnsiTheme profile from tokens.toml"
+                    value={mdProfileId}
+                    onChange={(e) => {
+                      const val = e.target.value as BunCliAnsiProfileId | ""
+                      if (val) handleSelectCliProfile(val)
+                      else setMdProfileId("")
+                    }}
+                    style={{
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                      borderWidth: "1px",
+                      borderStyle: "solid",
+                      borderColor: "var(--border-strong, #334155)",
+                      backgroundColor: "var(--surface-panel, #0f172a)",
+                      color: "var(--text-primary, #f1f5f9)",
+                      fontFamily: MONO_FONT,
+                      fontSize: "11px",
+                    }}
+                  >
+                    <option value="">custom / preset</option>
+                    {BUN_CLI_ANSI_PROFILES.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.id}
                       </option>
                     ))}
                   </select>
@@ -2887,7 +2977,7 @@ export function BunRuntimeSurfaceSection({
               </div>
             </div>
 
-            {/* Semantic TrueColor Palette Strip */}
+            {/* Semantic TrueColor Palette + GFM Listed Meta IDs Strip */}
             <div
               style={{
                 padding: "7px 14px",
@@ -2895,39 +2985,74 @@ export function BunRuntimeSurfaceSection({
                 borderBottomStyle: "solid",
                 borderBottomColor: "var(--border-default, #1e293b)",
                 display: "flex",
-                flexWrap: "wrap",
-                alignItems: "center",
-                gap: "12px",
+                flexDirection: "column",
+                gap: "5px",
                 fontFamily: MONO_FONT,
                 fontSize: "10.5px",
                 color: "#94a3b8",
               }}
             >
-              <span style={{ color: "#64748b", fontWeight: 600 }}>AnsiTheme TrueColor tokens:</span>
-              {(
-                Object.entries(mdStudioResult.paletteHex) as [
-                  keyof typeof mdStudioResult.paletteHex,
-                  string,
-                ][]
-              ).map(([token, hex]) => (
-                <span
-                  key={token}
-                  style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}
-                >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: "9px",
-                      height: "9px",
-                      borderRadius: "2px",
-                      backgroundColor: hex,
-                      display: "inline-block",
-                    }}
-                  />
-                  <span style={{ color: "#cbd5e1" }}>{token}</span>
-                  <span style={{ color: "#64748b" }}>{hex}</span>
+              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px" }}>
+                <span style={{ color: "#64748b", fontWeight: 600 }}>
+                  AnsiTheme TrueColor tokens:
                 </span>
-              ))}
+                {(
+                  Object.entries(mdStudioResult.paletteHex) as [
+                    keyof typeof mdStudioResult.paletteHex,
+                    string,
+                  ][]
+                ).map(([token, hex]) => (
+                  <span
+                    key={token}
+                    style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: "9px",
+                        height: "9px",
+                        borderRadius: "2px",
+                        backgroundColor: hex,
+                        display: "inline-block",
+                      }}
+                    />
+                    <span style={{ color: "#cbd5e1" }}>{token}</span>
+                    <span style={{ color: "#64748b" }}>{hex}</span>
+                  </span>
+                ))}
+              </div>
+              <div
+                data-gfm-listed-meta-ids="true"
+                style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px" }}
+              >
+                <span style={{ color: "#64748b", fontWeight: 600 }}>
+                  Listed GFM Meta IDs ({mdStudioResult.headingIds.length}):
+                </span>
+                {mdStudioResult.headingIds.length === 0 ? (
+                  <span style={{ color: "#64748b" }}>none</span>
+                ) : (
+                  mdStudioResult.headingIds.map((h) => (
+                    <span
+                      key={`${h.level}-${h.id}`}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        padding: "1px 6px",
+                        borderRadius: "4px",
+                        backgroundColor: "rgba(56, 189, 248, 0.08)",
+                        borderWidth: "1px",
+                        borderStyle: "solid",
+                        borderColor: "rgba(56, 189, 248, 0.25)",
+                        color: "#7dd3fc",
+                      }}
+                    >
+                      <span style={{ color: "#64748b" }}>H{h.level}</span>
+                      <span>#{h.id}</span>
+                    </span>
+                  ))
+                )}
+              </div>
             </div>
 
             {/* Split Editor + Live Rendered ANSI Terminal Preview */}

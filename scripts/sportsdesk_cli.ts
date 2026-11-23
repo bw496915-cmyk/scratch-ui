@@ -21,6 +21,9 @@ import { resolve } from "node:path"
 
 import { loadBunRuntimeSurfaceAudit } from "../packages/api/src/bun_runtime_surface_loader.ts"
 import {
+  BUN_CLI_ANSI_PROFILES,
+  type BunAnsiThemeConfig,
+  type BunCliAnsiProfileId,
   type BunMarkdownRenderMode,
   type BunMarkdownRenderPresetId,
   formatInspectTable,
@@ -38,12 +41,32 @@ import { assertSafeExecArgv } from "../src/cli/preflight_guard.ts"
 import {
   auditMarkdownDocs,
   auditPipelineArtifactsMetadata,
+  type MarkdownDocAuditEntry,
   runArtifactPipeline,
   UNIFIED_CLI_COMMANDS,
 } from "./gen_artifacts.ts"
 import { auditUnifiedVersions, bumpWorkspaceVersions } from "./version_manager.ts"
 
 const ROOT_DIR = process.cwd()
+
+function writeStdoutSafe(text: string): void {
+  try {
+    process.stdout.write(text)
+  } catch (err) {
+    if ((err as { readonly code?: string } | null)?.code === "EPIPE") {
+      return
+    }
+    throw err
+  }
+}
+
+if (typeof process !== "undefined" && process.stdout && typeof process.stdout.on === "function") {
+  process.stdout.on("error", (err: { readonly code?: string }) => {
+    if (err?.code === "EPIPE") {
+      process.exit(0)
+    }
+  })
+}
 
 const CHECK_GATE_SCRIPTS: Readonly<Record<string, readonly string[]>> = {
   lockfile: ["scripts/check_lockfile_integrity.ts"],
@@ -53,6 +76,250 @@ const CHECK_GATE_SCRIPTS: Readonly<Record<string, readonly string[]>> = {
   "shell-boundary": ["scripts/check_shell_boundary.ts"],
   snapshots: ["scripts/check_snapshot_hygiene.ts"],
   artifacts: ["scripts/gen_artifacts.ts", "--check"],
+}
+
+interface ParsedCliOptions {
+  readonly positional: readonly string[]
+  readonly json: boolean
+  readonly md: boolean
+  readonly ansi: boolean
+  readonly ids: boolean
+  readonly light: boolean
+  readonly noColor: boolean
+  readonly noHyperlinks: boolean
+  readonly desc: boolean
+  readonly dryRun: boolean
+  readonly tokensOnly: boolean
+  readonly mode: BunMarkdownRenderMode
+  readonly explicitMode: boolean
+  readonly preset?: BunMarkdownRenderPresetId
+  readonly profile?: BunCliAnsiProfileId
+  readonly columns?: number
+  readonly preid?: string
+}
+
+function loadTomlAnsiThemeProfile(profileName: string): BunAnsiThemeConfig | undefined {
+  const builtin = BUN_CLI_ANSI_PROFILES.find(
+    (p) => p.id === profileName || p.profileId === profileName,
+  )?.ansiTheme
+  const tokensPath = resolve(ROOT_DIR, "design/tokens.toml")
+  if (!existsSync(tokensPath) || typeof Bun === "undefined" || !Bun.TOML) {
+    return builtin
+  }
+  try {
+    const parsed = Bun.TOML.parse(readFileSync(tokensPath, "utf8")) as {
+      readonly cli?: {
+        readonly markdown_ansi?: Readonly<
+          Record<
+            string,
+            {
+              readonly profile_id?: string
+              readonly colors?: boolean
+              readonly columns?: number
+              readonly hyperlinks?: boolean
+              readonly kitty_graphics?: boolean
+              readonly light?: boolean
+            }
+          >
+        >
+      }
+    }
+    const table = parsed.cli?.markdown_ansi
+    if (!table) return builtin
+    const matched =
+      table[profileName] ?? Object.values(table).find((entry) => entry.profile_id === profileName)
+    if (!matched) return builtin
+    return {
+      colors: typeof matched.colors === "boolean" ? matched.colors : (builtin?.colors ?? true),
+      columns: typeof matched.columns === "number" ? matched.columns : (builtin?.columns ?? 88),
+      hyperlinks:
+        typeof matched.hyperlinks === "boolean"
+          ? matched.hyperlinks
+          : (builtin?.hyperlinks ?? true),
+      light: typeof matched.light === "boolean" ? matched.light : (builtin?.light ?? false),
+      kittyGraphics:
+        typeof matched.kitty_graphics === "boolean"
+          ? matched.kitty_graphics
+          : (builtin?.kittyGraphics ?? false),
+    }
+  } catch {
+    return builtin
+  }
+}
+
+function parseCliFlags(args: readonly string[]): ParsedCliOptions {
+  const positional: string[] = []
+  let json = false
+  let md = false
+  let ansi = false
+  let ids = false
+  let light = false
+  let noColor = false
+  let noHyperlinks = false
+  let desc = false
+  let dryRun = false
+  let tokensOnly = false
+  let mode: BunMarkdownRenderMode = "render-callbacks"
+  let explicitMode = false
+  let preset: BunMarkdownRenderPresetId | undefined
+  let profile: BunCliAnsiProfileId | undefined
+  let columns: number | undefined
+  let preid: string | undefined
+
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i]!
+    if (arg === "--json") json = true
+    else if (arg === "--md" || arg === "--markdown") md = true
+    else if (arg === "--ansi") ansi = true
+    else if (arg === "--ids" || arg === "--meta") ids = true
+    else if (arg === "--light") light = true
+    else if (arg === "--no-color") noColor = true
+    else if (arg === "--no-hyperlinks") noHyperlinks = true
+    else if (arg === "--desc") desc = true
+    else if (arg === "--dry-run") dryRun = true
+    else if (arg === "--tokens-only") tokensOnly = true
+    else if (arg === "--mode" && args[i + 1]) {
+      const m = args[i + 1]!
+      mode = m === "ansi" ? "ansi-theme" : m === "html" ? "html" : "render-callbacks"
+      explicitMode = true
+      i += 1
+    } else if (arg === "--preset" && args[i + 1]) {
+      preset = args[i + 1] as BunMarkdownRenderPresetId
+      i += 1
+    } else if (arg === "--profile" && args[i + 1]) {
+      profile = args[i + 1] as BunCliAnsiProfileId
+      i += 1
+    } else if (arg === "--columns" && args[i + 1]) {
+      const parsedCols = Number(args[i + 1])
+      if (Number.isFinite(parsedCols)) columns = parsedCols
+      i += 1
+    } else if (arg === "--preid" && args[i + 1]) {
+      preid = args[i + 1]!
+      i += 1
+    } else if (!arg.startsWith("-")) {
+      positional.push(arg)
+    }
+  }
+
+  return {
+    positional,
+    json,
+    md,
+    ansi,
+    ids,
+    light,
+    noColor,
+    noHyperlinks,
+    desc,
+    dryRun,
+    tokensOnly,
+    mode,
+    explicitMode,
+    preset,
+    profile,
+    columns,
+    preid,
+  }
+}
+
+function buildGfmTableMarkdown(
+  heading: string,
+  headers: readonly string[],
+  alignments: readonly ("left" | "center" | "right")[],
+  rows: readonly (readonly string[])[],
+  subtitle?: string,
+): string {
+  const esc = (v: string) => v.replace(/\|/g, "\\|").replace(/\r?\n/g, " ")
+  const widths = headers.map((h, i) =>
+    Math.max(h.length, 3, ...rows.map((r) => esc(r[i] ?? "").length)),
+  )
+  const fmtRow = (cells: readonly string[]) =>
+    `| ${cells
+      .map((cell, i) => {
+        const text = esc(cell)
+        const w = widths[i]!
+        return alignments[i] === "right" ? text.padStart(w, " ") : text.padEnd(w, " ")
+      })
+      .join(" | ")} |`
+  const sep = `| ${alignments
+    .map((align, i) => {
+      const w = widths[i]!
+      if (align === "right") return `${"-".repeat(w - 1)}:`
+      if (align === "center") return `:${"-".repeat(Math.max(1, w - 2))}:`
+      return `:${"-".repeat(w - 1)}`
+    })
+    .join(" | ")} |`
+
+  const table = [fmtRow(headers), sep, ...rows.map((r) => fmtRow(r))].join("\n")
+  return [`# ${heading}`, ...(subtitle ? ["", subtitle] : []), "", table, ""].join("\n")
+}
+
+function resolveThemeFromFlags(flags: ParsedCliOptions): Partial<BunAnsiThemeConfig> {
+  const fromToml = flags.profile ? loadTomlAnsiThemeProfile(flags.profile) : undefined
+  return {
+    colors: flags.noColor ? false : (fromToml?.colors ?? true),
+    columns: flags.columns ?? fromToml?.columns ?? 100,
+    hyperlinks: flags.noHyperlinks ? false : (fromToml?.hyperlinks ?? true),
+    light: flags.light ? true : (fromToml?.light ?? false),
+    kittyGraphics: fromToml?.kittyGraphics ?? false,
+  }
+}
+
+function printTableView(options: {
+  readonly heading: string
+  readonly subtitle?: string
+  readonly headers: readonly string[]
+  readonly alignments: readonly ("left" | "center" | "right")[]
+  readonly rows: readonly (readonly string[])[]
+  readonly inspectRows: readonly Record<string, unknown>[]
+  readonly inspectColumns: readonly string[]
+  readonly flags: ParsedCliOptions
+}): void {
+  if (options.flags.md) {
+    writeStdoutSafe(
+      buildGfmTableMarkdown(
+        options.heading,
+        options.headers,
+        options.alignments,
+        options.rows,
+        options.subtitle,
+      ),
+    )
+    return
+  }
+
+  if (options.flags.ansi || options.flags.profile) {
+    const md = buildGfmTableMarkdown(
+      options.heading,
+      options.headers,
+      options.alignments,
+      options.rows,
+      options.subtitle,
+    )
+    const rendered = renderBunMarkdownStudio(md, {
+      mode: options.flags.explicitMode ? options.flags.mode : "ansi-theme",
+      presetId: options.flags.preset,
+      profileId: options.flags.profile,
+      showHeadingIds: options.flags.ids,
+      theme: resolveThemeFromFlags(options.flags),
+    })
+    writeStdoutSafe(rendered.ansi)
+    return
+  }
+
+  if (options.subtitle) console.log(options.subtitle)
+  console.log(formatInspectTable(options.inspectRows, options.inspectColumns))
+}
+
+function resolveDocByTarget(
+  docs: readonly MarkdownDocAuditEntry[],
+  targetArg: string,
+): MarkdownDocAuditEntry | undefined {
+  const normalizedTarget = targetArg.replace(/\\/g, "/").replace(/^\.\//, "")
+  return (
+    docs.find((d) => d.metaId.toLowerCase() === targetArg.toLowerCase()) ??
+    docs.find((d) => d.path === normalizedTarget)
+  )
 }
 
 function runBunScript(argv: readonly string[]): number {
@@ -85,7 +352,8 @@ function runBunScript(argv: readonly string[]): number {
   }
 }
 
-function printHelp(): void {
+function printHelp(subArgs: readonly string[] = []): void {
+  const flags = parseCliFlags(subArgs)
   const bunVersion =
     typeof (globalThis as Record<string, unknown>).Bun === "object"
       ? String(
@@ -93,13 +361,23 @@ function printHelp(): void {
             "unknown",
         )
       : process.version
-  console.log(`SportsDesk Ops Dashboard — Unified Bun CLI (runtime: ${bunVersion})`)
-  console.log(formatInspectTable(UNIFIED_CLI_COMMANDS, ["command", "description"]))
+  const subtitle = `SportsDesk Ops Dashboard — Unified Bun CLI (runtime: ${bunVersion})`
+  printTableView({
+    heading: "SportsDesk Ops Dashboard — Unified Bun CLI",
+    subtitle,
+    headers: ["Command", "Purpose"],
+    alignments: ["left", "left"],
+    rows: UNIFIED_CLI_COMMANDS.map((c) => [`\`${c.command}\``, c.description]),
+    inspectRows: UNIFIED_CLI_COMMANDS,
+    inspectColumns: ["command", "description"],
+    flags,
+  })
 }
 
 function handleArtifacts(subArgs: readonly string[]): number {
-  const action = subArgs[0] ?? "status"
-  const tokensOnly = subArgs.includes("--tokens-only")
+  const flags = parseCliFlags(subArgs)
+  const action = flags.positional[0] ?? "status"
+  const tokensOnly = flags.tokensOnly
 
   if (action === "generate" || action === "gen") {
     const res = runArtifactPipeline({ rootDir: ROOT_DIR, check: false, tokensOnly })
@@ -136,10 +414,22 @@ function handleArtifacts(subArgs: readonly string[]): number {
       sha256: a.sha256.slice(0, 12),
       status: res.driftedFiles.includes(a.path) ? "DRIFT" : "OK",
     }))
-    console.log(formatInspectTable(rows, ["path", "source", "bytes", "sha256", "status"]))
-    console.log(
-      `Pipeline diagrams: ${pipeline.verifiedFiles}/${pipeline.totalArtifacts * 3} assets verified (${pipeline.issues.length} issues)`,
-    )
+    printTableView({
+      heading: "Generated & Managed Artifacts Status",
+      subtitle: `Pipeline diagrams: ${pipeline.verifiedFiles}/${pipeline.totalArtifacts * 3} assets verified (${pipeline.issues.length} issues)`,
+      headers: ["Artifact Path", "Source", "Bytes", "SHA-256 (12)", "Status"],
+      alignments: ["left", "left", "right", "left", "center"],
+      rows: rows.map((r) => [
+        `\`${r.path}\``,
+        `\`${r.source}\``,
+        `${r.bytes}`,
+        `\`${r.sha256}\``,
+        r.status,
+      ]),
+      inspectRows: rows,
+      inspectColumns: ["path", "source", "bytes", "sha256", "status"],
+      flags,
+    })
     return res.ok ? 0 : 1
   }
 
@@ -148,7 +438,8 @@ function handleArtifacts(subArgs: readonly string[]): number {
 }
 
 function handleDocs(subArgs: readonly string[]): number {
-  const action = subArgs[0] ?? "check"
+  const flags = parseCliFlags(subArgs)
+  const action = flags.positional[0] ?? "check"
 
   if (action === "check") {
     const audit = auditMarkdownDocs(ROOT_DIR)
@@ -160,71 +451,216 @@ function handleDocs(subArgs: readonly string[]): number {
       return 1
     }
     const totalLinks = audit.docs.reduce((acc, d) => acc + d.localLinksChecked, 0)
+    const totalHeadings = audit.docs.reduce((acc, d) => acc + d.headingIds.length, 0)
+    const totalTables = audit.docs.reduce((acc, d) => acc + d.tableCount, 0)
     console.log(
-      `PASS: Audited ${audit.docs.length} Markdown files (${totalLinks} local links verified, 0 broken links, 0 stale references).`,
+      `PASS: Audited ${audit.docs.length} Markdown files (${totalLinks} local links verified, ${totalHeadings} GFM heading meta IDs, ${totalTables} tables, 0 broken links, 0 stale references).`,
     )
     return 0
   }
 
   if (action === "list") {
     const audit = auditMarkdownDocs(ROOT_DIR)
-    const rows = audit.docs.map((d) => ({
+    if (flags.json) {
+      console.log(
+        JSON.stringify(
+          audit.docs.map((d) => ({
+            metaId: d.metaId,
+            path: d.path,
+            title: d.title,
+            lines: d.lines,
+            links: d.localLinksChecked,
+            tableCount: d.tableCount,
+            taskSummary: d.taskSummary,
+            headingCount: d.headingIds.length,
+            headingIds: flags.ids ? d.headingIds : d.headingIds.map((h) => h.id),
+            sha256: d.sha256.slice(0, 12),
+          })),
+          null,
+          2,
+        ),
+      )
+      return 0
+    }
+
+    const inspectRows = audit.docs.map((d) => ({
+      metaId: d.metaId,
       path: d.path,
+      headings: d.headingIds.length,
+      tables: d.tableCount,
       lines: d.lines,
       links: d.localLinksChecked,
-      issues: d.brokenLinks.length + d.staleReferences.length,
       sha256: d.sha256.slice(0, 12),
+      ...(flags.ids
+        ? {
+            listedIds:
+              d.headingIds
+                .slice(0, 3)
+                .map((h) => `#${h.id}`)
+                .join(", ") + (d.headingIds.length > 3 ? ` (+${d.headingIds.length - 3})` : ""),
+          }
+        : {}),
     }))
-    console.log(formatInspectTable(rows, ["path", "lines", "links", "issues", "sha256"]))
+    const headers = flags.ids
+      ? ["Meta ID", "Document", "Headings", "Tables", "Lines", "Links", "Listed GFM IDs", "SHA-256"]
+      : ["Meta ID", "Document", "Headings", "Tables", "Lines", "Links", "SHA-256"]
+    const alignments: readonly ("left" | "center" | "right")[] = flags.ids
+      ? ["left", "left", "right", "right", "right", "right", "left", "left"]
+      : ["left", "left", "right", "right", "right", "right", "left"]
+    const mdRows = audit.docs.map((d) => {
+      const base = [
+        `\`${d.metaId}\``,
+        `\`${d.path}\``,
+        String(d.headingIds.length),
+        String(d.tableCount),
+        String(d.lines),
+        String(d.localLinksChecked),
+      ]
+      if (flags.ids) {
+        const listed =
+          d.headingIds.length === 0
+            ? "—"
+            : d.headingIds
+                .slice(0, 3)
+                .map((h) => `\`#${h.id}\``)
+                .join(", ") + (d.headingIds.length > 3 ? ` (+${d.headingIds.length - 3})` : "")
+        base.push(listed)
+      }
+      base.push(`\`${d.sha256.slice(0, 12)}\``)
+      return base
+    })
+
+    printTableView({
+      heading: "SportsDesk Tracked Markdown Documentation",
+      subtitle: `${audit.docs.length} tracked documents · canonical SD-DOC-* meta IDs & GFM anchor index`,
+      headers,
+      alignments,
+      rows: mdRows,
+      inspectRows,
+      inspectColumns: flags.ids
+        ? ["metaId", "path", "headings", "tables", "lines", "links", "listedIds", "sha256"]
+        : ["metaId", "path", "headings", "tables", "lines", "links", "sha256"],
+      flags,
+    })
+    return 0
+  }
+
+  if (action === "ids") {
+    const audit = auditMarkdownDocs(ROOT_DIR)
+    const targetArg = flags.positional[1]
+    const matchedDocs = targetArg
+      ? audit.docs.filter((d) => {
+          const resolved = resolveDocByTarget(audit.docs, targetArg)
+          return resolved ? d.path === resolved.path : false
+        })
+      : audit.docs
+
+    if (targetArg && matchedDocs.length === 0) {
+      console.error(`Markdown doc or meta ID not found: ${targetArg}`)
+      return 2
+    }
+
+    const entries = matchedDocs.flatMap((d) =>
+      d.headingIds.map((h) => ({
+        metaId: d.metaId,
+        path: d.path,
+        level: `H${h.level}`,
+        gfmId: `#${h.id}`,
+        heading: h.text,
+      })),
+    )
+
+    if (flags.json) {
+      console.log(
+        JSON.stringify(
+          matchedDocs.map((d) => ({
+            metaId: d.metaId,
+            path: d.path,
+            tableCount: d.tableCount,
+            taskSummary: d.taskSummary,
+            headingIds: d.headingIds,
+          })),
+          null,
+          2,
+        ),
+      )
+      return 0
+    }
+
+    printTableView({
+      heading: targetArg
+        ? `Listed GFM Heading Meta IDs — ${matchedDocs[0]!.metaId}`
+        : "Listed GFM Heading Meta IDs Across Documentation",
+      subtitle: `${entries.length} GFM heading meta ID(s) extracted via Bun.markdown.render({ headings: { ids: true } })`,
+      headers: ["Doc Meta ID", "Level", "GFM Meta ID", "Heading Text", "Document"],
+      alignments: ["left", "center", "left", "left", "left"],
+      rows: entries.map((e) => [
+        `\`${e.metaId}\``,
+        e.level,
+        `\`${e.gfmId}\``,
+        e.heading,
+        `\`${e.path}\``,
+      ]),
+      inspectRows: entries,
+      inspectColumns: ["metaId", "level", "gfmId", "heading", "path"],
+      flags,
+    })
     return 0
   }
 
   if (action === "render") {
-    const targetArg = subArgs[1] ?? "dashboard.md"
-    const fullTarget = resolve(ROOT_DIR, targetArg)
+    const audit = auditMarkdownDocs(ROOT_DIR)
+    const targetArg = flags.positional[1] ?? "dashboard.md"
+    const docEntry = resolveDocByTarget(audit.docs, targetArg)
+    const relTarget = docEntry?.path ?? targetArg
+    const fullTarget = resolve(ROOT_DIR, relTarget)
     if (!fullTarget.startsWith(ROOT_DIR) || !existsSync(fullTarget)) {
-      console.error(`Markdown file not found inside workspace: ${targetArg}`)
+      console.error(`Markdown file or SD-DOC-* meta ID not found inside workspace: ${targetArg}`)
       return 2
     }
     const rawMd = readFileSync(fullTarget, "utf8")
-    let mode: BunMarkdownRenderMode = "render-callbacks"
-    let presetId: BunMarkdownRenderPresetId = "obsidian-desk"
-    let columns = 88
-    let colors = true
-    let light = false
-    let hyperlinks = true
-
-    for (let i = 2; i < subArgs.length; i += 1) {
-      const arg = subArgs[i]!
-      if (arg === "--mode" && subArgs[i + 1]) {
-        const m = subArgs[i + 1]!
-        mode = m === "ansi" ? "ansi-theme" : m === "html" ? "html" : "render-callbacks"
-        i += 1
-      } else if (arg === "--preset" && subArgs[i + 1]) {
-        presetId = subArgs[i + 1] as BunMarkdownRenderPresetId
-        i += 1
-      } else if (arg === "--columns" && subArgs[i + 1]) {
-        columns = Number(subArgs[i + 1]) || 88
-        i += 1
-      } else if (arg === "--light") {
-        light = true
-      } else if (arg === "--no-color") {
-        colors = false
-      } else if (arg === "--no-hyperlinks") {
-        hyperlinks = false
-      }
-    }
+    const mode: BunMarkdownRenderMode = flags.explicitMode
+      ? flags.mode
+      : flags.profile || flags.ansi
+        ? "ansi-theme"
+        : "render-callbacks"
 
     const rendered = renderBunMarkdownStudio(rawMd, {
       mode,
-      presetId,
-      theme: { colors, light, hyperlinks, columns },
+      presetId: flags.preset,
+      profileId: flags.profile,
+      showHeadingIds: flags.ids,
+      theme: resolveThemeFromFlags(flags),
     })
-    process.stdout.write(mode === "html" ? `${rendered.html}\n` : rendered.ansi)
+
+    if (mode === "html") {
+      writeStdoutSafe(`${rendered.html}\n`)
+      return 0
+    }
+
+    writeStdoutSafe(rendered.ansi)
+
+    if (flags.ids && rendered.headingIds.length > 0) {
+      const docMetaLabel = docEntry?.metaId ?? "CUSTOM-DOC"
+      const idTableMd = buildGfmTableMarkdown(
+        `Listed GFM Heading Meta IDs (${docMetaLabel})`,
+        ["Level", "GFM Meta ID", "Section Heading"],
+        ["center", "left", "left"],
+        rendered.headingIds.map((h) => [`H${h.level}`, `\`#${h.id}\``, h.text]),
+        `Doc: \`${relTarget}\` · Tables: ${rendered.tableCount} · Tasks: ${rendered.taskSummary.checked}/${rendered.taskSummary.total}`,
+      )
+      const idRendered = renderBunMarkdownStudio(idTableMd, {
+        mode: flags.explicitMode && mode === "render-callbacks" ? "render-callbacks" : "ansi-theme",
+        presetId: flags.preset,
+        profileId: flags.profile,
+        theme: resolveThemeFromFlags(flags),
+      })
+      writeStdoutSafe(`\n${idRendered.ansi}`)
+    }
     return 0
   }
 
-  console.error(`Unknown docs subcommand: ${action} (expected check|list|render)`)
+  console.error(`Unknown docs subcommand: ${action} (expected check|list|ids|render)`)
   return 2
 }
 
@@ -270,8 +706,9 @@ function handleSurface(subArgs: readonly string[]): number {
 }
 
 function handleVersion(subArgs: readonly string[]): number {
-  const action = subArgs[0] ?? "status"
-  const asJson = subArgs.includes("--json")
+  const flags = parseCliFlags(subArgs)
+  const action = flags.positional[0] ?? "status"
+  const asJson = flags.json
 
   if (action === "status" || action === "check") {
     const report = auditUnifiedVersions({ rootDir: ROOT_DIR })
@@ -287,12 +724,24 @@ function handleVersion(subArgs: readonly string[]): number {
       status: r.ok ? "OK" : "DRIFT",
       source: r.source,
     }))
-    console.log(
-      `Unified Versioning Matrix (engine: ${report.engine} · workspace: ${report.workspaceVersion ?? "unset"} · design: ${report.designVersion ?? "unset"} · bun: ${report.bunVersionPin ?? "unset"})`,
-    )
-    console.log(
-      formatInspectTable(rows, ["track", "target", "version", "expected", "status", "source"]),
-    )
+    const subtitle = `Unified Versioning Matrix (engine: ${report.engine} · workspace: ${report.workspaceVersion ?? "unset"} · design: ${report.designVersion ?? "unset"} · bun: ${report.bunVersionPin ?? "unset"})`
+    printTableView({
+      heading: "Unified Versioning Matrix",
+      subtitle,
+      headers: ["Track", "Target", "Version", "Expected", "Status", "Source"],
+      alignments: ["left", "left", "right", "right", "center", "left"],
+      rows: rows.map((r) => [
+        r.track,
+        `\`${r.target}\``,
+        `\`${r.version}\``,
+        `\`${r.expected}\``,
+        r.status,
+        `\`${r.source}\``,
+      ]),
+      inspectRows: rows,
+      inspectColumns: ["track", "target", "version", "expected", "status", "source"],
+      flags,
+    })
     if (!report.ok) {
       console.error(`FAIL: Found ${report.violations.length} SemVer parity violation(s):`)
       for (const v of report.violations) {
@@ -309,8 +758,8 @@ function handleVersion(subArgs: readonly string[]): number {
   }
 
   if (action === "satisfies") {
-    const version = subArgs[1]
-    const range = subArgs[2]
+    const version = flags.positional[1]
+    const range = flags.positional[2]
     if (!version || !range) {
       console.error("Usage: bun run cli version satisfies <version> <range>")
       return 2
@@ -329,8 +778,8 @@ function handleVersion(subArgs: readonly string[]): number {
   }
 
   if (action === "order") {
-    const a = subArgs[1]
-    const b = subArgs[2]
+    const a = flags.positional[1]
+    const b = flags.positional[2]
     if (!a || !b) {
       console.error("Usage: bun run cli version order <versionA> <versionB>")
       return 2
@@ -348,14 +797,13 @@ function handleVersion(subArgs: readonly string[]): number {
   }
 
   if (action === "sort") {
-    const desc = subArgs.includes("--desc")
-    const versions = subArgs.slice(1).filter((arg) => !arg.startsWith("--"))
+    const versions = flags.positional.slice(1)
     if (versions.length === 0) {
       console.error("Usage: bun run cli version sort [--desc] [--json] <v1> <v2> ...")
       return 2
     }
     try {
-      const sorted = sortSemver(versions, desc ? "desc" : "asc")
+      const sorted = sortSemver(versions, flags.desc ? "desc" : "asc")
       console.log(asJson ? JSON.stringify(sorted) : sorted.join("\n"))
       return 0
     } catch (err) {
@@ -365,8 +813,7 @@ function handleVersion(subArgs: readonly string[]): number {
   }
 
   if (action === "max") {
-    const positional = subArgs.slice(1).filter((arg) => !arg.startsWith("--"))
-    const [range, ...versions] = positional
+    const [range, ...versions] = flags.positional.slice(1)
     if (!range || versions.length === 0) {
       console.error("Usage: bun run cli version max [--json] <range> <v1> <v2> ...")
       return 2
@@ -381,21 +828,18 @@ function handleVersion(subArgs: readonly string[]): number {
   }
 
   if (action === "bump") {
-    const target = subArgs[1]
+    const target = flags.positional[1]
     if (!target) {
       console.error(
         "Usage: bun run cli version bump <major|minor|patch|premajor|preminor|prepatch|prerelease|x.y.z> [--preid <tag>] [--dry-run] [--json]",
       )
       return 2
     }
-    const dryRun = subArgs.includes("--dry-run")
-    const preidIdx = subArgs.indexOf("--preid")
-    const preid = preidIdx >= 0 ? subArgs[preidIdx + 1] : undefined
     const res = bumpWorkspaceVersions({
       rootDir: ROOT_DIR,
       target,
-      preid,
-      dryRun,
+      preid: flags.preid,
+      dryRun: flags.dryRun,
     })
     if (asJson) {
       console.log(JSON.stringify(res, null, 2))
@@ -410,10 +854,10 @@ function handleVersion(subArgs: readonly string[]): number {
       file: c.path,
       previous: c.previous,
       next: c.next,
-      mode: dryRun ? "DRY-RUN" : c.written ? "UPDATED" : "UNCHANGED",
+      mode: flags.dryRun ? "DRY-RUN" : c.written ? "UPDATED" : "UNCHANGED",
     }))
     console.log(
-      `${dryRun ? "DRY-RUN" : "PASS"}: Workspace version ${res.previousVersion} -> ${res.nextVersion}`,
+      `${flags.dryRun ? "DRY-RUN" : "PASS"}: Workspace version ${res.previousVersion} -> ${res.nextVersion}`,
     )
     console.log(formatInspectTable(rows, ["package", "file", "previous", "next", "mode"]))
     return 0
@@ -470,7 +914,8 @@ function handleCheck(subArgs: readonly string[]): number {
 }
 
 function handleScripts(subArgs: readonly string[]): number {
-  const filter = (subArgs[0] ?? "").trim().toLowerCase()
+  const flags = parseCliFlags(subArgs)
+  const filter = (flags.positional[0] ?? "").trim().toLowerCase()
   const pkg = JSON.parse(readFileSync(resolve(ROOT_DIR, "package.json"), "utf8")) as {
     readonly scripts?: Record<string, string>
   }
@@ -479,7 +924,16 @@ function handleScripts(subArgs: readonly string[]): number {
       ([k, v]) => !filter || k.toLowerCase().includes(filter) || v.toLowerCase().includes(filter),
     )
     .map(([name, command]) => ({ script: `bun run ${name}`, command }))
-  console.log(formatInspectTable(rows, ["script", "command"]))
+  printTableView({
+    heading: "SportsDesk Unified package.json Scripts",
+    subtitle: filter ? `Filter: "${filter}" (${rows.length} matches)` : `${rows.length} scripts`,
+    headers: ["Script", "Command"],
+    alignments: ["left", "left"],
+    rows: rows.map((r) => [`\`${r.script}\``, `\`${r.command}\``]),
+    inspectRows: rows,
+    inspectColumns: ["script", "command"],
+    flags,
+  })
   return 0
 }
 
@@ -489,7 +943,7 @@ export function runSportsdeskCli(argv: readonly string[]): number {
     case "help":
     case "--help":
     case "-h":
-      printHelp()
+      printHelp(rest)
       return 0
     case "version":
     case "versions":

@@ -252,6 +252,32 @@ describe("Bun Runtime Surface catalog & live audit engine", () => {
     expect(htmlRes.engine).toBe("bun-native")
     expect(htmlRes.html).toContain("<strong>bold</strong>")
     expect(htmlRes.html).toContain("<code>code</code>")
+
+    expect(callbacksRes.tableCount).toBe(1)
+    expect(callbacksRes.taskSummary).toEqual({ total: 3, checked: 2, unchecked: 1 })
+    expect(callbacksRes.headingIds.map((h) => h.id)).toEqual([
+      "sportsdesk-ops-live-surface-brief",
+      "live-signal-controls",
+      "route-latency-matrix",
+    ])
+    expect(callbacksRes.callbacksInvoked).toEqual(
+      expect.arrayContaining(["table", "thead", "tbody", "tr", "th", "td", "listItem"]),
+    )
+    expect(callbacksRes.plain).toContain("┌")
+    expect(callbacksRes.plain).toContain("L25.N1882")
+    expect(callbacksRes.plain).toContain("5,000 ms")
+
+    const withHeadingBadges = renderBunMarkdownStudio(DEFAULT_BUN_MARKDOWN_STUDIO_SAMPLE, {
+      mode: "render-callbacks",
+      profileId: "pipe_ascii",
+      showHeadingIds: true,
+    })
+    expect(withHeadingBadges.ansiTheme.colors).toBe(false)
+    expect(withHeadingBadges.ansiTheme.columns).toBe(0)
+    expect(withHeadingBadges.ansi).toContain("[#live-signal-controls]")
+    expect(withHeadingBadges.ansi).toContain("+---")
+    expect(withHeadingBadges.ansi).toContain("[x]")
+    expect(withHeadingBadges.ansi).toContain("[ ]")
   })
 
   test("handles Node/browser fallback scope cleanly when Bun global is absent", () => {

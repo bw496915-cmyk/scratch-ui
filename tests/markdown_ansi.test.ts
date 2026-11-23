@@ -192,4 +192,37 @@ describe("terminal Markdown", () => {
       "東   ready now",
     )
   })
+
+  test("renders GFM aligned tables, tasklists, and captures heading meta IDs", () => {
+    const md = [
+      "# Docs Table & Meta ID",
+      "",
+      "| Key | Align | Latency |",
+      "| :--- | :---: | ---: |",
+      "| `L25` | center | 42ms |",
+      "",
+      "- [x] Verified",
+      "- [ ] Pending",
+    ].join("\n")
+
+    let captured: import("../src/theme/markdown_ansi.ts").ThemedMarkdownMetadata | undefined
+    const plain = renderThemedMarkdown(md, {
+      colors: false,
+      showHeadingIds: true,
+      onMetadata: (meta) => {
+        captured = meta
+      },
+    })
+
+    expect(plain).toContain("Docs Table & Meta ID [#docs-table-meta-id]")
+    expect(plain).toContain("+-----+--------+---------+")
+    expect(plain).toContain("| L25 | center |    42ms |")
+    expect(plain).toContain("[x] Verified")
+    expect(plain).toContain("[ ] Pending")
+    expect(captured?.tableCount).toBe(1)
+    expect(captured?.taskSummary).toEqual({ total: 2, checked: 1, unchecked: 1 })
+    expect(captured?.headingIds).toEqual([
+      { level: 1, id: "docs-table-meta-id", text: "Docs Table & Meta ID" },
+    ])
+  })
 })

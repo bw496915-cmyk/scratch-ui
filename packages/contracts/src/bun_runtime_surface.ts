@@ -2245,6 +2245,94 @@ export const BUN_ANSI_THEME_PRESETS: readonly BunMarkdownRenderPreset[] = [
   },
 ]
 
+export type BunCliAnsiProfileId =
+  "ghostty_interactive" | "tty_narrow" | "r2_telemetry_stream" | "pipe_ascii"
+
+export interface BunCliAnsiProfileSpec {
+  readonly id: BunCliAnsiProfileId
+  readonly profileId: string
+  readonly label: string
+  readonly presetId: BunMarkdownRenderPresetId
+  readonly ansiTheme: BunAnsiThemeConfig
+  readonly description: string
+}
+
+/**
+ * Deterministic `[cli.markdown_ansi.*]` `Bun.markdown.AnsiTheme` profiles
+ * matching `design/tokens.toml` with explicit `light: false` to prevent
+ * ambient `COLORFGBG` drift on `#04070e`.
+ */
+export const BUN_CLI_ANSI_PROFILES: readonly BunCliAnsiProfileSpec[] = [
+  {
+    id: "ghostty_interactive",
+    profileId: "ANSI_GHOSTTY_INTERACTIVE",
+    label: "Ghostty Interactive (120c)",
+    presetId: "obsidian-desk",
+    ansiTheme: {
+      colors: true,
+      columns: 120,
+      hyperlinks: true,
+      light: false,
+      kittyGraphics: false,
+    },
+    description: "TrueColor interactive TTY with 120 cols and OSC-8 hyperlinks",
+  },
+  {
+    id: "tty_narrow",
+    profileId: "ANSI_TTY_NARROW",
+    label: "TTY Narrow (88c)",
+    presetId: "obsidian-desk",
+    ansiTheme: {
+      colors: true,
+      columns: 88,
+      hyperlinks: true,
+      light: false,
+      kittyGraphics: false,
+    },
+    description: "Compact 88-col TrueColor terminal profile for split panes",
+  },
+  {
+    id: "r2_telemetry_stream",
+    profileId: "ANSI_R2_TELEMETRY_STREAM",
+    label: "R2 Stream (0c / no OSC-8)",
+    presetId: "emerald-audit",
+    ansiTheme: {
+      colors: true,
+      columns: 0,
+      hyperlinks: false,
+      light: false,
+      kittyGraphics: false,
+    },
+    description: "Unwrapped TrueColor chunk stream without OSC-8 for R2 hash stability",
+  },
+  {
+    id: "pipe_ascii",
+    profileId: "ANSI_PIPE_ASCII",
+    label: "Pipe ASCII (NO_COLOR)",
+    presetId: "obsidian-desk",
+    ansiTheme: {
+      colors: false,
+      columns: 0,
+      hyperlinks: false,
+      light: false,
+      kittyGraphics: false,
+    },
+    description: "Plain ASCII chrome (zero SGR/OSC-8/Unicode box escapes) for CI & pipes",
+  },
+]
+
+export interface BunMarkdownHeadingMeta {
+  readonly level: number
+  readonly id: string
+  readonly text: string
+}
+
+export interface BunMarkdownTaskSummary {
+  readonly total: number
+  readonly checked: number
+  readonly unchecked: number
+}
+
 export interface BunMarkdownCallbackSpec {
   readonly hook: string
   readonly signature: string
@@ -2254,8 +2342,13 @@ export interface BunMarkdownCallbackSpec {
 export const BUN_MARKDOWN_CALLBACK_SPECS: readonly BunMarkdownCallbackSpec[] = [
   {
     hook: "heading",
-    signature: "(children, { level }) => string",
-    role: "Bold TrueColor heading + level accent prefix",
+    signature: "(children, { level, id }) => string",
+    role: "Bold TrueColor heading + GFM meta.id anchor capture",
+  },
+  {
+    hook: "table / tr / th / td",
+    signature: "(children, { align }) => string",
+    role: "GFM aligned Unicode/ASCII box tables (`bunStringWidth` aware)",
   },
   {
     hook: "paragraph",
@@ -2289,8 +2382,8 @@ export const BUN_MARKDOWN_CALLBACK_SPECS: readonly BunMarkdownCallbackSpec[] = [
   },
   {
     hook: "listItem",
-    signature: "(children, { ordered, index, start }) => string",
-    role: "Bullet/numbered list formatting with task indicators",
+    signature: "(children, { ordered, index, start, depth, checked }) => string",
+    role: "Nested bullet/numbered list formatting with GFM task ☑/☐ badges",
   },
   {
     hook: "link",
@@ -2318,17 +2411,29 @@ export const DEFAULT_BUN_MARKDOWN_STUDIO_SAMPLE = `# SportsDesk Ops — Live Sur
 
 **Runtime**: \`Bun.markdown.render\` + \`AnsiTheme\` · Secret posture: \`[REDACTED:TOKEN]\`
 
-- **Sharp Ticket**: \`T-9041\` on [NFL Markets](https://fantasy402.com)
-- ~~Stale line -3.5~~ → *Repriced -4.0* (hold > 4.2%)
-- Unsafe link neutralized: [Blocked Script](javascript:alert(1))
+## Live Signal Controls
 
-> Use \`Bun.markdown.render(md, callbacks)\` for custom SGR themes and \`Bun.markdown.ansi(md, theme)\` for built-in terminal layout.
+- [x] **Sharp Ticket**: \`T-9041\` on [NFL Markets](https://fantasy402.com)
+- [x] ~~Stale line -3.5~~ → *Repriced -4.0* (hold > 4.2%)
+- [ ] Unsafe link neutralized: [Blocked Script](javascript:alert(1))
+
+## Route & Latency Matrix
+
+| Route ID | Gate | Target |
+| :--- | :---: | ---: |
+| \`L25.N1882\` | Devig Consensus | 5,000 ms |
+| \`L26.N3104\` | **Sharp Shrinkage** | 8 tix |
+| \`L28.N2501\` | Manager Clamp | \`CRITICAL\` |
+
+> Use \`Bun.markdown.render(md, callbacks, { headings: { ids: true } })\` for custom SGR + GFM tables and \`Bun.markdown.ansi(md, theme)\` for built-in terminal layout.
 
 ---`
 
 export interface BunMarkdownStudioOptions {
   readonly mode?: BunMarkdownRenderMode | undefined
   readonly presetId?: BunMarkdownRenderPresetId | undefined
+  readonly profileId?: BunCliAnsiProfileId | undefined
+  readonly showHeadingIds?: boolean | undefined
   readonly theme?: Partial<BunAnsiThemeConfig> | undefined
 }
 
@@ -2346,6 +2451,9 @@ export interface BunMarkdownStudioResult {
   readonly maxColumns: number
   readonly ansiByteLength: number
   readonly callbacksInvoked: readonly string[]
+  readonly headingIds: readonly BunMarkdownHeadingMeta[]
+  readonly tableCount: number
+  readonly taskSummary: BunMarkdownTaskSummary
 }
 
 const STUDIO_TERMINAL_CONTROLS = /[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/g
@@ -2445,13 +2553,156 @@ function resolveSemanticPaletteAnsi(
   return resolved
 }
 
+export type GfmTableAlign = "left" | "center" | "right" | undefined
+
+interface GfmTableCell {
+  readonly text: string
+  readonly align?: GfmTableAlign
+  readonly isHeader?: boolean
+}
+
+function slugifyGfmHeading(text: string, counts: Map<string, number>): string {
+  const base = text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\p{L}\p{N}\s-]/gu, "")
+    .replace(/[\s-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+  const prev = counts.get(base) ?? 0
+  counts.set(base, prev + 1)
+  return prev === 0 ? base : `${base}-${prev}`
+}
+
+function padGfmCell(text: string, width: number, align: GfmTableAlign): string {
+  const clean = text.replace(/[\r\n]+/g, " ").trim()
+  const visual = bunStringWidth(clean)
+  const padTotal = Math.max(0, width - visual)
+  if (align === "right") {
+    return `${" ".repeat(padTotal)}${clean}`
+  }
+  if (align === "center") {
+    const leftPad = Math.floor(padTotal / 2)
+    const rightPad = padTotal - leftPad
+    return `${" ".repeat(leftPad)}${clean}${" ".repeat(rightPad)}`
+  }
+  return `${clean}${" ".repeat(padTotal)}`
+}
+
+export function renderGfmBoxTable(options: {
+  readonly headRows: readonly (readonly GfmTableCell[])[]
+  readonly bodyRows: readonly (readonly GfmTableCell[])[]
+  readonly unicode: boolean
+  readonly colors: boolean
+  readonly headerAnsi?: string | undefined
+  readonly borderAnsi?: string | undefined
+  readonly reset?: string | undefined
+  readonly bold?: string | undefined
+}): string {
+  const allRows = [...options.headRows, ...options.bodyRows]
+  if (allRows.length === 0) return ""
+  const colCount = Math.max(...allRows.map((r) => r.length), 0)
+  if (colCount === 0) return ""
+
+  const alignments: GfmTableAlign[] = Array.from({ length: colCount }, () => undefined)
+  const widths: number[] = Array.from({ length: colCount }, () => 3)
+
+  for (const row of allRows) {
+    for (let c = 0; c < colCount; c += 1) {
+      const cell = row[c]
+      if (!cell) continue
+      if (cell.align && !alignments[c]) alignments[c] = cell.align
+      const w = bunStringWidth(cell.text.replace(/[\r\n]+/g, " ").trim())
+      if (w > widths[c]!) widths[c] = w
+    }
+  }
+
+  const bAnsi = options.colors ? (options.borderAnsi ?? "") : ""
+  const hAnsi = options.colors ? `${options.bold ?? "\u001b[1m"}${options.headerAnsi ?? ""}` : ""
+  const rst = options.colors ? (options.reset ?? "\u001b[0m") : ""
+  const sep = (left: string, mid: string, right: string, fill: string) =>
+    `${bAnsi}${left}${widths.map((w) => fill.repeat(w + 2)).join(mid)}${right}${rst}`
+
+  const top = options.unicode ? sep("┌", "┬", "┐", "─") : sep("+", "+", "+", "-")
+  const mid = options.unicode ? sep("├", "┼", "┤", "─") : sep("+", "+", "+", "-")
+  const bot = options.unicode ? sep("└", "┴", "┘", "─") : sep("+", "+", "+", "-")
+  const vbar = options.unicode ? `${bAnsi}│${rst}` : "|"
+
+  const formatRow = (row: readonly GfmTableCell[], isHeaderRow: boolean): string => {
+    const renderedCells = Array.from({ length: colCount }, (_unused, c) => {
+      const cell = row[c]
+      const raw = cell?.text ?? ""
+      const padded = padGfmCell(raw, widths[c]!, cell?.align ?? alignments[c])
+      return isHeaderRow && hAnsi ? ` ${hAnsi}${padded}${rst} ` : ` ${padded} `
+    })
+    return `${vbar}${renderedCells.join(vbar)}${vbar}`
+  }
+
+  const lines: string[] = [top]
+  for (const row of options.headRows) {
+    lines.push(formatRow(row, true))
+  }
+  if (options.headRows.length > 0 && options.bodyRows.length > 0) {
+    lines.push(mid)
+  }
+  for (const row of options.bodyRows) {
+    lines.push(formatRow(row, false))
+  }
+  lines.push(bot)
+  return `${lines.join("\n")}\n`
+}
+
+function splitMarkdownTableCells(rowLine: string): string[] {
+  const trimmed = rowLine.trim().replace(/^\|/, "").replace(/\|$/, "")
+  const cells: string[] = []
+  let current = ""
+  let inBackticks = false
+  for (let i = 0; i < trimmed.length; i += 1) {
+    const ch = trimmed[i]!
+    if (ch === "\\" && i + 1 < trimmed.length && trimmed[i + 1] === "|") {
+      current += "|"
+      i += 1
+      continue
+    }
+    if (ch === "`") inBackticks = !inBackticks
+    if (ch === "|" && !inBackticks) {
+      cells.push(current.trim())
+      current = ""
+      continue
+    }
+    current += ch
+  }
+  cells.push(current.trim())
+  return cells
+}
+
+function parseTableSeparatorAlignments(sepLine: string): GfmTableAlign[] | null {
+  const trimmed = sepLine.trim()
+  if (!trimmed.includes("|") && !trimmed.includes("-")) return null
+  const parts = splitMarkdownTableCells(trimmed)
+  if (parts.length === 0) return null
+  const aligns: GfmTableAlign[] = []
+  for (const part of parts) {
+    if (!/^:?-{2,}:?$/.test(part)) return null
+    const left = part.startsWith(":")
+    const right = part.endsWith(":")
+    aligns.push(left && right ? "center" : right ? "right" : left ? "left" : undefined)
+  }
+  return aligns
+}
+
 function fallbackMarkdownRenderToAnsi(
   markdown: string,
   mode: "render-callbacks" | "ansi-theme",
   theme: BunAnsiThemeConfig,
   paletteAnsi: Readonly<Record<keyof BunAnsiSemanticPaletteHex, string>>,
   callbacksInvoked: Set<string>,
-): string {
+  options: { readonly showHeadingIds?: boolean } = {},
+): {
+  readonly ansi: string
+  readonly headingIds: readonly BunMarkdownHeadingMeta[]
+  readonly tableCount: number
+  readonly taskSummary: BunMarkdownTaskSummary
+} {
   const useColor = theme.colors
   const reset = useColor ? "\u001b[0m" : ""
   const boldOn = useColor ? "\u001b[1m" : ""
@@ -2461,7 +2712,8 @@ function fallbackMarkdownRenderToAnsi(
   const italicOff = useColor ? "\u001b[23m" : ""
   const strikeOn = useColor ? "\u001b[9m" : ""
   const strikeOff = useColor ? "\u001b[29m" : ""
-  const cols = Math.max(24, Math.min(200, Math.floor(theme.columns || 76)))
+  const cols =
+    theme.columns === 0 ? 0 : Math.max(24, Math.min(200, Math.floor(theme.columns || 76)))
 
   const hColor =
     mode === "ansi-theme"
@@ -2512,7 +2764,15 @@ function fallbackMarkdownRenderToAnsi(
 
   let inFence = false
   const lines: string[] = []
-  for (const rawLine of markdown.replace(/\r\n?/g, "\n").split("\n")) {
+  const headingIds: BunMarkdownHeadingMeta[] = []
+  const slugCounts = new Map<string, number>()
+  let tableCount = 0
+  let taskChecked = 0
+  let taskUnchecked = 0
+
+  const rawLines = markdown.replace(/\r\n?/g, "\n").split("\n")
+  for (let i = 0; i < rawLines.length; i += 1) {
+    const rawLine = rawLines[i]!
     const trimmed = rawLine.trim()
     if (trimmed.startsWith("```")) {
       inFence = !inFence
@@ -2523,24 +2783,86 @@ function fallbackMarkdownRenderToAnsi(
       lines.push(`${dimOn}${stripTerminalControls(rawLine)}${reset}`)
       continue
     }
+
+    // GFM Pipe Table Block
+    const nextLine = rawLines[i + 1]
+    if (trimmed.includes("|") && typeof nextLine === "string") {
+      const aligns = parseTableSeparatorAlignments(nextLine)
+      if (aligns && aligns.length > 0) {
+        callbacksInvoked.add("table")
+        callbacksInvoked.add("thead")
+        callbacksInvoked.add("tbody")
+        callbacksInvoked.add("tr")
+        callbacksInvoked.add("th")
+        callbacksInvoked.add("td")
+        tableCount += 1
+
+        const headRaw = splitMarkdownTableCells(rawLine)
+        const headRow: GfmTableCell[] = aligns.map((align, colIdx) => ({
+          text: formatInline(headRaw[colIdx] ?? ""),
+          align,
+          isHeader: true,
+        }))
+
+        const bodyRows: GfmTableCell[][] = []
+        let j = i + 2
+        while (j < rawLines.length) {
+          const bLine = rawLines[j]!.trim()
+          if (!bLine || !bLine.includes("|")) break
+          const cells = splitMarkdownTableCells(rawLines[j]!)
+          bodyRows.push(
+            aligns.map((align, colIdx) => ({
+              text: formatInline(cells[colIdx] ?? ""),
+              align,
+              isHeader: false,
+            })),
+          )
+          j += 1
+        }
+        i = j - 1
+
+        const tableOut = renderGfmBoxTable({
+          headRows: [headRow],
+          bodyRows,
+          unicode: useColor,
+          colors: useColor,
+          headerAnsi: paletteAnsi.key,
+          borderAnsi: paletteAnsi.quote,
+          reset,
+          bold: boldOn,
+        })
+        lines.push(tableOut.trimEnd())
+        continue
+      }
+    }
+
     if (/^(?:---+|\*\*\*+|___+)$/.test(trimmed)) {
       callbacksInvoked.add("hr")
-      lines.push(`${dimOn}${"─".repeat(Math.min(cols, 56))}${reset}`)
+      const ruleWidth = cols > 0 ? Math.min(cols, 56) : 56
+      lines.push(`${dimOn}${"─".repeat(ruleWidth)}${reset}`)
       continue
     }
     const headingMatch = /^(#{1,6})\s+(.*)$/.exec(rawLine)
     if (headingMatch) {
       callbacksInvoked.add("heading")
       const level = headingMatch[1]!.length
-      const body = formatInline(headingMatch[2] ?? "")
+      const rawText = headingMatch[2] ?? ""
+      const body = formatInline(rawText)
+      const plainText = bunStripAnsi(body).trim()
+      const id = slugifyGfmHeading(plainText, slugCounts)
+      headingIds.push({ level, id, text: plainText })
+      const idSuffix =
+        options.showHeadingIds && id ? (useColor ? ` ${dimOn}[#${id}]${reset}` : ` [#${id}]`) : ""
       if (mode === "ansi-theme" && level === 1) {
-        lines.push(`${hColor}${body}${reset}`)
-        lines.push(
-          `${dimOn}${"═".repeat(Math.min(cols, Math.max(8, bunStringWidth(body))))}${reset}`,
-        )
+        lines.push(`${hColor}${body}${reset}${idSuffix}`)
+        const ulWidth =
+          cols > 0
+            ? Math.min(cols, Math.max(8, bunStringWidth(body)))
+            : Math.max(8, bunStringWidth(body))
+        lines.push(`${dimOn}${"═".repeat(ulWidth)}${reset}`)
       } else {
         const prefix = level > 1 ? `${"#".repeat(level)} ` : ""
-        lines.push(`${hColor}${prefix}${body}${reset}`)
+        lines.push(`${hColor}${prefix}${body}${reset}${idSuffix}`)
       }
       continue
     }
@@ -2551,14 +2873,33 @@ function fallbackMarkdownRenderToAnsi(
       lines.push(`${bar}${formatInline(quoteMatch[1] ?? "")}`)
       continue
     }
-    const listMatch = /^(\s*[-*+]|\s*\d+\.)\s+(.*)$/.exec(rawLine)
+    const listMatch = /^(\s*)([-*+]|\d+\.)\s+(.*)$/.exec(rawLine)
     if (listMatch) {
       callbacksInvoked.add("listItem")
-      const marker = listMatch[1]!.trim()
-      const bullet = /^\d+\./.test(marker)
-        ? `${paletteAnsi.key}${marker}${reset}`
-        : `${paletteAnsi.ok}•${reset}`
-      lines.push(`  ${bullet} ${formatInline(listMatch[2] ?? "")}`)
+      callbacksInvoked.add("list")
+      const indent = "  ".repeat(Math.floor((listMatch[1] ?? "").length / 2) + 1)
+      const marker = listMatch[2]!.trim()
+      let itemBody = listMatch[3] ?? ""
+      const taskMatch = /^\[( |x|X)\]\s+(.*)$/.exec(itemBody)
+      let bullet: string
+      if (taskMatch) {
+        const isChecked = taskMatch[1]!.toLowerCase() === "x"
+        if (isChecked) taskChecked += 1
+        else taskUnchecked += 1
+        itemBody = taskMatch[2] ?? ""
+        bullet = useColor
+          ? isChecked
+            ? `${paletteAnsi.ok}☑${reset}`
+            : `${dimOn}☐${reset}`
+          : isChecked
+            ? "[x]"
+            : "[ ]"
+      } else {
+        bullet = /^\d+\./.test(marker)
+          ? `${paletteAnsi.key}${marker}${reset}`
+          : `${paletteAnsi.ok}•${reset}`
+      }
+      lines.push(`${indent}${bullet} ${formatInline(itemBody)}`)
       continue
     }
     if (trimmed === "") {
@@ -2568,7 +2909,16 @@ function fallbackMarkdownRenderToAnsi(
     callbacksInvoked.add("paragraph")
     lines.push(wrapTextToColumns(formatInline(rawLine), cols))
   }
-  return `${lines.join("\n").trimEnd()}\n`
+  return {
+    ansi: `${lines.join("\n").trimEnd()}\n`,
+    headingIds,
+    tableCount,
+    taskSummary: {
+      total: taskChecked + taskUnchecked,
+      checked: taskChecked,
+      unchecked: taskUnchecked,
+    },
+  }
 }
 
 function fallbackMarkdownToSafeHtml(markdown: string): string {
@@ -2587,21 +2937,32 @@ export function renderBunMarkdownStudio(
   options: BunMarkdownStudioOptions = {},
 ): BunMarkdownStudioResult {
   const mode: BunMarkdownRenderMode = options.mode ?? "render-callbacks"
+  const profileSpec = options.profileId
+    ? BUN_CLI_ANSI_PROFILES.find((p) => p.id === options.profileId)
+    : undefined
   const preset =
-    BUN_ANSI_THEME_PRESETS.find((p) => p.id === options.presetId) ?? BUN_ANSI_THEME_PRESETS[0]!
+    BUN_ANSI_THEME_PRESETS.find((p) => p.id === (options.presetId ?? profileSpec?.presetId)) ??
+    BUN_ANSI_THEME_PRESETS[0]!
+  const baseTheme = profileSpec?.ansiTheme ?? preset.defaultTheme
+  const rawCols = options.theme?.columns ?? baseTheme.columns
+  const columns = rawCols === 0 ? 0 : Math.max(24, Math.min(200, Math.floor(Number(rawCols) || 76)))
+
   const ansiTheme: BunAnsiThemeConfig = {
-    colors: options.theme?.colors ?? preset.defaultTheme.colors,
-    columns: Math.max(
-      24,
-      Math.min(200, Math.floor(options.theme?.columns ?? preset.defaultTheme.columns)),
-    ),
-    hyperlinks: options.theme?.hyperlinks ?? preset.defaultTheme.hyperlinks,
-    light: options.theme?.light ?? preset.defaultTheme.light,
-    kittyGraphics: options.theme?.kittyGraphics ?? preset.defaultTheme.kittyGraphics,
+    colors: options.theme?.colors ?? baseTheme.colors,
+    columns,
+    hyperlinks: options.theme?.hyperlinks ?? baseTheme.hyperlinks,
+    light: options.theme?.light ?? baseTheme.light,
+    kittyGraphics: options.theme?.kittyGraphics ?? baseTheme.kittyGraphics,
   }
+  const showHeadingIds = Boolean(options.showHeadingIds)
   const resolvedPaletteAnsi = resolveSemanticPaletteAnsi(preset.paletteHex, ansiTheme.colors)
   const cleanSource = stripTerminalControls(markdown.replace(/\r\n?/g, "\n"))
   const callbacksInvoked = new Set<string>()
+  const collectedHeadings: BunMarkdownHeadingMeta[] = []
+  const slugFallbackCounts = new Map<string, number>()
+  let tableCount = 0
+  let taskChecked = 0
+  let taskUnchecked = 0
 
   const bunMd = (
     (globalThis as Record<string, unknown>).Bun as
@@ -2619,6 +2980,14 @@ export function renderBunMarkdownStudio(
       | undefined
   )?.markdown
 
+  const gfmRenderOptions = {
+    tables: true,
+    strikethrough: true,
+    tasklists: true,
+    autolinks: true,
+    headings: { ids: true },
+  }
+
   let engine: "bun-native" | "ts-fallback" = "ts-fallback"
   let ansi = ""
   let html = ""
@@ -2626,10 +2995,8 @@ export function renderBunMarkdownStudio(
   if (typeof bunMd?.html === "function") {
     try {
       html = bunMd.html(cleanSource, {
-        tables: true,
-        strikethrough: true,
-        tasklists: true,
-        autolinks: true,
+        ...gfmRenderOptions,
+        headings: { ids: true, autolink: true },
         tagFilter: true,
         noHtmlBlocks: true,
         noHtmlSpans: true,
@@ -2642,25 +3009,7 @@ export function renderBunMarkdownStudio(
     html = fallbackMarkdownToSafeHtml(cleanSource)
   }
 
-  if (mode === "ansi-theme" && typeof bunMd?.ansi === "function") {
-    try {
-      const rawAnsi = bunMd.ansi(cleanSource, ansiTheme)
-      // Sanitize any OSC-8 hyperlink emitted by Bun.markdown.ansi
-      ansi = rawAnsi.replace(/\u001b\]8;;([^\u001b]*)\u001b\\/g, (seq, href: string) =>
-        href === "" || validateSafeStudioHref(href) !== null ? seq : "",
-      )
-      engine = "bun-native"
-      callbacksInvoked.add("Bun.markdown.ansi(AnsiTheme)")
-    } catch {
-      ansi = fallbackMarkdownRenderToAnsi(
-        cleanSource,
-        "ansi-theme",
-        ansiTheme,
-        resolvedPaletteAnsi,
-        callbacksInvoked,
-      )
-    }
-  } else if (mode === "render-callbacks" && typeof bunMd?.render === "function") {
+  if (mode === "render-callbacks" && typeof bunMd?.render === "function") {
     try {
       const reset = ansiTheme.colors ? "\u001b[0m" : ""
       const bold = ansiTheme.colors ? "\u001b[1m" : ""
@@ -2670,6 +3019,11 @@ export function renderBunMarkdownStudio(
       const strike = ansiTheme.colors ? "\u001b[9m" : ""
       const strikeOff = ansiTheme.colors ? "\u001b[29m" : ""
       const cols = ansiTheme.columns
+
+      let currentRowCells: GfmTableCell[] = []
+      let currentSectionRows: GfmTableCell[][] = []
+      let activeHeadRows: GfmTableCell[][] = []
+      let activeBodyRows: GfmTableCell[][] = []
 
       ansi = bunMd.render(
         cleanSource,
@@ -2684,13 +3038,28 @@ export function renderBunMarkdownStudio(
           },
           heading: (children: unknown, meta?: unknown) => {
             callbacksInvoked.add("heading")
-            const level =
-              meta && typeof meta === "object" && "level" in meta
-                ? Number((meta as { level?: unknown }).level ?? 1)
-                : 1
+            const m = (meta && typeof meta === "object" ? meta : {}) as {
+              readonly level?: unknown
+              readonly id?: unknown
+            }
+            const level = Number(m.level ?? 1) || 1
+            const rendered = String(children ?? "")
+            const plainText = bunStripAnsi(rendered).trim()
+            const id =
+              typeof m.id === "string" && m.id.trim().length > 0
+                ? m.id.trim()
+                : slugifyGfmHeading(plainText, slugFallbackCounts)
+            collectedHeadings.push({ level, id, text: plainText })
+
             const prefix = level > 1 ? `${"#".repeat(level)} ` : ""
-            const line = wrapTextToColumns(`${prefix}${String(children ?? "")}`, cols)
-            return `${bold}${resolvedPaletteAnsi.heading}${line}${reset}\n`
+            const idBadge =
+              showHeadingIds && id
+                ? ansiTheme.colors
+                  ? ` ${dim}[#${id}]${reset}`
+                  : ` [#${id}]`
+                : ""
+            const line = wrapTextToColumns(`${prefix}${rendered}`, cols)
+            return `${bold}${resolvedPaletteAnsi.heading}${line}${reset}${idBadge}\n`
           },
           paragraph: (children: unknown) => {
             callbacksInvoked.add("paragraph")
@@ -2735,15 +3104,105 @@ export function renderBunMarkdownStudio(
           },
           listItem: (children: unknown, meta?: unknown) => {
             callbacksInvoked.add("listItem")
-            const m = (meta ?? {}) as { ordered?: boolean; index?: number; start?: number }
-            const bullet = m.ordered
-              ? `${resolvedPaletteAnsi.key}${(m.start ?? 1) + (m.index ?? 0)}.${reset}`
-              : `${resolvedPaletteAnsi.ok}•${reset}`
-            return `  ${bullet} ${String(children ?? "").trimEnd()}\n`
+            const m = (meta ?? {}) as {
+              ordered?: boolean
+              index?: number
+              start?: number
+              depth?: number
+              checked?: boolean
+            }
+            const indent = "  ".repeat((m.depth ?? 0) + 1)
+            let bullet: string
+            if (typeof m.checked === "boolean") {
+              if (m.checked) taskChecked += 1
+              else taskUnchecked += 1
+              bullet = ansiTheme.colors
+                ? m.checked
+                  ? `${resolvedPaletteAnsi.ok}☑${reset}`
+                  : `${dim}☐${reset}`
+                : m.checked
+                  ? "[x]"
+                  : "[ ]"
+            } else {
+              bullet = m.ordered
+                ? `${resolvedPaletteAnsi.key}${(m.start ?? 1) + (m.index ?? 0)}.${reset}`
+                : `${resolvedPaletteAnsi.ok}•${reset}`
+            }
+            return `${indent}${bullet} ${String(children ?? "").trimEnd()}\n`
+          },
+          th: (children: unknown, meta?: unknown) => {
+            callbacksInvoked.add("th")
+            const align =
+              meta && typeof meta === "object" && "align" in meta
+                ? ((meta as { align?: GfmTableAlign }).align ?? undefined)
+                : undefined
+            currentRowCells.push({
+              text: String(children ?? "").trim(),
+              align,
+              isHeader: true,
+            })
+            return ""
+          },
+          td: (children: unknown, meta?: unknown) => {
+            callbacksInvoked.add("td")
+            const align =
+              meta && typeof meta === "object" && "align" in meta
+                ? ((meta as { align?: GfmTableAlign }).align ?? undefined)
+                : undefined
+            currentRowCells.push({
+              text: String(children ?? "").trim(),
+              align,
+              isHeader: false,
+            })
+            return ""
+          },
+          tr: () => {
+            callbacksInvoked.add("tr")
+            if (currentRowCells.length > 0) {
+              currentSectionRows.push(currentRowCells)
+              currentRowCells = []
+            }
+            return ""
+          },
+          thead: () => {
+            callbacksInvoked.add("thead")
+            activeHeadRows = currentSectionRows
+            currentSectionRows = []
+            return ""
+          },
+          tbody: () => {
+            callbacksInvoked.add("tbody")
+            activeBodyRows = currentSectionRows
+            currentSectionRows = []
+            return ""
+          },
+          table: () => {
+            callbacksInvoked.add("table")
+            tableCount += 1
+            if (currentSectionRows.length > 0 && activeBodyRows.length === 0) {
+              activeBodyRows = currentSectionRows
+              currentSectionRows = []
+            }
+            const formatted = renderGfmBoxTable({
+              headRows: activeHeadRows,
+              bodyRows: activeBodyRows,
+              unicode: ansiTheme.colors,
+              colors: ansiTheme.colors,
+              headerAnsi: resolvedPaletteAnsi.key,
+              borderAnsi: resolvedPaletteAnsi.quote,
+              reset,
+              bold,
+            })
+            currentRowCells = []
+            currentSectionRows = []
+            activeHeadRows = []
+            activeBodyRows = []
+            return `${formatted}\n`
           },
           hr: () => {
             callbacksInvoked.add("hr")
-            return `${dim}${"─".repeat(Math.min(cols, 56))}${reset}\n`
+            const ruleWidth = cols > 0 ? Math.min(cols, 56) : 56
+            return `${dim}${"─".repeat(ruleWidth)}${reset}\n`
           },
           link: (children: unknown, meta?: unknown) => {
             callbacksInvoked.add("link")
@@ -2764,29 +3223,129 @@ export function renderBunMarkdownStudio(
             return stripTerminalControls(String(alt ?? ""))
           },
         },
-        { tables: true, strikethrough: true, tasklists: true, autolinks: true },
+        gfmRenderOptions,
       )
       engine = "bun-native"
     } catch {
-      ansi = fallbackMarkdownRenderToAnsi(
+      const fb = fallbackMarkdownRenderToAnsi(
         cleanSource,
         "render-callbacks",
         ansiTheme,
         resolvedPaletteAnsi,
         callbacksInvoked,
+        { showHeadingIds },
       )
+      ansi = fb.ansi
+      collectedHeadings.push(...fb.headingIds)
+      tableCount = fb.tableCount
+      taskChecked = fb.taskSummary.checked
+      taskUnchecked = fb.taskSummary.unchecked
     }
-  } else if (mode === "html") {
-    ansi = html
-    callbacksInvoked.add("Bun.markdown.html")
   } else {
-    ansi = fallbackMarkdownRenderToAnsi(
-      cleanSource,
-      mode,
-      ansiTheme,
-      resolvedPaletteAnsi,
-      callbacksInvoked,
-    )
+    // Extract GFM heading meta IDs, tables, and task counts cleanly for ansi-theme & html modes
+    if (typeof bunMd?.render === "function") {
+      try {
+        bunMd.render(
+          cleanSource,
+          {
+            text: (t: unknown) => stripTerminalControls(String(t ?? "")),
+            heading: (children: unknown, meta?: unknown) => {
+              const m = (meta && typeof meta === "object" ? meta : {}) as {
+                readonly level?: unknown
+                readonly id?: unknown
+              }
+              const level = Number(m.level ?? 1) || 1
+              const plainText = bunStripAnsi(String(children ?? "")).trim()
+              const id =
+                typeof m.id === "string" && m.id.trim().length > 0
+                  ? m.id.trim()
+                  : slugifyGfmHeading(plainText, slugFallbackCounts)
+              collectedHeadings.push({ level, id, text: plainText })
+              return ""
+            },
+            table: () => {
+              tableCount += 1
+              return ""
+            },
+            listItem: (_children: unknown, meta?: unknown) => {
+              const checked =
+                meta && typeof meta === "object" && "checked" in meta
+                  ? (meta as { checked?: unknown }).checked
+                  : undefined
+              if (typeof checked === "boolean") {
+                if (checked) taskChecked += 1
+                else taskUnchecked += 1
+              }
+              return ""
+            },
+          },
+          gfmRenderOptions,
+        )
+      } catch {
+        // fallback extraction below if needed
+      }
+    }
+
+    if (mode === "ansi-theme" && typeof bunMd?.ansi === "function") {
+      try {
+        const rawAnsi = bunMd.ansi(cleanSource, ansiTheme)
+        // Sanitize any OSC-8 hyperlink emitted by Bun.markdown.ansi
+        ansi = rawAnsi.replace(/\u001b\]8;;([^\u001b]*)\u001b\\/g, (seq, href: string) =>
+          href === "" || validateSafeStudioHref(href) !== null ? seq : "",
+        )
+        engine = "bun-native"
+        callbacksInvoked.add("Bun.markdown.ansi(AnsiTheme)")
+      } catch {
+        const fb = fallbackMarkdownRenderToAnsi(
+          cleanSource,
+          "ansi-theme",
+          ansiTheme,
+          resolvedPaletteAnsi,
+          callbacksInvoked,
+          { showHeadingIds },
+        )
+        ansi = fb.ansi
+        if (collectedHeadings.length === 0) {
+          collectedHeadings.push(...fb.headingIds)
+          tableCount = fb.tableCount
+          taskChecked = fb.taskSummary.checked
+          taskUnchecked = fb.taskSummary.unchecked
+        }
+      }
+    } else if (mode === "html") {
+      ansi = html
+      callbacksInvoked.add("Bun.markdown.html")
+      if (collectedHeadings.length === 0) {
+        const fb = fallbackMarkdownRenderToAnsi(
+          cleanSource,
+          "render-callbacks",
+          ansiTheme,
+          resolvedPaletteAnsi,
+          new Set<string>(),
+          { showHeadingIds },
+        )
+        collectedHeadings.push(...fb.headingIds)
+        tableCount = fb.tableCount
+        taskChecked = fb.taskSummary.checked
+        taskUnchecked = fb.taskSummary.unchecked
+      }
+    } else {
+      const fb = fallbackMarkdownRenderToAnsi(
+        cleanSource,
+        mode === "ansi-theme" ? "ansi-theme" : "render-callbacks",
+        ansiTheme,
+        resolvedPaletteAnsi,
+        callbacksInvoked,
+        { showHeadingIds },
+      )
+      ansi = fb.ansi
+      if (collectedHeadings.length === 0) {
+        collectedHeadings.push(...fb.headingIds)
+        tableCount = fb.tableCount
+        taskChecked = fb.taskSummary.checked
+        taskUnchecked = fb.taskSummary.unchecked
+      }
+    }
   }
 
   const plain = bunStripAnsi(ansi)
@@ -2811,5 +3370,12 @@ export function renderBunMarkdownStudio(
     maxColumns,
     ansiByteLength: new TextEncoder().encode(ansi).length,
     callbacksInvoked: Array.from(callbacksInvoked),
+    headingIds: collectedHeadings,
+    tableCount,
+    taskSummary: {
+      total: taskChecked + taskUnchecked,
+      checked: taskChecked,
+      unchecked: taskUnchecked,
+    },
   }
 }

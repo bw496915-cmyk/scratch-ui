@@ -163,90 +163,475 @@
   },
   "markdownDocs": [
     {
+      "metaId": "SD-DOC-DASHBOARD",
       "path": "dashboard.md",
       "title": "📊 SportsDesk & Fantasy402 Real-Time Surveillance Dashboard",
       "lines": 176,
       "bytes": 20186,
       "sha256": "d8d12427b7ff479e67ae836a3ee6a728b4d5f94eb1742118e808bd6b10050cce",
-      "localLinksChecked": 3
+      "localLinksChecked": 3,
+      "headingCount": 14,
+      "tableCount": 9,
+      "taskSummary": {
+        "done": 0,
+        "open": 0
+      },
+      "headingIds": [
+        {
+          "level": 1,
+          "id": "sportsdesk-fantasy402-real-time-surveillance-dashboard",
+          "text": "📊 SportsDesk & Fantasy402 Real-Time Surveillance Dashboard"
+        },
+        {
+          "level": 2,
+          "id": "top-rated-sharp-bettors-live-surveillance",
+          "text": "🎯 Top Rated Sharp Bettors (Live Surveillance)"
+        },
+        {
+          "level": 2,
+          "id": "top-sub-agents-downline-trees-30-day-rollup",
+          "text": "🏢 Top Sub-Agents & Downline Trees (30-Day Rollup)"
+        },
+        {
+          "level": 2,
+          "id": "live-incoming-wager-stream-real-time-tape",
+          "text": "⚡ Live Incoming Wager Stream (Real-Time Tape)"
+        },
+        {
+          "level": 2,
+          "id": "cross-endpoint-portal-figure-date-reconciliation-getinfoplayer-getperformanceplayer-getwagersbyfiguredate",
+          "text": "🧾 Cross-Endpoint Portal & Figure-Date Reconciliation (getInfoPlayer ↔ getPerformancePlayer ↔ getWagersByFigureDate)"
+        },
+        {
+          "level": 2,
+          "id": "sport-exposure-breakdown",
+          "text": "📈 Sport & Exposure Breakdown"
+        },
+        {
+          "level": 2,
+          "id": "bun-native-dns-cache-networking-telemetry",
+          "text": "🌐 Bun Native DNS Cache & Networking Telemetry"
+        },
+        {
+          "level": 2,
+          "id": "customer-profiling-behavioral-sharp-showcase",
+          "text": "👥 Customer Profiling & Behavioral Sharp Showcase"
+        },
+        {
+          "level": 3,
+          "id": "profiled-customer-cohorts-corpora",
+          "text": "Profiled Customer Cohorts & Corpora"
+        },
+        {
+          "level": 4,
+          "id": "live-kpi-strip-http1270013000tabcustomers-matrix-overlay-matrix1tabcustomers",
+          "text": "Live KPI strip (http://127.0.0.1:3000/?tab=customers · matrix overlay ?matrix=1&tab=customers)"
+        },
+        {
+          "level": 4,
+          "id": "reference-registry-measured-snapshots-not-the-live-kpi-denominators",
+          "text": "Reference registry (measured snapshots — not the live KPI denominators)"
+        },
+        {
+          "level": 3,
+          "id": "multidimensional-profiling-architecture",
+          "text": "Multidimensional Profiling Architecture"
+        },
+        {
+          "level": 3,
+          "id": "bun-144-test-harness-runtime-beats-stale-typesbun",
+          "text": "🧪 Bun 1.4.4 test harness — runtime beats stale @types/bun"
+        },
+        {
+          "level": 2,
+          "id": "unified-bun-cli-markdown-rendering-directives",
+          "text": "⚙️ Unified Bun CLI & Markdown Rendering Directives"
+        }
+      ]
     },
     {
+      "metaId": "SD-DOC-DESIGN-TOKENS",
       "path": "design/README.md",
       "title": "Design Token SSOT",
-      "lines": 187,
-      "bytes": 12580,
-      "sha256": "15ef42e1eb18e039474129f90aa975225a3289a4498ccea492b39b101812ed0a",
-      "localLinksChecked": 33
+      "lines": 201,
+      "bytes": 15820,
+      "sha256": "1a8183a4c2bdb8daa91105cb3efa1c579041eadb8e15fce3ff3417aecd76658e",
+      "localLinksChecked": 34,
+      "headingCount": 10,
+      "tableCount": 3,
+      "taskSummary": {
+        "done": 0,
+        "open": 0
+      },
+      "headingIds": [
+        {
+          "level": 1,
+          "id": "design-token-ssot",
+          "text": "Design Token SSOT"
+        },
+        {
+          "level": 2,
+          "id": "architecture-compilation-flow",
+          "text": "Architecture & Compilation Flow"
+        },
+        {
+          "level": 2,
+          "id": "authoritative-files-generated-outputs",
+          "text": "Authoritative Files & Generated Outputs"
+        },
+        {
+          "level": 2,
+          "id": "bun-native-pipeline-architecture",
+          "text": "Bun-Native Pipeline Architecture"
+        },
+        {
+          "level": 2,
+          "id": "four-axis-design-token-architecture",
+          "text": "Four-Axis Design Token Architecture"
+        },
+        {
+          "level": 2,
+          "id": "deterministic-cli-bunmarkdownansitheme-profiles-climarkdownansi",
+          "text": "Deterministic CLI Bun.markdown.AnsiTheme Profiles ([cli.markdown_ansi.*])"
+        },
+        {
+          "level": 2,
+          "id": "perceptual-accessibility-gates-gates",
+          "text": "Perceptual & Accessibility Gates ([gates])"
+        },
+        {
+          "level": 2,
+          "id": "root-alias-layer",
+          "text": ":root Alias Layer"
+        },
+        {
+          "level": 2,
+          "id": "brand-identity-contextual-xmp-asset-pipeline",
+          "text": "Brand Identity & Contextual XMP Asset Pipeline"
+        },
+        {
+          "level": 2,
+          "id": "verification-regeneration-workflow",
+          "text": "Verification & Regeneration Workflow"
+        }
+      ]
     },
     {
+      "metaId": "SD-DOC-CUSTOMER-SOURCES",
       "path": "docs/live-customer-sources.md",
       "title": "Local live customer identities",
       "lines": 85,
       "bytes": 5419,
       "sha256": "bbd69062bfb88d61534ee3edeef7037a809f2b8c8280af061b4dc648dc2a810e",
-      "localLinksChecked": 0
+      "localLinksChecked": 0,
+      "headingCount": 3,
+      "tableCount": 0,
+      "taskSummary": {
+        "done": 0,
+        "open": 0
+      },
+      "headingIds": [
+        {
+          "level": 1,
+          "id": "local-live-customer-identities",
+          "text": "Local live customer identities"
+        },
+        {
+          "level": 2,
+          "id": "retained-wager-observations",
+          "text": "Retained wager observations"
+        },
+        {
+          "level": 2,
+          "id": "collector-scheduling",
+          "text": "Collector scheduling"
+        }
+      ]
     },
     {
+      "metaId": "SD-DOC-LOCAL-DEV",
       "path": "LOCAL_DEVELOPMENT.md",
       "title": "Local SportsDesk development",
       "lines": 537,
       "bytes": 28567,
       "sha256": "77030b6e8e2609db6ac6a1922fc875e6f9f5c54388a4762262d86658ae16913a",
-      "localLinksChecked": 0
+      "localLinksChecked": 0,
+      "headingCount": 12,
+      "tableCount": 0,
+      "taskSummary": {
+        "done": 0,
+        "open": 0
+      },
+      "headingIds": [
+        {
+          "level": 1,
+          "id": "local-sportsdesk-development",
+          "text": "Local SportsDesk development"
+        },
+        {
+          "level": 2,
+          "id": "bun-144",
+          "text": "Bun 1.4.4"
+        },
+        {
+          "level": 2,
+          "id": "local-package-registry",
+          "text": "Local package registry"
+        },
+        {
+          "level": 2,
+          "id": "connectivity-investigation-november-19-2026",
+          "text": "Connectivity investigation — November 19, 2026"
+        },
+        {
+          "level": 3,
+          "id": "companion-daemon-and-collector-configuration",
+          "text": "Companion daemon and collector configuration"
+        },
+        {
+          "level": 3,
+          "id": "original-evidence",
+          "text": "Original evidence"
+        },
+        {
+          "level": 2,
+          "id": "dashboard-asset-and-telemetry-verification",
+          "text": "Dashboard asset and telemetry verification"
+        },
+        {
+          "level": 2,
+          "id": "local-dashboard-sign-in",
+          "text": "Local dashboard sign-in"
+        },
+        {
+          "level": 3,
+          "id": "bun-cookie-examples",
+          "text": "Bun cookie examples"
+        },
+        {
+          "level": 2,
+          "id": "local-https-and-websockets",
+          "text": "Local HTTPS and WebSockets"
+        },
+        {
+          "level": 2,
+          "id": "profile-radar-sources",
+          "text": "Profile Radar sources"
+        },
+        {
+          "level": 2,
+          "id": "shadow-pricing-sources",
+          "text": "Shadow Pricing sources"
+        }
+      ]
     },
     {
+      "metaId": "SD-DOC-CONTRACTS",
       "path": "packages/contracts/README.md",
       "title": "`@sportsdesk-ops/contracts`",
       "lines": 47,
       "bytes": 4591,
       "sha256": "b4d230a7bcb79c79ee4630b1b4da3956b727a50a55157395ba7621d5d2e9aa30",
-      "localLinksChecked": 0
+      "localLinksChecked": 0,
+      "headingCount": 4,
+      "tableCount": 2,
+      "taskSummary": {
+        "done": 0,
+        "open": 0
+      },
+      "headingIds": [
+        {
+          "level": 1,
+          "id": "sportsdesk-opscontracts",
+          "text": "@sportsdesk-ops/contracts"
+        },
+        {
+          "level": 2,
+          "id": "usage",
+          "text": "Usage"
+        },
+        {
+          "level": 2,
+          "id": "subpath-exports-packagejson",
+          "text": "Subpath Exports (package.json)"
+        },
+        {
+          "level": 2,
+          "id": "additional-modules-exported-from-srcindexts",
+          "text": "Additional Modules Exported from . (src/index.ts)"
+        }
+      ]
     },
     {
+      "metaId": "SD-DOC-ROOT-README",
       "path": "README.md",
       "title": "SportsDesk Ops Dashboard",
-      "lines": 125,
-      "bytes": 7582,
-      "sha256": "fa8cc34166761e95531728e762acf91940a2692a7623fbed300a6526b91e5576",
-      "localLinksChecked": 22
+      "lines": 141,
+      "bytes": 10538,
+      "sha256": "c792f4f3fc237272f4f398080739bb672b549062e845755568e45492f00dcd6a",
+      "localLinksChecked": 22,
+      "headingCount": 8,
+      "tableCount": 2,
+      "taskSummary": {
+        "done": 0,
+        "open": 0
+      },
+      "headingIds": [
+        {
+          "level": 1,
+          "id": "sportsdesk-ops-dashboard",
+          "text": "SportsDesk Ops Dashboard"
+        },
+        {
+          "level": 2,
+          "id": "pinned-runtime-quick-start",
+          "text": "Pinned Runtime & Quick Start"
+        },
+        {
+          "level": 2,
+          "id": "unified-bun-cli-bun-run-cli",
+          "text": "Unified Bun CLI (bun run cli)"
+        },
+        {
+          "level": 2,
+          "id": "workspace-architecture",
+          "text": "Workspace Architecture"
+        },
+        {
+          "level": 2,
+          "id": "design-tokens-generated-artifacts-zero-drift-ssot",
+          "text": "Design Tokens & Generated Artifacts (Zero-Drift SSOT)"
+        },
+        {
+          "level": 2,
+          "id": "security-runtime-hardening",
+          "text": "Security & Runtime Hardening"
+        },
+        {
+          "level": 2,
+          "id": "verification-quality-gates",
+          "text": "Verification & Quality Gates"
+        },
+        {
+          "level": 2,
+          "id": "documentation-index",
+          "text": "Documentation Index"
+        }
+      ]
     },
     {
+      "metaId": "SD-DOC-SCHEMA",
       "path": "schema/README.md",
       "title": "Schema & Data Contracts",
       "lines": 19,
       "bytes": 1157,
       "sha256": "bdbdbeeb7b2178fe3ba77ac65e39e11d4ef40f14e21316b418de36ed25b4e77c",
-      "localLinksChecked": 3
+      "localLinksChecked": 3,
+      "headingCount": 1,
+      "tableCount": 1,
+      "taskSummary": {
+        "done": 0,
+        "open": 0
+      },
+      "headingIds": [
+        {
+          "level": 1,
+          "id": "schema-data-contracts",
+          "text": "Schema & Data Contracts"
+        }
+      ]
     },
     {
+      "metaId": "SD-DOC-STATIC",
       "path": "static/README.md",
       "title": "Static HTML Surfaces",
       "lines": 16,
       "bytes": 860,
       "sha256": "88b5a5e4f32e9c1a3eb1695656433503a239b46ea494aca1c8800e893feeb3c6",
-      "localLinksChecked": 7
+      "localLinksChecked": 7,
+      "headingCount": 1,
+      "tableCount": 0,
+      "taskSummary": {
+        "done": 0,
+        "open": 0
+      },
+      "headingIds": [
+        {
+          "level": 1,
+          "id": "static-html-surfaces",
+          "text": "Static HTML Surfaces"
+        }
+      ]
     },
     {
+      "metaId": "SD-DOC-FIXTURES-BACKTEST",
       "path": "tests/fixtures/backtest/README.md",
       "title": "Synthetic backtest fixture (P1.1)",
       "lines": 70,
       "bytes": 3350,
       "sha256": "f8a885a7e4413f7840e27f8f29292bf0772f40398a1514ae0086bb490c60313a",
-      "localLinksChecked": 0
+      "localLinksChecked": 0,
+      "headingCount": 5,
+      "tableCount": 1,
+      "taskSummary": {
+        "done": 0,
+        "open": 0
+      },
+      "headingIds": [
+        {
+          "level": 1,
+          "id": "synthetic-backtest-fixture-p11",
+          "text": "Synthetic backtest fixture (P1.1)"
+        },
+        {
+          "level": 2,
+          "id": "files",
+          "text": "Files"
+        },
+        {
+          "level": 2,
+          "id": "what-the-fixture-covers",
+          "text": "What the fixture covers"
+        },
+        {
+          "level": 2,
+          "id": "scenario-constants",
+          "text": "Scenario constants"
+        },
+        {
+          "level": 2,
+          "id": "regenerating-the-golden",
+          "text": "Regenerating the golden"
+        }
+      ]
     },
     {
+      "metaId": "SD-DOC-FIXTURES-VERIFY",
       "path": "tests/fixtures/verify-load/FIXTURES.md",
       "title": "verify-load pinned artifacts (CI)",
       "lines": 14,
       "bytes": 720,
       "sha256": "c6092f7cc138905ad90fb690fa3cb90b05463a321fdc7af1e6559644c95d5bcc",
-      "localLinksChecked": 0
+      "localLinksChecked": 0,
+      "headingCount": 1,
+      "tableCount": 0,
+      "taskSummary": {
+        "done": 0,
+        "open": 0
+      },
+      "headingIds": [
+        {
+          "level": 1,
+          "id": "verify-load-pinned-artifacts-ci",
+          "text": "verify-load pinned artifacts (CI)"
+        }
+      ]
     }
   ],
   "cliCommands": [
     {
-      "command": "bun run cli help",
-      "description": "Display unified Bun CLI command reference and pinned runtime version"
+      "command": "bun run cli help [--md|--ansi] [--profile <name>]",
+      "description": "Display unified Bun CLI command reference (supports GFM Markdown or Bun.markdown.ansi tables)"
     },
     {
       "command": "bun run cli artifacts generate",
@@ -257,23 +642,31 @@
       "description": "Fail-closed drift gate for generated token outputs, pipeline asset hashes, and generated artifact docs"
     },
     {
+      "command": "bun run cli artifacts status [--md|--ansi] [--profile <name>]",
+      "description": "Inspect managed artifact hashes and pipeline diagram verification status"
+    },
+    {
       "command": "bun run cli docs check",
       "description": "Verify zero broken local links and zero stale legacy references across all .md files"
     },
     {
-      "command": "bun run cli docs list",
-      "description": "List all tracked repository Markdown documents with line counts and link status"
+      "command": "bun run cli docs list [--ids] [--json] [--md|--ansi] [--profile <name>]",
+      "description": "List tracked Markdown documents with canonical SD-DOC-* meta IDs, GFM heading counts, tables, tasks, and hashes"
     },
     {
-      "command": "bun run cli docs render <file>",
-      "description": "Render a Markdown file via Bun.markdown.render() / Bun.markdown.ansi(AnsiTheme) in the terminal"
+      "command": "bun run cli docs ids [file|metaId] [--json] [--md|--ansi] [--profile <name>]",
+      "description": "List GFM heading anchor meta IDs (`#id`), levels, and section titles across documentation"
+    },
+    {
+      "command": "bun run cli docs render <file|metaId> [--mode render|ansi|html] [--profile <name>] [--ids]",
+      "description": "Render a Markdown file or SD-DOC-* ID via Bun.markdown.render() / Bun.markdown.ansi(AnsiTheme) with GFM tables and #id badges"
     },
     {
       "command": "bun run cli surface [--kinds|--deep|--json]",
       "description": "Run read-only live Bun Runtime Surface audit (Bun.* kinds, bun:* modules, namespaces, classes)"
     },
     {
-      "command": "bun run cli version status [--json]",
+      "command": "bun run cli version status [--json|--md|--ansi]",
       "description": "Inspect unified SemVer matrix across workspace packages, design tokens/branding, and Bun runtime pin"
     },
     {
@@ -305,8 +698,8 @@
       "description": "Execute repository integrity gates under Bun (versions, lockfile, registry-parity, route-surface, bundle-hygiene, shell-boundary, snapshots, artifacts, docs)"
     },
     {
-      "command": "bun run cli scripts [filter]",
-      "description": "Inspect grouped package.json scripts using Bun.inspect.table"
+      "command": "bun run cli scripts [filter] [--md|--ansi] [--profile <name>]",
+      "description": "Inspect grouped package.json scripts using Bun.inspect.table or Bun.markdown.ansi tables"
     }
   ],
   "packageScripts": {

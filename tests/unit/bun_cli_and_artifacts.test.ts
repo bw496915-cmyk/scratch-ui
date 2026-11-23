@@ -160,5 +160,60 @@ describe("unified Bun CLI (scripts/sportsdesk_cli.ts)", () => {
     expect(renderRes.exitCode).toBe(0)
     expect(renderRes.stdout.length).toBeGreaterThan(100)
     expect(renderRes.stdout).toContain("Design Token SSOT")
+
+    const profileRenderRes = runCli([
+      "docs",
+      "render",
+      "SD-DOC-DESIGN-TOKENS",
+      "--mode",
+      "ansi",
+      "--profile",
+      "pipe_ascii",
+      "--ids",
+    ])
+    expect(profileRenderRes.exitCode).toBe(0)
+    expect(profileRenderRes.stdout).toContain("Design Token SSOT")
+    expect(profileRenderRes.stdout).toContain("#design-token-ssot")
+    expect(profileRenderRes.stdout).toContain("+---")
+  })
+
+  test("docs list, docs ids, and help --ansi/--md expose SD-DOC-* meta IDs and GFM tables", () => {
+    const audit = auditMarkdownDocs(ROOT_DIR)
+    const designDoc = audit.docs.find((d) => d.path === "design/README.md")
+    expect(designDoc?.metaId).toBe("SD-DOC-DESIGN-TOKENS")
+    expect(designDoc?.tableCount).toBeGreaterThanOrEqual(2)
+    expect(designDoc?.headingIds.some((h) => h.id === "design-token-ssot")).toBe(true)
+
+    const listJson = runCli(["docs", "list", "--json", "--ids"])
+    expect(listJson.exitCode).toBe(0)
+    const listPayload = JSON.parse(listJson.stdout) as {
+      readonly metaId: string
+      readonly path: string
+      readonly tableCount: number
+      readonly headingIds: readonly { readonly id: string }[]
+    }[]
+    expect(listPayload.some((d) => d.metaId === "SD-DOC-ROOT-README")).toBe(true)
+    expect(
+      listPayload.find((d) => d.metaId === "SD-DOC-DESIGN-TOKENS")?.headingIds.length,
+    ).toBeGreaterThanOrEqual(5)
+
+    const idsJson = runCli(["docs", "ids", "SD-DOC-DESIGN-TOKENS", "--json"])
+    expect(idsJson.exitCode).toBe(0)
+    const idsPayload = JSON.parse(idsJson.stdout) as {
+      readonly metaId: string
+      readonly headingIds: readonly { readonly level: number; readonly id: string }[]
+    }[]
+    expect(idsPayload[0]?.metaId).toBe("SD-DOC-DESIGN-TOKENS")
+    expect(idsPayload[0]?.headingIds.some((h) => h.id === "design-token-ssot")).toBe(true)
+
+    const helpMd = runCli(["help", "--md"])
+    expect(helpMd.exitCode).toBe(0)
+    expect(helpMd.stdout).toContain("| Command")
+    expect(helpMd.stdout).toContain("| :---")
+
+    const helpAnsi = runCli(["help", "--ansi", "--profile", "tty_narrow"])
+    expect(helpAnsi.exitCode).toBe(0)
+    expect(helpAnsi.stdout).toContain("┌")
+    expect(helpAnsi.stdout).toContain("bun run cli docs ids")
   })
 })

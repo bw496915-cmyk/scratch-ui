@@ -63,7 +63,14 @@ export interface PipelineArtifactVerification {
   readonly sha256ByExt: Readonly<Record<string, string>>
 }
 
+export interface MarkdownHeadingMetaEntry {
+  readonly level: number
+  readonly id: string
+  readonly text: string
+}
+
 export interface MarkdownDocAuditEntry {
+  readonly metaId: string
   readonly path: string
   readonly title: string
   readonly lines: number
@@ -72,6 +79,12 @@ export interface MarkdownDocAuditEntry {
   readonly localLinksChecked: number
   readonly brokenLinks: readonly string[]
   readonly staleReferences: readonly string[]
+  readonly headingIds: readonly MarkdownHeadingMetaEntry[]
+  readonly tableCount: number
+  readonly taskSummary: {
+    readonly done: number
+    readonly open: number
+  }
 }
 
 export interface GeneratedArtifactRecord {
@@ -131,12 +144,20 @@ export interface ArtifactsManifest {
       }
     | undefined
   readonly markdownDocs: readonly {
+    readonly metaId: string
     readonly path: string
     readonly title: string
     readonly lines: number
     readonly bytes: number
     readonly sha256: string
     readonly localLinksChecked: number
+    readonly headingCount: number
+    readonly tableCount: number
+    readonly taskSummary: {
+      readonly done: number
+      readonly open: number
+    }
+    readonly headingIds: readonly MarkdownHeadingMetaEntry[]
   }[]
   readonly cliCommands: readonly {
     readonly command: string
@@ -162,8 +183,9 @@ export const UNIFIED_CLI_COMMANDS: readonly {
   readonly description: string
 }[] = [
   {
-    command: "bun run cli help",
-    description: "Display unified Bun CLI command reference and pinned runtime version",
+    command: "bun run cli help [--md|--ansi] [--profile <name>]",
+    description:
+      "Display unified Bun CLI command reference (supports GFM Markdown or Bun.markdown.ansi tables)",
   },
   {
     command: "bun run cli artifacts generate",
@@ -176,18 +198,29 @@ export const UNIFIED_CLI_COMMANDS: readonly {
       "Fail-closed drift gate for generated token outputs, pipeline asset hashes, and generated artifact docs",
   },
   {
+    command: "bun run cli artifacts status [--md|--ansi] [--profile <name>]",
+    description: "Inspect managed artifact hashes and pipeline diagram verification status",
+  },
+  {
     command: "bun run cli docs check",
     description:
       "Verify zero broken local links and zero stale legacy references across all .md files",
   },
   {
-    command: "bun run cli docs list",
-    description: "List all tracked repository Markdown documents with line counts and link status",
+    command: "bun run cli docs list [--ids] [--json] [--md|--ansi] [--profile <name>]",
+    description:
+      "List tracked Markdown documents with canonical SD-DOC-* meta IDs, GFM heading counts, tables, tasks, and hashes",
   },
   {
-    command: "bun run cli docs render <file>",
+    command: "bun run cli docs ids [file|metaId] [--json] [--md|--ansi] [--profile <name>]",
     description:
-      "Render a Markdown file via Bun.markdown.render() / Bun.markdown.ansi(AnsiTheme) in the terminal",
+      "List GFM heading anchor meta IDs (`#id`), levels, and section titles across documentation",
+  },
+  {
+    command:
+      "bun run cli docs render <file|metaId> [--mode render|ansi|html] [--profile <name>] [--ids]",
+    description:
+      "Render a Markdown file or SD-DOC-* ID via Bun.markdown.render() / Bun.markdown.ansi(AnsiTheme) with GFM tables and #id badges",
   },
   {
     command: "bun run cli surface [--kinds|--deep|--json]",
@@ -195,7 +228,7 @@ export const UNIFIED_CLI_COMMANDS: readonly {
       "Run read-only live Bun Runtime Surface audit (Bun.* kinds, bun:* modules, namespaces, classes)",
   },
   {
-    command: "bun run cli version status [--json]",
+    command: "bun run cli version status [--json|--md|--ansi]",
     description:
       "Inspect unified SemVer matrix across workspace packages, design tokens/branding, and Bun runtime pin",
   },
@@ -231,8 +264,9 @@ export const UNIFIED_CLI_COMMANDS: readonly {
       "Execute repository integrity gates under Bun (versions, lockfile, registry-parity, route-surface, bundle-hygiene, shell-boundary, snapshots, artifacts, docs)",
   },
   {
-    command: "bun run cli scripts [filter]",
-    description: "Inspect grouped package.json scripts using Bun.inspect.table",
+    command: "bun run cli scripts [filter] [--md|--ansi] [--profile <name>]",
+    description:
+      "Inspect grouped package.json scripts using Bun.inspect.table or Bun.markdown.ansi tables",
   },
 ]
 
@@ -861,13 +895,105 @@ function discoverMarkdownFiles(rootDir: string): string[] {
   return out.sort((a, b) => a.localeCompare(b))
 }
 
+const CANONICAL_DOC_META_IDS: Readonly<Record<string, string>> = {
+  "README.md": "SD-DOC-ROOT-README",
+  "LOCAL_DEVELOPMENT.md": "SD-DOC-LOCAL-DEV",
+  "dashboard.md": "SD-DOC-DASHBOARD",
+  "design/README.md": "SD-DOC-DESIGN-TOKENS",
+  "docs/generated/ARTIFACTS_AND_CLI.md": "SD-DOC-GEN-ARTIFACTS",
+  "docs/live-customer-sources.md": "SD-DOC-CUSTOMER-SOURCES",
+  "packages/contracts/README.md": "SD-DOC-CONTRACTS",
+  "schema/README.md": "SD-DOC-SCHEMA",
+  "static/README.md": "SD-DOC-STATIC",
+  "tests/fixtures/backtest/README.md": "SD-DOC-FIXTURES-BACKTEST",
+  "tests/fixtures/verify-load/FIXTURES.md": "SD-DOC-FIXTURES-VERIFY",
+}
+
+export function buildDocMetaId(relPath: string): string {
+  const normalized = relPath.replace(/\\/g, "/")
+  if (CANONICAL_DOC_META_IDS[normalized]) {
+    return CANONICAL_DOC_META_IDS[normalized]!
+  }
+  const slug = normalized
+    .replace(/\.md$/i, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toUpperCase()
+  return `SD-DOC-${slug || "MARKDOWN"}`
+}
+
+function extractGfmDocStructure(markdown: string): {
+  readonly headingIds: readonly MarkdownHeadingMetaEntry[]
+  readonly tableCount: number
+  readonly taskSummary: { readonly done: number; readonly open: number }
+} {
+  const headingIds: MarkdownHeadingMetaEntry[] = []
+  let tableCount = 0
+  let done = 0
+  let open = 0
+
+  Bun.markdown.render(
+    markdown,
+    {
+      text: (t) => t,
+      codespan: (c) => c,
+      strong: (c) => c,
+      emphasis: (c) => c,
+      strikethrough: (c) => c,
+      link: (c) => c,
+      heading: (children, meta) => {
+        const text = String(children ?? "").trim()
+        const id = typeof meta?.id === "string" ? meta.id.trim() : ""
+        if (text.length > 0 || id.length > 0) {
+          headingIds.push({
+            level: Number(meta?.level ?? 1) || 1,
+            id,
+            text,
+          })
+        }
+        return ""
+      },
+      table: () => {
+        tableCount += 1
+        return ""
+      },
+      listItem: (_children, meta) => {
+        if (typeof meta?.checked === "boolean") {
+          if (meta.checked) done += 1
+          else open += 1
+        }
+        return ""
+      },
+    },
+    {
+      headings: { ids: true },
+      tables: true,
+      tasklists: true,
+      strikethrough: true,
+      autolinks: true,
+    },
+  )
+
+  return {
+    headingIds,
+    tableCount,
+    taskSummary: { done, open },
+  }
+}
+
 function extractFirstHeading(markdown: string, fallback: string): string {
   const match = /^#\s+(.+)$/m.exec(markdown)
   return match ? match[1]!.trim() : fallback
 }
 
 function extractMarkdownLinksWithHtmlRewriter(markdown: string): readonly string[] {
-  const html = Bun.markdown.html(markdown)
+  const html = Bun.markdown.html(markdown, {
+    tables: true,
+    strikethrough: true,
+    tasklists: true,
+    autolinks: true,
+    headings: { ids: true },
+  })
   const hrefs: string[] = []
   const rewriter = new HTMLRewriter().on("a[href]", {
     element(el) {
@@ -901,8 +1027,8 @@ function resolveCandidatePaths(rootDir: string, fullDocPath: string, cleanPath: 
 }
 
 /**
- * Audits all repository Markdown files for broken local links (via `Bun.Glob` + `HTMLRewriter`)
- * and stale collector-only references.
+ * Audits all repository Markdown files for broken local links (via `Bun.Glob` + `HTMLRewriter`),
+ * GFM heading anchor meta IDs, GFM table/tasklist counts, and stale collector-only references.
  */
 export function auditMarkdownDocs(
   rootDir: string,
@@ -923,6 +1049,8 @@ export function auditMarkdownDocs(
     const bytes = Buffer.byteLength(content, "utf8")
     const sha256 = sha256Hex(content)
     const title = extractFirstHeading(content, relPath)
+    const metaId = buildDocMetaId(relPath)
+    const gfm = extractGfmDocStructure(content)
 
     const hrefs = extractMarkdownLinksWithHtmlRewriter(content)
     let localLinksChecked = 0
@@ -952,6 +1080,7 @@ export function auditMarkdownDocs(
     }
 
     docs.push({
+      metaId,
       path: relPath,
       title,
       lines,
@@ -960,6 +1089,9 @@ export function auditMarkdownDocs(
       localLinksChecked,
       brokenLinks,
       staleReferences,
+      headingIds: gfm.headingIds,
+      tableCount: gfm.tableCount,
+      taskSummary: gfm.taskSummary,
     })
   }
 
@@ -967,8 +1099,8 @@ export function auditMarkdownDocs(
 }
 
 /**
- * Async Markdown link auditor using `Bun.Glob.scan()`, `HTMLRewriter` over `Response`,
- * and `Bun.file().exists()` for every local link target.
+ * Async Markdown link & GFM meta ID auditor using `Bun.Glob.scan()`, `HTMLRewriter` over `Response`,
+ * `Bun.markdown.render(..., { headings: { ids: true } })`, and `Bun.file().exists()`.
  */
 export async function auditMarkdownDocsAsync(
   rootDir: string,
@@ -998,8 +1130,16 @@ export async function auditMarkdownDocsAsync(
     const bytes = Buffer.byteLength(content, "utf8")
     const sha256 = sha256Hex(content)
     const title = extractFirstHeading(content, relPath)
+    const metaId = buildDocMetaId(relPath)
+    const gfm = extractGfmDocStructure(content)
 
-    const html = Bun.markdown.html(content)
+    const html = Bun.markdown.html(content, {
+      tables: true,
+      strikethrough: true,
+      tasklists: true,
+      autolinks: true,
+      headings: { ids: true },
+    })
     const hrefs: string[] = []
     const rewriter = new HTMLRewriter().on("a[href]", {
       element(el) {
@@ -1044,6 +1184,7 @@ export async function auditMarkdownDocsAsync(
     }
 
     docs.push({
+      metaId,
       path: relPath,
       title,
       lines,
@@ -1052,6 +1193,9 @@ export async function auditMarkdownDocsAsync(
       localLinksChecked,
       brokenLinks,
       staleReferences,
+      headingIds: gfm.headingIds,
+      tableCount: gfm.tableCount,
+      taskSummary: gfm.taskSummary,
     })
   }
 
@@ -1121,15 +1265,50 @@ export function emitArtifactsAndCliMarkdown(manifest: ArtifactsManifest): string
   )
 
   const docTable = formatAlignedMarkdownTable(
-    ["Document", "Title", "Lines", "Local Links", "SHA-256 (12)"],
-    ["left", "left", "right", "right", "left"],
-    manifest.markdownDocs.map((d) => [
-      `[\`${d.path}\`](../../${d.path})`,
-      d.title.replace(/\|/g, "\\|"),
-      String(d.lines),
-      String(d.localLinksChecked),
-      `\`${d.sha256.slice(0, 12)}\``,
-    ]),
+    [
+      "Doc Meta ID",
+      "Document",
+      "Title",
+      "Headings",
+      "Tables",
+      "Tasks",
+      "Lines",
+      "Links",
+      "SHA-256 (12)",
+    ],
+    ["left", "left", "left", "right", "right", "right", "right", "right", "left"],
+    manifest.markdownDocs.map((d) => {
+      const taskLabel =
+        d.taskSummary.done + d.taskSummary.open > 0
+          ? `${d.taskSummary.done}/${d.taskSummary.done + d.taskSummary.open}`
+          : "0"
+      return [
+        `\`${d.metaId}\``,
+        `[\`${d.path}\`](../../${d.path})`,
+        d.title.replace(/\|/g, "\\|"),
+        String(d.headingCount),
+        String(d.tableCount),
+        taskLabel,
+        String(d.lines),
+        String(d.localLinksChecked),
+        `\`${d.sha256.slice(0, 12)}\``,
+      ]
+    }),
+  )
+
+  const headingIdsTable = formatAlignedMarkdownTable(
+    ["Doc Meta ID", "Document", "Listed GFM Heading Meta IDs (`#id`)"],
+    ["left", "left", "left"],
+    manifest.markdownDocs.map((d) => {
+      const listed =
+        d.headingIds.length === 0
+          ? "—"
+          : d.headingIds
+              .slice(0, 4)
+              .map((h) => `\`#${h.id}\``)
+              .join(", ") + (d.headingIds.length > 4 ? ` (+${d.headingIds.length - 4})` : "")
+      return [`\`${d.metaId}\``, `[\`${d.path}\`](../../${d.path})`, listed]
+    }),
   )
 
   const scriptTable = formatAlignedMarkdownTable(
@@ -1182,9 +1361,15 @@ ${diagramTable}
 ${brandingSection}
 ## Verified Markdown Documentation Inventory
 
-Every local link across all **${manifest.markdownDocs.length}** tracked Markdown documents is checked by \`bun run docs:check\`:
+Every local link across all **${manifest.markdownDocs.length}** tracked Markdown documents is checked by \`bun run docs:check\`, indexed with canonical \`SD-DOC-*\` meta IDs and GFM heading/table structure:
 
 ${docTable}
+
+## Listed GFM Heading Meta IDs
+
+Inspect all extracted GFM heading \`#id\` anchors via \`bun run cli docs ids\`:
+
+${headingIdsTable}
 
 ## Unified \`package.json\` Scripts
 
@@ -1331,12 +1516,17 @@ export function runArtifactPipeline(options: {
       entries: brandingAudit.entries,
     },
     markdownDocs: mdAudit.docs.map((d) => ({
+      metaId: d.metaId,
       path: d.path,
       title: d.title,
       lines: d.lines,
       bytes: d.bytes,
       sha256: d.sha256,
       localLinksChecked: d.localLinksChecked,
+      headingCount: d.headingIds.length,
+      tableCount: d.tableCount,
+      taskSummary: d.taskSummary,
+      headingIds: d.headingIds,
     })),
     cliCommands: UNIFIED_CLI_COMMANDS,
     packageScripts: pkgJson.scripts ?? {},
