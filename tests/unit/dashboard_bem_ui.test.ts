@@ -44,13 +44,17 @@ describe("Bloomberg High-Density Ops UI (`sd-` BEM) architecture", () => {
     expect(appSource).toContain('refreshLabel="Refresh Telemetry"')
     expect(appSource).toContain("<LiveTickerOverlay")
     expect(appSource).toContain("tickerOverlayOpen={tickerOverlayOpen}")
+    expect(appSource).toContain("rankings={rankings}")
   })
 
-  test("CustomersTabPanel implements sticky BEM panes, gauges, sparklines, Divergence Alert, and session banner", () => {
+  test("CustomersTabPanel implements sticky BEM panes, gauges, sparklines, Sharpness Heatmap, Divergence Alert, and session banner", () => {
     expect(customersSource).toContain("sd-profile-list")
     expect(customersSource).toContain("sd-profile-list__header")
     expect(customersSource).toContain("sd-profile-row")
     expect(customersSource).toContain("sd-profile-row--selected")
+    expect(customersSource).toContain("sd-profile-row--sharp")
+    expect(customersSource).toContain("Sharpness Heatmap")
+    expect(customersSource).toContain('data-sharpness-heatmap-toggle="true"')
     expect(customersSource).toContain("sd-profile-row__score")
     expect(customersSource).toContain("sd-risk-gauge")
     expect(customersSource).toContain("sd-profile-detail")
@@ -92,6 +96,7 @@ describe("Bloomberg High-Density Ops UI (`sd-` BEM) architecture", () => {
       ".sd-profile-list",
       ".sd-profile-row",
       ".sd-profile-row--selected",
+      ".sd-profile-row--sharp",
       ".sd-profile-row__score",
       ".sd-profile-detail",
       ".sd-profile-detail__alert--divergence",
@@ -112,6 +117,7 @@ describe("Bloomberg High-Density Ops UI (`sd-` BEM) architecture", () => {
       "@keyframes sd-critical-pulse",
       "prefers-reduced-motion: reduce",
       '[data-dashboard-theme="light"] .sd-status-bar__item',
+      '[data-dashboard-theme="light"] .sd-profile-row--sharp',
     ]
     for (const sel of requiredSelectors) {
       expect(deskCss).toContain(sel)

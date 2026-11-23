@@ -9,7 +9,8 @@
  */
 
 import type { CustomerLiveActivitySummary } from "./customer_drilldown_summary.ts"
-import type { ProfileAxisKey, ProfileRiskBand, ShowcaseCustomer } from "./types.ts"
+import type { NormalizedRankingsResult } from "./hydration.ts"
+import type { ProfileAxisKey, ProfileRiskBand, RankedPlayer30d, ShowcaseCustomer } from "./types.ts"
 
 /** Standard -110 sportsbook vig breakeven probability: 110 / 210 ≈ 0.5238095 */
 export const BREAKEVEN_PROB_MINUS_110 = 110 / 210
@@ -130,10 +131,7 @@ export interface StakeDistributionMetrics {
 }
 
 export type BayesianSampleBasis =
-  | "backtest-tickets"
-  | "retained-history"
-  | "live-tape"
-  | "score-prior"
+  "backtest-tickets" | "retained-history" | "live-tape" | "score-prior"
 
 export interface BayesianSkillEstimate {
   readonly priorAlpha: number
@@ -533,7 +531,7 @@ export function computeProfileBayesianSkill(
   const priorBeta = 24
 
   const parlayTickets = cust.forensicDossier?.parlayBacktest?.totalParlayTickets ?? 0
-  const retainedTickets = cust.retainedHistory?.settledCount ?? 0
+  const retainedTickets = cust.retainedHistory?.eligibleWagers ?? 0
   const liveTickets = liveActivity?.ticketCount ?? 0
 
   let sampleSize: number
@@ -663,8 +661,7 @@ export function computeDeskExposureModel(cust: ShowcaseCustomer): DeskExposureMo
     cust.correlatedRisk === "CRITICAL" || (probitRho !== null && probitRho >= 0.65)
   const isHighSyndicate = cust.syndicateRisk === "HIGH" || cust.syndicateProb >= 0.7
 
-  const baselineStake =
-    !unknown.includes("meanStake") && cust.meanStake > 0 ? cust.meanStake : 1000
+  const baselineStake = !unknown.includes("meanStake") && cust.meanStake > 0 ? cust.meanStake : 1000
   const capMultiplier =
     cust.score >= 8.5 || isParlayCrit
       ? 0.35
@@ -685,13 +682,7 @@ export function computeDeskExposureModel(cust: ShowcaseCustomer): DeskExposureMo
           : 0
 
   const suggestedShadeCents =
-    cust.score >= 8.5
-      ? 15
-      : cust.score >= 7.0 || isParlayCrit
-        ? 10
-        : cust.score >= 5.5
-          ? 5
-          : 0
+    cust.score >= 8.5 ? 15 : cust.score >= 7.0 || isParlayCrit ? 10 : cust.score >= 5.5 ? 5 : 0
 
   const suggestedShadowMultiplier =
     cust.score >= 8.5 && (!hasMeasuredHold || cust.holdPct < 0)
@@ -848,9 +839,7 @@ export function computeCohortBenchmarks(
       : null
 
   const hasScore = !unknown.includes("sharpness")
-  const scoreRank = hasScore
-    ? measuredScores.filter((v) => v > cust.score).length + 1
-    : null
+  const scoreRank = hasScore ? measuredScores.filter((v) => v > cust.score).length + 1 : null
 
   return {
     cohortSize: cohort.length,
@@ -1226,7 +1215,8 @@ export function evaluateProfileQuantitativeModel(
 
   const dominatingAxis =
     axes.length > 0 && cust.score > 0
-      ? [...axes].sort((a, b) => b.utilizationPct - a.utilizationPct || b.value - a.value)[0] ?? null
+      ? ([...axes].sort((a, b) => b.utilizationPct - a.utilizationPct || b.value - a.value)[0] ??
+        null)
       : null
 
   const bayesian = isUnmeasured ? null : computeProfileBayesianSkill(cust, liveActivity)
@@ -1248,5 +1238,182 @@ export function evaluateProfileQuantitativeModel(
     benchmark,
     riskDrivers,
     nearestPeers,
+  }
+}
+
+export interface SharpnessHeatmapOverlay {
+  readonly isSharp: boolean
+  readonly isClvLeader: boolean
+  /** Discrete thermal heat level: 0 = baseline, 1..5 = rising CLV/sharpness intensity. */
+  readonly heatLevel: 0 | 1 | 2 | 3 | 4 | 5
+  readonly rankedMatch: RankedPlayer30d | null
+  /** Basis points of CLV signal from rankings or backtest dossier, or null if absent. */
+  readonly clvBps: number | null
+  readonly clvSignalLabel: string | null
+  readonly rankLabel: string | null
+  readonly summaryTitle: string
+}
+
+export interface SharpnessHeatmapSummary {
+  readonly rankedTotal: number
+  readonly matchedCount: number
+  readonly sharpCount: number
+  readonly clvLeaderCount: number
+}
+
+/**
+ * Index `NormalizedRankingsResult.players` by uppercase player ID for O(1) profile correlation.
+ */
+export function buildRankingsPlayerLookup(
+  rankings?: NormalizedRankingsResult | null,
+): ReadonlyMap<string, RankedPlayer30d> {
+  const byId = new Map<string, RankedPlayer30d>()
+  if (!rankings?.players) return byId
+  for (const player of rankings.players) {
+    const key = player.id.trim().toUpperCase()
+    if (!key) continue
+    const prev = byId.get(key)
+    if (
+      !prev ||
+      player.score > prev.score ||
+      (player.score === prev.score && player.rank < prev.rank)
+    ) {
+      byId.set(key, player)
+    }
+  }
+  return byId
+}
+
+/**
+ * Evaluate CLV-leader & sharpness heatmap overlay signals for a single `ShowcaseCustomer`
+ * against the 30-day `rankings` index.
+ */
+export function evaluateSharpnessHeatmapOverlay(
+  cust: ShowcaseCustomer,
+  rankingsById: ReadonlyMap<string, RankedPlayer30d>,
+): SharpnessHeatmapOverlay {
+  const rankedMatch = rankingsById.get(cust.id.trim().toUpperCase()) ?? null
+  const unknown = cust.unknown ?? []
+  const custClvKnown = !unknown.includes("clv")
+  const custSharpKnown = !unknown.includes("sharpness")
+
+  const dossierClvBps = cust.forensicDossier?.parlayBacktest?.avgClvBps
+  const clvBps =
+    rankedMatch?.clvBps !== undefined && Number.isFinite(rankedMatch.clvBps)
+      ? rankedMatch.clvBps
+      : typeof dossierClvBps === "number" && Number.isFinite(dossierClvBps)
+        ? dossierClvBps
+        : null
+
+  const rankedTierSharp =
+    rankedMatch !== null &&
+    (rankedMatch.tier.startsWith("TIER_1") ||
+      rankedMatch.tier.startsWith("TIER_2") ||
+      rankedMatch.score >= 7.0 ||
+      rankedMatch.alertRate >= 25)
+
+  const rankedClvLeader =
+    rankedMatch !== null &&
+    ((rankedMatch.clvBps !== undefined && rankedMatch.clvBps >= 80) ||
+      (rankedMatch.score >= 7.5 && rankedMatch.alertRate >= 25) ||
+      (rankedMatch.netUsd !== undefined && rankedMatch.netUsd < 0 && rankedMatch.score >= 6.8))
+
+  const custClvLeader = (custClvKnown && cust.clvScore >= 2.2) || (clvBps !== null && clvBps >= 80)
+  const isClvLeader = rankedClvLeader || custClvLeader
+
+  const custSharp = custSharpKnown && cust.score >= 7.5
+  const isSharp =
+    isClvLeader ||
+    rankedTierSharp ||
+    (rankedMatch !== null && rankedMatch.score >= 6.5) ||
+    custSharp
+
+  let heatLevel: 0 | 1 | 2 | 3 | 4 | 5 = 0
+  if (isSharp) {
+    const baseScore = Math.max(rankedMatch?.score ?? 0, custSharpKnown ? cust.score : 0)
+    const clvBoost = isClvLeader ? 0.9 : 0
+    const bpsBoost =
+      clvBps !== null && clvBps >= 150 ? 0.6 : clvBps !== null && clvBps >= 80 ? 0.3 : 0
+    const alertBoost = rankedMatch && rankedMatch.alertRate >= 35 ? 0.4 : 0
+    const composite = baseScore + clvBoost + bpsBoost + alertBoost
+    heatLevel =
+      composite >= 10.2 ? 5 : composite >= 9.2 ? 4 : composite >= 8.2 ? 3 : composite >= 7.2 ? 2 : 1
+  }
+
+  const rankLabel = rankedMatch ? `#${rankedMatch.rank} 30d` : null
+  let clvSignalLabel: string | null = null
+  if (clvBps !== null) {
+    clvSignalLabel = `${clvBps >= 0 ? "+" : ""}${Math.round(clvBps)} bps CLV`
+  } else if (rankedMatch && isClvLeader) {
+    clvSignalLabel = `CLV-Leader · ${rankedMatch.score.toFixed(1)}`
+  } else if (custClvKnown && cust.clvScore >= 2.2) {
+    clvSignalLabel = `CLV ${cust.clvScore.toFixed(2)}/3`
+  } else if (rankedMatch) {
+    clvSignalLabel = `30d ${rankedMatch.score.toFixed(1)} · ${rankedMatch.alertRate.toFixed(0)}% alert`
+  }
+
+  const parts: string[] = []
+  if (rankedMatch) {
+    parts.push(
+      `30d Rank #${rankedMatch.rank} (${rankedMatch.tierLabel || rankedMatch.tier}, score ${rankedMatch.score.toFixed(1)})`,
+    )
+    parts.push(`alert ${rankedMatch.alertRate.toFixed(1)}%`)
+  }
+  if (clvBps !== null) {
+    parts.push(`CLV ${clvBps >= 0 ? "+" : ""}${Math.round(clvBps)} bps`)
+  } else if (custClvKnown && cust.clvScore > 0) {
+    parts.push(`CLV axis ${cust.clvScore.toFixed(2)}/3.0`)
+  }
+  if (isClvLeader) {
+    parts.push("CLV-Leader signal")
+  }
+
+  return {
+    isSharp,
+    isClvLeader,
+    heatLevel,
+    rankedMatch,
+    clvBps,
+    clvSignalLabel,
+    rankLabel,
+    summaryTitle:
+      parts.length > 0
+        ? `Sharpness Heatmap: ${parts.join(" · ")}`
+        : "No active 30d rankings sharp/CLV overlay signal",
+  }
+}
+
+/**
+ * Summarize Sharpness Heatmap coverage across the currently visible profiled customer rows.
+ */
+export function summarizeSharpnessHeatmap(
+  customers: readonly ShowcaseCustomer[],
+  rankings?: NormalizedRankingsResult | null,
+): {
+  readonly overlaysById: ReadonlyMap<string, SharpnessHeatmapOverlay>
+  readonly summary: SharpnessHeatmapSummary
+} {
+  const rankingsById = buildRankingsPlayerLookup(rankings)
+  const overlaysById = new Map<string, SharpnessHeatmapOverlay>()
+  let matchedCount = 0
+  let sharpCount = 0
+  let clvLeaderCount = 0
+
+  for (const cust of customers) {
+    const overlay = evaluateSharpnessHeatmapOverlay(cust, rankingsById)
+    overlaysById.set(cust.id, overlay)
+    if (overlay.rankedMatch !== null) matchedCount += 1
+    if (overlay.isSharp) sharpCount += 1
+    if (overlay.isClvLeader) clvLeaderCount += 1
+  }
+
+  return {
+    overlaysById,
+    summary: {
+      rankedTotal: rankings?.players.length ?? 0,
+      matchedCount,
+      sharpCount,
+      clvLeaderCount,
+    },
   }
 }

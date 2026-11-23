@@ -4659,6 +4659,7 @@ export function App(): React.ReactElement {
                 void handleRefreshTelemetry()
               }}
               sharpestOnChainXref={sharpestOnChainXref}
+              rankings={rankings}
               sortedCustomers={sortedCustomers}
               customerSort={customerSort}
               onCustomerSort={onCustomerSort}

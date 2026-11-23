@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  Flame,
   Globe,
   Plus,
   Radio,
@@ -28,6 +29,7 @@ import {
   type CustomerCohortKpiTone,
   deriveCustomerCohortKpiCards,
   formatProvenanceBadge,
+  type NormalizedRankingsResult,
   PENDING_COHORTS_PROVENANCE,
 } from "../hydration.ts"
 import { getLocalAgentHref } from "../links.ts"
@@ -36,7 +38,7 @@ import {
   FANTASY402_PORTAL_WINDOW_TARGET,
   getFantasy402PortalLinkProps,
 } from "../portal_link.ts"
-import { evaluateProfileQuantitativeModel } from "../profile_formulas.ts"
+import { evaluateProfileQuantitativeModel, summarizeSharpnessHeatmap } from "../profile_formulas.ts"
 import {
   classifyCustomerProfile,
   PROFILE_TAG_CATEGORY_META,
@@ -142,6 +144,8 @@ export interface CustomersTabPanelProps {
   readonly onSelectWager?: ((wager: LiveWager) => void) | undefined
   /** Sharpest profiles cross-referenced against live on-chain wager tracking and bridge leads. */
   readonly sharpestOnChainXref?: SharpestOnChainXrefReport | null | undefined
+  /** 30-day leaderboard rankings payload used by the Sharpness Heatmap overlay. */
+  readonly rankings?: NormalizedRankingsResult | null | undefined
   /** Whether the dockable Live Ticker Overlay is open. */
   readonly tickerOverlayOpen?: boolean | undefined
   /** Toggle the dockable Live Ticker Overlay without leaving Profiles context. */
@@ -261,7 +265,12 @@ function resolveBadgeModifier(raw: string): string {
     return "syndicate-link"
   }
   if (key.includes("whale") || key.includes("vip") || key.includes("high_hold")) return "whale"
-  if (key.includes("alert") || key.includes("restrict") || key.includes("shadow") || key.includes("gap")) {
+  if (
+    key.includes("alert") ||
+    key.includes("restrict") ||
+    key.includes("shadow") ||
+    key.includes("gap")
+  ) {
     return "alert-operator"
   }
   return "sharp"
@@ -369,6 +378,7 @@ export function CustomersTabPanel({
   liveWagers = [],
   onSelectWager,
   sharpestOnChainXref = null,
+  rankings = null,
   tickerOverlayOpen = false,
   onToggleTickerOverlay,
 }: CustomersTabPanelProps): React.ReactElement {
@@ -377,6 +387,28 @@ export function CustomersTabPanel({
   const [activitySportFilter, setActivitySportFilter] = useState<string>("ALL")
   const [filtersExpanded, setFiltersExpanded] = useState<boolean>(false)
   const [showRowSparklines, setShowRowSparklines] = useState<boolean>(true)
+  const [sharpnessHeatmapEnabled, setSharpnessHeatmapEnabled] = useState<boolean>(() => {
+    try {
+      return window.localStorage.getItem("sportsdesk.profiles.sharpness_heatmap") === "1"
+    } catch {
+      return false
+    }
+  })
+  const toggleSharpnessHeatmap = () => {
+    setSharpnessHeatmapEnabled((prev) => {
+      const next = !prev
+      try {
+        window.localStorage.setItem("sportsdesk.profiles.sharpness_heatmap", next ? "1" : "0")
+      } catch {
+        // Ignore storage write errors in restricted browsing contexts.
+      }
+      return next
+    })
+  }
+  const sharpnessHeatmapData = useMemo(
+    () => summarizeSharpnessHeatmap(sortedCustomers, rankings),
+    [sortedCustomers, rankings],
+  )
   const pageSize = 100
   const page = Math.min(profilePage, Math.max(0, Math.ceil(sortedCustomers.length / pageSize) - 1))
   useEffect(() => {
@@ -1233,7 +1265,12 @@ export function CustomersTabPanel({
         return (
           <div style={styles.showcaseGrid}>
             {/* Left Column: Profiled Bettors List (.sd-profile-list) */}
-            <div className="sd-profile-list" style={styles.tablePanel} data-type="profile-list">
+            <div
+              className="sd-profile-list"
+              style={styles.tablePanel}
+              data-type="profile-list"
+              data-sharpness-heatmap={sharpnessHeatmapEnabled ? "true" : "false"}
+            >
               <div className="sd-profile-list__header">
                 <div className="sd-profile-list__title-group">
                   <h3 className="sd-profile-list__title">
@@ -1271,6 +1308,26 @@ export function CustomersTabPanel({
                   </select>
                   <button
                     type="button"
+                    className={`sd-action-btn sd-heatmap-toggle${sharpnessHeatmapEnabled ? " sd-action-btn--primary sd-heatmap-toggle--active" : ""}`}
+                    aria-pressed={sharpnessHeatmapEnabled}
+                    data-sharpness-heatmap-toggle="true"
+                    onClick={toggleSharpnessHeatmap}
+                    title={
+                      rankings && rankings.players.length > 0
+                        ? `Overlay 30d rankings CLV-leader sharpness signals (${sharpnessHeatmapData.summary.sharpCount} sharp · ${sharpnessHeatmapData.summary.clvLeaderCount} CLV leaders)`
+                        : "Toggle CLV-leader sharpness heatmap overlay across profiled bettors"
+                    }
+                  >
+                    <Flame size={11} aria-hidden="true" />
+                    <span>Sharpness Heatmap</span>
+                    {sharpnessHeatmapEnabled && (
+                      <span className="sd-tabular">
+                        ({sharpnessHeatmapData.summary.sharpCount})
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
                     className={`sd-action-btn ${showRowSparklines ? "sd-action-btn--active" : ""}`}
                     aria-pressed={showRowSparklines}
                     onClick={() => setShowRowSparklines((prev) => !prev)}
@@ -1303,6 +1360,27 @@ export function CustomersTabPanel({
                   )}
                 </div>
               </div>
+              {sharpnessHeatmapEnabled && (
+                <div
+                  className="sd-sharp-heatmap-strip sd-tabular"
+                  data-sharpness-heatmap-strip="true"
+                >
+                  <span className="sd-badge sd-badge--clv-leader">CLV-LEADER OVERLAY</span>
+                  <span>
+                    Highlighted rows: <strong>{sharpnessHeatmapData.summary.sharpCount}</strong>{" "}
+                    sharp · <strong>{sharpnessHeatmapData.summary.clvLeaderCount}</strong> CLV
+                    leaders ·{" "}
+                    {sharpnessHeatmapData.summary.rankedTotal > 0 ? (
+                      <>
+                        <strong>{sharpnessHeatmapData.summary.matchedCount}</strong> /{" "}
+                        {sharpnessHeatmapData.summary.rankedTotal} 30d rankings correlated
+                      </>
+                    ) : (
+                      "30d rankings feed pending (using profile CLV & score signals)"
+                    )}
+                  </span>
+                </div>
+              )}
               <div className="profiles-wrap">
                 <table style={styles.table}>
                   <thead>
@@ -1384,6 +1462,9 @@ export function CustomersTabPanel({
                         ? 0
                         : Math.min(100, Math.max(4, Math.round((cust.score / 10) * 100)))
                       const typeMod = resolveBadgeModifier(typeSpec.id || typeSpec.shortLabel)
+                      const heatmapOverlay = sharpnessHeatmapData.overlaysById.get(cust.id)
+                      const isSharpHeatmapRow =
+                        sharpnessHeatmapEnabled && Boolean(heatmapOverlay?.isSharp)
 
                       const actionClass = cust.action.includes("ALERT")
                         ? "action-alert"
@@ -1394,9 +1475,21 @@ export function CustomersTabPanel({
                       return (
                         <tr
                           key={cust.id}
-                          className={`sd-profile-row${isSelected ? " sd-profile-row--selected" : ""}`}
+                          className={`sd-profile-row${isSelected ? " sd-profile-row--selected" : ""}${isSharpHeatmapRow ? " sd-profile-row--sharp" : ""}`}
                           data-status={rowStatus}
                           data-severity={rowStatus}
+                          data-sharp-overlay={isSharpHeatmapRow ? "true" : undefined}
+                          data-clv-leader={
+                            isSharpHeatmapRow && heatmapOverlay?.isClvLeader ? "true" : undefined
+                          }
+                          data-sharp-heat={
+                            isSharpHeatmapRow ? String(heatmapOverlay?.heatLevel ?? 1) : undefined
+                          }
+                          title={
+                            isSharpHeatmapRow && heatmapOverlay
+                              ? heatmapOverlay.summaryTitle
+                              : undefined
+                          }
                           style={styles.tr(isSelected)}
                           onClick={() => {
                             onSelectCustomer(cust)
@@ -1466,6 +1559,26 @@ export function CustomersTabPanel({
                                 {cust.agentId} ↗
                               </a>
                             </div>
+                            {isSharpHeatmapRow && heatmapOverlay && (
+                              <div
+                                className="sd-profile-row__sharp-overlay sd-tabular"
+                                title={heatmapOverlay.summaryTitle}
+                              >
+                                {heatmapOverlay.isClvLeader && (
+                                  <span className="sd-badge sd-badge--clv-leader">CLV-LEADER</span>
+                                )}
+                                {heatmapOverlay.rankLabel && (
+                                  <span className="sd-sharp-overlay-chip">
+                                    {heatmapOverlay.rankLabel}
+                                  </span>
+                                )}
+                                {heatmapOverlay.clvSignalLabel && (
+                                  <span className="sd-sharp-overlay-chip sd-sharp-overlay-chip--clv">
+                                    {heatmapOverlay.clvSignalLabel}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                             {classification.tags.length > 0 && (
                               <div className="sd-profile-row__badges">
                                 {classification.tags.slice(0, 3).map((tag) => {
@@ -2609,7 +2722,9 @@ export function CustomersTabPanel({
                               <div className="sd-policy-matrix-meta sd-tabular">
                                 <span>
                                   Live Avg Stake:{" "}
-                                  <strong>${selectedLiveActivity.avgRiskUsd.toLocaleString()}</strong>
+                                  <strong>
+                                    ${selectedLiveActivity.avgRiskUsd.toLocaleString()}
+                                  </strong>
                                 </span>
                                 <span>·</span>
                                 <span>
@@ -2617,7 +2732,8 @@ export function CustomersTabPanel({
                                   <strong
                                     style={{
                                       color:
-                                        selectedLiveActivity.avgRiskUsd / selectedCustomer.meanStake >=
+                                        selectedLiveActivity.avgRiskUsd /
+                                          selectedCustomer.meanStake >=
                                         1.5
                                           ? "#f87171"
                                           : "#7dd3fc",
@@ -2634,7 +2750,9 @@ export function CustomersTabPanel({
                                     <span>·</span>
                                     <span>
                                       To-Win / Risk:{" "}
-                                      <strong>{selectedLiveActivity.avgToWinRatio.toFixed(2)}×</strong>
+                                      <strong>
+                                        {selectedLiveActivity.avgToWinRatio.toFixed(2)}×
+                                      </strong>
                                     </span>
                                   </>
                                 )}
@@ -2701,7 +2819,8 @@ export function CustomersTabPanel({
                                           ) : null}
                                         </span>
                                         <span className="sd-tabular">
-                                          ${row.riskUsd.toLocaleString()} ({row.sharePct.toFixed(0)}%)
+                                          ${row.riskUsd.toLocaleString()} ({row.sharePct.toFixed(0)}
+                                          %)
                                         </span>
                                       </div>
                                       <div
@@ -2758,7 +2877,9 @@ export function CustomersTabPanel({
                                 {activitySportFilter === "ALL"
                                   ? selectedLiveActivity.ticketCount
                                   : selectedLiveActivity.tickets.filter(
-                                      (t) => (t.sport || "OTHER").trim().toUpperCase() === activitySportFilter,
+                                      (t) =>
+                                        (t.sport || "OTHER").trim().toUpperCase() ===
+                                        activitySportFilter,
                                     ).length}
                                 {activitySportFilter !== "ALL" ? ` · ${activitySportFilter}` : ""})
                               </h4>
@@ -2778,108 +2899,109 @@ export function CustomersTabPanel({
                                 .filter(
                                   (w) =>
                                     activitySportFilter === "ALL" ||
-                                    (w.sport || "OTHER").trim().toUpperCase() === activitySportFilter,
+                                    (w.sport || "OTHER").trim().toUpperCase() ===
+                                      activitySportFilter,
                                 )
                                 .slice(0, 10)
                                 .map((wager) => {
-                                const isCrit =
-                                  wager.alertTier === "CRITICAL" || wager.alertTier === "STEAM"
-                                return (
-                                  <button
-                                    key={wager.ticketId}
-                                    type="button"
-                                    onClick={() =>
-                                      onSelectWager
-                                        ? onSelectWager(wager)
-                                        : onViewCustomerWagers?.(selectedCustomer.id)
-                                    }
-                                    className="sd-drilldown-ticket-row"
-                                  >
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        alignItems: "flex-start",
-                                        gap: "2px",
-                                        minWidth: 0,
-                                      }}
+                                  const isCrit =
+                                    wager.alertTier === "CRITICAL" || wager.alertTier === "STEAM"
+                                  return (
+                                    <button
+                                      key={wager.ticketId}
+                                      type="button"
+                                      onClick={() =>
+                                        onSelectWager
+                                          ? onSelectWager(wager)
+                                          : onViewCustomerWagers?.(selectedCustomer.id)
+                                      }
+                                      className="sd-drilldown-ticket-row"
                                     >
                                       <div
                                         style={{
                                           display: "flex",
-                                          alignItems: "center",
-                                          gap: "6px",
-                                          fontSize: "11.5px",
-                                          fontWeight: 600,
-                                          color: "#f1f5f9",
+                                          flexDirection: "column",
+                                          alignItems: "flex-start",
+                                          gap: "2px",
+                                          minWidth: 0,
                                         }}
                                       >
-                                        <span style={{ color: "#38bdf8" }}>{wager.sport}</span>
-                                        <span
+                                        <div
                                           style={{
-                                            overflow: "hidden",
-                                            textOverflow: "ellipsis",
-                                            whiteSpace: "nowrap",
-                                            maxWidth: "250px",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "6px",
+                                            fontSize: "11.5px",
+                                            fontWeight: 600,
+                                            color: "#f1f5f9",
                                           }}
                                         >
-                                          {wager.selection || wager.event}
-                                        </span>
-                                        {isCrit ? (
+                                          <span style={{ color: "#38bdf8" }}>{wager.sport}</span>
                                           <span
                                             style={{
-                                              fontSize: "9.5px",
-                                              fontWeight: 700,
-                                              padding: "1px 5px",
-                                              borderRadius: "3px",
-                                              backgroundColor: "rgba(239, 68, 68, 0.18)",
-                                              color: "#fca5a5",
+                                              overflow: "hidden",
+                                              textOverflow: "ellipsis",
+                                              whiteSpace: "nowrap",
+                                              maxWidth: "250px",
                                             }}
                                           >
-                                            {wager.alertTier}
+                                            {wager.selection || wager.event}
                                           </span>
-                                        ) : null}
+                                          {isCrit ? (
+                                            <span
+                                              style={{
+                                                fontSize: "9.5px",
+                                                fontWeight: 700,
+                                                padding: "1px 5px",
+                                                borderRadius: "3px",
+                                                backgroundColor: "rgba(239, 68, 68, 0.18)",
+                                                color: "#fca5a5",
+                                              }}
+                                            >
+                                              {wager.alertTier}
+                                            </span>
+                                          ) : null}
+                                        </div>
+                                        <span
+                                          style={{
+                                            fontSize: "10.5px",
+                                            color: "#94a3b8",
+                                            fontFamily:
+                                              "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                                          }}
+                                        >
+                                          #{wager.ticketId} · {wager.betType} ·{" "}
+                                          {wager.writer ?? wager.ticketWriter ?? "DIRECT"}
+                                          {wager.oddsAmerican ? ` · ${wager.oddsAmerican}` : ""}
+                                        </span>
                                       </div>
-                                      <span
+                                      <div
                                         style={{
-                                          fontSize: "10.5px",
-                                          color: "#94a3b8",
+                                          display: "flex",
+                                          flexDirection: "column",
+                                          alignItems: "flex-end",
+                                          fontVariantNumeric: "tabular-nums",
                                           fontFamily:
                                             "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                                          flexShrink: 0,
                                         }}
                                       >
-                                        #{wager.ticketId} · {wager.betType} ·{" "}
-                                        {wager.writer ?? wager.ticketWriter ?? "DIRECT"}
-                                        {wager.oddsAmerican ? ` · ${wager.oddsAmerican}` : ""}
-                                      </span>
-                                    </div>
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        alignItems: "flex-end",
-                                        fontVariantNumeric: "tabular-nums",
-                                        fontFamily:
-                                          "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                                        flexShrink: 0,
-                                      }}
-                                    >
-                                      <span
-                                        style={{
-                                          fontSize: "12px",
-                                          fontWeight: 700,
-                                          color: isCrit ? "#fca5a5" : "#e2e8f0",
-                                        }}
-                                      >
-                                        ${wager.riskUsd.toLocaleString()}
-                                      </span>
-                                      <span style={{ fontSize: "10px", color: "#64748b" }}>
-                                        win ${wager.toWinUsd.toLocaleString()}
-                                      </span>
-                                    </div>
-                                  </button>
-                                )
-                              })}
+                                        <span
+                                          style={{
+                                            fontSize: "12px",
+                                            fontWeight: 700,
+                                            color: isCrit ? "#fca5a5" : "#e2e8f0",
+                                          }}
+                                        >
+                                          ${wager.riskUsd.toLocaleString()}
+                                        </span>
+                                        <span style={{ fontSize: "10px", color: "#64748b" }}>
+                                          win ${wager.toWinUsd.toLocaleString()}
+                                        </span>
+                                      </div>
+                                    </button>
+                                  )
+                                })}
                             </div>
                           </div>
                         </>

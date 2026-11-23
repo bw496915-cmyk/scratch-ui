@@ -132,8 +132,10 @@ export function bookRowsToProfiles(
     const rawSharp = Number(row.sharp_score)
     const sharpKnown = Number.isFinite(rawSharp)
     const score = sharpKnown ? round(clamp(rawSharp / 10, 0, 10), 2) : 0
-    const rawClvBps = row.clv_bps != null && Number.isFinite(Number(row.clv_bps)) ? Number(row.clv_bps) : null
-    const rawHoldPct = row.hold_pct != null && Number.isFinite(Number(row.hold_pct)) ? Number(row.hold_pct) : null
+    const rawClvBps =
+      row.clv_bps != null && Number.isFinite(Number(row.clv_bps)) ? Number(row.clv_bps) : null
+    const rawHoldPct =
+      row.hold_pct != null && Number.isFinite(Number(row.hold_pct)) ? Number(row.hold_pct) : null
     const rawDelay = nonNegativeFinite(row.delay_seconds)
     const delayKnown = rawDelay !== null
     const delay = rawDelay ?? 0
@@ -331,7 +333,8 @@ export function backtestRowsToProfiles(rows: ReadonlyArray<Row>): ShowcaseCustom
       inPlayDelaySec: 0,
       lineShadeCents: 0,
       shadowCopyMultiplier: 1,
-      action: roundedScore >= 7 || correlatedRisk === "CRITICAL" ? "ALERT_OPERATOR" : "ACCEPT_NORMAL",
+      action:
+        roundedScore >= 7 || correlatedRisk === "CRITICAL" ? "ALERT_OPERATOR" : "ACCEPT_NORMAL",
       ipAddress: String(row.ipSubnet ?? row.ip_subnet ?? "—"),
       unknown,
       source: "backtest",

@@ -376,9 +376,7 @@ export function ProfileFormulaDrilldownPanel({
                 >
                   {(bayesian.probAboveBreakeven * 100).toFixed(1)}%
                 </strong>
-                <span className="sd-formula-bench-sub sd-tabular">
-                  vs 52.38% (-110 vig)
-                </span>
+                <span className="sd-formula-bench-sub sd-tabular">vs 52.38% (-110 vig)</span>
               </div>
 
               <div className="sd-formula-bench-cell">
@@ -456,7 +454,8 @@ export function ProfileFormulaDrilldownPanel({
           </>
         ) : (
           <div className="sd-formula-empty">
-            Bayesian posterior withheld: sharpness and lifetime hold are unmeasured for this account.
+            Bayesian posterior withheld: sharpness and lifetime hold are unmeasured for this
+            account.
           </div>
         )}
       </div>
@@ -539,7 +538,11 @@ export function ProfileFormulaDrilldownPanel({
                     <span
                       className={`sd-policy-status sd-policy-status--${item.isGap ? item.severity : "ok"}`}
                     >
-                      {item.isGap ? (item.severity === "critical" ? "CRITICAL GAP" : "GAP") : "ALIGNED"}
+                      {item.isGap
+                        ? item.severity === "critical"
+                          ? "CRITICAL GAP"
+                          : "GAP"
+                        : "ALIGNED"}
                     </span>
                   </td>
                 </tr>
@@ -694,7 +697,9 @@ export function ProfileFormulaDrilldownPanel({
           <div className="sd-formula-bench-cell">
             <span className="sd-formula-bench-label">Sim VaR / Cap</span>
             <strong className="sd-formula-bench-val sd-tabular">
-              {simulation.projectedVarToCapPct !== null ? `${simulation.projectedVarToCapPct}%` : "—"}
+              {simulation.projectedVarToCapPct !== null
+                ? `${simulation.projectedVarToCapPct}%`
+                : "—"}
             </strong>
             <span className="sd-formula-bench-sub sd-tabular">
               Throttle {(simulation.breakdown.capThrottleFactor * 100).toFixed(0)}%
@@ -745,7 +750,9 @@ export function ProfileFormulaDrilldownPanel({
               >
                 <div className="sd-peer-row__id">
                   <strong>{peer.id}</strong>
-                  <span>Agent {peer.agentId} · {peer.reason}</span>
+                  <span>
+                    Agent {peer.agentId} · {peer.reason}
+                  </span>
                 </div>
                 <div className="sd-peer-row__metrics sd-tabular">
                   <strong>{peer.score.toFixed(1)}</strong>

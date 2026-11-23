@@ -336,7 +336,10 @@ export function classifyCustomerProfileType(cust: ShowcaseCustomer): ProfileType
     timingUpper.includes("SCALP") ||
     timingUpper.includes("LATENCY") ||
     timingUpper.includes("BONUS") ||
-    (cust.clvScore >= 1.8 && !unknown.includes("gini") && cust.gini <= 0.14 && specUpper.includes("LIVE"))
+    (cust.clvScore >= 1.8 &&
+      !unknown.includes("gini") &&
+      cust.gini <= 0.14 &&
+      specUpper.includes("LIVE"))
   ) {
     return PROFILE_TYPE_SPECS.BONUS_ARB_SCALPER
   }
