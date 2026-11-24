@@ -740,9 +740,17 @@ export function createHttpAuthController(options: HttpAuthOptions = {}) {
   }
 
   type BunCsrfApi = {
-    readonly generate?: (secret: string, options: { sessionId: string }) => string
-    readonly verify?: (token: string, options: { secret: string; sessionId: string }) => boolean
+    readonly generate?: (
+      secret: string,
+      options: { readonly sessionId: string; readonly expiresIn?: number },
+    ) => string
+    readonly verify?: (
+      token: string,
+      options: { readonly secret: string; readonly sessionId: string; readonly maxAge?: number },
+    ) => boolean
   }
+
+  const CSRF_TOKEN_MAX_AGE_MS = Math.max(15 * 60_000, sessionTtlMs)
 
   const getBunCsrf = (): BunCsrfApi | undefined =>
     (globalThis as unknown as { Bun?: { CSRF?: BunCsrfApi } }).Bun?.CSRF
@@ -750,7 +758,10 @@ export function createHttpAuthController(options: HttpAuthOptions = {}) {
   const generateCsrfForSession = (sessionId: string): string => {
     const bunCsrf = getBunCsrf()
     if (typeof bunCsrf?.generate === "function") {
-      return `${BUN_CSRF_PREFIX}${bunCsrf.generate(csrfSecret, { sessionId })}`
+      return `${BUN_CSRF_PREFIX}${bunCsrf.generate(csrfSecret, {
+        sessionId,
+        expiresIn: CSRF_TOKEN_MAX_AGE_MS,
+      })}`
     }
     return randomBytes(24).toString("base64url")
   }
@@ -767,6 +778,7 @@ export function createHttpAuthController(options: HttpAuthOptions = {}) {
         return bunCsrf.verify(providedToken.slice(BUN_CSRF_PREFIX.length), {
           secret: csrfSecret,
           sessionId,
+          maxAge: CSRF_TOKEN_MAX_AGE_MS,
         })
       } catch {
         return false

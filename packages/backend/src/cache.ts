@@ -48,31 +48,99 @@ export class BoundedStampCache<T> {
   }
 }
 
+type BunPeekFn = (<T>(promise: Promise<T> | T) => T | Promise<T>) & {
+  readonly status?: (promise: Promise<unknown>) => "fulfilled" | "pending" | "rejected"
+}
+
+function getBunPeek(): BunPeekFn | undefined {
+  const bun = (globalThis as unknown as { readonly Bun?: { readonly peek?: BunPeekFn } }).Bun
+  return typeof bun?.peek === "function" ? bun.peek : undefined
+}
+
 export interface CachedJsonReader {
   readCachedJson: <T>(filePath: string) => Promise<{ stamp: string; value: T } | null>
+  /**
+   * Synchronous zero-microtask read of the most recently cached or already-settled
+   * in-flight JSON payload (leverages `Bun.peek` / `Bun.peek.status` under Bun).
+   */
+  peekCachedJson: <T>(filePath: string) => { stamp: string; value: T } | null
   clear: () => void
 }
 
-/** Create a stat-stamped JSON file reader bounded to `maxEntries` paths. */
+/** Create a stat-stamped JSON file reader bounded to `maxEntries` paths with in-flight dedup & `Bun.peek` fast path. */
 export function createCachedJsonReader(maxEntries = 24): CachedJsonReader {
   const cache = new BoundedStampCache<unknown>(maxEntries)
+  const latestStamps = new Map<string, string>()
+  const inFlight = new Map<string, Promise<{ stamp: string; value: unknown } | null>>()
+
   return {
     async readCachedJson<T>(filePath: string): Promise<{ stamp: string; value: T } | null> {
       const stamp = await statStamp(filePath)
       if (stamp === null) {
         cache.delete(filePath)
+        latestStamps.delete(filePath)
         return null
       }
       const hit = cache.getIfFresh(filePath, stamp)
       if (hit !== undefined) {
         return { stamp, value: hit as T }
       }
-      const value = JSON.parse(await readFile(filePath, "utf8")) as T
-      cache.set(filePath, stamp, value)
-      return { stamp, value }
+
+      const inflightKey = `${filePath}\0${stamp}`
+      const existing = inFlight.get(inflightKey)
+      if (existing) {
+        // Zero-microtask fast-path under Bun if the shared promise already settled
+        const peek = getBunPeek()
+        if (peek && typeof peek.status === "function" && peek.status(existing) === "fulfilled") {
+          return peek(existing) as { stamp: string; value: T } | null
+        }
+        return (await existing) as { stamp: string; value: T } | null
+      }
+
+      const loadPromise: Promise<{ stamp: string; value: unknown } | null> = readFile(
+        filePath,
+        "utf8",
+      )
+        .then((raw) => {
+          const parsed = JSON.parse(raw) as unknown
+          cache.set(filePath, stamp, parsed)
+          latestStamps.set(filePath, stamp)
+          return { stamp, value: parsed }
+        })
+        .finally(() => {
+          if (inFlight.get(inflightKey) === loadPromise) {
+            inFlight.delete(inflightKey)
+          }
+        })
+
+      inFlight.set(inflightKey, loadPromise)
+      return (await loadPromise) as { stamp: string; value: T } | null
     },
+
+    peekCachedJson<T>(filePath: string): { stamp: string; value: T } | null {
+      const stamp = latestStamps.get(filePath)
+      if (stamp !== undefined) {
+        const hit = cache.getIfFresh(filePath, stamp)
+        if (hit !== undefined) {
+          return { stamp, value: hit as T }
+        }
+      }
+      const peek = getBunPeek()
+      if (peek && typeof peek.status === "function") {
+        const prefix = `${filePath}\0`
+        for (const [key, promise] of inFlight.entries()) {
+          if (key.startsWith(prefix) && peek.status(promise) === "fulfilled") {
+            return peek(promise) as { stamp: string; value: T } | null
+          }
+        }
+      }
+      return null
+    },
+
     clear() {
       cache.clear()
+      latestStamps.clear()
+      inFlight.clear()
     },
   }
 }

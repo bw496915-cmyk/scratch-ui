@@ -233,7 +233,7 @@ export function buildDashboardShadowSliceUrl(
   slice: ActiveShadowSlice,
   options?: { readonly matrix?: boolean | undefined },
 ): string {
-  const url = new URL("/", "http://local")
+  const url = new URL("/", "https://non-fetching.invalid")
   url.searchParams.set("tab", "shadow")
   if (options?.matrix === true) {
     url.searchParams.set("matrix", "1")

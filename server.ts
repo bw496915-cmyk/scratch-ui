@@ -34,7 +34,12 @@ import { SLAB_SERVER } from "./lib/slab_config.ts"
 import { loadTomlConfig } from "./lib/wager_config.ts"
 import { loadWagersTabPolicyStamp } from "./lib/wagers_tab_policy.ts"
 import { inspectWagersWireContract } from "./lib/wagers_wire_contract.ts"
-import { createDashboardApi, type WsLike } from "./packages/api/src/index.ts"
+import {
+  createDashboardApi,
+  deriveWebSocketUrl,
+  loadValidatedEgressOrigins,
+  type WsLike,
+} from "./packages/api/src/index.ts"
 import {
   computeCustomersCohortPayload,
   createAgentDetailService,
@@ -265,15 +270,20 @@ async function toWebRequest(req: express.Request): Promise<Request> {
 
 async function sendWebResponse(res: express.Response, webRes: Response): Promise<void> {
   res.status(webRes.status)
-  webRes.headers.forEach((value, key) => {
+  const setCookies =
+    typeof webRes.headers.getSetCookie === "function" ? webRes.headers.getSetCookie() : []
+  for (const [key, value] of webRes.headers) {
     const lower = key.toLowerCase()
-    if (lower === "transfer-encoding") return
+    if (lower === "transfer-encoding" || lower === "set-cookie") continue
     if (lower === "cache-control" && value.toLowerCase() === "no-cache") {
       res.setHeader("Cache-Control", "no-store")
-      return
+      continue
     }
     res.setHeader(key, value)
-  })
+  }
+  if (setCookies.length > 0) {
+    res.setHeader("Set-Cookie", setCookies)
+  }
   const buf = Buffer.from(await webRes.arrayBuffer())
   res.send(buf)
 }
@@ -380,8 +390,11 @@ async function startServer() {
     return Array.from(byId.values())
   }
 
+  const egressOrigins = loadValidatedEgressOrigins(process.env)
+
   const r2PipelineService = createR2PipelineService({
-    daemon4020Origin: process.env.SPORTSDESK_API_ORIGIN ?? "http://127.0.0.1:4020",
+    daemon4020Origin: egressOrigins.API_ORIGIN.origin,
+    publicBase: egressOrigins.R2_PUBLIC_ORIGIN.origin,
     getAutomationsSnapshot: () => buildNodeAutomationsSnapshot(),
   })
 
@@ -1203,13 +1216,17 @@ async function startServer() {
         ? `ENFORCED (session+CSRF / Bearer · admin-exec=${httpAuth.isAdminConfigured() ? "configured" : "locked"})`
         : "ENFORCED — FAIL-CLOSED (no token configured; set SPORTSDESK_DASHBOARD_TOKEN or SPORTSDESK_ADMIN_TOKEN)"
     const uiMode = IS_PROD && HAS_DIST_BUILD ? "static dist/" : "Vite dev middleware"
+    const hasTls = Boolean(
+      process.env.SPORTSDESK_TLS_CERT_PATH && process.env.SPORTSDESK_TLS_KEY_PATH,
+    )
+    const serverBaseUrl = `${hasTls ? "https" : "http"}://${HOST}:${PORT}`
     console.log(
-      `\n⚡ SportsDesk Ops Enhanced Surveillance Dashboard running on http://${HOST}:${PORT}`,
+      `\n⚡ SportsDesk Ops Enhanced Surveillance Dashboard running on ${serverBaseUrl}`,
     )
     console.log(`   ➜ Runtime:   Node.js ${process.version} (Express + ${uiMode} + ws)`)
     console.log(`   ➜ Auth Gate: ${authMode}`)
-    console.log(`   ➜ Health:    http://${HOST}:${PORT}/health`)
-    console.log(`   ➜ WebSocket: ws://${HOST}:${PORT}/ws\n`)
+    console.log(`   ➜ Health:    ${serverBaseUrl}/health`)
+    console.log(`   ➜ WebSocket: ${deriveWebSocketUrl(serverBaseUrl, "/ws")}\n`)
   })
 
   const shutdown = () => {

@@ -111,16 +111,32 @@ export const R2_PIPELINE_TARGETS: readonly R2TargetSpec[] = [
 
 export type R2Fetcher = (url: string, init?: RequestInit) => Promise<Response>
 
-function defaultFetchWithTimeout(
+async function defaultFetchWithTimeout(
   url: string,
   init: RequestInit | undefined,
   timeoutMs: number,
 ): Promise<Response> {
-  return fetch(url, {
+  const timeoutSignal = AbortSignal.timeout(timeoutMs)
+  const signal =
+    init?.signal && typeof AbortSignal.any === "function"
+      ? AbortSignal.any([timeoutSignal, init.signal])
+      : (init?.signal ?? timeoutSignal)
+  const res = await fetch(url, {
     ...init,
     method: init?.method ?? "GET",
-    signal: init?.signal ?? AbortSignal.timeout(timeoutMs),
+    redirect: "manual",
+    credentials: "omit",
+    signal,
   })
+  if (res.status >= 300 && res.status < 400) {
+    try {
+      await res.body?.cancel()
+    } catch {
+      // ignore stream cancellation errors
+    }
+    throw new Error(`Redirect refused (${res.status}): ${res.headers.get("location") ?? ""}`)
+  }
+  return res
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

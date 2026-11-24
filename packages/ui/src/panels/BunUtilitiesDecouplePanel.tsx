@@ -4,17 +4,21 @@ import { Check, Copy, Play, RefreshCw, ShieldCheck, Terminal, X } from "lucide-r
 import { validateApiBase } from "../api_base_validation.ts"
 import {
   BUN_RUNTIME_RELEASE_ENHANCEMENTS,
+  BUN_RUNTIME_UTILS_EXTENDED,
   BUN_UTILITIES_CATALOG,
   type BunUtilityCategory,
   type CompressionProbeResult,
   compressDeflateText,
   compressGzipText,
+  compressZstdText,
   decodeBase64Utf8,
   deepEqualsSafe,
+  deepMatchSafe,
   encodeBase64Utf8,
   escapeHtmlSafe,
   fileUrlToPathSafe,
   findAllowlistedExecutable,
+  generateUuidV5,
   generateUuidV7,
   hashPasswordPreview,
   inspectModuleMetaSnapshot,
@@ -77,6 +81,7 @@ export function BunUtilitiesDecouplePanel({
 
   // Live utility workbench states
   const [uuidValue, setUuidValue] = useState<string>(() => generateUuidV7())
+  const [uuidV5Value, setUuidV5Value] = useState<string>("")
   const [base64Raw, setBase64Raw] = useState<string>("SportsDesk Ops · Bun 1.4.4")
   const [htmlInput, setHtmlInput] = useState<string>('<img src=x onerror="alert(1)"> & "ops"')
   const [eqLeft, setEqLeft] = useState<string>('{"port":4022,"decoupled":true}')
@@ -89,6 +94,7 @@ export function BunUtilitiesDecouplePanel({
   )
   const [gzipResult, setGzipResult] = useState<CompressionProbeResult | null>(null)
   const [deflateResult, setDeflateResult] = useState<CompressionProbeResult | null>(null)
+  const [zstdResult, setZstdResult] = useState<CompressionProbeResult | null>(null)
   const [sleepActualMs, setSleepActualMs] = useState<number | null>(null)
   const [sleepRunning, setSleepRunning] = useState<boolean>(false)
   const [pwInput, setPwInput] = useState<string>("desk-demo-passphrase")
@@ -110,13 +116,27 @@ export function BunUtilitiesDecouplePanel({
   useEffect(() => {
     if (!open) return
     let active = true
-    void Promise.all([compressGzipText(compressSample), compressDeflateText(compressSample)]).then(
-      ([gz, df]) => {
-        if (!active) return
-        setGzipResult(gz)
-        setDeflateResult(df)
-      },
-    )
+    void generateUuidV5(status.apiBaseUrl).then((v5) => {
+      if (active) setUuidV5Value(v5)
+    })
+    return () => {
+      active = false
+    }
+  }, [open, status.apiBaseUrl])
+
+  useEffect(() => {
+    if (!open) return
+    let active = true
+    void Promise.all([
+      compressGzipText(compressSample),
+      compressDeflateText(compressSample),
+      compressZstdText(compressSample),
+    ]).then(([gz, df, zs]) => {
+      if (!active) return
+      setGzipResult(gz)
+      setDeflateResult(df)
+      setZstdResult(zs)
+    })
     return () => {
       active = false
     }
@@ -144,7 +164,11 @@ export function BunUtilitiesDecouplePanel({
     try {
       const a: unknown = JSON.parse(eqLeft)
       const b: unknown = JSON.parse(eqRight)
-      return { ok: true as const, equal: deepEqualsSafe(a, b, eqStrict) }
+      return {
+        ok: true as const,
+        equal: deepEqualsSafe(a, b, eqStrict),
+        match: deepMatchSafe(a, b),
+      }
     } catch (err) {
       return {
         ok: false as const,
@@ -487,7 +511,18 @@ export function BunUtilitiesDecouplePanel({
                 </button>
               </div>
             </div>
-            <code style={{ fontSize: "11px", wordBreak: "break-all" }}>{uuidValue}</code>
+            <code style={{ fontSize: "11px", wordBreak: "break-all" }}>v7: {uuidValue}</code>
+            {uuidV5Value && (
+              <code
+                style={{
+                  fontSize: "10px",
+                  color: "var(--sd-text-muted, #94a3b8)",
+                  wordBreak: "break-all",
+                }}
+              >
+                v5 (apiBase): {uuidV5Value}
+              </code>
+            )}
             <div style={{ fontSize: "11px", color: "var(--sd-text-muted, #94a3b8)" }}>
               {sleepActualMs !== null
                 ? `Last Bun.sleep(50) elapsed: ${sleepActualMs}ms`
@@ -587,7 +622,7 @@ export function BunUtilitiesDecouplePanel({
               fontSize: "12px",
             }}
           >
-            <strong>Gzip &amp; DEFLATE Compression</strong>
+            <strong>Gzip, DEFLATE &amp; Zstd Compression</strong>
             <input
               type="text"
               value={compressSample}
@@ -612,6 +647,14 @@ export function BunUtilitiesDecouplePanel({
               DEFLATE:{" "}
               {deflateResult
                 ? `${deflateResult.inputBytes}B -> ${deflateResult.outputBytes}B (${deflateResult.ratioPct}%, ${deflateResult.engine})`
+                : "computing..."}
+            </div>
+            <div style={{ fontSize: "11px", fontFamily: "monospace" }}>
+              ZSTD:{" "}
+              {zstdResult
+                ? zstdResult.engine === "unavailable"
+                  ? "server-side Bun 1.4.4 Accept-Encoding: zstd"
+                  : `${zstdResult.inputBytes}B -> ${zstdResult.outputBytes}B (${zstdResult.ratioPct}%, ${zstdResult.engine})`
                 : "computing..."}
             </div>
           </div>
@@ -702,7 +745,7 @@ export function BunUtilitiesDecouplePanel({
                 }}
               >
                 {deepEqSummary.ok
-                  ? `deepEquals -> ${String(deepEqSummary.equal)}`
+                  ? `deepEquals=${String(deepEqSummary.equal)} · deepMatch=${String(deepEqSummary.match)}`
                   : deepEqSummary.error}
               </span>
             </div>
@@ -959,6 +1002,54 @@ export function BunUtilitiesDecouplePanel({
                 </div>
                 <div style={{ fontSize: "11px", color: "var(--sd-text-muted, #94a3b8)" }}>
                   {item.detail}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Section 5: Wired Bun utils.md Hot-Path Primitives */}
+        <section
+          aria-label="Wired Bun utils.md hot-path primitives"
+          data-bun-runtime-utils-extended="true"
+          style={{
+            borderTop: "1px solid var(--sd-border-subtle, #1e293b)",
+            paddingTop: "12px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+          }}
+        >
+          <div style={{ fontSize: "12px", fontWeight: 700 }}>
+            Wired utils.md Hot-Path Primitives ({BUN_RUNTIME_UTILS_EXTENDED.length})
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+              gap: "8px",
+            }}
+          >
+            {BUN_RUNTIME_UTILS_EXTENDED.map((item) => (
+              <div
+                key={item.id}
+                data-bun-extended-util={item.id}
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: "7px",
+                  border: "1px solid var(--sd-border-subtle, #1e293b)",
+                  backgroundColor: "var(--sd-surface-base, rgba(2, 6, 23, 0.5))",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "3px",
+                }}
+              >
+                <code style={{ fontSize: "11px", color: "#34d399", fontWeight: 700 }}>
+                  {item.bunApi}
+                </code>
+                <div style={{ fontSize: "10px", color: "#38bdf8" }}>{item.wiredIn}</div>
+                <div style={{ fontSize: "11px", color: "var(--sd-text-muted, #94a3b8)" }}>
+                  {item.summary}
                 </div>
               </div>
             ))}

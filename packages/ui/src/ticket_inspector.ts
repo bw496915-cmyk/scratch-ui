@@ -140,7 +140,7 @@ export function buildShadowSliceHrefFromWager(wager: LiveWager, origin = ""): st
     return null
   }
   const base = origin === "" ? "/" : origin.replace(/\/$/, "") + "/"
-  const url = new URL(base, "http://local")
+  const url = new URL(base, "https://non-fetching.invalid")
   url.searchParams.set("tab", "shadow")
   url.searchParams.set("sport", tax.sport)
   url.searchParams.set("subSport", tax.subSport)
@@ -178,7 +178,7 @@ export function findWagerByTicketParam(
 
 export function buildTicketInspectorPageUrl(ticketId: string, origin = ""): string {
   const base = origin === "" ? "/" : origin.replace(/\/$/, "") + "/"
-  const url = new URL(base, "http://local")
+  const url = new URL(base, "https://non-fetching.invalid")
   url.searchParams.set("tab", "wagers")
   url.searchParams.set("ticket", normalizeTicketIdParam(ticketId))
   return `${url.pathname}${url.search}`
@@ -220,7 +220,7 @@ export function buildBookdeskopsWeblogTraceHref(
 }
 
 export function buildAlertsTabTicketHref(ticketId: string): string {
-  const url = new URL("/", "http://local")
+  const url = new URL("/", "https://non-fetching.invalid")
   url.searchParams.set("tab", "alerts")
   url.searchParams.set("ticket", normalizeTicketIdParam(ticketId))
   return `${url.pathname}${url.search}`

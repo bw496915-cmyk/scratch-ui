@@ -6357,9 +6357,44 @@ html[data-dashboard-theme="light"] body {
 }
 
 .sd-header-title-row .sd-logo-home-link {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
   gap: 8px;
+  transform-origin: left center;
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), opacity 150ms ease;
+  cursor: pointer;
+}
+
+.sd-header-title-row .sd-logo-home-link:hover {
+  transform: scale(1.03);
+  opacity: 1;
+}
+
+.sd-header-title-row .sd-logo-home-link:active {
+  transform: scale(0.98);
+}
+
+.sd-header-title-row .sd-logo-home-link .sd-header-logo-emblem {
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.22);
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 180ms ease;
+}
+
+.sd-header-title-row .sd-logo-home-link:hover .sd-header-logo-emblem {
+  transform: scale(1.06);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.38);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-header-title-row .sd-logo-home-link,
+  .sd-header-title-row .sd-logo-home-link .sd-header-logo-emblem {
+    transition: opacity 150ms ease;
+  }
+
+  .sd-header-title-row .sd-logo-home-link:hover,
+  .sd-header-title-row .sd-logo-home-link:active,
+  .sd-header-title-row .sd-logo-home-link:hover .sd-header-logo-emblem {
+    transform: none;
+  }
 }
 
 .sd-app-title {

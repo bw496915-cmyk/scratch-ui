@@ -2767,10 +2767,12 @@ export function App(): React.ReactElement {
     let isMounted = true
     const rttWindow: number[] = []
     let pingTimer: ReturnType<typeof setInterval> | null = null
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
+    const wsUrl = new URL("/ws", window.location.href)
     const devSessionTok = getDevSessionToken()
-    const wsQuery = devSessionTok ? `?dev_session=${encodeURIComponent(devSessionTok)}` : ""
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws${wsQuery}`)
+    if (devSessionTok) {
+      wsUrl.searchParams.set("dev_session", devSessionTok)
+    }
+    const ws = new WebSocket(wsUrl.href.replace(/^http/i, "ws"))
 
     const sendWsPing = () => {
       if (ws.readyState !== WebSocket.OPEN) return
@@ -3617,14 +3619,23 @@ export function App(): React.ReactElement {
             onClick={(e) => {
               if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
                 e.preventDefault()
-                navigatePrimaryRoute("risk-overview")
+                if (activeTab === "risk-overview") {
+                  void Promise.allSettled([fetchDashboard(), handleRefreshTelemetry()])
+                } else {
+                  navigatePrimaryRoute("risk-overview")
+                }
               }
             }}
-            title="SportsDesk & Fantasy402 Operations — Risk Overview (#/risk-exposure/risk-overview)"
+            title={
+              activeTab === "risk-overview"
+                ? "SportsDesk & Fantasy402 Operations — Click to refresh dashboard"
+                : "SportsDesk & Fantasy402 Operations — Return to Risk Overview (#/risk-exposure/risk-overview)"
+            }
           >
             <img
               src={BRAND_ASSETS.emblemWebp}
               alt={BRAND_ASSETS.emblemAlt}
+              className="sd-header-logo-emblem"
               width={32}
               height={32}
               decoding="async"
@@ -3644,7 +3655,6 @@ export function App(): React.ReactElement {
                 borderWidth: "1px",
                 borderStyle: "solid",
                 borderColor: "rgba(56, 189, 248, 0.28)",
-                boxShadow: "0 0 12px rgba(56, 189, 248, 0.22)",
                 flexShrink: 0,
                 display: "block",
               }}

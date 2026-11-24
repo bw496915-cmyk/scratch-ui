@@ -30,6 +30,7 @@ import {
   safeDecodeRouteParam,
   type TypedRouteRequest,
 } from "./bun_routes.ts"
+import { compressResponsePayload } from "./bun_runtime_utils.ts"
 import { createConfigStatusStore } from "./config_status.ts"
 import {
   createShiftSessionLogStore,
@@ -299,13 +300,18 @@ function buildAlignedApiHeaders(
   }
 }
 
-function defaultEncodeResponse(_req: Request, spec: EncodedResponseSpec): Response {
-  const bytes = spec.produce()
-  const body = new Uint8Array(bytes.byteLength)
-  body.set(bytes)
+function defaultEncodeResponse(req: Request, spec: EncodedResponseSpec): Response {
+  const rawBytes = spec.produce()
+  const { body: negotiated, encoding } = compressResponsePayload(
+    rawBytes,
+    req.headers.get("accept-encoding"),
+  )
+  const body = new Uint8Array(negotiated.byteLength)
+  body.set(negotiated)
   return new Response(body, {
     headers: {
       "Content-Type": spec.contentType,
+      ...(encoding !== "identity" ? { "Content-Encoding": encoding } : {}),
       "Cache-Control": "no-store",
       Vary: "Accept-Encoding, Authorization, Cookie, X-SportsDesk-Tab",
       "X-Content-Type-Options": "nosniff",
@@ -910,6 +916,26 @@ export function createDashboardApi<TWs extends WsLike = WsLike>(
       ),
     },
 
+    "/api/rankings": {
+      GET: async (req: Request): Promise<Response> => {
+        try {
+          const url = new URL(req.url)
+          const limit = Number(url.searchParams.get("limit")) || 100
+          const { generatedAtIso, payload } = await deps.rankings.getAll(limit)
+          return await encodeResponse(req, {
+            version: `dev-rankings|${generatedAtIso}|${limit}`,
+            contentType: "application/json; charset=utf-8",
+            produce: () => textEncoder.encode(JSON.stringify(payload)),
+          })
+        } catch (err) {
+          return Response.json(
+            { error: err instanceof Error ? err.message : String(err) },
+            { status: 500 },
+          )
+        }
+      },
+    },
+
     "/api/rankings/all": {
       GET: async (req: Request): Promise<Response> => {
         try {
@@ -950,6 +976,11 @@ export function createDashboardApi<TWs extends WsLike = WsLike>(
       },
     },
     "/api/live-wagers": {
+      GET: async (): Promise<Response> => {
+        return Response.json(await withWagersTabPolicy(deps, await deps.getLiveWagersPayload()))
+      },
+    },
+    "/api/live-bets": {
       GET: async (): Promise<Response> => {
         return Response.json(await withWagersTabPolicy(deps, await deps.getLiveWagersPayload()))
       },
@@ -1807,10 +1838,11 @@ export function createDashboardApi<TWs extends WsLike = WsLike>(
     Response.json({ error: "Method Not Allowed" }, { status: 405 }),
   )
 
+  // Deliberately NO "/api/*" catch-all in the route table.
+  // If a path is not explicitly listed here, it is not reachable (404).
   const routes = {
     ...staticRoutes,
     ...paramRoutes,
-    "/api/*": guardedApiFallback,
   }
 
   /** Dispatch a dashboard API/health `Request` completely in-memory with zero port bind. */

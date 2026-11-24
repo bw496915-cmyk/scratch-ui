@@ -416,3 +416,62 @@ export function isLocalDevLocation(win?: LocationOriginLike | null): boolean {
   ).process?.env?.NODE_ENV
   return nodeEnv !== "production"
 }
+
+export class ApiBaseError extends Error {
+  readonly reason: string
+  readonly code: ApiBaseValidationCode | "ERR_API_BASE_ESCAPED_ORIGIN" | "ERR_API_BASE_ESCAPED_PATH"
+
+  constructor(
+    reason: string,
+    code:
+      | ApiBaseValidationCode
+      | "ERR_API_BASE_ESCAPED_ORIGIN"
+      | "ERR_API_BASE_ESCAPED_PATH" = "ERR_API_BASE_INVALID_URL",
+  ) {
+    super(`invalid apiBase: ${reason}`)
+    this.name = "ApiBaseError"
+    this.reason = reason
+    this.code = code
+  }
+}
+
+export function parseValidatedApiBaseUrl(
+  input: string,
+  options: { readonly allowLoopback?: boolean | undefined } = {},
+): URL {
+  const allowLoopback = options.allowLoopback ?? isLocalDevLocation()
+  const result = validateApiBase(input, allowLoopback)
+  if (!result.ok) {
+    throw new ApiBaseError(result.code, result.code)
+  }
+  return new URL(result.normalized)
+}
+
+/**
+ * Resolve a relative endpoint path under a validated base `URL` with strict
+ * post-join origin and pathname containment.
+ */
+export function resolveUnder(base: URL | string, rel: string): URL {
+  if (/%2f|%5c|\\/i.test(rel)) {
+    throw new ApiBaseError("encoded path separator forbidden", "ERR_API_BASE_ESCAPED_PATH")
+  }
+  const baseUrl = base instanceof URL ? base : new URL(base)
+  const baseDir = new URL(
+    baseUrl.pathname.endsWith("/")
+      ? baseUrl.href
+      : `${baseUrl.origin}${baseUrl.pathname}/${baseUrl.search}${baseUrl.hash}`,
+  )
+  const out = new URL(rel, baseDir)
+  if (out.origin !== baseUrl.origin) {
+    throw new ApiBaseError("escaped origin", "ERR_API_BASE_ESCAPED_ORIGIN")
+  }
+  const normalizedBasePath = baseUrl.pathname.replace(/\/{2,}/g, "/").replace(/\/+$/, "")
+  const prefix = normalizedBasePath === "" ? "/" : `${normalizedBasePath}/`
+  const resolvedPath = out.pathname.replace(/\/{2,}/g, "/").replace(/\/+$/, "") || "/"
+  const matchesExactBase = normalizedBasePath !== "" && resolvedPath === normalizedBasePath
+  if (!matchesExactBase && !out.pathname.startsWith(prefix)) {
+    throw new ApiBaseError("escaped path", "ERR_API_BASE_ESCAPED_PATH")
+  }
+  return out
+}
+

@@ -11,7 +11,17 @@ import {
   stripControls,
 } from "./ansi_tokens.ts"
 
-declare const Bun: Pick<typeof import("bun"), "markdown" | "stringWidth" | "wrapAnsi">
+declare const Bun: Pick<
+  typeof import("bun"),
+  "markdown" | "stringWidth" | "wrapAnsi" | "stripANSI" | "sliceAnsi"
+>
+
+function stripAnsiFast(text: string): string {
+  if (typeof Bun !== "undefined" && typeof Bun.stripANSI === "function") {
+    return Bun.stripANSI(text)
+  }
+  return stripVTControlCharacters(text)
+}
 
 const SIGNED_S3_QUERY = new Set(["x-amz-credential", "x-amz-signature", "x-amz-security-token"])
 
@@ -188,7 +198,7 @@ export function renderThemedMarkdown(
       heading: (children, meta) => {
         const level = meta?.level ?? 1
         const id = typeof meta?.id === "string" ? meta.id : ""
-        const plain = stripVTControlCharacters(stripControls(children)).trim()
+        const plain = stripAnsiFast(stripControls(children)).trim()
         headingIds.push({ level, id, text: plain })
         const idTag =
           options.showHeadingIds && id ? (colors ? ` ${dim}[#${id}]${reset}` : ` [#${id}]`) : ""

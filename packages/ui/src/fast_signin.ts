@@ -81,13 +81,16 @@ export function extractAndScrubFastSignInToken(
   }
 }
 
+/** Documented RFC 2606 non-routable, non-mDNS parser base (never fetched). */
+const NON_FETCHING_PARSE_BASE = "https://non-fetching.invalid"
+
 /**
  * Build a bookmarkable dashboard URL embedding the temporary `?fast_signin=`
  * token while preserving the current origin, route, safe query params, and hash.
  */
 export function buildFastSignInBookmarkUrl(currentHref: string, token: string): string {
   const cleanToken = token.trim()
-  const url = new URL(currentHref, "http://dashboard.local")
+  const url = new URL(currentHref, NON_FETCHING_PARSE_BASE)
   if (cleanToken.length > 0) {
     url.searchParams.set(FAST_SIGNIN_QUERY_PARAM, cleanToken)
   } else {
@@ -109,7 +112,7 @@ export function extractFastSignInTokenFromInput(rawInput: string): string | null
   if (!trimmed) return null
   if (looksLikeUrlOrQuery(trimmed)) {
     try {
-      const parsed = new URL(trimmed, "http://dashboard.local")
+      const parsed = new URL(trimmed, NON_FETCHING_PARSE_BASE)
       if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
         return null
       }
@@ -132,7 +135,7 @@ export function resolveFastSignInBookmarkUrl(currentHref: string, rawInput: stri
 
   if (looksLikeUrlOrQuery(trimmed)) {
     try {
-      const parsed = new URL(trimmed, currentHref || "http://dashboard.local")
+      const parsed = new URL(trimmed, currentHref || NON_FETCHING_PARSE_BASE)
       if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
         return null
       }

@@ -72,13 +72,34 @@ export const ANSI = {
   boldWhite: "\x1b[1;37m",
 } as const
 
+interface BunAnsiRuntime {
+  readonly stripANSI?: (input: string) => string
+  readonly stringWidth?: (
+    input: string,
+    options?: { readonly ambiguousIsNarrow?: boolean; readonly countAnsiEscapeCodes?: boolean },
+  ) => number
+  readonly sliceAnsi?: (input: string, start: number, end?: number) => string
+}
+
+function getBunAnsi(): BunAnsiRuntime | undefined {
+  return (globalThis as unknown as { readonly Bun?: BunAnsiRuntime }).Bun
+}
+
 const ANSI_STRIP_RE = /\x1b\[[0-9;]*m/g
 
 export function stripAnsi(input: string): string {
+  const bun = getBunAnsi()
+  if (typeof bun?.stripANSI === "function") {
+    return bun.stripANSI(input)
+  }
   return input.replace(ANSI_STRIP_RE, "")
 }
 
 export function visibleLength(input: string): number {
+  const bun = getBunAnsi()
+  if (typeof bun?.stringWidth === "function") {
+    return bun.stringWidth(input, { ambiguousIsNarrow: true, countAnsiEscapeCodes: false })
+  }
   return stripAnsi(input).length
 }
 
@@ -93,16 +114,25 @@ export function padVisibleStart(input: string, width: number): string {
 }
 
 /**
- * Truncates a string to `maxLen` visible characters while preserving ANSI escape
- * sequences cleanly and closing active styles with reset when clipped.
+ * Truncates a string to `maxLen` visible columns while preserving ANSI escape
+ * sequences cleanly (via SIMD `Bun.sliceAnsi` when running under Bun) and closing
+ * active styles with reset when clipped.
  */
 export function truncateVisible(input: string, maxLen: number): string {
   if (maxLen <= 0) return ""
-  const plain = stripAnsi(input)
-  if (plain.length <= maxLen) return input
+  const visual = visibleLength(input)
+  if (visual <= maxLen) return input
   if (maxLen === 1) return "…"
 
   const target = maxLen - 1
+  const bun = getBunAnsi()
+  if (typeof bun?.sliceAnsi === "function") {
+    const sliced = bun.sliceAnsi(input, 0, target)
+    const hasAnsi = input.includes("\x1b[")
+    if (!hasAnsi) return `${sliced}…`
+    return sliced.endsWith(ANSI.reset) ? `${sliced}…` : `${sliced}…${ANSI.reset}`
+  }
+
   let visible = 0
   let out = ""
   let hasAnsi = false

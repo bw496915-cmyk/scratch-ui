@@ -331,13 +331,19 @@ export function buildDashboardSearch(
 }
 
 /**
+ * Documented RFC 2606 non-routable, non-mDNS synthetic parser base.
+ * Used solely for resolving relative dashboard paths — NEVER fetched.
+ */
+export const NON_FETCHING_PARSE_BASE = "https://non-fetching.invalid" as const
+
+/**
  * Construct a separate `URL` object for a dashboard state without mutating
  * `Window.location`. Unknown params (`apiBase`, `customer`, `ticket`) survive.
  */
 export function buildDashboardUrlObject(
   state: DashboardUrlState,
   currentHref = "/",
-  originBase = "http://dashboard.local",
+  originBase: string = NON_FETCHING_PARSE_BASE,
   canonicalHash?: string,
 ): URL {
   const url = new URL(currentHref, originBase)
@@ -354,7 +360,7 @@ export function dashboardUrl(
   currentHref = "/",
   canonicalHash?: string,
 ): string {
-  const url = buildDashboardUrlObject(state, currentHref, "http://dashboard.local", canonicalHash)
+  const url = buildDashboardUrlObject(state, currentHref, NON_FETCHING_PARSE_BASE, canonicalHash)
   return `${url.pathname}${url.search}${url.hash}`
 }
 
@@ -397,7 +403,7 @@ export function writeDashboardUrl(
   const baseOrigin =
     win.location.origin && win.location.origin !== "null"
       ? win.location.origin
-      : "http://dashboard.local"
+      : NON_FETCHING_PARSE_BASE
   const nextUrl = buildDashboardUrlObject(state, win.location.href, baseOrigin, options.hash)
   const next = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`
   const current = `${win.location.pathname}${win.location.search}${win.location.hash}`

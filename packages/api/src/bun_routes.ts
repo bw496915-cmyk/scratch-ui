@@ -17,6 +17,8 @@ import {
  */
 export const DASHBOARD_ROUTES = {
   root: "/",
+  dashboardApp: "/app",
+  dashboardLiveBets: "/live-bets",
   health: "/health",
   apiHealth: "/api/health",
   authLogin: "/api/auth/login",
@@ -32,9 +34,17 @@ export const DASHBOARD_ROUTES = {
   shiftLogs: "/api/shift/logs",
   configStatus: "/api/config/status",
   rankings: "/api/rankings",
+  rankingsAll: "/api/rankings/all",
   customers: "/api/customers",
+  wagers: "/api/wagers",
   liveWagers: "/api/live-wagers",
-  apiWildcard: "/api/*",
+  liveBets: "/api/live-bets",
+  terminalExec: "/api/terminal/exec",
+  weblogsReset: "/api/weblogs/reset",
+  weblogsArchiveS3: "/api/weblogs/archive-s3",
+  ws: "/ws",
+  wsStatus: "/api/ws/status",
+  mcp: "/mcp",
 } as const
 
 export type DashboardRouteKey = keyof typeof DASHBOARD_ROUTES

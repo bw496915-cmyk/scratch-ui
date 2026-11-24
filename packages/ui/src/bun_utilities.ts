@@ -286,10 +286,19 @@ interface BunUtilitiesRuntimeGlobal {
     readonly revision?: string
     readonly main?: string
     readonly randomUUIDv7?: (encoding?: "hex", timestamp?: number) => string
+    readonly randomUUIDv5?: (
+      name: string | Uint8Array,
+      namespace: string | Uint8Array,
+      encoding?: "hex",
+    ) => string
     readonly gzipSync?: (data: Uint8Array) => Uint8Array
     readonly deflateSync?: (data: Uint8Array) => Uint8Array
+    readonly zstdCompressSync?: (data: Uint8Array, options?: { readonly level?: number }) => Uint8Array
     readonly escapeHTML?: (value: string) => string
+    readonly stripANSI?: (value: string) => string
+    readonly sliceAnsi?: (value: string, start: number, end?: number) => string
     readonly deepEquals?: (a: unknown, b: unknown, strict?: boolean) => boolean
+    readonly deepMatch?: (subset: unknown, target: unknown) => boolean
     readonly sleep?: (ms: number) => Promise<void>
     readonly fileURLToPath?: (url: string | URL) => string
     readonly pathToFileURL?: (path: string) => URL
@@ -427,7 +436,7 @@ export function decodeBase64Utf8(encoded: string): string {
 }
 
 export interface CompressionProbeResult {
-  readonly algorithm: "gzip" | "deflate-raw"
+  readonly algorithm: "gzip" | "deflate-raw" | "zstd"
   readonly engine: "bun-native" | "web-compression-stream" | "unavailable"
   readonly inputBytes: number
   readonly outputBytes: number
@@ -891,4 +900,210 @@ export async function safeReadBlobText(
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// Extended Bun 1.4.4 `docs/runtime/utils.md` Hot-Path Primitives
+// ---------------------------------------------------------------------------
+
+/** Deterministic RFC 4122 URL namespace used for SportsDesk UUIDv5 idempotency keys. */
+export const SPORTSDESK_UI_UUID_NAMESPACE = "6ba7b811-9dad-11d1-80b4-00c04fd430c8" as const
+
+/** Compress UTF-8 text via native `Bun.zstdCompressSync` (returns `unavailable` in browsers without Zstd). */
+export async function compressZstdText(input: string): Promise<CompressionProbeResult> {
+  const raw = new TextEncoder().encode(input)
+  const bun = getBunRuntimeObj()
+  if (typeof bun?.zstdCompressSync === "function") {
+    const out = bun.zstdCompressSync(raw)
+    return {
+      algorithm: "zstd",
+      engine: "bun-native",
+      inputBytes: raw.byteLength,
+      outputBytes: out.byteLength,
+      ratioPct: raw.byteLength > 0 ? Math.round((out.byteLength / raw.byteLength) * 1000) / 10 : 0,
+      previewBase64: bytesToBase64(out).slice(0, 64),
+    }
+  }
+  return {
+    algorithm: "zstd",
+    engine: "unavailable",
+    inputBytes: raw.byteLength,
+    outputBytes: 0,
+    ratioPct: 0,
+    previewBase64: "",
+  }
+}
+
+// eslint-disable-next-line no-control-regex
+const UI_ANSI_STRIP_RE = /\x1b(?:\][^\x07\x1b]*(?:\x07|\x1b\\)|\[[0-?]*[ -/]*[@-~])/g
+
+/** Strip ANSI / VT escape sequences using SIMD `Bun.stripANSI` or regex fallback. */
+export function stripAnsiSafe(input: string): string {
+  const bun = getBunRuntimeObj()
+  if (typeof bun?.stripANSI === "function") {
+    return bun.stripANSI(input)
+  }
+  return input.replace(UI_ANSI_STRIP_RE, "")
+}
+
+/** ANSI-aware visual slice via `Bun.sliceAnsi` or plain code-point slice fallback. */
+export function sliceAnsiSafe(input: string, start: number, end?: number): string {
+  const bun = getBunRuntimeObj()
+  if (typeof bun?.sliceAnsi === "function") {
+    return end === undefined ? bun.sliceAnsi(input, start) : bun.sliceAnsi(input, start, end)
+  }
+  return Array.from(stripAnsiSafe(input)).slice(start, end).join("")
+}
+
+function fallbackDeepMatchUi(subset: unknown, target: unknown): boolean {
+  if (Object.is(subset, target)) return true
+  if (subset === null || target === null || typeof subset !== "object" || typeof target !== "object") {
+    return false
+  }
+  if (Array.isArray(subset)) {
+    if (!Array.isArray(target) || subset.length > target.length) return false
+    return subset.every((item, idx) => fallbackDeepMatchUi(item, target[idx]))
+  }
+  if (Array.isArray(target)) return false
+  const subRec = subset as Record<string, unknown>
+  const tgtRec = target as Record<string, unknown>
+  for (const key of Object.keys(subRec)) {
+    if (!(key in tgtRec)) return false
+    if (!fallbackDeepMatchUi(subRec[key], tgtRec[key])) return false
+  }
+  return true
+}
+
+/** Subset deep match via `Bun.deepMatch` (returns true when `target` contains all properties of `subset`). */
+export function deepMatchSafe(subset: unknown, target: unknown): boolean {
+  const bun = getBunRuntimeObj()
+  if (typeof bun?.deepMatch === "function") {
+    try {
+      return bun.deepMatch(subset, target)
+    } catch {
+      // fall through
+    }
+  }
+  return fallbackDeepMatchUi(subset, target)
+}
+
+function parseUuidHexToBytes(uuid: string): Uint8Array {
+  const clean = uuid.replace(/-/g, "")
+  if (clean.length !== 32) {
+    throw new TypeError(`Invalid UUID namespace: ${uuid}`)
+  }
+  const out = new Uint8Array(16)
+  for (let i = 0; i < 16; i += 1) {
+    out[i] = Number.parseInt(clean.slice(i * 2, i * 2 + 2), 16)
+  }
+  return out
+}
+
+/** Generate a deterministic RFC 4122 UUIDv5 via `Bun.randomUUIDv5` or Web Crypto SHA-1 fallback. */
+export async function generateUuidV5(
+  name: string,
+  namespace: string = SPORTSDESK_UI_UUID_NAMESPACE,
+): Promise<string> {
+  const bun = getBunRuntimeObj()
+  if (typeof bun?.randomUUIDv5 === "function") {
+    return bun.randomUUIDv5(name, namespace, "hex")
+  }
+  const nsBytes = parseUuidHexToBytes(namespace)
+  const nameBytes = new TextEncoder().encode(name)
+  const combined = new Uint8Array(nsBytes.byteLength + nameBytes.byteLength)
+  combined.set(nsBytes, 0)
+  combined.set(nameBytes, nsBytes.byteLength)
+
+  if (typeof crypto !== "undefined" && crypto.subtle && typeof crypto.subtle.digest === "function") {
+    const digest = new Uint8Array(await crypto.subtle.digest("SHA-1", combined))
+    const bytes = digest.slice(0, 16)
+    bytes[6] = (bytes[6]! & 0x0f) | 0x50 // version 5
+    bytes[8] = (bytes[8]! & 0x3f) | 0x80 // RFC 4122 variant
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+  }
+  // Minimal deterministic fallback when crypto.subtle is unavailable (e.g. non-secure HTTP context)
+  let h1 = 0x811c9dc5
+  let h2 = 0x01000193
+  for (let i = 0; i < combined.length; i += 1) {
+    h1 = Math.imul(h1 ^ combined[i]!, 0x01000193) >>> 0
+    h2 = Math.imul(h2 ^ (combined[i]! + i), 0x85ebca6b) >>> 0
+  }
+  const hex = `${h1.toString(16).padStart(8, "0")}${h2.toString(16).padStart(8, "0")}${(h1 ^ h2).toString(16).padStart(8, "0")}${(h1 + h2 >>> 0).toString(16).padStart(8, "0")}`
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20, 32)}`
+}
+
+export interface BunExtendedUtilDescriptor {
+  readonly id: string
+  readonly bunApi: string
+  readonly wiredIn: string
+  readonly summary: string
+}
+
+/**
+ * Extended `bun.com/docs/runtime/utils.md` APIs actively wired into SportsDesk Ops
+ * server hot paths and UI workbench (separate from the 19-entry `BUN_UTILITIES_CATALOG`).
+ */
+export const BUN_RUNTIME_UTILS_EXTENDED: readonly BunExtendedUtilDescriptor[] = Object.freeze([
+  {
+    id: "zstd-compress",
+    bunApi: "Bun.zstdCompressSync / zstdDecompressSync",
+    wiredIn: "API router Accept-Encoding: zstd negotiation + UI probe",
+    summary: "Negotiates Content-Encoding: zstd ahead of gzip on >=1 KB API payloads.",
+  },
+  {
+    id: "strip-ansi",
+    bunApi: "Bun.stripANSI",
+    wiredIn: "desk_inspect + markdown_ansi + UI stripAnsiSafe",
+    summary: "SIMD ANSI/VT escape stripping replacing regex passes on terminal tables.",
+  },
+  {
+    id: "slice-ansi",
+    bunApi: "Bun.sliceAnsi",
+    wiredIn: "desk_inspect.truncateVisible + UI sliceAnsiSafe",
+    summary: "Column-accurate ANSI-preserving truncation without SGR bleed.",
+  },
+  {
+    id: "string-width",
+    bunApi: "Bun.stringWidth",
+    wiredIn: "desk_inspect.visibleLength + markdown_ansi",
+    summary: "Unicode/CJK/emoji display-width measurement for CLI tables.",
+  },
+  {
+    id: "wrap-ansi",
+    bunApi: "Bun.wrapAnsi",
+    wiredIn: "markdown_ansi + bun_runtime_utils.wrapAnsiNative",
+    summary: "Word-wraps styled terminal output while maintaining active ANSI escapes.",
+  },
+  {
+    id: "index-of-line",
+    bunApi: "Bun.indexOfLine",
+    wiredIn: "bun_runtime_utils.splitByteLines",
+    summary: "SIMD newline offset scanning on Uint8Array buffers for NDJSON/AccessLog ingest.",
+  },
+  {
+    id: "peek",
+    bunApi: "Bun.peek / Bun.peek.status",
+    wiredIn: "packages/backend/src/cache.ts (createCachedJsonReader)",
+    summary: "Zero-microtask reads on already-settled cache promises plus in-flight dedup.",
+  },
+  {
+    id: "deep-match",
+    bunApi: "Bun.deepMatch",
+    wiredIn: "bun_runtime_utils.deepMatchNative + UI workbench",
+    summary: "Native subset matching for config/filter predicate assertions.",
+  },
+  {
+    id: "random-uuidv5",
+    bunApi: "Bun.randomUUIDv5",
+    wiredIn: "bun_runtime_utils.randomUuidV5 + UI workbench",
+    summary: "Deterministic RFC 4122 namespace UUIDv5 idempotency & dedup keys.",
+  },
+  {
+    id: "readable-stream-to",
+    bunApi: "Bun.readableStreamTo*",
+    wiredIn: "bun_runtime_utils.streamTo{Text,JSON,Bytes,ArrayBuffer,Blob,Array}",
+    summary: "One-call native stream consumers with Web Response fallbacks.",
+  },
+])
+
 
