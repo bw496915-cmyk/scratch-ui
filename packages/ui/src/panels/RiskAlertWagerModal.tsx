@@ -14,6 +14,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 
 import {
+  formatAgentChain,
   formatAlertWagerBrief,
   type RecentRiskAlertItem,
   type RecentRiskAlertKind,
@@ -143,7 +144,7 @@ export function RiskAlertWagerModal({
     onOpenCustomerProfile(matchedCustomer)
   }
 
-  const agentChain = [ctx.agentId, ctx.masterAgent].filter(Boolean).join(" / ")
+  const agentChain = formatAgentChain(ctx.agentId, ctx.masterAgent)
 
   const modalContent = (
     <div
@@ -382,11 +383,20 @@ export function RiskAlertWagerModal({
               <div className="sd-alert-wager-modal-dl-row">
                 <dt>60m Exposure Context</dt>
                 <dd className="sd-alert-wager-modal-mono">
-                  {ctx.cumulativeRiskUsd !== null && ctx.thresholdLimitUsd !== null
-                    ? `${formatUsdFull(ctx.cumulativeRiskUsd)} vs ${formatUsdFull(ctx.thresholdLimitUsd)} cap`
-                    : ctx.deliveryStatus
-                      ? `Dispatch ${ctx.deliveryStatus}`
-                      : "Single-ticket trigger"}
+                  {item.kind === "SINGLE_WAGER_BREACH" && ctx.thresholdLimitUsd !== null
+                    ? `${formatUsdFull(ctx.riskUsd)} stake vs ${formatUsdFull(ctx.thresholdLimitUsd)} max cap`
+                    : ctx.cumulativeRiskUsd !== null && ctx.thresholdLimitUsd !== null
+                      ? item.kind === "THRESHOLD_WARNING"
+                        ? `${formatUsdFull(ctx.cumulativeRiskUsd)} vs ${formatUsdFull(ctx.thresholdLimitUsd)} warn${
+                            ctx.breachLimitUsd !== null &&
+                            ctx.breachLimitUsd !== ctx.thresholdLimitUsd
+                              ? ` (${formatUsdFull(ctx.breachLimitUsd)} cap)`
+                              : ""
+                          }`
+                        : `${formatUsdFull(ctx.cumulativeRiskUsd)} vs ${formatUsdFull(ctx.thresholdLimitUsd)} breach cap`
+                      : ctx.deliveryStatus
+                        ? `Dispatch ${ctx.deliveryStatus}`
+                        : "Single-ticket trigger"}
                 </dd>
               </div>
               <div className="sd-alert-wager-modal-dl-row">

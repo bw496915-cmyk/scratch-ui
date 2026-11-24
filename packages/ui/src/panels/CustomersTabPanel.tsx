@@ -3375,7 +3375,11 @@ export function CustomersTabPanel({
                                         >
                                           #{wager.ticketId} · {wager.betType} ·{" "}
                                           {wager.writer ?? wager.ticketWriter ?? "DIRECT"}
-                                          {wager.oddsAmerican ? ` · ${wager.oddsAmerican}` : ""}
+                                          {wager.oddsAmerican &&
+                                          wager.oddsAmerican.trim() !== "—" &&
+                                          wager.oddsAmerican.trim() !== "-"
+                                            ? ` · ${wager.oddsAmerican.trim()}`
+                                            : ""}
                                         </span>
                                       </div>
                                       <div

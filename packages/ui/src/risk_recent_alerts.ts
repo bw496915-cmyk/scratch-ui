@@ -20,11 +20,18 @@ import {
 import {
   capUtilizationPct,
   formatImpliedProbability,
+  formatImpliedProbabilityFromPayout,
   payoutMultiple,
   ticketQuotedHoldPct,
 } from "./ticket_inspector.ts"
 import type { DashboardAlertRecord, LiveWager } from "./types.ts"
-import { formatWagerSelection, selectionIncludesLine } from "./wager_display.ts"
+import {
+  formatWagerSelection,
+  normalizeAmericanOdds,
+  resolveWagerOddsAmerican,
+  selectionIncludesLine,
+  selectionIncludesOdds,
+} from "./wager_display.ts"
 
 const MINUTE_MS = 60_000
 
@@ -51,6 +58,8 @@ export interface RecentRiskAlertItem {
   readonly riskUsd: number
   readonly cumulativeRiskUsd: number | null
   readonly thresholdLimitUsd: number | null
+  /** 60m breach cap reference alongside `thresholdLimitUsd` (especially on THRESHOLD_WARNING items). */
+  readonly breachLimitUsd?: number | null | undefined
   readonly ticketId: string
   readonly customerId: string
   readonly agentId: string | null
@@ -230,6 +239,7 @@ export function buildRecentRiskAlerts(input: BuildRecentRiskAlertsInput): Recent
       title: string,
       detail: string,
       limitRefUsd: number | null,
+      breachRefUsd: number | null = null,
     ) => {
       representedTickets.add(ticketKey)
       alerts.push({
@@ -244,13 +254,14 @@ export function buildRecentRiskAlerts(input: BuildRecentRiskAlertsInput): Recent
         riskUsd,
         cumulativeRiskUsd,
         thresholdLimitUsd: limitRefUsd,
+        breachLimitUsd: breachRefUsd,
         ticketId: wager.ticketId,
         customerId: wager.customerId,
-        agentId: wager.agentId || null,
+        agentId: normalizeOptionalField(wager.agentId),
         sport: wager.sport || "OTHER",
         event: wager.event || wager.selection || "Live Market",
         selection: wager.selection || wager.event || "—",
-        oddsAmerican: wager.oddsAmerican || null,
+        oddsAmerican: resolveWagerOddsAmerican(wager),
         alertTier: wager.alertTier,
         clvCents: wager.clvCents,
         operatorDirective: wager.operatorDirective || null,
@@ -276,6 +287,7 @@ export function buildRecentRiskAlerts(input: BuildRecentRiskAlertsInput): Recent
         "60m Aggregate Risk Limit Breached",
         `Cumulative ${formatUsdWhole(cumulativeRiskUsd)} exceeded ${formatUsdWhole(breachLimitUsd)} cap by +${formatUsdWhole(excessUsd)} (${pct}%).`,
         breachLimitUsd,
+        breachLimitUsd,
       )
       while (cumulativeRiskUsd >= breachLimitUsd * nextMilestoneRatio) {
         nextMilestoneRatio += 0.25
@@ -299,6 +311,7 @@ export function buildRecentRiskAlerts(input: BuildRecentRiskAlertsInput): Recent
         "60m Warning Threshold Reached",
         `Cumulative ${formatUsdWhole(cumulativeRiskUsd)} crossed ${formatUsdWhole(warningLimitUsd)} warn (${pct}% of cap · ${formatUsdWhole(remaining)} left).`,
         warningLimitUsd,
+        breachLimitUsd,
       )
       continue
     }
@@ -316,6 +329,7 @@ export function buildRecentRiskAlerts(input: BuildRecentRiskAlertsInput): Recent
         "BREACH",
         `60m Exposure Escalated (${pct}% of Limit)`,
         `Compounding ticket pushed 60m risk to ${formatUsdWhole(cumulativeRiskUsd)} (+${formatUsdWhole(excessUsd)} over ${formatRiskCompactUsd(breachLimitUsd)}).`,
+        breachLimitUsd,
         breachLimitUsd,
       )
       while (cumulativeRiskUsd >= breachLimitUsd * nextMilestoneRatio) {
@@ -383,13 +397,16 @@ export function buildRecentRiskAlerts(input: BuildRecentRiskAlertsInput): Recent
       riskUsd,
       cumulativeRiskUsd: null,
       thresholdLimitUsd: null,
+      breachLimitUsd: null,
       ticketId: rec.wagerId || rec.deliveryId.slice(0, 8),
       customerId: rec.payload.customerId || linkedWager?.customerId || "UNKNOWN",
-      agentId: linkedWager?.agentId ?? null,
+      agentId: normalizeOptionalField(linkedWager?.agentId),
       sport,
       event: rec.payload.event || linkedWager?.event || selection,
       selection,
-      oddsAmerican: rec.payload.oddsAmerican || linkedWager?.oddsAmerican || null,
+      oddsAmerican:
+        normalizeAmericanOdds(rec.payload.oddsAmerican) ??
+        (linkedWager ? resolveWagerOddsAmerican(linkedWager) : null),
       alertTier: rec.tier,
       clvCents:
         typeof rec.payload.clvCents === "number" && Number.isFinite(rec.payload.clvCents)
@@ -737,13 +754,38 @@ export interface AlertWagerContext {
   readonly deliveryStatus: DashboardAlertRecord["status"] | null
   readonly cumulativeRiskUsd: number | null
   readonly thresholdLimitUsd: number | null
+  readonly breachLimitUsd: number | null
   readonly placedTimestamp: string
   readonly hasLiveWagerRecord: boolean
 }
 
+const PLACEHOLDER_FIELD_TOKENS = new Set(["", "—", "–", "-", "n/a", "null", "undefined"])
+
 function collapseWs(raw: string | null | undefined): string {
   if (!raw) return ""
   return sanitizeCaptureText(raw).trim().replace(/\s+/g, " ")
+}
+
+function normalizeOptionalField(raw: string | null | undefined): string | null {
+  const cleaned = collapseWs(raw)
+  if (PLACEHOLDER_FIELD_TOKENS.has(cleaned.toLowerCase())) return null
+  return cleaned
+}
+
+/**
+ * Formats an agent / master-agent chain while stripping placeholder dashes and
+ * deduplicating identical IDs (`ZZAGENT1` + `ZZAGENT1` → `"ZZAGENT1"`).
+ */
+export function formatAgentChain(
+  agentId: string | null | undefined,
+  masterAgent: string | null | undefined,
+): string {
+  const a = normalizeOptionalField(agentId)
+  const m = normalizeOptionalField(masterAgent)
+  if (a && m) {
+    return a.toUpperCase() === m.toUpperCase() ? a : `${a} / ${m}`
+  }
+  return a ?? m ?? ""
 }
 
 /**
@@ -756,6 +798,9 @@ export function estimateToWinFromAmericanOdds(
 ): number | null {
   if (!Number.isFinite(riskUsd) || riskUsd <= 0 || !oddsAmerican) return null
   const normalized = oddsAmerican.trim().replace(/,/g, "")
+  if (/^(?:EV|EVEN)$/i.test(normalized)) {
+    return Math.round(riskUsd * 100) / 100
+  }
   if (!/^[+-]?\d+$/.test(normalized)) return null
   const odds = Number.parseInt(normalized, 10)
   if (!Number.isFinite(odds) || odds === 0 || (odds > -100 && odds < 100)) return null
@@ -772,21 +817,23 @@ function resolveCleanChannelLabel(wager: LiveWager | null): string {
   return writerText || channel
 }
 
-function buildEffectiveLine(selection: string, lineDisplay: string, oddsAmerican: string): string {
+function buildEffectiveLine(
+  selection: string,
+  lineDisplay: string,
+  oddsAmerican: string | null,
+): string {
   const hasLine = lineDisplay.length > 0
-  const hasOdds = oddsAmerican.length > 0
+  const hasOdds = oddsAmerican !== null && oddsAmerican.length > 0
 
   if (hasLine) {
-    const lineLower = lineDisplay.toLowerCase()
-    const oddsLower = oddsAmerican.toLowerCase()
-    if (hasOdds && !lineLower.includes(oddsLower)) {
+    if (hasOdds && !selectionIncludesOdds(lineDisplay, oddsAmerican)) {
       return `${lineDisplay} (${oddsAmerican})`
     }
     return lineDisplay
   }
 
   if (selection.length > 0) {
-    if (hasOdds && !selection.toLowerCase().includes(oddsAmerican.toLowerCase())) {
+    if (hasOdds && !selectionIncludesOdds(selection, oddsAmerican)) {
       return `${selection} (${oddsAmerican})`
     }
     return selection
@@ -803,31 +850,41 @@ export function resolveAlertWagerContext(item: RecentRiskAlertItem): AlertWagerC
   const wager = item.linkedWager
   const ticketId = wager?.ticketId || item.ticketId
   const customerId = wager?.customerId || item.customerId || "UNKNOWN"
-  const agentId = collapseWs(wager?.agentId ?? item.agentId) || null
-  const masterAgent = collapseWs(wager?.masterAgent) || null
+  const agentId = normalizeOptionalField(wager?.agentId ?? item.agentId)
+  const masterAgent = normalizeOptionalField(wager?.masterAgent)
   const vip = Boolean(wager?.vip)
 
   const sport = collapseWs(wager?.sport || item.sport) || "OTHER"
-  const subSport = collapseWs(wager?.subSport) || null
+  const subSport = normalizeOptionalField(wager?.subSport)
   const betType = collapseWs(wager?.betType) || (wager ? "STRAIGHT" : "ALERT")
   const channelLabel = resolveCleanChannelLabel(wager)
 
   const event = collapseWs(wager?.event || item.event) || "Live Market"
-  const selection = collapseWs(wager?.selection || item.selection)
-  const lineDisplay = collapseWs(wager?.lineDisplay)
-  const oddsAmerican = collapseWs(wager?.oddsAmerican || item.oddsAmerican)
+  const selection = normalizeOptionalField(wager?.selection || item.selection) ?? ""
+  const lineDisplay = normalizeOptionalField(wager?.lineDisplay) ?? ""
+  const oddsAmerican =
+    resolveWagerOddsAmerican({
+      oddsAmerican: wager?.oddsAmerican ?? item.oddsAmerican,
+      lineDisplay,
+      selection,
+      betType,
+    }) ?? normalizeAmericanOdds(item.oddsAmerican)
 
   const effectiveLine = buildEffectiveLine(selection, lineDisplay, oddsAmerican)
   const formattedPick = wager
     ? formatWagerSelection({
         selection: wager.selection,
         lineDisplay: wager.lineDisplay,
-        oddsAmerican: wager.oddsAmerican,
+        oddsAmerican: oddsAmerican ?? "",
       })
     : selection && lineDisplay && !selectionIncludesLine(selection, lineDisplay)
-      ? `${selection} ${lineDisplay}${oddsAmerican ? ` (${oddsAmerican})` : ""}`
+      ? `${selection} ${lineDisplay}${
+          oddsAmerican && !selectionIncludesOdds(`${selection} ${lineDisplay}`, oddsAmerican)
+            ? ` (${oddsAmerican})`
+            : ""
+        }`
       : selection
-        ? `${selection}${oddsAmerican && !selection.includes(oddsAmerican) ? ` (${oddsAmerican})` : ""}`
+        ? `${selection}${oddsAmerican && !selectionIncludesOdds(selection, oddsAmerican) ? ` (${oddsAmerican})` : ""}`
         : effectiveLine
 
   const riskUsd = safePositiveUsd(wager?.riskUsd ?? item.riskUsd)
@@ -856,7 +913,13 @@ export function resolveAlertWagerContext(item: RecentRiskAlertItem): AlertWagerC
   const totalReturnMultiple =
     riskUsd > 0 && totalPayoutUsd !== null ? Number((totalPayoutUsd / riskUsd).toFixed(2)) : null
 
-  const impliedProbability = oddsAmerican ? formatImpliedProbability(oddsAmerican) : "—"
+  const impliedFromOdds = oddsAmerican ? formatImpliedProbability(oddsAmerican) : "—"
+  const impliedProbability =
+    impliedFromOdds !== "—"
+      ? impliedFromOdds
+      : riskUsd > 0 && toWinUsd !== null && toWinUsd > 0
+        ? formatImpliedProbabilityFromPayout(riskUsd, toWinUsd)
+        : "—"
   const quotedHoldPct =
     riskUsd > 0 && toWinUsd !== null ? ticketQuotedHoldPct(riskUsd, toWinUsd) : null
 
@@ -879,8 +942,8 @@ export function resolveAlertWagerContext(item: RecentRiskAlertItem): AlertWagerC
     maxRecommendedStake !== null ? capUtilizationPct(riskUsd, maxRecommendedStake) : null
 
   const alertTier = wager?.alertTier ?? item.alertTier
-  const alertBadge = collapseWs(wager?.alertBadge) || null
-  const operatorDirective = collapseWs(wager?.operatorDirective || item.operatorDirective) || null
+  const alertBadge = normalizeOptionalField(wager?.alertBadge)
+  const operatorDirective = normalizeOptionalField(wager?.operatorDirective || item.operatorDirective)
 
   return {
     ticketId,
@@ -895,7 +958,7 @@ export function resolveAlertWagerContext(item: RecentRiskAlertItem): AlertWagerC
     event,
     selection: selection || "—",
     lineDisplay: lineDisplay || null,
-    oddsAmerican: oddsAmerican || null,
+    oddsAmerican,
     effectiveLine,
     formattedPick,
     riskUsd,
@@ -915,6 +978,7 @@ export function resolveAlertWagerContext(item: RecentRiskAlertItem): AlertWagerC
     deliveryStatus: item.deliveryStatus ?? null,
     cumulativeRiskUsd: item.cumulativeRiskUsd,
     thresholdLimitUsd: item.thresholdLimitUsd,
+    breachLimitUsd: item.breachLimitUsd ?? null,
     placedTimestamp: wager?.timestamp || item.clockLabel,
     hasLiveWagerRecord: wager !== null,
   }
@@ -929,18 +993,47 @@ export function formatAlertWagerBrief(
       ? `$${Math.round(ctx.totalPayoutUsd).toLocaleString("en-US")} total ($${Math.round(ctx.riskUsd).toLocaleString("en-US")} risk / $${Math.round(ctx.toWinUsd).toLocaleString("en-US")} to win${ctx.payoutMultiple !== null ? ` · ${ctx.payoutMultiple}x` : ""})`
       : `$${Math.round(ctx.riskUsd).toLocaleString("en-US")} risk`
 
+  const agentChain = formatAgentChain(ctx.agentId, ctx.masterAgent)
+  const sportSuffix =
+    ctx.subSport && ctx.subSport.toUpperCase() !== ctx.sport.toUpperCase()
+      ? ` / ${ctx.subSport}`
+      : ""
+  const showSeparatePick =
+    ctx.formattedPick !== "—" &&
+    ctx.formattedPick.toLowerCase() !== ctx.effectiveLine.toLowerCase()
+
   const lines = [
     `[${item.severity}] ${item.title} (${item.clockLabel} · ${item.relativeAgeLabel})`,
-    `Ticket #${ctx.ticketId} · Customer ${ctx.customerId}${ctx.agentId ? ` · Agent ${ctx.agentId}` : ""}${ctx.masterAgent ? ` / ${ctx.masterAgent}` : ""}`,
-    `Event: ${ctx.event} (${ctx.sport}${ctx.subSport ? ` / ${ctx.subSport}` : ""})`,
-    `Effective Line: ${ctx.effectiveLine} · Pick: ${ctx.formattedPick}`,
+    `Ticket #${ctx.ticketId} · Customer ${ctx.customerId}${ctx.vip ? " (VIP)" : ""}${agentChain ? ` · Agent ${agentChain}` : ""}`,
+    `Event: ${ctx.event} (${ctx.sport}${sportSuffix})`,
+    showSeparatePick
+      ? `Effective Line: ${ctx.effectiveLine} · Pick: ${ctx.formattedPick}`
+      : `Effective Line: ${ctx.effectiveLine}`,
     `Payout: ${payoutLine} · Implied ${ctx.impliedProbability}`,
     `CLV: ${ctx.clvCents !== null ? `${ctx.clvCents >= 0 ? "+" : ""}${ctx.clvCents.toFixed(1)}¢` : "—"} · Tier: ${ctx.alertTier ?? "—"} · Directive: ${ctx.operatorDirective ?? "—"}`,
   ]
-  if (ctx.cumulativeRiskUsd !== null && ctx.thresholdLimitUsd !== null) {
+  if (item.kind === "SINGLE_WAGER_BREACH" && ctx.thresholdLimitUsd !== null) {
+    const windowSuffix =
+      ctx.cumulativeRiskUsd !== null
+        ? ` (60m window: $${Math.round(ctx.cumulativeRiskUsd).toLocaleString("en-US")})`
+        : ""
     lines.push(
-      `60m Window Exposure: $${Math.round(ctx.cumulativeRiskUsd).toLocaleString("en-US")} vs $${Math.round(ctx.thresholdLimitUsd).toLocaleString("en-US")} limit`,
+      `Single-Wager Cap: $${Math.round(ctx.riskUsd).toLocaleString("en-US")} stake vs $${Math.round(ctx.thresholdLimitUsd).toLocaleString("en-US")} max cap${windowSuffix}`,
     )
+  } else if (ctx.cumulativeRiskUsd !== null && ctx.thresholdLimitUsd !== null) {
+    if (item.kind === "THRESHOLD_WARNING") {
+      const breachSuffix =
+        ctx.breachLimitUsd !== null && ctx.breachLimitUsd !== ctx.thresholdLimitUsd
+          ? ` ($${Math.round(ctx.breachLimitUsd).toLocaleString("en-US")} breach limit)`
+          : ""
+      lines.push(
+        `60m Window Exposure: $${Math.round(ctx.cumulativeRiskUsd).toLocaleString("en-US")} vs $${Math.round(ctx.thresholdLimitUsd).toLocaleString("en-US")} warn threshold${breachSuffix}`,
+      )
+    } else {
+      lines.push(
+        `60m Window Exposure: $${Math.round(ctx.cumulativeRiskUsd).toLocaleString("en-US")} vs $${Math.round(ctx.thresholdLimitUsd).toLocaleString("en-US")} breach limit`,
+      )
+    }
   }
   return lines.join("\n")
 }

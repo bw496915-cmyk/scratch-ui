@@ -1,15 +1,23 @@
 import { describe, expect, test } from "bun:test"
 
+import { parseShortDesc } from "../../lib/live_wagers.ts"
+import { projectLiveWagerRow } from "../../packages/backend/src/wagers.ts"
 import {
   buildRecentAlertFrequencyBuckets,
   buildRecentRiskAlerts,
   estimateToWinFromAmericanOdds,
   filterRecentRiskAlerts,
+  formatAgentChain,
   formatAlertWagerBrief,
   formatRelativeAlertAge,
   resolveAlertWagerContext,
 } from "../../packages/ui/src/risk_recent_alerts.ts"
 import type { DashboardAlertRecord, LiveWager } from "../../packages/ui/src/types.ts"
+import {
+  extractAmericanOddsFromText,
+  formatWagerSelection,
+  resolveWagerOddsAmerican,
+} from "../../packages/ui/src/wager_display.ts"
 
 const ANCHOR_MS = Date.parse("2026-11-21T20:00:00.000Z")
 
@@ -467,5 +475,169 @@ describe("60-minute Recent Alerts sidebar history builder", () => {
     expect(breachBuckets.buckets.reduce((s, b) => s + b.breachCount, 0)).toBe(1)
     expect(breachBuckets.buckets.reduce((s, b) => s + b.warnCount, 0)).toBe(0)
     expect(breachBuckets.thresholdMarker.breachLimitUsd).toBe(25_000)
+  })
+
+  test("suppresses placeholder (—) odds, deduplicates identical agent/line fields, derives implied probability, and labels warning vs single-wager caps accurately", () => {
+    // Reproduces ticket #767465271 from live-wagers-LIST-100.json (ZZCUST22. / ZZAGENT1 / Alpha -110 / placeholder "—" odds)
+    const priorWager = makeWager({
+      ticketId: "767465250",
+      riskUsd: 39_650,
+      toWinUsd: 36_000,
+      maxRecommendedStake: 50_000,
+      timestamp: new Date(ANCHOR_MS - 40 * 60_000).toISOString(),
+    })
+    const warnTrigger = makeWager({
+      ticketId: "767465271",
+      customerId: "ZZCUST22.",
+      agentId: "ZZAGENT1",
+      masterAgent: "ZZAGENT1",
+      vip: true,
+      sport: "FOOTBALL",
+      betType: "Moneyline",
+      event: "Alpha vs Beta",
+      selection: "Alpha -110",
+      lineDisplay: "Alpha -110",
+      oddsAmerican: "—",
+      riskUsd: 1_200,
+      toWinUsd: 2_000,
+      clvCents: null,
+      alertTier: "RECREATIONAL",
+      operatorDirective: "Accept Normal (autoExecute: false)",
+      maxRecommendedStake: 25_000,
+      timestamp: new Date(ANCHOR_MS - 35 * 60_000).toISOString(),
+    })
+
+    const feed = buildRecentRiskAlerts({
+      wagers: [priorWager, warnTrigger],
+      breachLimitUsd: 50_000,
+      warningLimitUsd: 40_000,
+      anchorMs: ANCHOR_MS,
+    })
+
+    expect(feed.items).toHaveLength(1)
+    const warnItem = feed.items[0]!
+    expect(warnItem.kind).toBe("THRESHOLD_WARNING")
+    expect(warnItem.oddsAmerican).toBe("-110")
+    expect(warnItem.breachLimitUsd).toBe(50_000)
+
+    const ctx = resolveAlertWagerContext(warnItem)
+    expect(ctx.oddsAmerican).toBe("-110")
+    expect(ctx.effectiveLine).toBe("Alpha -110")
+    expect(ctx.formattedPick).toBe("Alpha -110")
+    expect(ctx.impliedProbability).toBe("52.4%")
+    expect(ctx.breachLimitUsd).toBe(50_000)
+
+    const brief = formatAlertWagerBrief(warnItem, ctx)
+    expect(brief).not.toContain("(—)")
+    expect(brief).not.toContain("ZZAGENT1 / ZZAGENT1")
+    expect(brief).not.toContain("Pick: Alpha -110")
+    expect(brief).toContain("Customer ZZCUST22. (VIP) · Agent ZZAGENT1")
+    expect(brief).toContain("Effective Line: Alpha -110")
+    expect(brief).toContain("Implied 52.4%")
+    expect(brief).toContain(
+      "60m Window Exposure: $40,850 vs $40,000 warn threshold ($50,000 breach limit)",
+    )
+
+    // Single-wager cap breach compares ticket stake vs single-wager cap (never 60m cumulative vs single-wager cap)
+    const overCapWager = makeWager({
+      ticketId: "767465999",
+      customerId: "SHARP_CAP",
+      agentId: "—",
+      masterAgent: "BILLY666",
+      betType: "Parlay",
+      selection: "3-Leg Parlay",
+      lineDisplay: "3-Leg Parlay",
+      oddsAmerican: "—",
+      riskUsd: 4_500,
+      toWinUsd: 7_500,
+      maxRecommendedStake: 2_000,
+      timestamp: new Date(ANCHOR_MS - 5 * 60_000).toISOString(),
+    })
+    const capFeed = buildRecentRiskAlerts({
+      wagers: [
+        makeWager({
+          ticketId: "767465998",
+          riskUsd: 8_000,
+          timestamp: new Date(ANCHOR_MS - 10 * 60_000).toISOString(),
+        }),
+        overCapWager,
+      ],
+      breachLimitUsd: 50_000,
+      warningLimitUsd: 40_000,
+      anchorMs: ANCHOR_MS,
+    })
+    const capItem = capFeed.items.find((i) => i.ticketId === "767465999")!
+    const capCtx = resolveAlertWagerContext(capItem)
+    expect(capCtx.agentId).toBeNull()
+    expect(capCtx.masterAgent).toBe("BILLY666")
+    expect(capCtx.oddsAmerican).toBeNull()
+    // Parlay without explicit odds derives break-even implied probability from risk / total payout (4500 / 12000 = 37.5%)
+    expect(capCtx.impliedProbability).toBe("37.5%")
+    const capBrief = formatAlertWagerBrief(capItem, capCtx)
+    expect(capBrief).toContain("Agent BILLY666")
+    expect(capBrief).not.toContain("Agent —")
+    expect(capBrief).toContain("Single-Wager Cap: $4,500 stake vs $2,000 max cap (60m window: $12,500)")
+
+    // Shared formatting & backend projection invariants
+    expect(formatAgentChain("ZZAGENT1", "zzagent1")).toBe("ZZAGENT1")
+    expect(formatAgentChain("—", "—")).toBe("")
+    expect(formatAgentChain("AF420", "BILLY666")).toBe("AF420 / BILLY666")
+
+    expect(extractAmericanOddsFromText("Alpha -110")).toBe("-110")
+    expect(extractAmericanOddsFromText("Steelers (Live) +27½ +100")).toBe("+100")
+    expect(extractAmericanOddsFromText("BOS -4.5")).toBeNull()
+    expect(extractAmericanOddsFromText("Rams EV")).toBe("+100")
+
+    expect(
+      formatWagerSelection({ selection: "Alpha -110", lineDisplay: "Alpha -110", oddsAmerican: "—" }),
+    ).toBe("Alpha -110")
+    expect(
+      formatWagerSelection({
+        selection: "Alpha -110",
+        lineDisplay: "Alpha -110",
+        oddsAmerican: "-110",
+      }),
+    ).toBe("Alpha -110")
+    expect(
+      formatWagerSelection({ selection: "BOS -4.5", lineDisplay: "-4.5", oddsAmerican: "-110" }),
+    ).toBe("BOS -4.5 (-110)")
+    expect(
+      resolveWagerOddsAmerican({
+        betType: "Parlay",
+        selection: "Alpha -110",
+        lineDisplay: "Alpha -110",
+        oddsAmerican: "—",
+      }),
+    ).toBeNull()
+
+    const projectedMoneyline = projectLiveWagerRow(
+      {
+        WagerNumber: 767465271,
+        AgentID: "ZZAGENT1",
+        AgentLogin: "ZZAGENT1    ",
+        CustomerID: "ZZCUST22.    ",
+        WagerType: "M",
+        AmountWagered: 1200,
+        ToWinAmount: 2000,
+        TicketWriter: "Internet",
+        InsertDateTime: "2026-11-04 12:22:00.000",
+        ShortDesc: "M.G999999250\r\nFootball - Alpha vs Beta / Game / Winner (2 way) / Alpha -110&#x0D;\n",
+        VIP: "1",
+      },
+      { parseShortDesc, sharpCustomerIds: new Set() },
+    )
+    expect(projectedMoneyline?.oddsAmerican).toBe("-110")
+
+    const projectedParlay = projectLiveWagerRow(
+      {
+        WagerNumber: 767465250,
+        WagerType: "P",
+        AmountWagered: 1200,
+        ToWinAmount: 2000,
+        ShortDesc: "P.G999999250\r\nFootball - Alpha vs Beta / Game / Winner (2 way) / Alpha -110&#x0D;\n",
+      },
+      { parseShortDesc, sharpCustomerIds: new Set() },
+    )
+    expect(projectedParlay?.oddsAmerican).toBe("—")
   })
 })

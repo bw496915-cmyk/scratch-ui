@@ -21,6 +21,7 @@ import {
 } from "../risk_recent_alerts.ts"
 import type { DashboardAlertRecord, LiveWager, ShowcaseCustomer } from "../types.ts"
 import { RiskRecentAlertsChart } from "../viz/RiskRecentAlertsChart.tsx"
+import { formatWagerSelection } from "../wager_display.ts"
 import { RiskAlertWagerModal } from "./RiskAlertWagerModal.tsx"
 
 export interface RiskRecentAlertsSidebarProps {
@@ -390,8 +391,11 @@ export function RiskRecentAlertsSidebar({
 
                 {item.selection && item.selection !== "—" ? (
                   <div className="sd-recent-alert-selection">
-                    {item.selection}
-                    {item.oddsAmerican ? ` (${item.oddsAmerican})` : ""}
+                    {formatWagerSelection({
+                      selection: item.selection,
+                      lineDisplay: "",
+                      oddsAmerican: item.oddsAmerican ?? "",
+                    })}
                   </div>
                 ) : null}
               </button>

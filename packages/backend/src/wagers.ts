@@ -89,6 +89,36 @@ function readWagerAmount(value: unknown): number | undefined {
   return Number.isFinite(amount) && amount >= 0 ? amount : undefined
 }
 
+function isPlaceholderOddsToken(raw: string): boolean {
+  const normalized = raw.trim().toLowerCase()
+  return (
+    normalized === "" ||
+    normalized === "—" ||
+    normalized === "–" ||
+    normalized === "-" ||
+    normalized === "n/a" ||
+    normalized === "null" ||
+    normalized === "undefined"
+  )
+}
+
+function extractSingleLegAmericanOdds(pick: string | undefined): string | null {
+  if (!pick) return null
+  const cleaned = pick.trim().replace(/\s+/g, " ")
+  if (!cleaned) return null
+  const match = /(?:^|\s)([+-]\d{3,5})$/.exec(cleaned)
+  if (match?.[1]) {
+    const parsed = Number.parseInt(match[1], 10)
+    if (Number.isFinite(parsed) && Math.abs(parsed) >= 100) {
+      return match[1]
+    }
+  }
+  if (/(?:^|\s)(?:EV|EVEN)$/i.test(cleaned)) {
+    return "+100"
+  }
+  return null
+}
+
 /** Project a measured ticker row. Missing identity or amounts make it unusable in aggregate totals. */
 export function projectLiveWagerRow(
   item: Record<string, unknown>,
@@ -143,6 +173,12 @@ export function projectLiveWagerRow(
   const volumeUsd = readWagerAmount(item.VolumeAmount ?? item.volumeAmount ?? item.volumeUsd)
   const vip = item.VIP === true || item.vip === true || String(item.VIP ?? "").trim() === "1"
   const wagerTypeProjection = projectWagerType(item)
+  const rawOdds = typeof item.oddsAmerican === "string" ? item.oddsAmerican.trim() : ""
+  const resolvedOdds = !isPlaceholderOddsToken(rawOdds)
+    ? rawOdds
+    : wagerTypeProjection.wagerTypeCode !== "P" && parsed.legs.length === 1
+      ? (extractSingleLegAmericanOdds(firstLeg?.pick) ?? "—")
+      : "—"
 
   return {
     ticketId,
@@ -167,7 +203,7 @@ export function projectLiveWagerRow(
     event: String(firstLeg?.game || (item.event ?? "—")),
     selection: String(firstLeg?.pick || (item.selection ?? "—")),
     lineDisplay: String(firstLeg?.pick || (item.lineDisplay ?? "—")),
-    oddsAmerican: typeof item.oddsAmerican === "string" ? item.oddsAmerican : "—",
+    oddsAmerican: resolvedOdds,
     riskUsd,
     ...(volumeUsd === undefined ? {} : { volumeUsd }),
     toWinUsd,

@@ -279,8 +279,14 @@ export function ticketPtyFindSportCommand(subSport: string | null | undefined): 
 
 export function americanOddsImpliedProbability(oddsAmerican: string): number | null {
   const trimmed = oddsAmerican.trim().replace(/,/g, "")
+  if (/^(?:EV|EVEN)$/i.test(trimmed)) {
+    return 0.5
+  }
+  if (!/^[+-]?\d+$/.test(trimmed)) {
+    return null
+  }
   const n = Number.parseInt(trimmed, 10)
-  if (!Number.isFinite(n) || n === 0) {
+  if (!Number.isFinite(n) || n === 0 || (n > -100 && n < 100)) {
     return null
   }
   if (n > 0) {
@@ -303,6 +309,15 @@ export function formatImpliedProbability(oddsAmerican: string): string {
   if (p === null) {
     return "—"
   }
+  return `${(p * 100).toFixed(1)}%`
+}
+
+/** Break-even implied win probability derived from ticket risk & to-win payout when explicit odds are absent. */
+export function formatImpliedProbabilityFromPayout(riskUsd: number, toWinUsd: number): string {
+  if (!Number.isFinite(riskUsd) || !Number.isFinite(toWinUsd) || riskUsd <= 0 || toWinUsd <= 0) {
+    return "—"
+  }
+  const p = riskUsd / (riskUsd + toWinUsd)
   return `${(p * 100).toFixed(1)}%`
 }
 

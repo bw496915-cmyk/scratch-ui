@@ -16,6 +16,7 @@ import {
   buildTicketInspectorPageUrl,
   capUtilizationPct,
   formatImpliedProbability,
+  formatImpliedProbabilityFromPayout,
   formatOperatorBrief,
   inferMarketKindFromBetType,
   inferPeriodHintFromWager,
@@ -31,7 +32,11 @@ import {
   wagerChannelLabel,
 } from "../ticket_inspector.ts"
 import type { DashboardAlertRecord, LiveWager, TierStyleConfig } from "../types.ts"
-import { formatWagerSelection } from "../wager_display.ts"
+import {
+  formatWagerSelection,
+  resolveWagerOddsAmerican,
+  selectionIncludesOdds,
+} from "../wager_display.ts"
 
 export interface TicketInspectorPanelProps {
   readonly wager: LiveWager
@@ -62,7 +67,12 @@ export function TicketInspectorPanel({
   const shadowHref = buildShadowSliceHrefFromWager(wager)
   const regime = inferTicketInspectorRegime(wager)
   const quotedHold = ticketQuotedHoldPct(wager.riskUsd, wager.toWinUsd)
-  const implied = formatImpliedProbability(wager.oddsAmerican)
+  const resolvedOdds = resolveWagerOddsAmerican(wager)
+  const impliedFromOdds = resolvedOdds ? formatImpliedProbability(resolvedOdds) : "—"
+  const implied =
+    impliedFromOdds !== "—"
+      ? impliedFromOdds
+      : formatImpliedProbabilityFromPayout(wager.riskUsd, wager.toWinUsd)
   const marketKind = inferMarketKindFromBetType(wager.betType)
   const periodHint = inferPeriodHintFromWager(wager)
   const capUse = capUtilizationPct(wager.riskUsd, wager.maxRecommendedStake)
@@ -121,7 +131,9 @@ export function TicketInspectorPanel({
             Placed {wager.timestamp} · {wager.sport}
             {wager.subSport ? ` / ${wager.subSport}` : ""} · {wager.betType} ·{" "}
             {sanitizeCaptureText(wager.lineDisplay)}
-            {wager.oddsAmerican !== "—" ? ` (${wager.oddsAmerican})` : ""}
+            {resolvedOdds && !selectionIncludesOdds(wager.lineDisplay, resolvedOdds)
+              ? ` (${resolvedOdds})`
+              : ""}
             {wager.ticketWriter ? ` · writer ${sanitizeCaptureText(wager.ticketWriter)}` : ""}
           </div>
         </div>
