@@ -306,6 +306,10 @@ interface BunUtilitiesRuntimeGlobal {
     readonly password?: {
       readonly hash?: (password: string, options?: { readonly algorithm?: string }) => Promise<string>
     }
+    readonly XML?: {
+      readonly parse?: (input: string, options?: Record<string, unknown>) => unknown
+      readonly stringify?: (value: unknown, options?: Record<string, unknown>) => string
+    }
   }
 }
 
@@ -1104,6 +1108,101 @@ export const BUN_RUNTIME_UTILS_EXTENDED: readonly BunExtendedUtilDescriptor[] = 
     wiredIn: "bun_runtime_utils.streamTo{Text,JSON,Bytes,ArrayBuffer,Blob,Array}",
     summary: "One-call native stream consumers with Web Response fallbacks.",
   },
+  {
+    id: "bun-xml",
+    bunApi: "Bun.XML.parse / Bun.XML.stringify (Bun.xml)",
+    wiredIn: "BunUtilitiesDecouplePanel + parseXmlSafe / stringifyXmlSafe",
+    summary:
+      "Native Bun 1.4.4 XML parser & serializer (attributes via @key) for odds feeds and brand/meta XML manifests, with browser DOMParser fallback.",
+  },
 ])
+
+export interface XmlProbeResult {
+  readonly ok: boolean
+  readonly engine: "bun-xml" | "dom-parser" | "fallback"
+  readonly parsed?: unknown
+  readonly roundTrip?: string
+  readonly error?: string
+}
+
+function escapeXmlAttr(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+}
+
+/** Parse XML via native `Bun.XML.parse` (Bun 1.4.4) with browser `DOMParser` fallback. */
+export function parseXmlSafe(xml: string): XmlProbeResult {
+  const bun = getBunRuntimeObj()
+  if (typeof bun?.XML?.parse === "function") {
+    try {
+      const parsed = bun.XML.parse(xml)
+      const roundTrip =
+        typeof bun.XML.stringify === "function" ? bun.XML.stringify(parsed) : undefined
+      return { ok: true, engine: "bun-xml", parsed, roundTrip }
+    } catch (err) {
+      return {
+        ok: false,
+        engine: "bun-xml",
+        error: err instanceof Error ? err.message : String(err),
+      }
+    }
+  }
+  if (typeof DOMParser === "function") {
+    try {
+      const doc = new DOMParser().parseFromString(xml, "application/xml")
+      const parserError = doc.querySelector("parsererror")
+      if (parserError) {
+        return {
+          ok: false,
+          engine: "dom-parser",
+          error: parserError.textContent?.trim() || "XML parse error",
+        }
+      }
+      const root = doc.documentElement
+      const attrs: Record<string, string> = {}
+      for (let i = 0; i < root.attributes.length; i += 1) {
+        const attr = root.attributes[i]
+        if (attr) attrs[`@${attr.name}`] = attr.value
+      }
+      const children: Record<string, unknown> = { ...attrs }
+      for (let i = 0; i < root.children.length; i += 1) {
+        const child = root.children[i]
+        if (child) children[child.tagName] = child.textContent ?? ""
+      }
+      const parsed = { [root.tagName]: Object.keys(children).length > 0 ? children : root.textContent ?? "" }
+      return { ok: true, engine: "dom-parser", parsed, roundTrip: xml.trim() }
+    } catch (err) {
+      return {
+        ok: false,
+        engine: "dom-parser",
+        error: err instanceof Error ? err.message : String(err),
+      }
+    }
+  }
+  return { ok: true, engine: "fallback", parsed: { raw: xml.trim() }, roundTrip: xml.trim() }
+}
+
+/** Serialize an object to XML via native `Bun.XML.stringify` or deterministic tag serializer fallback. */
+export function stringifyXmlSafe(rootTag: string, attrs: Record<string, string>, text?: string): string {
+  const bun = getBunRuntimeObj()
+  if (typeof bun?.XML?.stringify === "function") {
+    const node: Record<string, string> = {}
+    for (const [k, v] of Object.entries(attrs)) {
+      node[`@${k}`] = v
+    }
+    if (text !== undefined) node["#text"] = text
+    return bun.XML.stringify({ [rootTag]: node })
+  }
+  const attrStr = Object.entries(attrs)
+    .map(([k, v]) => ` ${k}="${escapeXmlAttr(v)}"`)
+    .join("")
+  return text !== undefined
+    ? `<${rootTag}${attrStr}>${escapeXmlAttr(text)}</${rootTag}>`
+    : `<${rootTag}${attrStr}/>`
+}
+
 
 

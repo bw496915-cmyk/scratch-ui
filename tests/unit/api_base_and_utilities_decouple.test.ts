@@ -321,7 +321,10 @@ describe("Local :4022 SPA Decoupling & All 19 Bun Runtime Utilities", () => {
         serverRuntimeEngine: "bun/1.4.4",
       }),
     )
-    expect(html).toContain("Local :4022 SPA Decoupling")
+    expect(html).toContain("SportsDesk &amp; Fantasy402 Operations")
+    expect(html).toContain("SPA Decoupling &amp; Bun Runtime Utilities")
+    expect(html).toContain("sportsbook-risk-surveillance")
+    expect(html).toContain("Bun.XML")
     expect(html).toContain("hasRegExpGroups = true")
     expect(html).toContain("VALID -&gt; https://api.bookdeskops.com/v2")
     for (const util of BUN_UTILITIES_CATALOG) {

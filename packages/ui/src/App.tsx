@@ -3619,18 +3619,12 @@ export function App(): React.ReactElement {
             onClick={(e) => {
               if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
                 e.preventDefault()
-                if (activeTab === "risk-overview") {
-                  void Promise.allSettled([fetchDashboard(), handleRefreshTelemetry()])
-                } else {
-                  navigatePrimaryRoute("risk-overview")
-                }
+                setMobileNavOpen(false)
+                navigatePrimaryRoute("risk-overview")
+                void Promise.allSettled([fetchDashboard(), handleRefreshTelemetry()])
               }
             }}
-            title={
-              activeTab === "risk-overview"
-                ? "SportsDesk & Fantasy402 Operations — Click to refresh dashboard"
-                : "SportsDesk & Fantasy402 Operations — Return to Risk Overview (#/risk-exposure/risk-overview)"
-            }
+            title="SportsDesk & Fantasy402 Operations — Refresh dashboard & return to Risk Overview (#/risk-exposure/risk-overview)"
           >
             <img
               src={BRAND_ASSETS.emblemWebp}
@@ -3640,6 +3634,15 @@ export function App(): React.ReactElement {
               height={32}
               decoding="async"
               referrerPolicy="no-referrer"
+              onClick={(e) => {
+                if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setMobileNavOpen(false)
+                  navigatePrimaryRoute("risk-overview")
+                  void handleRefreshTelemetry()
+                }
+              }}
               onError={(e) => {
                 const target = e.currentTarget
                 if (target.dataset.fallbackApplied !== "1") {

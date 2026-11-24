@@ -6374,24 +6374,29 @@ html[data-dashboard-theme="light"] body {
   transform: scale(0.98);
 }
 
+.sd-header-logo-emblem,
 .sd-header-title-row .sd-logo-home-link .sd-header-logo-emblem {
   box-shadow: 0 0 12px rgba(56, 189, 248, 0.22);
   transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 180ms ease;
+  cursor: pointer;
 }
 
+.sd-header-logo-emblem:hover,
 .sd-header-title-row .sd-logo-home-link:hover .sd-header-logo-emblem {
-  transform: scale(1.06);
+  transform: scale(1.05);
   box-shadow: 0 0 16px rgba(56, 189, 248, 0.38);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .sd-header-title-row .sd-logo-home-link,
+  .sd-header-logo-emblem,
   .sd-header-title-row .sd-logo-home-link .sd-header-logo-emblem {
     transition: opacity 150ms ease;
   }
 
   .sd-header-title-row .sd-logo-home-link:hover,
   .sd-header-title-row .sd-logo-home-link:active,
+  .sd-header-logo-emblem:hover,
   .sd-header-title-row .sd-logo-home-link:hover .sd-header-logo-emblem {
     transform: none;
   }
@@ -9257,3 +9262,18 @@ button.sd-surveillance-stat:focus-visible {
     transition: none;
   }
 }
+
+aside#sd-mobile-nav-drawer {
+  background-color: #ffffff;
+  border-style: solid;
+  border-width: 19px;
+  font-family: Arial;
+  height: 1026.555px;
+  margin-left: 33px;
+}
+
+aside#sd-mobile-nav-drawer > nav:nth-of-type(1) > button:nth-of-type(2) > span:nth-of-type(1) > span:nth-of-type(2) {
+  color: #371113;
+  border-color: #2a1717;
+}
+

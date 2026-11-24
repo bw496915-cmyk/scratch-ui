@@ -22,12 +22,15 @@ import {
   generateUuidV7,
   hashPasswordPreview,
   inspectModuleMetaSnapshot,
+  parseXmlSafe,
   pathToFileUrlSafe,
   resolveSpaDecoupleStatus,
   sleepMs,
+  stringifyXmlSafe,
   type SpaDecoupleStatus,
 } from "../bun_utilities.ts"
 import { copyText } from "../clipboard.ts"
+import { BRAND_ASSETS } from "../operator_profiles.ts"
 
 export interface BunUtilitiesDecouplePanelProps {
   readonly open: boolean
@@ -192,6 +195,23 @@ export function BunUtilitiesDecouplePanel({
 
   const whichProbe = useMemo(() => findAllowlistedExecutable(whichBin), [whichBin])
 
+  const brandXmlSample = useMemo(
+    () =>
+      stringifyXmlSafe(
+        "sportsdesk",
+        {
+          brand: BRAND_ASSETS.monogram,
+          version: BRAND_ASSETS.version,
+          tokens: BRAND_ASSETS.tokensVersion,
+          domain: BRAND_ASSETS.domainContext,
+        },
+        BRAND_ASSETS.shortName,
+      ),
+    [],
+  )
+
+  const xmlProbe = useMemo(() => parseXmlSafe(brandXmlSample), [brandXmlSample])
+
   const visibleUtilities = useMemo(
     () =>
       category === "all"
@@ -215,7 +235,7 @@ export function BunUtilitiesDecouplePanel({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="SPA Origin Decoupling & Bun Runtime Utilities"
+      aria-label={`${BRAND_ASSETS.shortName} — SPA Origin Decoupling, Meta & Bun Runtime Utilities`}
       data-bun-utilities-decouple-panel="true"
       style={{
         position: "fixed",
@@ -233,6 +253,10 @@ export function BunUtilitiesDecouplePanel({
       }}
     >
       <div
+        data-brand-name={BRAND_ASSETS.shortName}
+        data-brand-version={BRAND_ASSETS.version}
+        data-brand-domain={BRAND_ASSETS.domainContext}
+        data-tokens-version={BRAND_ASSETS.tokensVersion}
         style={{
           width: "min(980px, 100%)",
           maxHeight: "min(88vh, 860px)",
@@ -261,10 +285,42 @@ export function BunUtilitiesDecouplePanel({
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-              <Terminal size={16} style={{ color: "#38bdf8" }} aria-hidden="true" />
-              <h2 style={{ margin: 0, fontSize: "15px", fontWeight: 700 }}>
-                Local :4022 SPA Decoupling &amp; Bun Utilities ({BUN_UTILITIES_CATALOG.length})
+              <img
+                src={BRAND_ASSETS.emblemPng64}
+                alt={BRAND_ASSETS.emblemAlt}
+                width={20}
+                height={20}
+                style={{
+                  width: "20px",
+                  height: "20px",
+                  borderRadius: "4px",
+                  objectFit: "cover",
+                  border: "1px solid rgba(56, 189, 248, 0.35)",
+                  flexShrink: 0,
+                }}
+              />
+              <Terminal size={15} style={{ color: "#38bdf8" }} aria-hidden="true" />
+              <h2
+                data-brand-version={BRAND_ASSETS.version}
+                data-brand-domain={BRAND_ASSETS.domainContext}
+                style={{ margin: 0, fontSize: "15px", fontWeight: 700 }}
+              >
+                {BRAND_ASSETS.shortName} — SPA Decoupling &amp; Bun Runtime Utilities (
+                {BUN_UTILITIES_CATALOG.length}+{BUN_RUNTIME_UTILS_EXTENDED.length})
               </h2>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  padding: "2px 8px",
+                  borderRadius: "999px",
+                  background: "rgba(52, 211, 153, 0.14)",
+                  color: "#34d399",
+                  border: "1px solid rgba(52, 211, 153, 0.35)",
+                }}
+              >
+                {BRAND_ASSETS.version}
+              </span>
               <span
                 style={{
                   fontSize: "11px",
@@ -286,13 +342,15 @@ export function BunUtilitiesDecouplePanel({
               </span>
             </div>
             <p style={{ margin: 0, fontSize: "12px", color: "var(--sd-text-muted, #94a3b8)" }}>
-              {status.summary}
+              {BRAND_ASSETS.organization} · domain <code>{BRAND_ASSETS.domainContext}</code> ·
+              tokens <code>v{BRAND_ASSETS.tokensVersion}</code> · <code>import.meta</code> &amp;{" "}
+              <code>Bun.XML</code> (<code>parse</code>/<code>stringify</code>) — {status.summary}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close SPA decoupling and Bun utilities panel"
+            aria-label={`Close ${BRAND_ASSETS.shortName} runtime utilities panel`}
             style={{
               background: "transparent",
               border: "1px solid var(--sd-border-subtle, #334155)",
@@ -827,7 +885,7 @@ export function BunUtilitiesDecouplePanel({
             }}
           >
             <strong style={{ fontFamily: "inherit", fontSize: "12px", marginBottom: "2px" }}>
-              import.meta &amp; Entrypoint Introspection
+              import.meta, Brand Meta &amp; Bun.XML
             </strong>
             <div>dir: {moduleMeta.importMetaDir}</div>
             <div>file: {moduleMeta.importMetaFile}</div>
@@ -835,6 +893,9 @@ export function BunUtilitiesDecouplePanel({
             <div>import.meta.main: {String(moduleMeta.importMetaMain)}</div>
             <div style={{ wordBreak: "break-all" }}>
               Bun.main: {moduleMeta.bunMain ?? "(browser SPA bundle)"}
+            </div>
+            <div style={{ wordBreak: "break-all", color: "#34d399" }}>
+              Bun.XML ({xmlProbe.engine}): {xmlProbe.roundTrip ?? brandXmlSample}
             </div>
           </div>
         </section>

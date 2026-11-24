@@ -39,7 +39,9 @@ import {
   compressZstdText,
   deepMatchSafe,
   generateUuidV5,
+  parseXmlSafe,
   sliceAnsiSafe,
+  stringifyXmlSafe,
   stripAnsiSafe,
 } from "../../packages/ui/src/bun_utilities.ts"
 import { ANSI, stripAnsi, truncateVisible, visibleLength } from "../../server/desk_inspect.ts"
@@ -265,7 +267,13 @@ describe("Bun 1.4.4 runtime utils.md wiring", () => {
 
   test("UI extended utils.md helpers & catalog preserve the 19-entry BUN_UTILITIES_CATALOG", async () => {
     expect(BUN_UTILITIES_CATALOG.length).toBe(19)
-    expect(BUN_RUNTIME_UTILS_EXTENDED.length).toBe(10)
+    expect(BUN_RUNTIME_UTILS_EXTENDED.length).toBe(11)
+
+    const xml = stringifyXmlSafe("sportsdesk", { brand: "SD", version: "v1.01.23-next" }, "Ops")
+    const parsedXml = parseXmlSafe(xml)
+    expect(parsedXml.ok).toBe(true)
+    expect(parsedXml.engine).toBe("bun-xml")
+    expect(parsedXml.roundTrip).toContain("<sportsdesk")
 
     const zstdProbe = await compressZstdText("sportsdesk-ops ui zstd probe ".repeat(16))
     expect(zstdProbe.algorithm).toBe("zstd")
