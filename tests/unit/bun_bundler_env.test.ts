@@ -1,7 +1,8 @@
 /**
- * @file tests/unit/bun_bundler_env.test.ts
- * @description Verifies Bun bundler `env: "PUBLIC_*"` and `[serve.static]` `bunfig.toml`
- * prefix inlining contract, secret isolation, and static-analysis limits on Bun 1.4.4.
+ * Verifies Bun bundler `env: "PUBLIC_*"` and `[serve.static]` `bunfig.toml` prefix inlining contract, secret isolation,
+ * and static-analysis limits on Bun 1.4.4.
+ *
+ * @file Tests/unit/bun_bundler_env.test.ts
  */
 
 import { describe, expect, test } from "bun:test"

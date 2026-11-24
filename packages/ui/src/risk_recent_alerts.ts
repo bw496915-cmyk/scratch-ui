@@ -1,9 +1,10 @@
 /**
- * @file packages/ui/src/risk_recent_alerts.ts
- * @description Builds the chronological 60-minute 'Recent Alerts' feed for the
- * Risk Overview sidebar: replays rolling 60m aggregate risk threshold crossings
- * (Warning & Breach), single-wager cap breaches, CRITICAL/STEAM tickets, and
- * recent alert dispatch records, linking every event to its underlying LiveWager.
+ * Builds the chronological 60-minute 'Recent Alerts' feed for the Risk Overview sidebar: replays
+ * rolling 60m aggregate risk threshold crossings (Warning & Breach), single-wager cap breaches,
+ * CRITICAL/STEAM tickets, and recent alert dispatch records, linking every event to its underlying
+ * LiveWager.
+ *
+ * @file Packages/ui/src/risk_recent_alerts.ts
  */
 
 import { WAGER_CHANNEL_LABELS, wagerChannelOf } from "@sportsdesk-ops/contracts"
@@ -136,8 +137,8 @@ function parseIsoMs(raw: string | undefined | null, fallbackAnchorMs: number): n
 }
 
 /**
- * Deterministically builds the last-60-minute historical risk breaches and threshold
- * warnings feed linked directly to their corresponding wager details.
+ * Deterministically builds the last-60-minute historical risk breaches and threshold warnings feed
+ * linked directly to their corresponding wager details.
  */
 export function buildRecentRiskAlerts(input: BuildRecentRiskAlertsInput): RecentRiskAlertsResult {
   const windowMinutes = Math.max(
@@ -451,9 +452,9 @@ export function buildRecentRiskAlerts(input: BuildRecentRiskAlertsInput): Recent
 }
 
 /**
- * Isolates a specific alert severity (`ALL`, `WARN`, `BREACH`) while preserving
- * the rolling 60-minute window bounds and USD threshold crossing telemetry so
- * downstream charts keep the vertical threshold marker anchored accurately.
+ * Isolates a specific alert severity (`ALL`, `WARN`, `BREACH`) while preserving the rolling
+ * 60-minute window bounds and USD threshold crossing telemetry so downstream charts keep the
+ * vertical threshold marker anchored accurately.
  */
 export function filterRecentRiskAlerts(
   feed: RecentRiskAlertsResult,
@@ -487,7 +488,10 @@ export interface AlertThresholdMarker {
   readonly normalizedX: number
   /** Bucket index (0..bucketCount-1) containing the crossing, or null when uncrossed. */
   readonly crossedBucketIndex: number | null
-  /** Fractional [0, 1] offset inside the crossed bucket for pixel-exact alignment with scaleBand bars. */
+  /**
+   * Fractional [0, 1] offset inside the crossed bucket for pixel-exact alignment with scaleBand
+   * bars.
+   */
   readonly crossedBucketFraction: number
   readonly crossedClockLabel: string | null
   readonly crossedTicketId: string | null
@@ -529,8 +533,8 @@ function formatHm(epochMs: number): string {
 }
 
 /**
- * Aggregates historical 60-minute risk breaches and threshold warnings into
- * equal-width time buckets (default 12 × 5m) for D3 frequency/severity visualization.
+ * Aggregates historical 60-minute risk breaches and threshold warnings into equal-width time
+ * buckets (default 12 × 5m) for D3 frequency/severity visualization.
  */
 export function buildRecentAlertFrequencyBuckets(
   result: RecentRiskAlertsResult,
@@ -773,8 +777,8 @@ function normalizeOptionalField(raw: string | null | undefined): string | null {
 }
 
 /**
- * Formats an agent / master-agent chain while stripping placeholder dashes and
- * deduplicating identical IDs (`ZZAGENT1` + `ZZAGENT1` → `"ZZAGENT1"`).
+ * Formats an agent / master-agent chain while stripping placeholder dashes and deduplicating
+ * identical IDs (`ZZAGENT1` + `ZZAGENT1` → `"ZZAGENT1"`).
  */
 export function formatAgentChain(
   agentId: string | null | undefined,
@@ -789,8 +793,8 @@ export function formatAgentChain(
 }
 
 /**
- * Estimates net win (`toWinUsd`) from stake and American odds when an off-tape
- * alert record does not carry an explicit `toWinUsd` field.
+ * Estimates net win (`toWinUsd`) from stake and American odds when an off-tape alert record does
+ * not carry an explicit `toWinUsd` field.
  */
 export function estimateToWinFromAmericanOdds(
   riskUsd: number,
@@ -843,8 +847,8 @@ function buildEffectiveLine(
 }
 
 /**
- * Resolves full wager context (payout, effective line, customer ID, cap metrics,
- * odds math, and surveillance metadata) for the Recent Alerts detail modal.
+ * Resolves full wager context (payout, effective line, customer ID, cap metrics, odds math, and
+ * surveillance metadata) for the Recent Alerts detail modal.
  */
 export function resolveAlertWagerContext(item: RecentRiskAlertItem): AlertWagerContext {
   const wager = item.linkedWager
@@ -943,7 +947,9 @@ export function resolveAlertWagerContext(item: RecentRiskAlertItem): AlertWagerC
 
   const alertTier = wager?.alertTier ?? item.alertTier
   const alertBadge = normalizeOptionalField(wager?.alertBadge)
-  const operatorDirective = normalizeOptionalField(wager?.operatorDirective || item.operatorDirective)
+  const operatorDirective = normalizeOptionalField(
+    wager?.operatorDirective || item.operatorDirective,
+  )
 
   return {
     ticketId,
@@ -999,8 +1005,7 @@ export function formatAlertWagerBrief(
       ? ` / ${ctx.subSport}`
       : ""
   const showSeparatePick =
-    ctx.formattedPick !== "—" &&
-    ctx.formattedPick.toLowerCase() !== ctx.effectiveLine.toLowerCase()
+    ctx.formattedPick !== "—" && ctx.formattedPick.toLowerCase() !== ctx.effectiveLine.toLowerCase()
 
   const lines = [
     `[${item.severity}] ${item.title} (${item.clockLabel} · ${item.relativeAgeLabel})`,

@@ -84,9 +84,7 @@ describe("PanelErrorBoundary recovery & diagnostics", () => {
     boundary.setState = ((updater: unknown) => {
       const next =
         typeof updater === "function"
-          ? (updater as (prev: typeof boundary.state) => Partial<typeof boundary.state>)(
-              boundary.state,
-            )
+          ? (updater as (prev: typeof boundary.state) => Partial<typeof boundary.state>)(boundary.state)
           : (updater as Partial<typeof boundary.state>)
       boundary.state = { ...boundary.state, ...next }
       capturedStates.push(boundary.state as unknown as Record<string, unknown>)

@@ -1,5 +1,6 @@
 /**
- * Inlined hold-floor SSOT metadata from `config/wager_tiers.toml` (bun build tree-shakes unused tables).
+ * Inlined hold-floor SSOT metadata from `config/wager_tiers.toml` (bun build tree-shakes unused
+ * tables).
  */
 
 import wagerTiersCfg from "../../../../config/wager_tiers.toml"

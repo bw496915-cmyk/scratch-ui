@@ -1,15 +1,13 @@
 /**
- * @file packages/ui/src/portal_link.ts
- * @description Consistent Fantasy402 Manager Portal link builder with named
- * browsing-context reuse (`target="fantasy402-manager-session"`).
+ * Consistent Fantasy402 Manager Portal link builder with named browsing-context reuse
+ * (`target="fantasy402-manager-session"`). Why a named target without `rel="noreferrer"` /
+ * `noopener`: Spawning `target="_blank" rel="noreferrer"` creates a fresh isolated browsing context
+ * on every click with empty `sessionStorage`, causing Fantasy402's `manager.html` to report "Your
+ * session has expired" even when the operator is already signed in. Reusing a fixed named target
+ * bound strictly to the hard-coded `https://fantasy402.com` origin lets the operator sign in once
+ * in that tab and jump directly to `?customer=<ID>` while retaining session state.
  *
- * Why a named target without `rel="noreferrer"` / `noopener`:
- * Spawning `target="_blank" rel="noreferrer"` creates a fresh isolated browsing
- * context on every click with empty `sessionStorage`, causing Fantasy402's
- * `manager.html` to report "Your session has expired" even when the operator is
- * already signed in. Reusing a fixed named target bound strictly to the
- * hard-coded `https://fantasy402.com` origin lets the operator sign in once in
- * that tab and jump directly to `?customer=<ID>` while retaining session state.
+ * @file Packages/ui/src/portal_link.ts
  */
 
 export const FANTASY402_PORTAL_ORIGIN = "https://fantasy402.com" as const
@@ -33,8 +31,8 @@ export interface Fantasy402PortalLinkAttributes {
 }
 
 /**
- * Returns anchor attributes that reuse the operator's authenticated
- * Fantasy402 manager tab instead of spawning an isolated sessionless tab.
+ * Returns anchor attributes that reuse the operator's authenticated Fantasy402 manager tab instead
+ * of spawning an isolated sessionless tab.
  */
 export function getFantasy402PortalLinkProps(customerId: string): Fantasy402PortalLinkAttributes {
   return {

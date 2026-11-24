@@ -1,12 +1,13 @@
 /**
- * @file src/lib/token_bitsets.ts
- * @description Precomputed `Uint32Array` bitset masks compiled from `design/tokens.toml`
- * covering ingestion channels, surveillance surfaces, risk routes, and DualClock SLA states.
+ * Precomputed `Uint32Array` bitset masks compiled from `design/tokens.toml` covering ingestion
+ * channels, surveillance surfaces, risk routes, and DualClock SLA states. Hot-path classification
+ * contract:
  *
- * Hot-path classification contract:
  * - `TokenBitsetBuffer` reuses a fixed 4-word `Uint32Array` via `.clear()` (`words.fill(0)`).
  * - Bitwise set/test/intersect/containsAll operations run in O(1) with zero heap allocations.
  * - All bit positions are strictly <= 30 (`>>> 0` unsigned contract, avoiding negative 32-bit SMIs).
+ *
+ * @file Src/lib/token_bitsets.ts
  */
 
 import { readFileSync } from "node:fs"
@@ -234,9 +235,7 @@ export function unpackBridgeIdFromMeta(word: number): number {
   return (word >>> 18) & 0x3
 }
 
-/**
- * Creates a 4-word `Uint32Array` preset mask `[ingestion, surface, route, slaUi]`.
- */
+/** Creates a 4-word `Uint32Array` preset mask `[ingestion, surface, route, slaUi]`. */
 export function createPresetMaskWords(
   ingestionMask: number,
   surfaceMask: number,
@@ -422,9 +421,7 @@ const CANONICAL_SURFACE_ORDER: readonly string[] = [
   "--sd-surface-selected",
 ]
 
-/**
- * Compiles `design/tokens.toml` directly into `Uint32Array` bitset masks and O(1) lookup tables.
- */
+/** Compiles `design/tokens.toml` directly into `Uint32Array` bitset masks and O(1) lookup tables. */
 export function compileTokenBitsetsFromToml(
   tomlPath: string = resolve(process.cwd(), "design/tokens.toml"),
 ): CompiledTokenBitsets {
@@ -603,9 +600,8 @@ export function compileTokenBitsetsFromToml(
 // ── 8. Reusable Zero-Allocation `TokenBitsetBuffer` ──────────────────────────
 
 /**
- * Reusable 4-word `Uint32Array` hot-path classification buffer.
- * Call `.clear()` between events/ticks to reset all words to zero in O(1)
- * without allocating a new `Uint32Array`.
+ * Reusable 4-word `Uint32Array` hot-path classification buffer. Call `.clear()` between
+ * events/ticks to reset all words to zero in O(1) without allocating a new `Uint32Array`.
  */
 export class TokenBitsetBuffer {
   readonly words: Uint32Array
@@ -623,9 +619,9 @@ export class TokenBitsetBuffer {
   }
 
   /**
-   * Single-call O(1) hot-path event classifier: clears the reusable buffer and
-   * populates ingestion channel, surface, route, and DualClock SLA state bits.
-   * Pass `-1` for any axis not applicable to the current event.
+   * Single-call O(1) hot-path event classifier: clears the reusable buffer and populates ingestion
+   * channel, surface, route, and DualClock SLA state bits. Pass `-1` for any axis not applicable to
+   * the current event.
    */
   classify(
     channelId: number,

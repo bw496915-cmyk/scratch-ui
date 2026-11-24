@@ -55,8 +55,7 @@ describe("L1: Bitwise Telemetry Parsing & Cross-Feed Correlation Spine", () => {
         dateLabel: "November 19, 2026",
         timeEst: "08:21:55 AM",
         ip: "102.128.164.122",
-        action:
-          'API LOG | BLOCK BET | BOT BLOCK LINE ST | #[{"key":"bot_619137349_0_L_U_0","val":"BB55103"}]',
+        action: 'API LOG | BLOCK BET | BOT BLOCK LINE ST | #[{"key":"bot_619137349_0_L_U_0","val":"BB55103"}]',
       },
     ])
 
@@ -81,8 +80,7 @@ describe("L1: Bitwise Telemetry Parsing & Cross-Feed Correlation Spine", () => {
         dateLabel: "November 19, 2026",
         timeEst: "08:21:55 AM",
         ip: "102.128.164.122",
-        action:
-          'API LOG | BLOCK BET | BOT BLOCK LINE ST | #[{"key":"bot_619137349_0_L_U_0","val":"BB55103"}]',
+        action: 'API LOG | BLOCK BET | BOT BLOCK LINE ST | #[{"key":"bot_619137349_0_L_U_0","val":"BB55103"}]',
       },
     ])
 
@@ -97,8 +95,7 @@ describe("L1: Bitwise Telemetry Parsing & Cross-Feed Correlation Spine", () => {
       TicketWriter: "GSLIVE",
       InsertDateTime: "2026-11-19T08:22:10-05:00",
       VIP: "1",
-      ShortDesc:
-        "S.LIVE\r\nBasketball - Lakers vs Suns / Game / Total / Under 228½ -110 #619137349",
+      ShortDesc: "S.LIVE\r\nBasketball - Lakers vs Suns / Game / Total / Under 228½ -110 #619137349",
     })
 
     const profile = normalizeRawCustomerToProfileRecord({
@@ -149,12 +146,7 @@ describe("L1: Bitwise Telemetry Parsing & Cross-Feed Correlation Spine", () => {
     )
     expect(countSetBits(tripleOverlap)).toBe(1)
     expect(
-      bloomMayOverlap64(
-        index.gameBloomLo[0]!,
-        index.gameBloomHi[0]!,
-        index.gameBloomLo[0]!,
-        index.gameBloomHi[0]!,
-      ),
+      bloomMayOverlap64(index.gameBloomLo[0]!, index.gameBloomHi[0]!, index.gameBloomLo[0]!, index.gameBloomHi[0]!),
     ).toBe(true)
 
     const queried = index.queryByMask({

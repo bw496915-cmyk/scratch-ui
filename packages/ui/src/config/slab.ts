@@ -1,12 +1,11 @@
 /**
- * @file packages/ui/src/config/slab.ts
- * @description Build-time guard for the frontend slab capability.
+ * Build-time guard for the frontend slab capability. `config/slab.toml` (server) may set
+ * `unsafe.allowed = true` because the server can use `Bun.allocUnsafe`. The browser bundle must not
+ * inherit that: this module validates the frontend TOML at load time and throws if the capability
+ * ever flips. Bun inlines the table at bundle time, so the check costs nothing at runtime and
+ * cannot be disabled by a caller.
  *
- * `config/slab.toml` (server) may set `unsafe.allowed = true` because the server
- * can use `Bun.allocUnsafe`. The browser bundle must not inherit that: this
- * module validates the frontend TOML at load time and throws if the capability
- * ever flips. Bun inlines the table at bundle time, so the check costs nothing at
- * runtime and cannot be disabled by a caller.
+ * @file Packages/ui/src/config/slab.ts
  */
 
 import { meta, unsafe } from "./slab.frontend.toml"

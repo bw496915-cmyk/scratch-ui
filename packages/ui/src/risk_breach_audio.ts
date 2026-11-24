@@ -127,9 +127,10 @@ export interface BreachSoundTriggerInput {
 
 /**
  * Determines whether a breach sound cue should fire.
+ *
  * - Fires immediately on fresh entry into "breach" (from idle, ok, warn, or initial load).
- * - While already in "breach", fires again only after `cooldownSec` has elapsed AND
- *   excess exposure increased (new breach risk arrived), avoiding repetitive audio spam.
+ * - While already in "breach", fires again only after `cooldownSec` has elapsed AND excess exposure
+ *   increased (new breach risk arrived), avoiding repetitive audio spam.
  */
 export function shouldTriggerRiskBreachSound(input: BreachSoundTriggerInput): boolean {
   if (!input.enabled || input.nextStatus !== "breach") {
@@ -258,8 +259,8 @@ export function getBreachToneNotes(
 }
 
 /**
- * Synthesizes a subtle Web Audio API breach notification tone with smooth
- * gain envelopes (click-free). Never throws if audio is unavailable or blocked.
+ * Synthesizes a subtle Web Audio API breach notification tone with smooth gain envelopes
+ * (click-free). Never throws if audio is unavailable or blocked.
  */
 export function playRiskBreachTone(
   prefs: Pick<RiskBreachSoundPrefs, "tone" | "volume">,

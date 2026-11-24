@@ -22,13 +22,7 @@
     "domain": "sportsbook-risk-surveillance",
     "audience": "Quantitative Risk Desk, Line Managers & Compliance Analysts",
     "classification": "OPERATIONAL_BRANDING",
-    "surfaces": [
-      "web-dashboard",
-      "opengraph-social",
-      "web-manifest",
-      "cli-ansi",
-      "r2-artifacts"
-    ],
+    "surfaces": ["web-dashboard", "opengraph-social", "web-manifest", "cli-ansi", "r2-artifacts"],
     "keywords": [
       "sportsbook-risk",
       "wager-telemetry",
@@ -66,13 +60,7 @@
       "description": "Primary 256x256 WebP radar shield emblem for SportsDesk & Fantasy402 dashboard navigation and Shift Handoff headers.",
       "assetRole": "app-emblem",
       "surfaceContext": "dashboard-header-nav",
-      "subjects": [
-        "sportsdesk-ops",
-        "brand-emblem",
-        "radar-shield",
-        "header-nav",
-        "webp"
-      ],
+      "subjects": ["sportsdesk-ops", "brand-emblem", "radar-shield", "header-nav", "webp"],
       "repoPath": "public/assets/branding/sportsdesk-emblem.webp",
       "publicUrl": "/assets/branding/sportsdesk-emblem.webp",
       "sourceMasterPath": "src/assets/images/sportsdesk_emblem_master_1795386608489.jpg",
@@ -84,9 +72,7 @@
       "bytes": 7814,
       "sha256": "9c74d06e5cf352e8852cdd9930e06e5635ceef88064c87411108e726b939a74d",
       "metadataBearing": true,
-      "xmpChannels": [
-        "webp-xmp"
-      ],
+      "xmpChannels": ["webp-xmp"],
       "provenance": {
         "streamId": "brand:sportsdesk-emblem:webp",
         "genU32": 10123,
@@ -109,12 +95,7 @@
       "description": "Crisp 64x64 PNG favicon icon stamped with SportsDesk Dublin Core and XMP provenance metadata.",
       "assetRole": "browser-favicon",
       "surfaceContext": "browser-tab-icon",
-      "subjects": [
-        "sportsdesk-ops",
-        "favicon",
-        "png-64",
-        "browser-tab"
-      ],
+      "subjects": ["sportsdesk-ops", "favicon", "png-64", "browser-tab"],
       "repoPath": "public/assets/branding/sportsdesk-emblem-64.png",
       "publicUrl": "/assets/branding/sportsdesk-emblem-64.png",
       "sourceMasterPath": "src/assets/images/sportsdesk_emblem_master_1795386608489.jpg",
@@ -126,9 +107,7 @@
       "bytes": 7803,
       "sha256": "0bd6b0ad9d40ddd3999deac95ecfdbfc3ce9f906410e6de196be529742881163",
       "metadataBearing": true,
-      "xmpChannels": [
-        "png-xmp"
-      ],
+      "xmpChannels": ["png-xmp"],
       "provenance": {
         "streamId": "brand:sportsdesk-emblem:64",
         "genU32": 10123,
@@ -151,12 +130,7 @@
       "description": "High-DPI 180x180 PNG touch icon for iOS home screen bookmarks and desktop shortcut badges.",
       "assetRole": "apple-touch-icon",
       "surfaceContext": "ios-homescreen-icon",
-      "subjects": [
-        "sportsdesk-ops",
-        "apple-touch-icon",
-        "png-180",
-        "mobile-shortcut"
-      ],
+      "subjects": ["sportsdesk-ops", "apple-touch-icon", "png-180", "mobile-shortcut"],
       "repoPath": "public/assets/branding/sportsdesk-emblem-180.png",
       "publicUrl": "/assets/branding/sportsdesk-emblem-180.png",
       "sourceMasterPath": "src/assets/images/sportsdesk_emblem_master_1795386608489.jpg",
@@ -168,9 +142,7 @@
       "bytes": 43150,
       "sha256": "973f73bfa8df0dfa30940da7052040d27105bc4d404efa38e98e6711596fbe6f",
       "metadataBearing": true,
-      "xmpChannels": [
-        "png-xmp"
-      ],
+      "xmpChannels": ["png-xmp"],
       "provenance": {
         "streamId": "brand:sportsdesk-emblem:180",
         "genU32": 10123,
@@ -193,12 +165,7 @@
       "description": "512x512 maskable PNG application icon declared in public/manifest.webmanifest with embedded XMP provenance.",
       "assetRole": "manifest-app-icon",
       "surfaceContext": "web-app-manifest",
-      "subjects": [
-        "sportsdesk-ops",
-        "app-icon",
-        "png-512",
-        "web-manifest"
-      ],
+      "subjects": ["sportsdesk-ops", "app-icon", "png-512", "web-manifest"],
       "repoPath": "public/assets/branding/sportsdesk-emblem-512.png",
       "publicUrl": "/assets/branding/sportsdesk-emblem-512.png",
       "sourceMasterPath": "src/assets/images/sportsdesk_emblem_master_1795386608489.jpg",
@@ -210,9 +177,7 @@
       "bytes": 268573,
       "sha256": "2d90fbaf90fcf36e35252552a5fa9df9ca33733724efbbfb404bc5e5fbdb7106",
       "metadataBearing": true,
-      "xmpChannels": [
-        "png-xmp"
-      ],
+      "xmpChannels": ["png-xmp"],
       "provenance": {
         "streamId": "brand:sportsdesk-emblem:512",
         "genU32": 10123,
@@ -235,13 +200,7 @@
       "description": "Widescreen 1200x630 WebP social share banner featuring the obsidian radar shield and live telemetry waveform with embedded XMP context.",
       "assetRole": "opengraph-social-banner-webp",
       "surfaceContext": "social-share-preview",
-      "subjects": [
-        "sportsdesk-ops",
-        "opengraph",
-        "social-card",
-        "telemetry-banner",
-        "webp"
-      ],
+      "subjects": ["sportsdesk-ops", "opengraph", "social-card", "telemetry-banner", "webp"],
       "repoPath": "public/assets/branding/sportsdesk-og-card.webp",
       "publicUrl": "/assets/branding/sportsdesk-og-card.webp",
       "sourceMasterPath": "src/assets/images/sportsdesk_og_card_1795386608006.jpg",
@@ -253,9 +212,7 @@
       "bytes": 28864,
       "sha256": "f36fc0f724372794e2b16686c1aac26fec4b7f917045e0be714e58cf469e9dd0",
       "metadataBearing": true,
-      "xmpChannels": [
-        "webp-xmp"
-      ],
+      "xmpChannels": ["webp-xmp"],
       "provenance": {
         "streamId": "brand:sportsdesk-og-card:webp",
         "genU32": 10123,
@@ -278,13 +235,7 @@
       "description": "Universal 1200x630 JPEG OpenGraph and Twitter/X summary_large_image card for social crawlers and unfurls.",
       "assetRole": "opengraph-social-banner-jpeg",
       "surfaceContext": "social-share-crawler",
-      "subjects": [
-        "sportsdesk-ops",
-        "opengraph",
-        "twitter-card",
-        "social-crawler",
-        "jpeg"
-      ],
+      "subjects": ["sportsdesk-ops", "opengraph", "twitter-card", "social-crawler", "jpeg"],
       "repoPath": "public/assets/branding/sportsdesk-og-card.jpg",
       "publicUrl": "/assets/branding/sportsdesk-og-card.jpg",
       "sourceMasterPath": "src/assets/images/sportsdesk_og_card_1795386608006.jpg",

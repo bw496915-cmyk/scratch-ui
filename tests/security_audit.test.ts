@@ -1,12 +1,15 @@
 /**
- * @file tests/security_audit.test.ts
- * @description Automated security regression suite verifying audit findings F1–F6:
+ * Automated security regression suite verifying audit findings F1–F6:
+ *
  * - F1: Fail-closed auth hook (missing/unconfigured hook denies)
  * - F2: Inverted auth default (on unless explicit dev/test opt-out; never off in prod)
  * - F3: All protected /api/* routes reject anonymous callers; weblogs/profiles redact raw IPs to /24#hash
  * - F4: POST /api/terminal/exec requires separate admin credential + strict allowlist; CSRF enforced on cookie writes
- * - F5: Security headers (CSP with Telegram frame-ancestors, nosniff, Referrer-Policy, Permissions-Policy, HSTS) & no X-Powered-By
+ * - F5: Security headers (CSP with Telegram frame-ancestors, nosniff, Referrer-Policy, Permissions-Policy, HSTS) & no
+ *   X-Powered-By
  * - F6: Minimal public /health & /api/health ({ status, timestamp }) vs authenticated /api/health/detail
+ *
+ * @file Tests/security_audit.test.ts
  */
 
 import { describe, expect, test } from "bun:test"
@@ -35,14 +38,10 @@ import { adminGuard, createDashboardApi, requireSession } from "../packages/api/
 import { DashboardHealthTracker } from "../packages/backend/src/health.ts"
 import { isDashboardAuthRequired } from "../packages/backend/src/parsers.ts"
 import { stripAnsi } from "../server/desk_inspect.ts"
-import {
-  formatProfileInspectPayload,
-  normalizeRawCustomerToProfileRecord,
-} from "../server/profile_inspect.ts"
+import { formatProfileInspectPayload, normalizeRawCustomerToProfileRecord } from "../server/profile_inspect.ts"
 import { createWebLogStore, parseFantasy402Action, WebLogView } from "../server/weblog_inspect.ts"
 
-const RAW_IPV4_RE =
-  /\b(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\b(?!\/24)/
+const RAW_IPV4_RE = /\b(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\b(?!\/24)/
 
 function makeTestApi(env: Record<string, string | undefined>) {
   const httpAuth = createHttpAuthController({ env })
@@ -235,9 +234,7 @@ describe("F1: Fail-Closed Auth Contract & requireSession Middleware", () => {
     const res = await api.fetch(new Request("http://127.0.0.1:3000/api/wagers"))
     expect(res.status).toBe(401)
 
-    const unsetEnvRes = await makeTestApi({}).api.fetch(
-      new Request("http://127.0.0.1:3000/api/wagers"),
-    )
+    const unsetEnvRes = await makeTestApi({}).api.fetch(new Request("http://127.0.0.1:3000/api/wagers"))
     expect(unsetEnvRes.status).toBe(401)
 
     // Top-level exported enforceAuth also defaults to 401 when process.env has no tokens
@@ -396,9 +393,7 @@ describe("F3: Protected API Surface, Dual Auth & IP Redaction", () => {
         body: JSON.stringify({ token: ENV.SPORTSDESK_DASHBOARD_TOKEN }),
       }),
     )
-    const session = response.headers
-      .getSetCookie()
-      .find((cookie) => cookie.startsWith("sd_session="))
+    const session = response.headers.getSetCookie().find((cookie) => cookie.startsWith("sd_session="))
     expect(session).toContain("Max-Age=10")
     const headers = new Headers({ cookie: session?.split(";")[0] ?? "" })
     now = 9_000
@@ -423,9 +418,7 @@ describe("F3: Protected API Surface, Dual Auth & IP Redaction", () => {
         }),
       )
       expect(response.status).toBe(200)
-      const [session, csrf] = response.headers
-        .getSetCookie()
-        .map((cookie) => new Bun.Cookie(cookie))
+      const [session, csrf] = response.headers.getSetCookie().map((cookie) => new Bun.Cookie(cookie))
       assert.ok(session?.name === "sd_session" && csrf?.name === "sd_csrf")
       return { id: session.value, csrf: csrf.value }
     }
@@ -447,15 +440,13 @@ describe("F3: Protected API Surface, Dual Auth & IP Redaction", () => {
       }),
     )
     expect(logout.status).toBe(403)
-    expect(
-      authenticateHeaders(new Headers({ ...headers, "x-csrf-token": first.csrf }), "POST")
-        .authenticated,
-    ).toBe(true)
+    expect(authenticateHeaders(new Headers({ ...headers, "x-csrf-token": first.csrf }), "POST").authenticated).toBe(
+      true,
+    )
     const anotherValidToken = "bun2." + Bun.CSRF.generate(secret, { sessionId: first.id })
     expect(anotherValidToken).not.toBe(first.csrf)
     expect(
-      authenticateHeaders(new Headers({ ...headers, "x-csrf-token": anotherValidToken }), "POST")
-        .authenticated,
+      authenticateHeaders(new Headers({ ...headers, "x-csrf-token": anotherValidToken }), "POST").authenticated,
     ).toBe(true)
   })
 
@@ -471,9 +462,7 @@ describe("F3: Protected API Surface, Dual Auth & IP Redaction", () => {
       expiresAtMs: Date.now() + 60_000,
     } satisfies Omit<SessionRecord, "credentialProof">
     const credentialProof = createHmac("sha256", credential)
-      .update(
-        JSON.stringify([id, record.operatorId, record.role, record.csrfToken, record.expiresAtMs]),
-      )
+      .update(JSON.stringify([id, record.operatorId, record.role, record.csrfToken, record.expiresAtMs]))
       .digest("hex")
     const rows = new Map<string, SessionRecord>([[id, { ...record, credentialProof }]])
     const { authenticateHeaders } = createHttpAuthController({
@@ -516,9 +505,7 @@ describe("F3: Protected API Surface, Dual Auth & IP Redaction", () => {
         body: JSON.stringify({ token: ENV.SPORTSDESK_DASHBOARD_TOKEN }),
       }),
     )
-    const logout = await auth.logout(
-      new Request(c.origin + "/api/auth/logout", { method: "POST", headers }),
-    )
+    const logout = await auth.logout(new Request(c.origin + "/api/auth/logout", { method: "POST", headers }))
     for (const response of [login, logout]) {
       expect(response.status).toBe(200)
       const cookies = response.headers.getSetCookie()
@@ -579,9 +566,7 @@ describe("F3: Protected API Surface, Dual Auth & IP Redaction", () => {
     const r = redactIpToSubnetHash("102.128.164.122", "unit-test-salt")
     expect(r.subnet24).toBe("102.128.164.0/24")
     expect(r.redacted).toMatch(/^102\.128\.164\.0\/24#[0-9a-f]{8}$/)
-    expect(redactRawIpsInText("login from 102.128.164.122 ok", "unit-test-salt")).not.toContain(
-      "102.128.164.122",
-    )
+    expect(redactRawIpsInText("login from 102.128.164.122 ok", "unit-test-salt")).not.toContain("102.128.164.122")
   })
 
   test("retained weblog pages preserve IP family, operation markers and the parsed selection", () => {
@@ -642,10 +627,7 @@ describe("F3: Protected API Surface, Dual Auth & IP Redaction", () => {
   test("weblog team selections and ticket references preserve distinct provider fields", () => {
     const store = createWebLogStore()
     const providerRows = [
-      [
-        "Chosen Team  : Example St | Game Num : 619137349 | Wager Number : 203 | Item Number : 1",
-        "08:22:01",
-      ],
+      ["Chosen Team  : Example St | Game Num : 619137349 | Wager Number : 203 | Item Number : 1", "08:22:01"],
       ["API LOG | PARLAY | Ticket: 1076964221", "08:22:02"],
       [
         "API LOG | Bet : Basketball #543 Example/Example O 210&amp;#189; -110 - buying -&amp;#189; For Game",
@@ -751,9 +733,7 @@ describe("F3: Protected API Surface, Dual Auth & IP Redaction", () => {
   })
 
   test("weblog operation variants keep exact subsecond source time and private details", () => {
-    expect(parseFantasy402Action("Round Robin / Selections : 2s 3 Parlay(s)").eventKind).toBe(
-      "ROUND_ROBIN_SELECTION",
-    )
+    expect(parseFantasy402Action("Round Robin / Selections : 2s 3 Parlay(s)").eventKind).toBe("ROUND_ROBIN_SELECTION")
     const store = createWebLogStore()
     const scope = { account: "ACCOUNT1", address: "192.0.2.10" }
     store.setCapture(
@@ -858,9 +838,7 @@ describe("F3: Protected API Surface, Dual Auth & IP Redaction", () => {
         },
       ],
     })
-    expect(
-      store.query({ site: "BETOLIVE.AG", version: "v1.0.288", limit: 1 }).summary.filteredEntries,
-    ).toBe(2)
+    expect(store.query({ site: "BETOLIVE.AG", version: "v1.0.288", limit: 1 }).summary.filteredEntries).toBe(2)
     expect(store.query({ site: "betolive.ag", version: "v1.0.290" }).entries).toHaveLength(0)
     expect(store.query({ q: "betolive.ag" }).entries).toHaveLength(2)
   })
@@ -1076,15 +1054,11 @@ describe("F5: Security Headers & Telegram Mini-App Frame Ancestors", () => {
     expect(metaNonceIdx).toBeLessThan(firstLinkIdx)
     expect(injected).not.toMatch(/<meta\b[^>]*csp-nonce[^>]*\bcontent=/i)
 
-    expect(injected).toContain(
-      `<link nonce="${nonce}" rel="stylesheet" href="/assets/index-abc123.css" />`,
-    )
+    expect(injected).toContain(`<link nonce="${nonce}" rel="stylesheet" href="/assets/index-abc123.css" />`)
     expect(injected).toContain('<link rel="icon" href="/favicon.ico" />')
     expect(injected).toContain(`<style nonce="${nonce}">body { color: #fff; }</style>`)
     expect(injected).toContain(`<script nonce="${nonce}" type="application/ld+json">`)
-    expect(injected).toContain(
-      `<script nonce="${nonce}" type="module" src="/assets/index-abc123.js"></script>`,
-    )
+    expect(injected).toContain(`<script nonce="${nonce}" type="module" src="/assets/index-abc123.js"></script>`)
 
     expect(() => injectCspNonceIntoHtml(rawHtml, 'bad"nonce')).toThrow(RangeError)
   })
@@ -1133,9 +1107,7 @@ describe("F5: Security Headers & Telegram Mini-App Frame Ancestors", () => {
 
     const bodyText = bodyBuf!.toString("utf8")
     expect(bodyText).toContain(`<meta property="csp-nonce" nonce="${nonce}" />`)
-    expect(bodyText).toContain(
-      `<script nonce="${nonce}" type="module" src="/assets/app.js"></script>`,
-    )
+    expect(bodyText).toContain(`<script nonce="${nonce}" type="module" src="/assets/app.js"></script>`)
   })
 
   test("public allowlist strictly limits unauthenticated routes", () => {

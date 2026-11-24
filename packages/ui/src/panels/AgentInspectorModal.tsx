@@ -53,8 +53,8 @@ export interface AgentInspectorTelemetry {
 }
 
 /**
- * Derive immediate handle trends and sub-conduit list for the inspected agent
- * from the active Rankings snapshot (supporting both Master Forests and Sub-Agents).
+ * Derive immediate handle trends and sub-conduit list for the inspected agent from the active
+ * Rankings snapshot (supporting both Master Forests and Sub-Agents).
  */
 export function buildAgentInspectorTelemetry(
   agentId: string,
@@ -213,8 +213,8 @@ function deterministicAgentSeed(agentId: string): number {
 }
 
 /**
- * Derive a deterministic 7-day daily handle trajectory anchored on the agent's
- * 30d daily average and exact 24-hour percentage delta.
+ * Derive a deterministic 7-day daily handle trajectory anchored on the agent's 30d daily average
+ * and exact 24-hour percentage delta.
  */
 export function buildAgentHandleTrendSeries(
   handleUsd: number | null | undefined,

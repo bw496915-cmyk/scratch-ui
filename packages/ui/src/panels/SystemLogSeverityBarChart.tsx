@@ -1,8 +1,9 @@
 /**
- * @file packages/ui/src/panels/SystemLogSeverityBarChart.tsx
- * @description Recharts 24-hour stacked/grouped bar chart visualizing System Logs
- * severity distribution (`CRITICAL`, `HIGH`, `WATCH`, `NORMAL`) across hourly
- * buckets, synchronized with the client-side bitwise search/filter store.
+ * Recharts 24-hour stacked/grouped bar chart visualizing System Logs severity distribution
+ * (`CRITICAL`, `HIGH`, `WATCH`, `NORMAL`) across hourly buckets, synchronized with the client-side
+ * bitwise search/filter store.
+ *
+ * @file Packages/ui/src/panels/SystemLogSeverityBarChart.tsx
  */
 
 import type React from "react"

@@ -35,8 +35,7 @@ const FANTASY402_ACCESS_LOG_LIST_FIXTURE = {
       AccessDateTime: "2026-11-16 18:01:43.653",
       ClientCode: "www.betolive.ag                         ",
       LoginID: "AF12                                              ",
-      Operation:
-        "Round Robin / Selections :    2s  3 Parlay(s)    3s  1 Parlay(s)  [ v1.0.287 | www.betolive.ag ]",
+      Operation: "Round Robin / Selections :    2s  3 Parlay(s)    3s  1 Parlay(s)  [ v1.0.287 | www.betolive.ag ]",
       Data: "Ticket : 1081067734 | ",
       IPAddress: "23.114.233.204",
     },
@@ -52,8 +51,7 @@ const FANTASY402_ACCESS_LOG_LIST_FIXTURE = {
       AccessDateTime: "2026-11-16 18:01:43.543",
       ClientCode: "www.betolive.ag                         ",
       LoginID: "AF12                                              ",
-      Operation:
-        " Chosen Team  : Indianapolis Colts | Game Num : 619135722 | Wager Number : 4 | Item Number : 2",
+      Operation: " Chosen Team  : Indianapolis Colts | Game Num : 619135722 | Wager Number : 4 | Item Number : 2",
       Data: "",
       IPAddress: "23.114.233.204",
     },
@@ -78,8 +76,7 @@ const FANTASY402_ACCESS_LOG_LIST_FIXTURE = {
       AccessDateTime: "2026-11-16 18:01:43.540",
       ClientCode: "www.betolive.ag                         ",
       LoginID: "AF12                                              ",
-      Operation:
-        " Chosen Team  : Los Angeles Chargers | Game Num : 619129776 | Wager Number : 4 | Item Number : 1",
+      Operation: " Chosen Team  : Los Angeles Chargers | Game Num : 619129776 | Wager Number : 4 | Item Number : 1",
       Data: "",
       IPAddress: "23.114.233.204",
     },
@@ -184,9 +181,7 @@ describe("Fantasy402 { LIST, INFO } AccessLog Ingestion & Forensics", () => {
     expect(limit.actionMeta?.limitUsd).toBe(500)
     expect(limit.actionMeta?.attemptedUsd).toBe(5000)
 
-    const mobileLogin = parseFantasy402Action(
-      "(M) Login successful (M)  [ v1.0.287 | www.betolive.ag ]",
-    )
+    const mobileLogin = parseFantasy402Action("(M) Login successful (M)  [ v1.0.287 | www.betolive.ag ]")
     expect(mobileLogin.eventKind).toBe("LOGIN_SUCCESS")
     expect(mobileLogin.clientVersion).toBe("v1.0.287")
     expect(mobileLogin.portalHost).toBe("www.betolive.ag")
@@ -219,9 +214,7 @@ describe("Fantasy402 { LIST, INFO } AccessLog Ingestion & Forensics", () => {
 
   test("createWebLogStore().query filters by ticketId, gameId, and portalHost and redacts raw IP", () => {
     const store = createWebLogStore()
-    const { ingestedCount, result } = store.ingest(
-      JSON.stringify(FANTASY402_ACCESS_LOG_LIST_FIXTURE),
-    )
+    const { ingestedCount, result } = store.ingest(JSON.stringify(FANTASY402_ACCESS_LOG_LIST_FIXTURE))
     expect(ingestedCount).toBe(FANTASY402_ACCESS_LOG_LIST_FIXTURE.LIST.length)
     expect(result.availableAccounts).toContain("AF12")
 
@@ -252,9 +245,7 @@ describe("Fantasy402 { LIST, INFO } AccessLog Ingestion & Forensics", () => {
     const wrappedBodyText = extractWebLogIngestRawText({
       rawText: JSON.stringify(FANTASY402_ACCESS_LOG_LIST_FIXTURE),
     })
-    expect(store.ingest(wrappedBodyText).ingestedCount).toBe(
-      FANTASY402_ACCESS_LOG_LIST_FIXTURE.LIST.length,
-    )
+    expect(store.ingest(wrappedBodyText).ingestedCount).toBe(FANTASY402_ACCESS_LOG_LIST_FIXTURE.LIST.length)
 
     expect(extractWebLogIngestRawText({})).toBe("")
     expect(extractWebLogIngestRawText({ rawText: "" })).toBe("")

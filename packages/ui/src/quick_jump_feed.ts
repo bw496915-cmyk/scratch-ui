@@ -1,10 +1,9 @@
 /**
- * @file packages/ui/src/quick_jump_feed.ts
- * @description Feed freshness for the Desk Quick-Jump ribbon.
+ * Feed freshness for the Desk Quick-Jump ribbon. The ribbon prints wager counts; without an age
+ * next to them a stale snapshot reads as live. These helpers are pure so the honesty rule is
+ * testable: a missing timestamp is `pending`, never `0s`.
  *
- * The ribbon prints wager counts; without an age next to them a stale snapshot
- * reads as live. These helpers are pure so the honesty rule is testable: a
- * missing timestamp is `pending`, never `0s`.
+ * @file Packages/ui/src/quick_jump_feed.ts
  */
 
 import { formatRelativeAge } from "./relative_time.ts"
@@ -24,8 +23,8 @@ export interface QuickJumpFeedState {
 }
 
 /**
- * Freshness of the live wager feed behind the ribbon's counts. A missing
- * timestamp reports `pending` (unknown), not `just now`.
+ * Freshness of the live wager feed behind the ribbon's counts. A missing timestamp reports
+ * `pending` (unknown), not `just now`.
  */
 export function quickJumpFeedState(
   feedUpdatedAt: number | null,

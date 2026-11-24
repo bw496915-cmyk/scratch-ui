@@ -1,15 +1,15 @@
 /**
- * @file docs/assets/live-ops.js
- * @description Pure helpers for the /graph "Live Wagers & Our Positions" panel.
+ * Pure helpers for the /graph "Live Wagers & Our Positions" panel. The page has three data planes,
+ * in freshness order:
  *
- * The page has three data planes, in freshness order:
- *   1. the same-origin bridge WebSocket on `/api/live-bets` (daemon-served pages only),
- *   2. `./graph-live-feed.json`, polled every 15s (daemon file or the last deployment),
- *   3. the last rendered values (the page never blanks a table on a failed poll).
+ * 1. The same-origin bridge WebSocket on `/api/live-bets` (daemon-served pages only),
+ * 2. `./graph-live-feed.json`, polled every 15s (daemon file or the last deployment),
+ * 3. The last rendered values (the page never blanks a table on a failed poll). Everything here is a
+ *    pure function of its arguments: no DOM, no network, no timers, no `innerHTML`. docs/graph.js
+ *    owns the wiring; tests/graph_live_ops.test.ts proves the aggregation and frame handling
+ *    without a browser.
  *
- * Everything here is a pure function of its arguments: no DOM, no network, no timers,
- * no `innerHTML`. docs/graph.js owns the wiring; tests/graph_live_ops.test.ts proves the
- * aggregation and frame handling without a browser.
+ * @file Docs/assets/live-ops.js
  */
 
 /** Topics the daemon hub republishes; mirrors BRIDGE_WS_TOPICS in the webview server. */
@@ -61,8 +61,8 @@ function asString(value) {
 const roundUsd = (value) => Math.round(value * 100) / 100
 
 /**
- * Aggregate the Polymarket shadow-position rows the poller publishes.
- * Provenance is per wallet: a failure must never look live.
+ * Aggregate the Polymarket shadow-position rows the poller publishes. Provenance is per wallet: a
+ * failure must never look live.
  */
 export function summarizePositions(walletProfiles) {
   const rows = Array.isArray(walletProfiles) ? walletProfiles : []
@@ -132,8 +132,8 @@ export function summarizePositions(walletProfiles) {
 }
 
 /**
- * Aggregate the desk's open shadow clusters (feed.pendingBets) into totals plus a venue
- * breakdown. `riskUsd`/`toWinUsd` are the row's own values; nothing is recomputed.
+ * Aggregate the desk's open shadow clusters (feed.pendingBets) into totals plus a venue breakdown.
+ * `riskUsd`/`toWinUsd` are the row's own values; nothing is recomputed.
  */
 export function summarizePendingBets(pendingBets) {
   const rows = Array.isArray(pendingBets) ? pendingBets : []
@@ -183,8 +183,8 @@ export function summarizePendingBets(pendingBets) {
 }
 
 /**
- * Map a `/api/live-wagers` row into the feed tick shape for preview tables and the tape.
- * Money stays off the wire; description is legs-only.
+ * Map a `/api/live-wagers` row into the feed tick shape for preview tables and the tape. Money
+ * stays off the wire; description is legs-only.
  */
 export function liveWagerToTickPreview(wager) {
   if (!isRecord(wager)) return null
@@ -282,9 +282,9 @@ function describeFrameTotals(frame) {
 }
 
 /**
- * Turn a bridge frame published on the WS hub into one tape entry.
- * The gateway publishes the raw rollup with the topic in its own `kind` field.
- * Returns null for unknown kinds so a foreign frame never renders.
+ * Turn a bridge frame published on the WS hub into one tape entry. The gateway publishes the raw
+ * rollup with the topic in its own `kind` field. Returns null for unknown kinds so a foreign frame
+ * never renders.
  */
 export function summarizeBridgeFrame(frame, receivedAtIso) {
   if (!isRecord(frame)) return null
@@ -339,8 +339,8 @@ export function formatAgeMs(ms) {
 }
 
 /**
- * Decide the panel's live mode from the WS state and the feed's age.
- * Never reports a live mode when the transport is only polling.
+ * Decide the panel's live mode from the WS state and the feed's age. Never reports a live mode when
+ * the transport is only polling.
  */
 export function resolveLiveMode({ wsState, feedAgeMs, feedDataMode } = {}) {
   const mode = feedDataMode && feedDataMode !== "—" ? `feed ${feedDataMode}` : "feed unknown"
@@ -380,10 +380,10 @@ export function resolveLiveMode({ wsState, feedAgeMs, feedDataMode } = {}) {
 }
 
 /**
- * State for the top banner. It differs from {@link resolveLiveMode} in two ways that matter
- * for trust: a failed fetch is reported as a failure (the banner used to restamp itself with
- * the current time, so an outage read as "0s ago"), and "nothing loaded yet" is its own state
- * instead of a premature "feed not reachable".
+ * State for the top banner. It differs from {@link resolveLiveMode} in two ways that matter for
+ * trust: a failed fetch is reported as a failure (the banner used to restamp itself with the
+ * current time, so an outage read as "0s ago"), and "nothing loaded yet" is its own state instead
+ * of a premature "feed not reachable".
  *
  * `fetchError` is a short reason string while the latest poll is failing, otherwise null.
  * `awaiting` is true until the first feed has loaded or failed.
@@ -427,15 +427,15 @@ export function resolvePollerState({
 export const GRAPH_FEED_POLL_STALE_MS = 300_000
 
 /**
- * Where the graph page is hosted: static Pages (committed feed file) or the ops daemon
- * (API + stream routes).
+ * Where the graph page is hosted: static Pages (committed feed file) or the ops daemon (API +
+ * stream routes).
  *
  * @typedef {{ kind: "daemon" | "static_pages" }} GraphHostEdge
  */
 
 /**
- * Resolve host edge from probe inputs. Policy: operator token ⇒ daemon; non-loopback without
- * token ⇒ static; loopback ⇒ HEAD `/api/graph-feed` result (`feedHeadOk`).
+ * Resolve host edge from probe inputs. Policy: operator token ⇒ daemon; non-loopback without token
+ * ⇒ static; loopback ⇒ HEAD `/api/graph-feed` result (`feedHeadOk`).
  *
  * @param {object} [input]
  * @param {boolean} [input.hasAdminToken]
@@ -462,8 +462,8 @@ export function graphHostEdgeIsDaemon(edge) {
 }
 
 /**
- * Poll URL for the graph feed: daemon serves `/api/graph-feed`; the static Pages edge uses
- * the committed sibling file.
+ * Poll URL for the graph feed: daemon serves `/api/graph-feed`; the static Pages edge uses the
+ * committed sibling file.
  */
 export function resolveGraphFeedPollUrl({ daemonFeedReachable, hostEdge } = {}) {
   const daemon = hostEdge ? graphHostEdgeIsDaemon(hostEdge) : daemonFeedReachable === true
@@ -477,9 +477,7 @@ export function graphStreamPollingFallbackTitle(hostEdge) {
     : "No stream on this edge — falling back to the 15s graph-live-feed.json poll"
 }
 
-/**
- * One-line operator hint when the feed is fixture-backed or older than the stale threshold.
- */
+/** One-line operator hint when the feed is fixture-backed or older than the stale threshold. */
 export function pollerRefreshHint({ feedDataMode, feedAgeMs } = {}) {
   const mode = String(feedDataMode ?? "").toUpperCase()
   const hasAge = typeof feedAgeMs === "number" && Number.isFinite(feedAgeMs)
@@ -490,9 +488,9 @@ export function pollerRefreshHint({ feedDataMode, feedAgeMs } = {}) {
 }
 
 /**
- * WAI-ARIA tablist keyboard model: Left/Right move with wraparound, Home/End jump to the
- * ends. Returns the new index, or `null` when the key is not a navigation key (so the caller
- * leaves the event alone).
+ * WAI-ARIA tablist keyboard model: Left/Right move with wraparound, Home/End jump to the ends.
+ * Returns the new index, or `null` when the key is not a navigation key (so the caller leaves the
+ * event alone).
  */
 export function nextTabIndex(current, key, count) {
   if (!Number.isInteger(count) || count < 1) return null

@@ -1,15 +1,16 @@
 /**
- * @file packages/api/src/bun_runtime_surface_loader.ts
- * @description Server-side read-only Bun Runtime Surface Audit loader.
+ * Server-side read-only Bun Runtime Surface Audit loader.
  *
- * - Under Bun: executes `runBunSurfaceAudit()` directly in-process and resolves
- *   built-in `bun:*` modules (`bun:sqlite`, `bun:ffi`, `bun:jsc`, `bun:test`,
- *   `bun:bundle`) via dynamic `createRequire(import.meta.url)` so bundlers do
- *   not try to statically bundle Bun-only specifiers for Node builds.
- * - Under Node.js (`tsx server.ts`): probes the installed `bun` binary using
- *   a fixed, read-only `execFileSync("bun", ["-e", ...])` call with a scrubbed
- *   environment (no shell, no user input, no secrets forwarded), falling back
- *   cleanly to `runBunSurfaceAudit()` if `bun` is not installed on PATH.
+ * - Under Bun: executes `runBunSurfaceAudit()` directly in-process and resolves built-in `bun:*`
+ *   modules (`bun:sqlite`, `bun:ffi`, `bun:jsc`, `bun:test`, `bun:bundle`) via dynamic
+ *   `createRequire(import.meta.url)` so bundlers do not try to statically bundle Bun-only
+ *   specifiers for Node builds.
+ * - Under Node.js (`tsx server.ts`): probes the installed `bun` binary using a fixed, read-only
+ *   `execFileSync("bun", ["-e", ...])` call with a scrubbed environment (no shell, no user input,
+ *   no secrets forwarded), falling back cleanly to `runBunSurfaceAudit()` if `bun` is not installed
+ *   on PATH.
+ *
+ * @file Packages/api/src/bun_runtime_surface_loader.ts
  */
 
 import { execFileSync } from "node:child_process"
@@ -55,9 +56,9 @@ const SERIALIZED_CLASS_TARGETS = JSON.stringify(BUN_DEEP_CLASS_TARGETS)
 const SERIALIZED_MODULE_TARGETS = JSON.stringify(BUN_BUILTIN_MODULE_TARGETS)
 
 /**
- * Fixed, hardcoded read-only probe script matching the Bun Runtime Surface
- * Audit specification + deep module/namespace/class/constant introspection.
- * Never reads or prints `Bun.env`, `process.env`, or `Bun.secrets` values.
+ * Fixed, hardcoded read-only probe script matching the Bun Runtime Surface Audit specification +
+ * deep module/namespace/class/constant introspection. Never reads or prints `Bun.env`,
+ * `process.env`, or `Bun.secrets` values.
  */
 const FIXED_BUN_BINARY_PROBE_SCRIPT = `
 const tiers = ${SERIALIZED_TIERS};

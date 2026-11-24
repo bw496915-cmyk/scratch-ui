@@ -1,9 +1,9 @@
 /**
- * @file packages/ui/src/risk_exposure_series.ts
- * @description Rolling 60-minute aggregate risk exposure series builder for the
- * Risk Overview Recharts line chart, tracking 1-minute risk fluctuations,
- * 5-minute rolling exposure pulses, critical/steam share, and 60m cumulative
- * risk/liability synchronized to real-time WebSocket feed ticks.
+ * Rolling 60-minute aggregate risk exposure series builder for the Risk Overview Recharts line
+ * chart, tracking 1-minute risk fluctuations, 5-minute rolling exposure pulses, critical/steam
+ * share, and 60m cumulative risk/liability synchronized to real-time WebSocket feed ticks.
+ *
+ * @file Packages/ui/src/risk_exposure_series.ts
  */
 
 import {
@@ -148,10 +148,10 @@ export function formatRiskCompactUsd(usd: number): string {
 }
 
 /**
- * Aggregates live wager risk exposure into 60 one-minute buckets over the last
- * 60 minutes. Anchors to `anchorMs` for live streaming feeds; if all parsed
- * wagers belong to a static capture older than 60 minutes, anchors to the
- * capture's latest timestamp so historical snapshots remain readable.
+ * Aggregates live wager risk exposure into 60 one-minute buckets over the last 60 minutes. Anchors
+ * to `anchorMs` for live streaming feeds; if all parsed wagers belong to a static capture older
+ * than 60 minutes, anchors to the capture's latest timestamp so historical snapshots remain
+ * readable.
  */
 export function buildRolling60MinRiskSeries(
   wagers: readonly LiveWager[],

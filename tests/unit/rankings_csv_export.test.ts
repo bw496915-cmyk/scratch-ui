@@ -156,9 +156,7 @@ describe("Rankings Tab Export to CSV", () => {
     expect(subAgentCsv).toContain(
       "sub_agent_id,master_forest,handle_usd,wagers,customer_count,top_customer,concentration_pct,is_proxy_conduit,avg_score,total_net_usd,handle_delta_24h_pct,desk_handle_share_pct,heat_bucket,visible_handle_percentile",
     )
-    expect(subAgentCsv).toContain(
-      "BILLY666_SUB1,BILLY666,420000,88,2,PEY101,96.4,PROXY,8.2,-15000,4.1,42,",
-    )
+    expect(subAgentCsv).toContain("BILLY666_SUB1,BILLY666,420000,88,2,PEY101,96.4,PROXY,8.2,-15000,4.1,42,")
   })
 
   test("downloadRankingsCsvBlob generates UTF-8 BOM Blob, triggers anchor download, and cleans up DOM", async () => {
@@ -177,21 +175,17 @@ describe("Rankings Tab Export to CSV", () => {
       },
     }
 
-    const ok = downloadRankingsCsvBlob(
-      "rank,customer_id\r\n1,SYNTH_SYN_01",
-      "sportsdesk-rankings-2026-11-20.csv",
-      {
-        document: {
-          createElement: () => fakeAnchor,
-          body: { appendChild: () => {} },
-        },
-        createObjectURL: (blob) => {
-          capturedBlob = blob
-          return "blob:rankings-csv-test"
-        },
-        revokeObjectURL: () => {},
+    const ok = downloadRankingsCsvBlob("rank,customer_id\r\n1,SYNTH_SYN_01", "sportsdesk-rankings-2026-11-20.csv", {
+      document: {
+        createElement: () => fakeAnchor,
+        body: { appendChild: () => {} },
       },
-    )
+      createObjectURL: (blob) => {
+        capturedBlob = blob
+        return "blob:rankings-csv-test"
+      },
+      revokeObjectURL: () => {},
+    })
 
     expect(ok).toBe(true)
     expect(clicked).toBe(true)

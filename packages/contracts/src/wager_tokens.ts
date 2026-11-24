@@ -1,11 +1,12 @@
 /**
- * @file packages/contracts/src/wager_tokens.ts
- * @description Design tokens, TrueColor ANSI encoders, and precomputed styles for Wager Tiers.
+ * Design tokens, TrueColor ANSI encoders, and precomputed styles for Wager Tiers. Provides a single
+ * source of truth for:
  *
- * Provides a single source of truth for:
  * 1. UI React CSSProperties badges (zero-allocation render loop)
  * 2. Terminal PTY ANSI 24-bit TrueColor SGR escape sequences via Bun.color
  * 3. Bun.markdown.render() element callbacks gated by Bun.enableANSIColors
+ *
+ * @file Packages/contracts/src/wager_tokens.ts
  */
 
 import type { CSSProperties } from "react"
@@ -29,8 +30,8 @@ export const SURFACE = {
 } as const
 
 /**
- * Composite an alpha foreground color over an opaque backdrop to produce solid hex.
- * Uses Bun.color when running in Bun runtime; falls back to pure-TS hex math in browser.
+ * Composite an alpha foreground color over an opaque backdrop to produce solid hex. Uses Bun.color
+ * when running in Bun runtime; falls back to pure-TS hex math in browser.
  */
 export const composite = (fg: string, a: number, bg: string): string => {
   const parseHex = (hex: string) => {
@@ -51,8 +52,8 @@ export const composite = (fg: string, a: number, bg: string): string => {
 }
 
 /**
- * Solid hex tier tokens composited against SURFACE.panel (#0d1527).
- * Written as literal hex constants for zero runtime CPU overhead and 100% browser bundle safety.
+ * Solid hex tier tokens composited against SURFACE.panel (#0d1527). Written as literal hex
+ * constants for zero runtime CPU overhead and 100% browser bundle safety.
  */
 export const TIER = {
   ORIGINATOR_HIGH_RISK: {

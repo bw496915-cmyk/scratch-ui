@@ -1,10 +1,12 @@
 /**
- * @file tests/runtime_preflight.test.ts
- * @description Tests for src/runtime-preflight.ts covering:
- *  - sealGlobalBunS3 (ambient Bun.s3 singleton lockdown + idempotency + S3Client isolation)
- *  - TLS 1.3 AEAD cipher pinning & downgrade rejection
- *  - Lazy Bun.file TypeError checks across native Bun parsers (TOML, YAML, JSON5, XML)
- *  - Composite runRuntimePreflightAudit & assertRuntimePreflightAudit
+ * Tests for src/runtime-preflight.ts covering:
+ *
+ * - SealGlobalBunS3 (ambient Bun.s3 singleton lockdown + idempotency + S3Client isolation)
+ * - TLS 1.3 AEAD cipher pinning & downgrade rejection
+ * - Lazy Bun.file TypeError checks across native Bun parsers (TOML, YAML, JSON5, XML)
+ * - Composite runRuntimePreflightAudit & assertRuntimePreflightAudit
+ *
+ * @file Tests/runtime_preflight.test.ts
  */
 
 import { describe, expect, test } from "bun:test"
@@ -56,9 +58,7 @@ describe("sealGlobalBunS3", () => {
     expect(first.lockedMethods).toContain("write")
     expect(isGlobalBunS3Sealed(mockBun)).toBe(true)
 
-    expect(() => (mockBun.s3 as { file: (k: string) => unknown }).file("x")).toThrow(
-      ERR_AMBIENT_BUN_S3_SEALED,
-    )
+    expect(() => (mockBun.s3 as { file: (k: string) => unknown }).file("x")).toThrow(ERR_AMBIENT_BUN_S3_SEALED)
     expect(() => {
       mockBun.s3 = {}
     }).toThrow(TypeError)
@@ -105,21 +105,13 @@ describe("TLS 1.3 cipher pinning", () => {
   })
 
   test("rejects rejectUnauthorized=false, TLS<1.3 downgrades, and legacy ciphers", () => {
-    expect(() => createPinnedTlsOptions({ rejectUnauthorized: false })).toThrow(
-      ERR_TLS_CIPHER_PIN_FAILED,
-    )
+    expect(() => createPinnedTlsOptions({ rejectUnauthorized: false })).toThrow(ERR_TLS_CIPHER_PIN_FAILED)
 
-    expect(() => createPinnedTlsOptions({ minVersion: "TLSv1.2" })).toThrow(
-      ERR_TLS_CIPHER_PIN_FAILED,
-    )
+    expect(() => createPinnedTlsOptions({ minVersion: "TLSv1.2" })).toThrow(ERR_TLS_CIPHER_PIN_FAILED)
 
-    expect(() => createPinnedTlsOptions({ maxVersion: "TLSv1.2" })).toThrow(
-      ERR_TLS_CIPHER_PIN_FAILED,
-    )
+    expect(() => createPinnedTlsOptions({ maxVersion: "TLSv1.2" })).toThrow(ERR_TLS_CIPHER_PIN_FAILED)
 
-    expect(() => createPinnedTlsOptions({ ciphers: "ECDHE-RSA-AES128-GCM-SHA256" })).toThrow(
-      ERR_TLS_CIPHER_PIN_FAILED,
-    )
+    expect(() => createPinnedTlsOptions({ ciphers: "ECDHE-RSA-AES128-GCM-SHA256" })).toThrow(ERR_TLS_CIPHER_PIN_FAILED)
 
     expect(() => createPinnedTlsOptions({ ciphers: "RC4-MD5" })).toThrow(ERR_TLS_CIPHER_PIN_FAILED)
 
@@ -170,9 +162,7 @@ describe("Lazy Bun.file TypeError checks", () => {
     expect(isLazyFileBlob('a = "1"')).toBe(false)
 
     expect(() => assertTextNotLazyBunFile(lazyFile, "Bun.TOML.parse")).toThrow(TypeError)
-    expect(() => assertTextNotLazyBunFile(lazyFile, "Bun.TOML.parse")).toThrow(
-      ERR_LAZY_BUN_FILE_BLOB,
-    )
+    expect(() => assertTextNotLazyBunFile(lazyFile, "Bun.TOML.parse")).toThrow(ERR_LAZY_BUN_FILE_BLOB)
     expect(assertTextNotLazyBunFile('a = "1"', "Bun.TOML.parse")).toBe('a = "1"')
   })
 
@@ -225,9 +215,7 @@ describe("runRuntimePreflightAudit", () => {
     expect(report.checks.tlsCipherPinning.status).toBe("pass")
     expect(report.checks.lazyBunFile.status).toBe("pass")
 
-    expect(() =>
-      assertRuntimePreflightAudit({ execArgv: ["--smol"], bunOptions: "" }),
-    ).not.toThrow()
+    expect(() => assertRuntimePreflightAudit({ execArgv: ["--smol"], bunOptions: "" })).not.toThrow()
   })
 
   test("fails closed when --env-file token bleed is detected", () => {

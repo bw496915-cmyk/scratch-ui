@@ -1,15 +1,15 @@
 /**
  * Registry preload for ad-hoc probes (`bun --preload ./preload/schema-inspect.ts …`).
  *
- * Builds `SqliteSchemaReport`, which implements `[Bun.inspect.custom]` (box tables
- * via lib/inspect.ts). One-liners pretty-print the full registry without running the CLI:
+ * Builds `SqliteSchemaReport`, which implements `[Bun.inspect.custom]` (box tables via
+ * lib/inspect.ts). One-liners pretty-print the full registry without running the CLI:
  *
- *   bun --preload ./preload/schema-inspect.ts -p 'console.log(__schemaReport)'
- *   bun run schema:inspect
+ * Bun --preload ./preload/schema-inspect.ts -p 'console.log(__schemaReport)' bun run schema:inspect
  *
- * Stdin REPL (preload must be on `run`, not before it, on Bun 1.4.4):
- *   bun run --preload ./preload/schema-inspect.ts -
- *   # then: console.log(__schemaReport)
+ * Stdin REPL (preload must be on `run`, not before it, on Bun 1.4.4): bun run --preload
+ * ./preload/schema-inspect.ts -
+ *
+ * # then: console.log(__schemaReport)
  */
 
 import { inspectColumns, inspectKeys, inspectSummary } from "../../lib/inspect.ts"

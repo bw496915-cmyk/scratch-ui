@@ -183,10 +183,7 @@ describe("Fantasy402 Agent Hierarchy & Player Directory Ingest", () => {
     const bailey = parsed.nodesById.get("BAILEYMA")
     expect(bailey?.directChildCount).toBe(3)
     expect(bailey?.rateCard?.totalMonthlyRateUsd).toBe(7)
-    expect(getActiveRateEntries(bailey?.rateCard).map((r) => r.key)).toEqual([
-      "headCountRateM",
-      "propBuilderRateM",
-    ])
+    expect(getActiveRateEntries(bailey?.rateCard).map((r) => r.key)).toEqual(["headCountRateM", "propBuilderRateM"])
   })
 
   test("strictly strips PLAYERS[].Password at both client pre-flight and server ingest (zero retention)", () => {
@@ -228,9 +225,7 @@ describe("Fantasy402 Agent Hierarchy & Player Directory Ingest", () => {
 
   test("rejects truncated Chrome DevTools console dumps with an actionable hint", () => {
     const truncatedDump = `{,…}\nGENERAL: [{AgentID: "BILLY667 "}]\n[100 … 199]`
-    expect(() => parseFantasy402HierarchyPayload(truncatedDump)).toThrow(
-      /truncated Chrome DevTools preview/i,
-    )
+    expect(() => parseFantasy402HierarchyPayload(truncatedDump)).toThrow(/truncated Chrome DevTools preview/i)
   })
 
   test("enriches createAgentDetailService (/api/agent/:id) and terminal agent-tree command", async () => {

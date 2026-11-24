@@ -1,8 +1,8 @@
 /**
- * @file lib/http_auth.ts
- * @description Centralized fail-closed HTTP & WebSocket authentication, CSRF
- * protection, separate admin-exec gating, IP privacy redaction, and terminal
- * command allowlist validation for SportsDesk Ops.
+ * Centralized fail-closed HTTP & WebSocket authentication, CSRF protection, separate admin-exec
+ * gating, IP privacy redaction, and terminal command allowlist validation for SportsDesk Ops.
+ *
+ * @file Lib/http_auth.ts
  */
 
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto"
@@ -106,8 +106,8 @@ const BUN_CSRF_PREFIX = "bun2."
 const SAFE_HTTP_METHODS = new Set(["GET", "HEAD", "OPTIONS"])
 
 /**
- * Public routes that intentionally bypass authentication.
- * Everything else under `/api/*`, `/agent/*`, `/docs/*`, `/mcp`, and `/ws` MUST authenticate.
+ * Public routes that intentionally bypass authentication. Everything else under `/api/*`,
+ * `/agent/*`, `/docs/*`, `/mcp`, and `/ws` MUST authenticate.
  */
 export function isPublicApiRoute(pathname: string, method: string): boolean {
   const m = method.toUpperCase()
@@ -142,9 +142,10 @@ function assertValidCspNonce(nonce: string): string {
 
 /**
  * Inject a per-request CSP nonce into an HTML shell:
- * - Inserts `<meta property="csp-nonce" nonce="...">` (never `content="..."`, which leaks to
- *   CSS attribute selectors) at the very top of `<head>` immediately after `<meta charset>`
- *   to prevent DOM clobbering of `document.querySelector('meta[property="csp-nonce"]')`.
+ *
+ * - Inserts `<meta property="csp-nonce" nonce="...">` (never `content="..."`, which leaks to CSS
+ *   attribute selectors) at the very top of `<head>` immediately after `<meta charset>` to prevent
+ *   DOM clobbering of `document.querySelector('meta[property="csp-nonce"]')`.
  * - Stamps `nonce="..."` on `<script>`, `<style>`, and `<link rel="stylesheet">` tags.
  */
 export function injectCspNonceIntoHtml(html: string, rawNonce: string): string {
@@ -180,10 +181,10 @@ export function injectCspNonceIntoHtml(html: string, rawNonce: string): string {
 }
 
 /**
- * Build baseline HTTP security headers that harden HTML & API responses while
- * supporting CSP Level 3 split `style-src-elem` / `style-src-attr` directives,
- * per-request nonces, and Telegram Mini-App / AI Studio preview embedding.
- * Note: `X-Frame-Options` is intentionally omitted so CSP `frame-ancestors` governs framing.
+ * Build baseline HTTP security headers that harden HTML & API responses while supporting CSP Level
+ * 3 split `style-src-elem` / `style-src-attr` directives, per-request nonces, and Telegram Mini-App
+ * / AI Studio preview embedding. Note: `X-Frame-Options` is intentionally omitted so CSP
+ * `frame-ancestors` governs framing.
  */
 export function buildSecurityHeaders(options: {
   readonly isProd: boolean
@@ -238,9 +239,9 @@ export function buildSecurityHeaders(options: {
 }
 
 /**
- * Send a per-request nonced HTML shell with `Cache-Control: private, no-store` and no `ETag`
- * / `Last-Modified` headers so browsers and CDNs can never serve a `304 Not Modified` body
- * with a stale nonce against a fresh CSP header.
+ * Send a per-request nonced HTML shell with `Cache-Control: private, no-store` and no `ETag` /
+ * `Last-Modified` headers so browsers and CDNs can never serve a `304 Not Modified` body with a
+ * stale nonce against a fresh CSP header.
  */
 export function sendNoncedHtmlShell(
   res: Pick<express.Response, "status" | "setHeader" | "removeHeader" | "end">,
@@ -359,8 +360,9 @@ function expandIpv6Groups(raw: string): string[] | null {
 }
 
 /**
- * Redact a raw IPv4/IPv6 address into a non-reversible `/24` (or IPv6 `/48`) prefix + keyed 8-hex HMAC token.
- * Example: `102.128.164.122` -> `{ redacted: "102.128.164.0/24#a9f3c1e2", subnet24: "102.128.164.0/24", hash: "a9f3c1e2" }`
+ * Redact a raw IPv4/IPv6 address into a non-reversible `/24` (or IPv6 `/48`) prefix + keyed 8-hex
+ * HMAC token. Example: `102.128.164.122` -> `{ redacted: "102.128.164.0/24#a9f3c1e2", subnet24:
+ * "102.128.164.0/24", hash: "a9f3c1e2" }`
  */
 export function redactIpToSubnetHash(
   rawIp: string,
@@ -431,10 +433,9 @@ export function redactRawIpsInText(text: string, salt?: string): string {
 const DEV_BEARER_PREFIX = "sd_dev_"
 
 /**
- * Strictly dev-only quick sign-in gate.
- * Returns true ONLY when running the explicit local/preview dev server
- * (`NODE_ENV=development` AND `SPORTSDESK_DEV_SERVER=1`). Never true in
- * production, staging, unset NODE_ENV, or unit tests without explicit opt-in.
+ * Strictly dev-only quick sign-in gate. Returns true ONLY when running the explicit local/preview
+ * dev server (`NODE_ENV=development` AND `SPORTSDESK_DEV_SERVER=1`). Never true in production,
+ * staging, unset NODE_ENV, or unit tests without explicit opt-in.
  */
 export function isDevQuickLoginAllowed(
   env: Record<string, string | undefined> = process.env,
@@ -1851,8 +1852,8 @@ async function writeWebResponseToExpress(res: express.Response, webRes: Response
 }
 
 /**
- * Create an Express middleware that enforces fail-closed (`401`) authentication
- * and CSRF verification for cookie-authenticated writes.
+ * Create an Express middleware that enforces fail-closed (`401`) authentication and CSRF
+ * verification for cookie-authenticated writes.
  */
 export function createEnforceAuthMiddleware(
   controller: HttpAuthController,
@@ -1876,9 +1877,7 @@ export function createEnforceAuthMiddleware(
   }
 }
 
-/**
- * Create an Express middleware enforcing separate admin elevation (`SPORTSDESK_ADMIN_TOKEN`).
- */
+/** Create an Express middleware enforcing separate admin elevation (`SPORTSDESK_ADMIN_TOKEN`). */
 export function createEnforceAdminMiddleware(
   controller: HttpAuthController,
   options?: { readonly fallbackPort?: number | undefined },
@@ -1907,8 +1906,8 @@ export function createEnforceAdminMiddleware(
 export const defaultHttpAuth = createHttpAuthController()
 
 /**
- * Default fail-closed `enforceAuth` hook returning `401` unless explicit tokens
- * are configured and valid credentials (session cookie + CSRF or Bearer token) are provided.
+ * Default fail-closed `enforceAuth` hook returning `401` unless explicit tokens are configured and
+ * valid credentials (session cookie + CSRF or Bearer token) are provided.
  */
 export const enforceAuth = (req: Request): Promise<Response | null> =>
   defaultHttpAuth.enforceAuth(req)

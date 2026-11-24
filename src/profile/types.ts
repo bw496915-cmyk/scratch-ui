@@ -1,7 +1,8 @@
 /**
- * @file src/profile/types.ts
- * @description Profile theme types spanning web UI (`ui`), terminal markdown ANSI
- * (`terminal`), object inspection (`inspect`), and explicit escape depth (`colorDepth`).
+ * Profile theme types spanning web UI (`ui`), terminal markdown ANSI (`terminal`), object
+ * inspection (`inspect`), and explicit escape depth (`colorDepth`).
+ *
+ * @file Src/profile/types.ts
  */
 
 export type ThemeMode = "light" | "dark"

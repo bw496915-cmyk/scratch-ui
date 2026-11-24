@@ -1,13 +1,11 @@
 /**
- * @file packages/api/src/shift_logs.ts
- * @description Server-side ring-buffered shift session log store powering
- * `GET/POST /api/shift/logs` for the Operator Shift Handoff modal.
+ * Server-side ring-buffered shift session log store powering `GET/POST /api/shift/logs` for the
+ * Operator Shift Handoff modal. Captures timestamped operator lifecycle and desk actions (login,
+ * logout, handoff initiated, alert acknowledgement, alert replay, sweep, operator switch, report
+ * copied) within the active shift window. Strict allowlists and length bounds prevent untrusted
+ * payloads or unbounded memory growth, and credentials/tokens are never recorded.
  *
- * Captures timestamped operator lifecycle and desk actions (login, logout,
- * handoff initiated, alert acknowledgement, alert replay, sweep, operator
- * switch, report copied) within the active shift window. Strict allowlists
- * and length bounds prevent untrusted payloads or unbounded memory growth,
- * and credentials/tokens are never recorded.
+ * @file Packages/api/src/shift_logs.ts
  */
 
 export const SHIFT_SESSION_ACTIONS = [

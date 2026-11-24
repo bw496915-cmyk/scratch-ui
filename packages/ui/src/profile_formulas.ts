@@ -1,11 +1,13 @@
 /**
- * @file packages/ui/src/profile_formulas.ts
- * @description Single-source-of-truth quantitative formulas for Profiled Bettors:
+ * Single-source-of-truth quantitative formulas for Profiled Bettors:
+ *
  * - Strictly conserved 5-axis sharpness decomposition (3.0 + 2.5 + 1.5 + 2.0 + 1.0 = 10.0)
  * - Exact stake distribution statistics (Gini, CV, Parametric/Empirical VaR95 & Analytical CVaR95)
  * - Empirical Beta-Binomial Bayesian skill posterior & fractional Kelly criterion
  * - Desk exposure, tail severity, and dynamic countermeasure policy gap model
  * - Cohort percentile benchmarking, risk driver attribution, and interactive What-If simulation
+ *
+ * @file Packages/ui/src/profile_formulas.ts
  */
 
 import type { CustomerLiveActivitySummary } from "./customer_drilldown_summary.ts"
@@ -300,6 +302,7 @@ export function computeGiniCoefficient(values: readonly number[]): number {
 
 /**
  * Exact stake distribution metrics:
+ *
  * - Sample mean μ, Bessel-corrected std dev σ (when n >= 2), CV = σ/μ, Gini
  * - Normal 95% VaR = μ + z₀.₉₅·σ and analytical Normal 95% CVaR = μ + (φ(z₀.₉₅)/0.05)·σ
  */
@@ -351,9 +354,8 @@ export function computeStakeDistribution(stakes: readonly number[]): StakeDistri
 /**
  * Water-filling exact conserved 5-axis sharpness decomposition.
  *
- * Guarantees:
- *   0 <= axis_i <= cap_i   for all 5 axes
- *   round(Σ axis_i, 2) === round(clamp(score, 0, 10), 2)   (exact 0.00 conservation delta)
+ * Guarantees: 0 <= axis_i <= cap_i for all 5 axes round(Σ axis_i, 2) === round(clamp(score, 0, 10), 2)
+ * (exact 0.00 conservation delta)
  *
  * Observed signals bias the relative weights of each axis before constrained water-filling so
  * high-CLV bettors concentrate points on CLV, Probit/steam bettors concentrate on Timing,
@@ -625,9 +627,9 @@ export function computeProfileBayesianSkill(
 }
 
 /**
- * Dynamic desk exposure & countermeasure policy gap model.
- * Computes formula-recommended cap, delay, shade, and shadow multiplier from observed signals,
- * and flags every gap against the currently applied account posture.
+ * Dynamic desk exposure & countermeasure policy gap model. Computes formula-recommended cap, delay,
+ * shade, and shadow multiplier from observed signals, and flags every gap against the currently
+ * applied account posture.
  */
 export function computeDeskExposureModel(cust: ShowcaseCustomer): DeskExposureModel {
   const unknown = cust.unknown ?? []
@@ -1033,8 +1035,8 @@ export function extractProfileRiskDrivers(
 }
 
 /**
- * Interactive What-If Desk Countermeasure Simulator.
- * Pure, deterministic calculation (<1ms) projecting post-control bettor edge and 30d desk P&L delta.
+ * Interactive What-If Desk Countermeasure Simulator. Pure, deterministic calculation (<1ms)
+ * projecting post-control bettor edge and 30d desk P&L delta.
  */
 export function simulateCountermeasureImpact(
   cust: ShowcaseCustomer,
@@ -1261,9 +1263,7 @@ export interface SharpnessHeatmapSummary {
   readonly clvLeaderCount: number
 }
 
-/**
- * Index `NormalizedRankingsResult.players` by uppercase player ID for O(1) profile correlation.
- */
+/** Index `NormalizedRankingsResult.players` by uppercase player ID for O(1) profile correlation. */
 export function buildRankingsPlayerLookup(
   rankings?: NormalizedRankingsResult | null,
 ): ReadonlyMap<string, RankedPlayer30d> {
@@ -1285,8 +1285,8 @@ export function buildRankingsPlayerLookup(
 }
 
 /**
- * Evaluate CLV-leader & sharpness heatmap overlay signals for a single `ShowcaseCustomer`
- * against the 30-day `rankings` index.
+ * Evaluate CLV-leader & sharpness heatmap overlay signals for a single `ShowcaseCustomer` against
+ * the 30-day `rankings` index.
  */
 export function evaluateSharpnessHeatmapOverlay(
   cust: ShowcaseCustomer,
@@ -1383,9 +1383,7 @@ export function evaluateSharpnessHeatmapOverlay(
   }
 }
 
-/**
- * Summarize Sharpness Heatmap coverage across the currently visible profiled customer rows.
- */
+/** Summarize Sharpness Heatmap coverage across the currently visible profiled customer rows. */
 export function summarizeSharpnessHeatmap(
   customers: readonly ShowcaseCustomer[],
   rankings?: NormalizedRankingsResult | null,

@@ -9,11 +9,7 @@
   "orientation": "any",
   "background_color": "#070b14",
   "theme_color": "#070b14",
-  "categories": [
-    "finance",
-    "analytics",
-    "utilities"
-  ],
+  "categories": ["finance", "analytics", "utilities"],
   "icons": [
     {
       "src": "/assets/branding/sportsdesk-emblem-64.png",

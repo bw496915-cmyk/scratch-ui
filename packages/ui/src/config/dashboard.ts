@@ -1,11 +1,10 @@
 /**
- * @file packages/ui/src/config/dashboard.ts
- * @description Sole TypeScript entrypoint for `dashboard.toml`.
- *
- * Bun parses and tree-shakes static TOML named exports at bundle time.
- * Never import `churn` here — `scripts/validate_dashboard_config.ts` asserts that
- * unimported top-level tables (`[churn]`) are eliminated from `dist/dashboard/*.js`
+ * Sole TypeScript entrypoint for `dashboard.toml`. Bun parses and tree-shakes static TOML named
+ * exports at bundle time. Never import `churn` here — `scripts/validate_dashboard_config.ts`
+ * asserts that unimported top-level tables (`[churn]`) are eliminated from `dist/dashboard/*.js`
  * while active keys (`thresholds.sharp`) are inlined.
+ *
+ * @file Packages/ui/src/config/dashboard.ts
  */
 
 import {
@@ -128,10 +127,9 @@ export interface BunGlobalSnapshot {
 }
 
 /**
- * Detect whether code is currently executing under Bun.
- * Checks `process.versions.bun` first (requires no `@types/bun` definitions),
- * then falls back to the `Bun` global, accessing both via `globalThis` so
- * browser-scoped TypeScript programs (`types: ["vite/client"]`) compile cleanly.
+ * Detect whether code is currently executing under Bun. Checks `process.versions.bun` first
+ * (requires no `@types/bun` definitions), then falls back to the `Bun` global, accessing both via
+ * `globalThis` so browser-scoped TypeScript programs (`types: ["vite/client"]`) compile cleanly.
  */
 export function isBunRuntime(
   runtimeGlobal: BunRuntimeGlobalLike = globalThis as unknown as BunRuntimeGlobalLike,
@@ -144,8 +142,8 @@ export function isBunRuntime(
 }
 
 /**
- * Safely inspect Bun runtime availability (`process.versions.bun` and
- * `globalThis.Bun`) without breaking Vite browser bundles or Node.js runtimes.
+ * Safely inspect Bun runtime availability (`process.versions.bun` and `globalThis.Bun`) without
+ * breaking Vite browser bundles or Node.js runtimes.
  */
 export function readBunGlobals(
   runtimeGlobal: BunRuntimeGlobalLike = globalThis as unknown as BunRuntimeGlobalLike,
@@ -163,11 +161,7 @@ export function readBunGlobals(
 
   const available = processVersionsBun !== null || hasBunGlobal
   const detectedVia: BunDetectionSource =
-    processVersionsBun !== null
-      ? "process.versions.bun"
-      : hasBunGlobal
-        ? "globalThis.Bun"
-        : "none"
+    processVersionsBun !== null ? "process.versions.bun" : hasBunGlobal ? "globalThis.Bun" : "none"
 
   if (!available) {
     return {
@@ -205,8 +199,9 @@ function defaultWindowLike(): DashboardWindowLocationLike | null {
 
 /**
  * Validates `?apiBase=` against the URLPattern allowlist:
- *   - Production: `https://<sub >.bookdeskops.com[/path]` (excluding denied/punycode labels)
- *   - Local dev: also permits `http://localhost|127.0.0.1|[::1][:port][/path]`
+ *
+ * - Production: `https://<sub >.bookdeskops.com[/path]` (excluding denied/punycode labels)
+ * - Local dev: also permits `http://localhost|127.0.0.1|[::1][:port][/path]`
  */
 export function inspectApiBaseOverride(
   win: DashboardWindowLocationLike | null = defaultWindowLike(),
@@ -221,9 +216,9 @@ export function inspectApiBaseOverride(
 }
 
 /**
- * `?apiBase=...` overrides `[api].base` at runtime when validated against trusted
- * `https://<sub >.bookdeskops.com` origins or loopback dev servers (`isLocalDev`).
- * Untrusted or malformed overrides are rejected fail-closed.
+ * `?apiBase=...` overrides `[api].base` at runtime when validated against trusted `https://<sub >.bookdeskops.com`
+ * origins or loopback dev servers (`isLocalDev`). Untrusted or malformed overrides are rejected
+ * fail-closed.
  */
 export function devApiBaseOverride(
   win: DashboardWindowLocationLike | null = defaultWindowLike(),
@@ -234,9 +229,9 @@ export function devApiBaseOverride(
 }
 
 /**
- * Resolve the effective Base URL as a separate `URL` object.
- * Priority: explicit `base` -> `?apiBase=` loopback override -> `DASHBOARD_API.base`
- * -> `Window.location.origin` -> fallback `http://localhost:3000`.
+ * Resolve the effective Base URL as a separate `URL` object. Priority: explicit `base` ->
+ * `?apiBase=` loopback override -> `DASHBOARD_API.base` -> `Window.location.origin` -> fallback
+ * `http://localhost:3000`.
  */
 export function resolveDashboardBaseUrl(
   base: string | null = null,
@@ -278,8 +273,8 @@ export function resolveDashboardBaseUrl(
 }
 
 /**
- * Construct a separate, immutable-intent `URL` instance for a dashboard API
- * endpoint with typed query parameters (never mutating `window.location`).
+ * Construct a separate, immutable-intent `URL` instance for a dashboard API endpoint with typed
+ * query parameters (never mutating `window.location`).
  */
 export function buildDashboardApiUrlObject(
   path: string,
@@ -307,10 +302,10 @@ export function buildDashboardApiUrlObject(
 }
 
 /**
- * Resolve a feed path against `[api].base` (origin only; `checkSchema` rejects paths).
- * Uses a separate `URL` object internally and returns a relative path+query when
- * operating on same-origin without an explicit/override base, or a full origin
- * URL when an explicit or loopback `?apiBase=` target is configured.
+ * Resolve a feed path against `[api].base` (origin only; `checkSchema` rejects paths). Uses a
+ * separate `URL` object internally and returns a relative path+query when operating on same-origin
+ * without an explicit/override base, or a full origin URL when an explicit or loopback `?apiBase=`
+ * target is configured.
  */
 export function dashboardApiUrl(
   path: string,

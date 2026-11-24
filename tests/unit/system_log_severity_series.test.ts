@@ -44,9 +44,7 @@ describe("system_log_severity_series: normalization & timestamp parsing", () => 
   })
 
   test("parses sourceSortMs, ISO timestamps, numeric epoch seconds/ms, sourceTime, and dateLabel fallback", () => {
-    expect(parseSystemLogEntryTimestampMs({ sourceSortMs: 1_795_340_000_000 })).toBe(
-      1_795_340_000_000,
-    )
+    expect(parseSystemLogEntryTimestampMs({ sourceSortMs: 1_795_340_000_000 })).toBe(1_795_340_000_000)
     expect(parseSystemLogEntryTimestampMs({ timestamp: 1_795_340_123_000 })).toBe(1_795_340_123_000)
     expect(parseSystemLogEntryTimestampMs({ timestamp: "1795340123" })).toBe(1_795_340_123_000)
     expect(parseSystemLogEntryTimestampMs({ timestamp: "2026-11-22T12:15:00.000Z" })).toBe(
@@ -55,9 +53,7 @@ describe("system_log_severity_series: normalization & timestamp parsing", () => 
     expect(parseSystemLogEntryTimestampMs({ sourceTime: "2026-11-22 10:30:00" })).toBe(
       Date.parse("2026-11-22T10:30:00-05:00"),
     )
-    expect(
-      parseSystemLogEntryTimestampMs({ dateLabel: "Nov 22, 2026", timeEst: "11:45:00 EST" }),
-    ).toBeGreaterThan(0)
+    expect(parseSystemLogEntryTimestampMs({ dateLabel: "Nov 22, 2026", timeEst: "11:45:00 EST" })).toBeGreaterThan(0)
     expect(parseSystemLogEntryTimestampMs({ timestamp: "" })).toBeNull()
     expect(parseSystemLogEntryTimestampMs({})).toBeNull()
   })

@@ -1,18 +1,18 @@
 {
   "name": "sportsdesk-local-registry",
-  "private": true,
   "version": "0.1.0",
+  "private": true,
   "type": "module",
-  "packageManager": "bun@1.4.4",
-  "engines": {
-    "bun": "1.4.4",
-    "node": ">=22"
-  },
   "scripts": {
     "start": "node node_modules/verdaccio/bin/verdaccio --config config.yaml --listen 127.0.0.1:4873"
   },
   "dependencies": {
     "verdaccio": "6.11.2",
     "verdaccio-htpasswd": "13.1.7"
-  }
+  },
+  "engines": {
+    "bun": "1.4.4",
+    "node": ">=22"
+  },
+  "packageManager": "bun@1.4.4"
 }

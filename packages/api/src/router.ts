@@ -1,6 +1,8 @@
 /**
- * @file packages/api/src/router.ts
- * @description Injectable dashboard HTTP API router + in-memory `fetch()` dispatcher for zero-port testing & `Bun.serve({ routes })`.
+ * Injectable dashboard HTTP API router + in-memory `fetch()` dispatcher for zero-port testing &
+ * `Bun.serve({ routes })`.
+ *
+ * @file Packages/api/src/router.ts
  */
 
 import { DnsBoundaryError } from "../../../src/lib/dns_boundary.ts"
@@ -100,11 +102,11 @@ function buildFailClosedUnauthorizedResponse(
 }
 
 /**
- * Route middleware enforcing an authenticated session (cookie + CSRF or Bearer
- * token via `enforceAuth`) prior to executing a route handler.
+ * Route middleware enforcing an authenticated session (cookie + CSRF or Bearer token via
+ * `enforceAuth`) prior to executing a route handler.
  *
- * Fails closed with HTTP `401 Unauthorized` whenever `enforceAuth` is missing,
- * non-callable, or throws — never permitting anonymous access.
+ * Fails closed with HTTP `401 Unauthorized` whenever `enforceAuth` is missing, non-callable, or
+ * throws — never permitting anonymous access.
  */
 export function requireSession<TReq extends Request = Request>(
   enforceAuth: SessionAuthHook | undefined,
@@ -152,15 +154,16 @@ function buildAdminForbiddenResponse(
 }
 
 /**
- * Route middleware enforcing `x-admin-token` verification prior to executing
- * privileged handlers (such as `POST /api/terminal/exec`).
+ * Route middleware enforcing `x-admin-token` verification prior to executing privileged handlers
+ * (such as `POST /api/terminal/exec`).
  *
  * Fails closed with HTTP `403 Forbidden`:
- * - Blocks any request lacking a non-empty `x-admin-token` header in production
- *   (and in all non-dev-bypassed environments, except an already-verified Dev Admin
- *   session on the local dev server when no separate `SPORTSDESK_ADMIN_TOKEN` is set).
- * - Delegates cryptographic verification of `x-admin-token` to `enforceAdminAuth`,
- *   denying with `403` whenever `enforceAdminAuth` is missing, non-callable, or throws.
+ *
+ * - Blocks any request lacking a non-empty `x-admin-token` header in production (and in all
+ *   non-dev-bypassed environments, except an already-verified Dev Admin session on the local dev
+ *   server when no separate `SPORTSDESK_ADMIN_TOKEN` is set).
+ * - Delegates cryptographic verification of `x-admin-token` to `enforceAdminAuth`, denying with `403`
+ *   whenever `enforceAdminAuth` is missing, non-callable, or throws.
  */
 export function adminGuard<TReq extends Request = Request>(
   enforceAdminAuth: SessionAuthHook | undefined,
@@ -205,9 +208,7 @@ export function adminGuard<TReq extends Request = Request>(
   }
 }
 
-/**
- * Wrap every HTTP method handler in a route family map with `requireSession`.
- */
+/** Wrap every HTTP method handler in a route family map with `requireSession`. */
 function protectRouteFamily<
   TReq extends Request,
   THandlers extends { readonly [M in HttpMethod]?: RouteHandler<TReq> },
@@ -323,10 +324,10 @@ function defaultEncodeResponse(req: Request, spec: EncodedResponseSpec): Respons
 /**
  * Merge the wagers-tab policy stamp into a live-wagers payload.
  *
- * The stamp is read from `packages/ui/src/config/wagers.toml` at request time,
- * so `curl -s :4021/api/wagers | jq -r .policy_version` is a stable probe that
- * survives rebuilds (unlike a bundle content hash). A missing/invalid policy
- * file must not take the feed down: the payload is returned unstamped.
+ * The stamp is read from `packages/ui/src/config/wagers.toml` at request time, so `curl -s
+ * :4021/api/wagers | jq -r .policy_version` is a stable probe that survives rebuilds (unlike a
+ * bundle content hash). A missing/invalid policy file must not take the feed down: the payload is
+ * returned unstamped.
  */
 async function withWagersTabPolicy(deps: DashboardApiDeps, payload: object): Promise<object> {
   const readPolicy = deps.getWagersTabPolicy
@@ -373,6 +374,7 @@ function projectPublicHealth(payload: unknown): {
  * Create the SportsDesk dashboard HTTP + WebSocket API surface.
  *
  * Exposes:
+ *
  * - `routes`: declarative route table ready to mount in `Bun.serve({ routes })`
  * - `fetch(req)`: zero-port in-memory request dispatcher for fast unit & contract tests
  * - `websocket` + `clients`: topic-based WebSocket handler
@@ -433,9 +435,7 @@ export function createDashboardApi<TWs extends WsLike = WsLike>(
 
   const textEncoder = new TextEncoder()
 
-  /**
-   * Explicit unauthenticated route allowlist (liveness probes + auth lifecycle only).
-   */
+  /** Explicit unauthenticated route allowlist (liveness probes + auth lifecycle only). */
   const publicStaticRoutes = {
     "/health": {
       GET: handlePublicHealth,
@@ -498,9 +498,7 @@ export function createDashboardApi<TWs extends WsLike = WsLike>(
     },
   } satisfies Record<string, SimpleMethodHandlers>
 
-  /**
-   * All protected static API & MCP route families, uniformly wrapped in `requireSession`.
-   */
+  /** All protected static API & MCP route families, uniformly wrapped in `requireSession`. */
   const protectedStaticRoutes = protectRouteFamily<
     Request,
     SimpleMethodHandlers,
@@ -1656,10 +1654,10 @@ export function createDashboardApi<TWs extends WsLike = WsLike>(
   }
 
   /**
-   * All parameterized API route families, uniformly wrapped in `requireSession`.
-   * Each handler single-decodes `req.params.id` via `safeDecodeRouteParam` so
-   * Bun's native Zig radix-tree router (raw slice) and in-memory `fetch()`
-   * behave identically without double-decoding or unhandled `URIError`s.
+   * All parameterized API route families, uniformly wrapped in `requireSession`. Each handler
+   * single-decodes `req.params.id` via `safeDecodeRouteParam` so Bun's native Zig radix-tree router
+   * (raw slice) and in-memory `fetch()` behave identically without double-decoding or unhandled
+   * `URIError`s.
    */
   const paramRoutes = protectRouteFamily<
     RouteRequestWithParams<{ readonly id: string }>,

@@ -1,6 +1,7 @@
 /**
- * @file packages/backend/src/agents.ts
- * @description Sub-agent hierarchy, 30d conduit rollup, and customer/wager lookup service (`/api/agent/:id`).
+ * Sub-agent hierarchy, 30d conduit rollup, and customer/wager lookup service (`/api/agent/:id`).
+ *
+ * @file Packages/backend/src/agents.ts
  */
 
 import { readFile } from "node:fs/promises"

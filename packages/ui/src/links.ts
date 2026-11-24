@@ -1,6 +1,7 @@
 /**
- * @file packages/ui/src/links.ts
- * @description Local SportsDesk route builders and broken desk.bookdeskops.com URL sanitizer.
+ * Local SportsDesk route builders and broken desk.bookdeskops.com URL sanitizer.
+ *
+ * @file Packages/ui/src/links.ts
  */
 
 const BROKEN_DESK_AGENT_RE = /^https?:\/\/desk\.bookdeskops\.com\/agent\/([^/?#]+)/i

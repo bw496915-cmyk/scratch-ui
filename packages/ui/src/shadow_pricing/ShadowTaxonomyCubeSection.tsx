@@ -1,7 +1,8 @@
 /**
- * @file packages/ui/src/shadow_pricing/ShadowTaxonomyCubeSection.tsx
- * @description 4-Axis Taxonomy Slice Selector, Active Slice Summary Strip, and
- * Interactive 4-Dimension Exposure & Hold Matrix Explorer.
+ * 4-Axis Taxonomy Slice Selector, Active Slice Summary Strip, and Interactive 4-Dimension Exposure
+ * & Hold Matrix Explorer.
+ *
+ * @file Packages/ui/src/shadow_pricing/ShadowTaxonomyCubeSection.tsx
  */
 
 import React from "react"

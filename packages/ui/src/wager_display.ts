@@ -1,11 +1,10 @@
 /**
- * @file packages/ui/src/wager_display.ts
- * @description One way to render a wager's selection, line and price.
- *
- * Hydrated F402 rows can carry the whole short description in both `selection`
- * and `lineDisplay` (ticket 769158444: both are `Steelers (Live) +27½ +100`).
- * Concatenating them prints the pick twice, so every renderer goes through this
+ * One way to render a wager's selection, line and price. Hydrated F402 rows can carry the whole
+ * short description in both `selection` and `lineDisplay` (ticket 769158444: both are `Steelers
+ * (Live) +27½ +100`). Concatenating them prints the pick twice, so every renderer goes through this
  * formatter instead of composing the strings itself.
+ *
+ * @file Packages/ui/src/wager_display.ts
  */
 
 /** The three fields needed to render a pick; structural so any wager row fits. */
@@ -37,9 +36,9 @@ export function normalizeAmericanOdds(raw: string | null | undefined): string | 
 }
 
 /**
- * Extracts a trailing American odds token (`-110`, `+145`, `EV`/`EVEN` → `+100`)
- * from a pick or line string. Requires `|n| >= 100` so spreads like `-4.5` or `-3`
- * are never mistaken for American odds.
+ * Extracts a trailing American odds token (`-110`, `+145`, `EV`/`EVEN` → `+100`) from a pick or
+ * line string. Requires `|n| >= 100` so spreads like `-4.5` or `-3` are never mistaken for American
+ * odds.
  */
 export function extractAmericanOddsFromText(raw: string | null | undefined): string | null {
   if (!raw) return null
@@ -59,8 +58,8 @@ export function extractAmericanOddsFromText(raw: string | null | undefined): str
 }
 
 /**
- * Resolves valid American odds from explicit `oddsAmerican`, falling back to
- * trailing odds embedded in `lineDisplay` / `selection` for non-parlay tickets.
+ * Resolves valid American odds from explicit `oddsAmerican`, falling back to trailing odds embedded
+ * in `lineDisplay` / `selection` for non-parlay tickets.
  */
 export function resolveWagerOddsAmerican(wager: {
   readonly oddsAmerican?: string | null | undefined
@@ -72,14 +71,13 @@ export function resolveWagerOddsAmerican(wager: {
   if (explicit !== null) return explicit
   if (/\bparlay\b/i.test(wager.betType ?? "")) return null
   return (
-    extractAmericanOddsFromText(wager.lineDisplay) ??
-    extractAmericanOddsFromText(wager.selection)
+    extractAmericanOddsFromText(wager.lineDisplay) ?? extractAmericanOddsFromText(wager.selection)
   )
 }
 
 /**
- * True when `odds` already appears inside `text` at whole-token boundaries
- * (plain or wrapped in parentheses), preventing `Alpha -110 (-110)`.
+ * True when `odds` already appears inside `text` at whole-token boundaries (plain or wrapped in
+ * parentheses), preventing `Alpha -110 (-110)`.
  */
 export function selectionIncludesOdds(text: string, odds: string): boolean {
   const cleanOdds = normalizeAmericanOdds(odds)
@@ -96,9 +94,8 @@ export function selectionIncludesOdds(text: string, odds: string): boolean {
 }
 
 /**
- * True when `lineDisplay` is already visible inside `selection`, compared on
- * collapsed lower-case text at whole-token boundaries — so `Over 47.5` does not
- * swallow a numeric line of `7`.
+ * True when `lineDisplay` is already visible inside `selection`, compared on collapsed lower-case
+ * text at whole-token boundaries — so `Over 47.5` does not swallow a numeric line of `7`.
  */
 export function selectionIncludesLine(selection: string, lineDisplay: string): boolean {
   const line = collapse(lineDisplay).toLowerCase()
@@ -110,8 +107,8 @@ export function selectionIncludesLine(selection: string, lineDisplay: string): b
 }
 
 /**
- * `selection [line] (odds)` with the line and odds printed only once and no
- * dangling separators or `(—)` placeholders. Empty input degrades to `—`.
+ * `selection [line] (odds)` with the line and odds printed only once and no dangling separators or
+ * `(—)` placeholders. Empty input degrades to `—`.
  */
 export function formatWagerSelection(
   wager: WagerSelectionParts,

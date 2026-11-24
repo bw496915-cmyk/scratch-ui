@@ -1,18 +1,16 @@
 /**
- * @file packages/api/src/config_status.ts
- * @description Server-side Status & Configuration Registry powering
- * `GET/POST/DELETE /api/config/status`.
+ * Server-side Status & Configuration Registry powering `GET/POST/DELETE /api/config/status`.
+ * Inventories all `.env.example` environment variables, build-time constants, and runtime
+ * configuration variables, traces every entry to the exact UI, API, and server components that
+ * consume it, and allows saving non-secret runtime configuration overrides safely. Security
+ * boundary:
  *
- * Inventories all `.env.example` environment variables, build-time constants,
- * and runtime configuration variables, traces every entry to the exact UI,
- * API, and server components that consume it, and allows saving non-secret
- * runtime configuration overrides safely.
+ * - Secret keys (tokens, passwords, API keys, DB credentials, HMAC salts) are strictly read-only
+ *   presence indicators (`configured: boolean`); their raw values are NEVER serialized into HTTP
+ *   responses or `.env.example` exports, and `POST` rejects any attempt to submit or overwrite
+ *   them.
  *
- * Security boundary:
- * - Secret keys (tokens, passwords, API keys, DB credentials, HMAC salts) are
- *   strictly read-only presence indicators (`configured: boolean`); their raw
- *   values are NEVER serialized into HTTP responses or `.env.example` exports,
- *   and `POST` rejects any attempt to submit or overwrite them.
+ * @file Packages/api/src/config_status.ts
  */
 
 import { readFileSync } from "node:fs"
@@ -161,9 +159,7 @@ export function isSensitiveConfigKey(key: string): boolean {
   return SENSITIVE_KEY_PATTERN.test(key)
 }
 
-/**
- * Parse `.env.example` into key/default/comment metadata while stripping outer quotes.
- */
+/** Parse `.env.example` into key/default/comment metadata while stripping outer quotes. */
 export function parseEnvExample(rawText: string): readonly ParsedEnvExampleEntry[] {
   const results: ParsedEnvExampleEntry[] = []
   let pendingComment: string[] = []

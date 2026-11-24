@@ -12,10 +12,11 @@ import {
 
 import { redactIpToSubnetHash } from "../lib/http_auth.ts"
 /**
- * @file server/weblog_inspect.ts
- * @description Bun.inspect.custom Weblogs parser, IP forensics classifier,
- * multi-field detail sorter, and 6-axis behavioral vectoring & cosine
- * similarity clustering engine for Fantasy402 / SportsDesk surveillance logs.
+ * Bun.inspect.custom Weblogs parser, IP forensics classifier, multi-field detail sorter, and 6-axis
+ * behavioral vectoring & cosine similarity clustering engine for Fantasy402 / SportsDesk
+ * surveillance logs.
+ *
+ * @file Server/weblog_inspect.ts
  */
 import { parseShortDesc } from "../lib/live_wagers.ts"
 import { parseParlayLegs, readParlayOperation } from "../lib/parlay_description.ts"

@@ -82,9 +82,7 @@ test("unsupported statuses, missing finance, free plays and refunds remain outsi
     stakeUsd: 100,
     stakeGini: null,
   })
-  expect(
-    projectRetainedCustomerHistory([[row(), row({ CustomerID: "ACCOUNT2" })]]).records,
-  ).toHaveLength(2)
+  expect(projectRetainedCustomerHistory([[row(), row({ CustomerID: "ACCOUNT2" })]]).records).toHaveLength(2)
 })
 test("exact roster aliases join private metrics; risk models and lifetime figures remain null", async () => {
   const dir = await mkdtemp(join(tmpdir(), "sportsdesk-history-"))
@@ -114,9 +112,7 @@ test("exact roster aliases join private metrics; risk models and lifetime figure
   const customer = bookRowsToProfiles([found!], "book")[0]!
   expect(customer.meanStake).toBe(100)
   expect(customer.unknown).not.toContain("meanStake")
-  expect(customer.unknown).toEqual(
-    expect.arrayContaining(["sharpness", "clv", "limit", "var95", "ltv", "sizing"]),
-  )
+  expect(customer.unknown).toEqual(expect.arrayContaining(["sharpness", "clv", "limit", "var95", "ltv", "sizing"]))
   const profile = buildCustomerProfileFromRow(found!, "NATIVE1")
   expect(profile.meanStakeUsd).toBe(100)
   expect(profile.lifetimeVolumeUsd).toBeNull()

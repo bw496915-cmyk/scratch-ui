@@ -66,7 +66,7 @@ import type {
   ShowcaseCustomer,
   TerminalHistoryEntry,
 } from "../types.ts"
-import { RiskExposureChart } from "./RiskExposureChart.tsx"
+import { RiskExposureD3Chart } from "../viz/RiskExposureD3Chart.tsx"
 import { RiskRecentAlertsSidebar } from "./RiskRecentAlertsSidebar.tsx"
 import { RiskThresholdModal } from "./RiskThresholdModal.tsx"
 import {
@@ -1304,8 +1304,8 @@ export function RiskOverviewPanel({
             onSaveSoundPrefs={handleSaveSoundPrefs}
           />
 
-          {/* Real-Time Aggregate Risk Exposure Line Chart (Last 60 Minutes) */}
-          <RiskExposureChart
+          {/* Real-Time Aggregate Risk Exposure D3 Line Chart (Last 60 Minutes) */}
+          <RiskExposureD3Chart
             wagers={wagers}
             hasWagerSnapshot={hasWagerSnapshot}
             snapshotStatus={snapshotStatus}
@@ -1317,6 +1317,7 @@ export function RiskOverviewPanel({
             exposureLimitUsd={exposureLimitUsd}
             warningLimitUsd={effectiveWarningLimitUsd}
             thresholdStatus={thresholdEval.status}
+            onOpenThresholdModal={() => setIsThresholdModalOpen(true)}
           />
 
           {/* Live Surveillance Pattern Radar */}

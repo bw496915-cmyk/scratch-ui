@@ -1,7 +1,8 @@
 /**
- * @file packages/ui/src/viz/SharpnessDecomposition.tsx
- * @description Sharpness score components on one common zero-anchored points scale, sorted, with
- * cap ticks. Fails closed when the components do not sum to the displayed score.
+ * Sharpness score components on one common zero-anchored points scale, sorted, with cap ticks.
+ * Fails closed when the components do not sum to the displayed score.
+ *
+ * @file Packages/ui/src/viz/SharpnessDecomposition.tsx
  */
 
 import React from "react"

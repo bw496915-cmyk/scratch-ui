@@ -1,6 +1,8 @@
 /**
- * @file packages/backend/src/r2_pipeline.ts
- * @description Live Cloudflare R2 public pipeline monitor, pointer-rollup dereferencer, and `:4020` daemon probe.
+ * Live Cloudflare R2 public pipeline monitor, pointer-rollup dereferencer, and `:4020` daemon
+ * probe.
+ *
+ * @file Packages/backend/src/r2_pipeline.ts
  */
 
 import type {
@@ -29,9 +31,9 @@ export const R2_HISTORY_DEFAULT_LIMIT = 60
 export const R2_HISTORY_DEFAULT_MIN_INTERVAL_SECONDS = 60
 
 /**
- * Publish-SLA arithmetic. `ageSeconds === null` means the probe could not read a
- * `Last-Modified` header, so every field is null rather than a fabricated zero.
- * `breachStartedAt` anchors on the publish timestamp, not on the rounded age.
+ * Publish-SLA arithmetic. `ageSeconds === null` means the probe could not read a `Last-Modified`
+ * header, so every field is null rather than a fabricated zero. `breachStartedAt` anchors on the
+ * publish timestamp, not on the rounded age.
  */
 export function computeR2SinkSlaStatus(
   ageSeconds: number | null,
@@ -790,8 +792,8 @@ export function createR2PipelineService(options: R2PipelineServiceOptions = {}) 
   let cachedAtMs = 0
 
   /**
-   * Append one sample per probe, throttled to `historyMinIntervalMs` except when
-   * the sink changes state (a fresh→stale transition is the sample that matters).
+   * Append one sample per probe, throttled to `historyMinIntervalMs` except when the sink changes
+   * state (a fresh→stale transition is the sample that matters).
    */
   function recordHistorySample(sink: R2SinkDetail, nowDate: Date, nowMs: number): void {
     const entry = historyBySink.get(sink.id)

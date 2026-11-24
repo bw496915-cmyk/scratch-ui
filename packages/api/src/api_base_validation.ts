@@ -1,19 +1,19 @@
 /**
- * @file packages/api/src/api_base_validation.ts
- * @description Hardened Bun-runtime API base & HTTP origin validation for `packages/api`.
+ * Hardened Bun-runtime API base & HTTP origin validation for `packages/api`. Security invariants:
  *
- * Security invariants:
- * - Startup `URLPattern` regex-group compilation assertion (`hasRegExpGroups === true`)
- *   for both production (`https://<sub >.bookdeskops.com`) and local dev loopback patterns
- *   — fails closed with `ERR_API_BASE_PATTERN_UNAVAILABLE` if regex groups fail to compile.
- * - Strict `MAX_API_BASE_INPUT` (2048 chars) length cap before invoking `URLPattern.exec()`
- *   to prevent polynomial-time regex backtracking.
- * - Rejects backslashes (`\`), query strings (`?`), hash fragments (`#`), embedded
- *   credentials, punycode labels (`xn--`), denied subdomains (`staging`), and invalid ports.
+ * - Startup `URLPattern` regex-group compilation assertion (`hasRegExpGroups === true`) for both
+ *   production (`https://<sub >.bookdeskops.com`) and local dev loopback patterns — fails closed
+ *   with `ERR_API_BASE_PATTERN_UNAVAILABLE` if regex groups fail to compile.
+ * - Strict `MAX_API_BASE_INPUT` (2048 chars) length cap before invoking `URLPattern.exec()` to
+ *   prevent polynomial-time regex backtracking.
+ * - Rejects backslashes (`\`), query strings (`?`), hash fragments (`#`), embedded credentials,
+ *   punycode labels (`xn--`), denied subdomains (`staging`), and invalid ports.
  * - Collapses repetitive path slashes (`//` -> `/`) and strips trailing slashes via
  *   `normalizeApiBaseUrl()` to close `URL` vs `fetch` parser differentials.
  * - Cross-runtime `URLSearchParams` helpers avoid `instanceof` and `.size`, and inspect
  *   `getAll("apiBase")` to block duplicate-key query smuggling.
+ *
+ * @file Packages/api/src/api_base_validation.ts
  */
 
 export const MAX_API_BASE_INPUT = 2048
@@ -50,9 +50,10 @@ type URLPatternConstructor = typeof URLPattern
 let prodPattern: URLPattern | undefined
 let devPattern: URLPattern | undefined
 
-function createPatterns(
-  PatternCtor: URLPatternConstructor | undefined,
-): { prod?: URLPattern; dev?: URLPattern } {
+function createPatterns(PatternCtor: URLPatternConstructor | undefined): {
+  prod?: URLPattern
+  dev?: URLPattern
+} {
   if (typeof PatternCtor !== "function") {
     return {}
   }
@@ -97,9 +98,10 @@ function createPatterns(
   }
 }
 
-function getPatterns(
-  patternCtorOverride?: URLPatternConstructor | null,
-): { prod?: URLPattern; dev?: URLPattern } {
+function getPatterns(patternCtorOverride?: URLPatternConstructor | null): {
+  prod?: URLPattern
+  dev?: URLPattern
+} {
   if (patternCtorOverride !== undefined) {
     return createPatterns(patternCtorOverride ?? undefined)
   }
@@ -116,8 +118,8 @@ function getPatterns(
 }
 
 /**
- * Returns `true` when the active runtime's `URLPattern` compiled both the
- * production and dev allowlist patterns with active custom regex groups.
+ * Returns `true` when the active runtime's `URLPattern` compiled both the production and dev
+ * allowlist patterns with active custom regex groups.
  */
 export function hasCompiledApiBasePatterns(
   patternCtorOverride?: URLPatternConstructor | null,
@@ -127,8 +129,8 @@ export function hasCompiledApiBasePatterns(
 }
 
 /**
- * Duck-typed `URLSearchParams` guard avoiding `instanceof` mismatches between
- * Web globals, `node:url`, and polyfills.
+ * Duck-typed `URLSearchParams` guard avoiding `instanceof` mismatches between Web globals,
+ * `node:url`, and polyfills.
  */
 export function isURLSearchParams(value: unknown): value is URLSearchParams {
   return (
@@ -154,9 +156,7 @@ export function extractSingleApiBaseParam(
 ): ApiBaseParamExtraction {
   const params = isURLSearchParams(searchOrParams)
     ? searchOrParams
-    : new URLSearchParams(
-        searchOrParams.startsWith("?") ? searchOrParams.slice(1) : searchOrParams,
-      )
+    : new URLSearchParams(searchOrParams.startsWith("?") ? searchOrParams.slice(1) : searchOrParams)
   const values = params.getAll("apiBase")
   if (values.length === 0) {
     return { present: false }
@@ -172,16 +172,14 @@ export function stripApiBaseParam(params: URLSearchParams): void {
   params.delete("apiBase")
 }
 
-/**
- * Collapses repetitive path slashes (`//` -> `/`) and strips trailing slashes.
- */
+/** Collapses repetitive path slashes (`//` -> `/`) and strips trailing slashes. */
 export function normalizeUrlPathSlashes(pathname: string): string {
   return pathname.replace(/\/{2,}/g, "/").replace(/\/+$/, "")
 }
 
 /**
- * Canonicalizes a validated `URL` into `${protocol}//${host}${normalizedPath}`
- * with repetitive and trailing slashes removed.
+ * Canonicalizes a validated `URL` into `${protocol}//${host}${normalizedPath}` with repetitive and
+ * trailing slashes removed.
  */
 export function normalizeApiBaseUrl(url: URL): string {
   const path = normalizeUrlPathSlashes(url.pathname)
@@ -217,9 +215,9 @@ function hasForbiddenQueryOrHash(trimmed: string, url: URL): boolean {
 }
 
 /**
- * Validates an untrusted `apiBase` string strictly via WHATWG `URLPattern`
- * with startup `hasRegExpGroups` verification, `MAX_API_BASE_INPUT` cap,
- * backslash rejection, host agreement check, and repetitive-slash normalization.
+ * Validates an untrusted `apiBase` string strictly via WHATWG `URLPattern` with startup
+ * `hasRegExpGroups` verification, `MAX_API_BASE_INPUT` cap, backslash rejection, host agreement
+ * check, and repetitive-slash normalization.
  */
 export function validateApiBaseWithPattern(
   raw: string | null | undefined,
@@ -283,9 +281,7 @@ export function validateApiBaseWithPattern(
   }
 }
 
-/**
- * Pure-`URL` fallback validator used only when `URLPattern` is unavailable.
- */
+/** Pure-`URL` fallback validator used only when `URLPattern` is unavailable. */
 export function validateApiBaseFallback(
   raw: string | null | undefined,
   isLocalDev: boolean,
@@ -358,8 +354,8 @@ export interface ValidateConfigHttpUrlOptions {
  * Hardened HTTP(S) configuration URL validator for server config overrides
  * (`SPORTSDESK_API_ORIGIN`, `R2_ENDPOINT`, `TELEGRAM_WEBHOOK_URL`, `SPORTSDESK_ALLOWED_ORIGINS`).
  *
- * Enforces `MAX_API_BASE_INPUT`, rejects backslashes, credentials, invalid ports,
- * and query/hash smuggling, and collapses repetitive slashes in paths.
+ * Enforces `MAX_API_BASE_INPUT`, rejects backslashes, credentials, invalid ports, and query/hash
+ * smuggling, and collapses repetitive slashes in paths.
  */
 export function validateConfigHttpUrl(
   raw: string | null | undefined,
@@ -410,9 +406,9 @@ export function validateConfigHttpUrl(
 }
 
 /**
- * Validates an optional `?apiBase=` query parameter on an incoming HTTP `Request`.
- * Returns `null` if no `apiBase` query parameter is present; otherwise validates
- * via `extractSingleApiBaseParam` + `validateApiBase`.
+ * Validates an optional `?apiBase=` query parameter on an incoming HTTP `Request`. Returns `null`
+ * if no `apiBase` query parameter is present; otherwise validates via `extractSingleApiBaseParam` +
+ * `validateApiBase`.
  */
 export function validateRequestApiBaseParam(
   req: Request,
@@ -449,9 +445,9 @@ export class ApiBaseError extends Error {
 }
 
 /**
- * Parse-first strict validator returning a canonical `URL` or throwing `ApiBaseError`.
- * Permits `https://<sub >.bookdeskops.com[/path]` in production and literal loopback
- * (`127.0.0.1` / `[::1]` / `localhost`) when `allowLoopback` is explicitly enabled.
+ * Parse-first strict validator returning a canonical `URL` or throwing `ApiBaseError`. Permits
+ * `https://<sub >.bookdeskops.com[/path]` in production and literal loopback (`127.0.0.1` / `[::1]`
+ * / `localhost`) when `allowLoopback` is explicitly enabled.
  */
 export function parseValidatedApiBaseUrl(
   input: string,
@@ -476,9 +472,9 @@ function decodePathForContainmentCheck(rawRel: string): string {
 }
 
 /**
- * Resolve a relative path under a validated base `URL` with post-join origin and
- * pathname containment. Defeats `..`, `..%2f..`, protocol-relative `//evil.example`,
- * and absolute origin overrides.
+ * Resolve a relative path under a validated base `URL` with post-join origin and pathname
+ * containment. Defeats `..`, `..%2f..`, protocol-relative `//evil.example`, and absolute origin
+ * overrides.
  */
 export function resolveUnder(base: URL | string, rel: string): URL {
   const baseUrl = base instanceof URL ? base : new URL(base)
@@ -501,4 +497,3 @@ export function resolveUnder(base: URL | string, rel: string): URL {
   }
   return out
 }
-

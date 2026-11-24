@@ -1,8 +1,8 @@
 /**
- * @file tests/unit/registry_parity.test.ts
- * @description Verifies workspace manifest, Bun version pin, `bunfig.toml`,
- * `.npmrc`, and `NPM_CONFIG_USERCONFIG` parity across the live repository and
- * synthetic drift fixtures.
+ * Verifies workspace manifest, Bun version pin, `bunfig.toml`, `.npmrc`, and `NPM_CONFIG_USERCONFIG` parity across the
+ * live repository and synthetic drift fixtures.
+ *
+ * @file Tests/unit/registry_parity.test.ts
  */
 
 import { afterEach, describe, expect, test } from "bun:test"
@@ -10,10 +10,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 
-import {
-  auditWorkspaceRegistryParity,
-  normalizeRegistryEndpoint,
-} from "../../scripts/check_registry_parity.ts"
+import { auditWorkspaceRegistryParity, normalizeRegistryEndpoint } from "../../scripts/check_registry_parity.ts"
 
 const ROOT_DIR = resolve(import.meta.dir, "../..")
 const tempDirs: string[] = []
@@ -88,8 +85,7 @@ function createTempRepo(overrides?: {
 
   writeFileSync(
     join(dir, "bunfig.toml"),
-    overrides?.bunfigToml ??
-      'env = false\n[install]\nignoreScripts = true\nminimumReleaseAge = "3d"\n',
+    overrides?.bunfigToml ?? 'env = false\n[install]\nignoreScripts = true\nminimumReleaseAge = "3d"\n',
   )
 
   if (overrides?.npmrc !== undefined) {
@@ -132,15 +128,11 @@ describe("check_registry_parity: workspace & registry parity gate", () => {
     expect(report.workspaces.lockfilePaths).toEqual(report.workspaces.resolvedPaths)
     expect(report.workspaces.internalDependenciesValid).toBe(true)
     expect(report.registrySources.nestedOverrideFiles).toEqual([])
-    expect(report.registrySources.projectNpmrcScopes["@sportsdesk-local"]).toBe(
-      "http://127.0.0.1:4873/",
-    )
+    expect(report.registrySources.projectNpmrcScopes["@sportsdesk-local"]).toBe("http://127.0.0.1:4873/")
   })
 
   test("normalizes trailing slashes and host casing on registry URLs", () => {
-    expect(normalizeRegistryEndpoint("HTTPS://NPM.PKG.GITHUB.COM/")).toBe(
-      "https://npm.pkg.github.com/",
-    )
+    expect(normalizeRegistryEndpoint("HTTPS://NPM.PKG.GITHUB.COM/")).toBe("https://npm.pkg.github.com/")
     expect(normalizeRegistryEndpoint("http://127.0.0.1:4873")).toBe("http://127.0.0.1:4873/")
   })
 
@@ -160,9 +152,7 @@ describe("check_registry_parity: workspace & registry parity gate", () => {
 
     const report = auditWorkspaceRegistryParity({ rootDir: dir, env: {} })
     expect(report.ok).toBe(false)
-    expect(report.violations.some((v) => v.includes("packageManager 'bun@1.4.4' diverges"))).toBe(
-      true,
-    )
+    expect(report.violations.some((v) => v.includes("packageManager 'bun@1.4.4' diverges"))).toBe(true)
     expect(report.violations.some((v) => v.includes("packages/core/.npmrc"))).toBe(true)
     expect(report.violations.some((v) => v.includes("disagrees with package.json"))).toBe(true)
     expect(report.violations.some((v) => v.includes("packages/stale"))).toBe(true)
@@ -187,9 +177,7 @@ describe("check_registry_parity: workspace & registry parity gate", () => {
 
     const report = auditWorkspaceRegistryParity({ rootDir: dir, env: {} })
     expect(report.ok).toBe(false)
-    expect(report.violations.some((v) => v.includes("Scope '@private' registry mismatch"))).toBe(
-      true,
-    )
+    expect(report.violations.some((v) => v.includes("Scope '@private' registry mismatch"))).toBe(true)
     expect(report.violations.some((v) => v.includes("non-placeholder literal token"))).toBe(true)
 
     const ciDir = createTempRepo({
@@ -212,9 +200,7 @@ describe("check_registry_parity: workspace & registry parity gate", () => {
       env: { NPM_CONFIG_USERCONFIG: join(ciDir, "ci-user.npmrc") },
     })
     expect(ciDivergeReport.ok).toBe(false)
-    expect(
-      ciDivergeReport.violations.some((v) => v.includes("NPM_CONFIG_USERCONFIG scope '@private'")),
-    ).toBe(true)
+    expect(ciDivergeReport.violations.some((v) => v.includes("NPM_CONFIG_USERCONFIG scope '@private'"))).toBe(true)
 
     const missingUserConfigReport = auditWorkspaceRegistryParity({
       rootDir: ciDir,
@@ -222,9 +208,7 @@ describe("check_registry_parity: workspace & registry parity gate", () => {
     })
     expect(missingUserConfigReport.ok).toBe(false)
     expect(
-      missingUserConfigReport.violations.some((v) =>
-        v.includes("NPM_CONFIG_USERCONFIG points to missing file"),
-      ),
+      missingUserConfigReport.violations.some((v) => v.includes("NPM_CONFIG_USERCONFIG points to missing file")),
     ).toBe(true)
   })
 })

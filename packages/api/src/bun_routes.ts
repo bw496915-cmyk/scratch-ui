@@ -1,8 +1,9 @@
 /**
- * @file packages/api/src/bun_routes.ts
- * @description Canonical route constants, `ExtractRouteParams` / `TypedRouteRequest`
- * helpers matching Bun's native `BunRequest<TPath>`, safe single-pass URL param
- * decoding, and typed `buildApiUrl` builders.
+ * Canonical route constants, `ExtractRouteParams` / `TypedRouteRequest` helpers matching Bun's
+ * native `BunRequest<TPath>`, safe single-pass URL param decoding, and typed `buildApiUrl`
+ * builders.
+ *
+ * @file Packages/api/src/bun_routes.ts
  */
 
 import {
@@ -12,8 +13,8 @@ import {
 } from "./api_base_validation.ts"
 
 /**
- * Canonical route path registry (`as const`) shared across Bun's radix-tree
- * `routes` map, typed request handlers, and URL builders.
+ * Canonical route path registry (`as const`) shared across Bun's radix-tree `routes` map, typed
+ * request handlers, and URL builders.
  */
 export const DASHBOARD_ROUTES = {
   root: "/",
@@ -54,6 +55,7 @@ export type DashboardRoutePath = (typeof DASHBOARD_ROUTES)[DashboardRouteKey]
  * Compile-time route parameter extractor matching Bun's `ExtractRouteParams<TPath>`.
  *
  * Examples:
+ *
  * - `ExtractRouteParams<"/api/agents/:id">` -> `{ readonly id: string }`
  * - `ExtractRouteParams<"/api/alerts/:id/ack">` -> `{ readonly id: string }`
  * - `ExtractRouteParams<"/api/shift/logs">` -> `Record<never, never>`
@@ -66,8 +68,8 @@ export type ExtractRouteParams<TPath extends string> =
       : Record<never, never>
 
 /**
- * Typed Request carrying zero-copy radix-tree `params` extracted from `TPath`.
- * Structurally compatible with Bun's native `BunRequest<TPath>`.
+ * Typed Request carrying zero-copy radix-tree `params` extracted from `TPath`. Structurally
+ * compatible with Bun's native `BunRequest<TPath>`.
  */
 export type TypedRouteRequest<TPath extends string> = Request & {
   readonly params: ExtractRouteParams<TPath>
@@ -79,9 +81,9 @@ export type DecodedRouteParamResult =
 /**
  * Single-pass URL segment decoder for `req.params.*`.
  *
- * Bun's radix-tree router slices `req.params` directly from the raw URL segment
- * without auto-decoding. Handlers should decode exactly once at the boundary and
- * reject malformed percent sequences or control characters with HTTP 400.
+ * Bun's radix-tree router slices `req.params` directly from the raw URL segment without
+ * auto-decoding. Handlers should decode exactly once at the boundary and reject malformed percent
+ * sequences or control characters with HTTP 400.
  */
 export function safeDecodeRouteParam(
   raw: string,
@@ -123,12 +125,12 @@ export function safeDecodeRouteParam(
 }
 
 /**
- * Extract the raw (undecoded) URL path segment for a matched route pattern,
- * falling back to `fallbackParam` when `req.url` does not match.
+ * Extract the raw (undecoded) URL path segment for a matched route pattern, falling back to
+ * `fallbackParam` when `req.url` does not match.
  *
- * Guarantees identical single-pass `decodeURIComponent` behavior and strict
- * rejection of malformed percent-encoding across both Bun versions that
- * auto-decode `req.params` and versions that pass zero-copy raw slices.
+ * Guarantees identical single-pass `decodeURIComponent` behavior and strict rejection of malformed
+ * percent-encoding across both Bun versions that auto-decode `req.params` and versions that pass
+ * zero-copy raw slices.
  */
 export function extractRawRouteParam(
   req: Request,
@@ -151,9 +153,8 @@ export function extractRawRouteParam(
 export type ApiQueryValue = string | number | boolean | null | undefined
 
 /**
- * Build a normalized API URL from a `string | URL` base (such as `server.url`),
- * substituting `:param` placeholders with `encodeURIComponent` and appending
- * optional query parameters.
+ * Build a normalized API URL from a `string | URL` base (such as `server.url`), substituting
+ * `:param` placeholders with `encodeURIComponent` and appending optional query parameters.
  */
 export function buildApiUrl<TPath extends string>(
   baseUrl: string | URL,

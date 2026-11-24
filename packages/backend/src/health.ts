@@ -1,6 +1,7 @@
 /**
- * @file packages/backend/src/health.ts
- * @description Throttled O(1) `/health` probe state machine for the dashboard server.
+ * Throttled O(1) `/health` probe state machine for the dashboard server.
+ *
+ * @file Packages/backend/src/health.ts
  */
 
 export interface AlertHealthSnapshot {

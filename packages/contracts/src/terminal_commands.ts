@@ -1,6 +1,6 @@
 /**
- * Explicit allowlist of read-only desk terminal commands.
- * Any command head outside this set is rejected before reaching the terminal engine.
+ * Explicit allowlist of read-only desk terminal commands. Any command head outside this set is
+ * rejected before reaching the terminal engine.
  */
 export const ALLOWED_TERMINAL_COMMAND_HEADS: ReadonlySet<string> = new Set<string>([
   "help",

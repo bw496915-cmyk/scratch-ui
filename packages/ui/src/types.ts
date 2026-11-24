@@ -552,9 +552,9 @@ export interface StaticDirectoryProbeSummary {
 }
 
 /**
- * Canonical ordered registry of top-level SportsDesk Dashboard tab identifiers.
- * Single source of truth for URL `?tab=` routing, `dashboard.toml` `panels.default_tab`,
- * keyboard shortcuts, and legacy route aliases.
+ * Canonical ordered registry of top-level SportsDesk Dashboard tab identifiers. Single source of
+ * truth for URL `?tab=` routing, `dashboard.toml` `panels.default_tab`, keyboard shortcuts, and
+ * legacy route aliases.
  */
 export const DASHBOARD_TAB_IDS = [
   "customers",
@@ -715,8 +715,8 @@ export function isDashboardTabId(value: unknown): value is DashboardTabId {
 }
 
 /**
- * Resolves a raw `?tab=`, hash slug, or legacy alias to a canonical `DashboardTabId`,
- * falling back to `fallback` (`"customers"` by default) when empty or unknown.
+ * Resolves a raw `?tab=`, hash slug, or legacy alias to a canonical `DashboardTabId`, falling back
+ * to `fallback` (`"customers"` by default) when empty or unknown.
  */
 export function resolveDashboardTabId(
   raw: unknown,
@@ -788,9 +788,9 @@ export interface TerminalHistoryEntry {
   readonly durationMs: number
   readonly timestamp: number
   /**
-   * True for the seeded welcome buffer, which never executed. A real run can
-   * legitimately report `durationMs: 0` (sub-millisecond command), so run
-   * statistics must not infer "did not execute" from the duration.
+   * True for the seeded welcome buffer, which never executed. A real run can legitimately report
+   * `durationMs: 0` (sub-millisecond command), so run statistics must not infer "did not execute"
+   * from the duration.
    */
   readonly synthetic?: boolean
 }

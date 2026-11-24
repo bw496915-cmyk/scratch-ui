@@ -49,18 +49,10 @@ describe("Precomputed Uint32Array Token Bitsets — design/tokens.toml compilati
     expect(compiled.routeMasks).toBeInstanceOf(Uint32Array)
     expect(compiled.slaMasks).toBeInstanceOf(Uint32Array)
 
-    expect(Array.from(compiled.channelMasks)).toEqual(
-      Array.from(PRECOMPUTED_TOKEN_BITSETS.channelMasks),
-    )
-    expect(Array.from(compiled.channelPackedMeta)).toEqual(
-      Array.from(PRECOMPUTED_TOKEN_BITSETS.channelPackedMeta),
-    )
-    expect(Array.from(compiled.surfaceMasks)).toEqual(
-      Array.from(PRECOMPUTED_TOKEN_BITSETS.surfaceMasks),
-    )
-    expect(Array.from(compiled.routeMasks)).toEqual(
-      Array.from(PRECOMPUTED_TOKEN_BITSETS.routeMasks),
-    )
+    expect(Array.from(compiled.channelMasks)).toEqual(Array.from(PRECOMPUTED_TOKEN_BITSETS.channelMasks))
+    expect(Array.from(compiled.channelPackedMeta)).toEqual(Array.from(PRECOMPUTED_TOKEN_BITSETS.channelPackedMeta))
+    expect(Array.from(compiled.surfaceMasks)).toEqual(Array.from(PRECOMPUTED_TOKEN_BITSETS.surfaceMasks))
+    expect(Array.from(compiled.routeMasks)).toEqual(Array.from(PRECOMPUTED_TOKEN_BITSETS.routeMasks))
     expect(Array.from(compiled.slaMasks)).toEqual(Array.from(PRECOMPUTED_TOKEN_BITSETS.slaMasks))
 
     expect(Array.from(compiled.presets.activeDomSurveillance)).toEqual(
@@ -228,23 +220,10 @@ describe("TokenBitsetBuffer — reusable .clear() O(1) hot-path classification",
     const classifier = new TokenBitsetBuffer()
 
     // 1. Healthy tick -> matches activeDomSurveillance
-    const freshSla = evaluator.tickScalars(
-      95,
-      0,
-      5,
-      0,
-      12,
-      100,
-      1_760_000_000_000,
-      1_760_000_000_000,
-    )
+    const freshSla = evaluator.tickScalars(95, 0, 5, 0, 12, 100, 1_760_000_000_000, 1_760_000_000_000)
     classifier.classify(CHANNEL_ID.INTERNET, SURFACE_ID.CARD, ROUTE_ID.DEVIG, freshSla)
-    expect(classifier.matchesPreset(PRECOMPUTED_TOKEN_BITSETS.presets.activeDomSurveillance)).toBe(
-      true,
-    )
-    expect(classifier.matchesPreset(PRECOMPUTED_TOKEN_BITSETS.presets.poisonQuarantineGate)).toBe(
-      false,
-    )
+    expect(classifier.matchesPreset(PRECOMPUTED_TOKEN_BITSETS.presets.activeDomSurveillance)).toBe(true)
+    expect(classifier.matchesPreset(PRECOMPUTED_TOKEN_BITSETS.presets.poisonQuarantineGate)).toBe(false)
 
     // 2. Poison DNS error spike -> matches poisonQuarantineGate
     const poisonSla = evaluator.tickScalars(
@@ -259,16 +238,8 @@ describe("TokenBitsetBuffer — reusable .clear() O(1) hot-path classification",
       STALE_SNAPSHOT_POISON_BIT,
     )
     expect(poisonSla).toBe(SLA_STATE_POISON)
-    classifier.classify(
-      CHANNEL_ID.GSLIVE,
-      SURFACE_ID.DOM,
-      ROUTE_ID.MANAGER,
-      poisonSla,
-      evaluator.reasonMask,
-    )
-    expect(classifier.matchesPreset(PRECOMPUTED_TOKEN_BITSETS.presets.poisonQuarantineGate)).toBe(
-      true,
-    )
+    classifier.classify(CHANNEL_ID.GSLIVE, SURFACE_ID.DOM, ROUTE_ID.MANAGER, poisonSla, evaluator.reasonMask)
+    expect(classifier.matchesPreset(PRECOMPUTED_TOKEN_BITSETS.presets.poisonQuarantineGate)).toBe(true)
     expect(classifier.hasPoisonBit()).toBe(true)
   })
 })

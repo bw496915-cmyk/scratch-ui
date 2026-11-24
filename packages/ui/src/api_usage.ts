@@ -1,12 +1,11 @@
 /**
- * @file packages/ui/src/api_usage.ts
- * @description Session-scoped API usage & header-alignment meter for the dashboard.
+ * Session-scoped API usage & header-alignment meter for the dashboard. Every dashboard request goes
+ * through `trackedFetch`, which injects aligned request headers (`Accept`, `X-SportsDesk-Client`,
+ * `X-SportsDesk-Tab`, `X-Request-Id`), records normalized endpoint metrics, and captures response
+ * header alignment telemetry (`Cache-Control`, `X-SportsDesk-Endpoint`, `X-Runtime-Engine`,
+ * `X-Response-Time-Ms`).
  *
- * Every dashboard request goes through `trackedFetch`, which injects aligned
- * request headers (`Accept`, `X-SportsDesk-Client`, `X-SportsDesk-Tab`,
- * `X-Request-Id`), records normalized endpoint metrics, and captures response
- * header alignment telemetry (`Cache-Control`, `X-SportsDesk-Endpoint`,
- * `X-Runtime-Engine`, `X-Response-Time-Ms`).
+ * @file Packages/ui/src/api_usage.ts
  */
 
 import { useSyncExternalStore } from "react"
@@ -125,9 +124,9 @@ function resolveBaseOrigin(): string {
 }
 
 /**
- * Extract structured `URL` base properties (origin, protocol, host, hostname,
- * port, effectivePort, pathname, href, source, sameOrigin, secure) without
- * exposing query values, customer IDs, or credentials.
+ * Extract structured `URL` base properties (origin, protocol, host, hostname, port, effectivePort,
+ * pathname, href, source, sameOrigin, secure) without exposing query values, customer IDs, or
+ * credentials.
  */
 export function extractBaseUrlProperties(
   input?: ApiUsageInput | null,
@@ -574,9 +573,9 @@ function buildAuthenticatedInit(init?: RequestInit): RequestInit {
 }
 
 /**
- * Drop-in `fetch` that records endpoint usage & aligned header telemetry without
- * changing the response. Concurrent identical plain GETs share one network
- * request and each caller gets its own `Response` clone.
+ * Drop-in `fetch` that records endpoint usage & aligned header telemetry without changing the
+ * response. Concurrent identical plain GETs share one network request and each caller gets its own
+ * `Response` clone.
  */
 export async function trackedFetch(input: ApiUsageInput, init?: RequestInit): Promise<Response> {
   const usageKey = apiUsageKey(input, init?.method)

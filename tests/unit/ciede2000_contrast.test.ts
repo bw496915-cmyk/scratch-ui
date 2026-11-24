@@ -30,10 +30,7 @@ interface TokensTomlPalette {
     readonly min_adjacent_channel_delta_e00_milli: number
   }
   readonly surfaces: Record<string, { readonly token_name: string; readonly hex: string }>
-  readonly ui: Record<
-    string,
-    { readonly token_name: string; readonly hex: string; readonly role: string }
-  >
+  readonly ui: Record<string, { readonly token_name: string; readonly hex: string; readonly role: string }>
   readonly sla: Record<
     string,
     {
@@ -74,9 +71,7 @@ function loadLightThemeTokensFromCss(): Readonly<Record<string, string>> {
   const css = readFileSync(TOKENS_CSS_PATH, "utf8")
   const match = /\[data-dashboard-theme="light"\]\s*\{([\s\S]*?)\}/.exec(css)
   if (!match) {
-    throw new Error(
-      'Missing [data-dashboard-theme="light"] block in packages/ui/src/styles/tokens.css',
-    )
+    throw new Error('Missing [data-dashboard-theme="light"] block in packages/ui/src/styles/tokens.css')
   }
   const result: Record<string, string> = {}
   const propRe = /(--[a-z0-9-]+)\s*:\s*([^;]+);/gi
@@ -267,9 +262,9 @@ describe("CIEDE2000 Contrast Gates — design/tokens.toml dark & light surveilla
     }
 
     // Verify AAA slate floor (#94a3b8 on #0b1120 >= 7.00:1)
-    expect(
-      wcagContrastRatio(toml.ui.text_muted!.hex, toml.ui.surface_card!.hex),
-    ).toBeGreaterThanOrEqual(gates.min_aaa_slate_contrast_milli / 1000)
+    expect(wcagContrastRatio(toml.ui.text_muted!.hex, toml.ui.surface_card!.hex)).toBeGreaterThanOrEqual(
+      gates.min_aaa_slate_contrast_milli / 1000,
+    )
   })
 
   test("validates light surveillance surfaces from tokens.css using ΔE00 and detects dark-mode token collisions", () => {

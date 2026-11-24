@@ -3,7 +3,8 @@
  *
  * The app is mounted at both `/` (dev:api host) and `/app` (the daemon route), so tab links are
  * relative (`?tab=…`) and the path resolver only looks at the last segment. That makes
- * `/app/live-bets` and `/live-bets` both open the wagers tab, while an explicit `?tab=` still wins.
+ * `/app/live-bets` and `/live-bets` both open the wagers tab, while an explicit `?tab=` still
+ * wins.
  */
 import type { DashboardTabId } from "./types.ts"
 

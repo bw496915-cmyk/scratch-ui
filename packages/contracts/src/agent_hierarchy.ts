@@ -1,8 +1,8 @@
 /**
- * @file packages/contracts/src/agent_hierarchy.ts
- * @description Browser-safe contracts & zero-password-retention sanitizers for
- * Fantasy402 `getListAgenstByAgent` (`{ EXTRA, GENERAL, PLAYERS }`) hierarchy
- * and player-directory snapshots.
+ * Browser-safe contracts & zero-password-retention sanitizers for Fantasy402 `getListAgenstByAgent`
+ * (`{ EXTRA, GENERAL, PLAYERS }`) hierarchy and player-directory snapshots.
+ *
+ * @file Packages/contracts/src/agent_hierarchy.ts
  */
 
 export const FANTASY402_RATE_FIELDS = [
@@ -44,9 +44,8 @@ export interface Fantasy402RateCard {
 }
 
 /**
- * Sanitized Fantasy402 player record.
- * Security invariant: plaintext Password fields from upstream `PLAYERS` are
- * NEVER represented, stored, or serialized in this contract.
+ * Sanitized Fantasy402 player record. Security invariant: plaintext Password fields from upstream
+ * `PLAYERS` are NEVER represented, stored, or serialized in this contract.
  */
 export interface SanitizedFantasy402Player {
   readonly customerId: string
@@ -124,9 +123,9 @@ export interface AgentHierarchyIngestResponse {
 const SENSITIVE_PLAYER_KEY_RE = /^(?:password|passwd|pwd|pass|pin|secret|token)$/i
 
 /**
- * Strip sensitive password keys from a parsed Fantasy402 payload object before
- * transmission or storage. Never mutates the original input; returns a cloned
- * sanitized structure plus exact count of stripped credential fields.
+ * Strip sensitive password keys from a parsed Fantasy402 payload object before transmission or
+ * storage. Never mutates the original input; returns a cloned sanitized structure plus exact count
+ * of stripped credential fields.
  */
 export function stripSensitiveFieldsFromFantasy402Object(input: unknown): {
   readonly sanitized: unknown
@@ -181,10 +180,10 @@ export function stripSensitiveFieldsFromFantasy402Object(input: unknown): {
 }
 
 /**
- * Client-side pre-flight sanitizer for pasted JSON text: parses JSON if valid
- * and strips all `PLAYERS[].Password` (and sensitive variants) BEFORE the
- * payload ever crosses the network. Falls back to line-level regex stripping
- * if the text is not valid JSON so raw passwords are never sent over the wire.
+ * Client-side pre-flight sanitizer for pasted JSON text: parses JSON if valid and strips all
+ * `PLAYERS[].Password` (and sensitive variants) BEFORE the payload ever crosses the network. Falls
+ * back to line-level regex stripping if the text is not valid JSON so raw passwords are never sent
+ * over the wire.
  */
 export function sanitizeFantasy402RawTextBeforeUpload(rawText: string): {
   readonly sanitizedText: string
@@ -220,9 +219,7 @@ export function sanitizeFantasy402RawTextBeforeUpload(rawText: string): {
   }
 }
 
-/**
- * Compute active non-zero rate entries for compact UI/terminal rendering.
- */
+/** Compute active non-zero rate entries for compact UI/terminal rendering. */
 export function getActiveRateEntries(rateCard: Fantasy402RateCard | null | undefined): readonly {
   readonly label: string
   readonly key: Fantasy402RateFieldKey

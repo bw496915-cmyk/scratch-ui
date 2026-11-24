@@ -2,14 +2,7 @@ import { beforeEach, describe, expect, test } from "bun:test"
 import { resolve } from "node:path"
 import { deflateSync } from "node:zlib"
 
-import {
-  concatBytes,
-  crc32Bytes,
-  crc32Of,
-  peekBytes,
-  sha256Hex,
-  toBytes,
-} from "../../lib/binary.ts"
+import { concatBytes, crc32Bytes, crc32Of, peekBytes, sha256Hex, toBytes } from "../../lib/binary.ts"
 import {
   encodeImageWithAvifFallback,
   getCachedAvifEncodeCapability,
@@ -52,11 +45,7 @@ function makePngChunk(type: string, data: Uint8Array): Uint8Array {
   return out
 }
 
-function makeRgbaPngFixture(
-  width = 16,
-  height = 16,
-  extraChunks: readonly Uint8Array[] = [],
-): Uint8Array {
+function makeRgbaPngFixture(width = 16, height = 16, extraChunks: readonly Uint8Array[] = []): Uint8Array {
   const ihdr = new Uint8Array(13)
   const ihdrView = new DataView(ihdr.buffer)
   ihdrView.setUint32(0, width, false)
@@ -115,8 +104,7 @@ function makeMinimalAvifFixture(options?: {
   if (options?.xmpXml) {
     const xmpBytes = textEncoder.encode(options.xmpXml)
     const uuid = new Uint8Array([
-      0xbe, 0x7a, 0xcf, 0xcb, 0x97, 0xa9, 0x42, 0xe8,
-      0x9c, 0x71, 0x99, 0x94, 0x91, 0xe3, 0xaf, 0xac,
+      0xbe, 0x7a, 0xcf, 0xcb, 0x97, 0xa9, 0x42, 0xe8, 0x9c, 0x71, 0x99, 0x94, 0x91, 0xe3, 0xaf, 0xac,
     ])
     const uuidBox = new Uint8Array(24 + xmpBytes.byteLength)
     const uView = new DataView(uuidBox.buffer)
@@ -137,9 +125,7 @@ describe("lib/binary.ts — BinaryInput utilities", () => {
     expect(await toBytes(expected)).toEqual(expected)
     expect(await toBytes(ab)).toEqual(expected)
     expect(await toBytes(new DataView(ab))).toEqual(expected)
-    expect(await toBytes(new Blob([expected], { type: "application/octet-stream" }))).toEqual(
-      expected,
-    )
+    expect(await toBytes(new Blob([expected], { type: "application/octet-stream" }))).toEqual(expected)
     expect(await toBytes(new Response(expected))).toEqual(expected)
     expect(await toBytes("sportsdesk-bin")).toEqual(expected)
   })
@@ -167,9 +153,7 @@ describe("lib/binary.ts — BinaryInput utilities", () => {
   })
 
   test("sha256Hex, crc32Of, and sync crc32Bytes match standard test vectors", async () => {
-    expect(await sha256Hex("abc")).toBe(
-      "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-    )
+    expect(await sha256Hex("abc")).toBe("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
     expect(crc32Bytes(textEncoder.encode("123456789"))).toBe(0xcbf43926)
     expect(await crc32Of(new Blob(["123456789"]))).toBe(0xcbf43926)
   })
@@ -179,9 +163,7 @@ describe("lib/xmp_container.ts — Sniffing, WebP/PNG XMP, and explicit AVIF row
   const rgbaPng = makeRgbaPngFixture(16, 16)
 
   test("sniffImageFormat & XMP_CONTAINER_MATRIX cover WebP, PNG, and explicit AVIF (image/avif)", async () => {
-    const webp = new Uint8Array(
-      await new Bun.Image(rgbaPng).webp({ lossless: true, quality: 100 }).toBuffer(),
-    )
+    const webp = new Uint8Array(await new Bun.Image(rgbaPng).webp({ lossless: true, quality: 100 }).toBuffer())
     const avif = makeMinimalAvifFixture({ width: 120, height: 80 })
 
     expect(sniffImageFormat(rgbaPng)).toBe("png")
@@ -227,9 +209,7 @@ describe("lib/xmp_container.ts — Sniffing, WebP/PNG XMP, and explicit AVIF row
   })
 
   test("WebP even-pads odd-length XMP chunks, sets VP8X 0x04 | 0x10, and keeps RIFF size = total - 8", async () => {
-    const losslessWebp = new Uint8Array(
-      await new Bun.Image(rgbaPng).webp({ lossless: true, quality: 100 }).toBuffer(),
-    )
+    const losslessWebp = new Uint8Array(await new Bun.Image(rgbaPng).webp({ lossless: true, quality: 100 }).toBuffer())
     // Intentionally odd UTF-8 byte length (13 bytes)
     const oddXmp = "<x:xmpmeta>1</x:xmpmeta>".slice(0, 13)
     expect(textEncoder.encode(oddXmp).byteLength % 2).toBe(1)
@@ -337,9 +317,7 @@ describe("AVIF -> WebP capability-cached fallback & R2/RPC MIME preservation", (
 
     const r2Write = await writeImageBlobToR2(mockS3, "assets/hero.webp", first.blob)
     expect(r2Write.type).toBe("image/webp")
-    expect(recordedWrites).toEqual([
-      { key: "assets/hero.webp", type: "image/webp", size: first.blob.size },
-    ])
+    expect(recordedWrites).toEqual([{ key: "assets/hero.webp", type: "image/webp", size: first.blob.size }])
 
     // string | Blob RPC preserves outBlob.type in both modes
     const rpcBlob = await toImageRpcPayload(first.blob, "blob")
@@ -391,9 +369,7 @@ describe("lib/image_provenance.ts — Delegated to lib/xmp_container.ts", () => 
 
     // 1. WebP provenance via webp-xmp channel
     const basePng = makeRgbaPngFixture(16, 16)
-    const webp = new Uint8Array(
-      await new Bun.Image(basePng).webp({ lossless: true, quality: 100 }).toBuffer(),
-    )
+    const webp = new Uint8Array(await new Bun.Image(basePng).webp({ lossless: true, quality: 100 }).toBuffer())
     const webpStamped = injectWebpXmp(webp, xmp)
     const webpReport = await inspectImageProvenance(webpStamped)
     expect(webpReport.available).toBe(true)

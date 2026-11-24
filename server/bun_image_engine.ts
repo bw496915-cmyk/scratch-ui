@@ -1,7 +1,8 @@
 /**
- * @file server/bun_image_engine.ts
- * @description Server-side bridge invoking native Bun 1.4.4 `Bun.Image` for asset diagnostics,
- * raw preview serving with strict path containment, and live format/resize transformations.
+ * Server-side bridge invoking native Bun 1.4.4 `Bun.Image` for asset diagnostics, raw preview
+ * serving with strict path containment, and live format/resize transformations.
+ *
+ * @file Server/bun_image_engine.ts
  */
 import { spawn } from "node:child_process"
 import { realpathSync, statSync } from "node:fs"

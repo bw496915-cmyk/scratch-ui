@@ -63,10 +63,9 @@ const BUILTIN_TOOL_POLICIES: Readonly<Record<string, TokenBucketPolicy>> = {
 }
 
 /**
- * Per-caller, per-tool token-bucket Durable Object (`MCP_LIMITER`).
- * Instances are addressed via `env.MCP_LIMITER.idFromName(callerHash)`.
- * Separates Wall (`Date.now()`) for token refill / resetEpochMs from
- * Monotonic (`performance.now()`) for execution latency measurement.
+ * Per-caller, per-tool token-bucket Durable Object (`MCP_LIMITER`). Instances are addressed via
+ * `env.MCP_LIMITER.idFromName(callerHash)`. Separates Wall (`Date.now()`) for token refill /
+ * resetEpochMs from Monotonic (`performance.now()`) for execution latency measurement.
  */
 export class McpLimiterDO {
   private readonly ctx: McpLimiterStateLike

@@ -1,6 +1,7 @@
 /**
- * @file src/config/wagerTiers.ts
- * @description Wager tier configuration loader — resolves @token:* and env:*, validates monotonicity.
+ * Wager tier configuration loader — resolves @token:* and env:*, validates monotonicity.
+ *
+ * @file Src/config/wagerTiers.ts
  */
 
 import { existsSync, readFileSync } from "node:fs"

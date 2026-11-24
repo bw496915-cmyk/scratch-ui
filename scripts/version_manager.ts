@@ -1,15 +1,15 @@
 /**
- * @file scripts/version_manager.ts
- * @description Unified SemVer 2.0 version management & drift auditor for SportsDesk Ops,
- * backed directly by `Bun.semver` (`satisfies` and `order`) via
- * `packages/contracts/src/bun_semver.ts`.
+ * Unified SemVer 2.0 version management & drift auditor for SportsDesk Ops, backed directly by
+ * `Bun.semver` (`satisfies` and `order`) via `packages/contracts/src/bun_semver.ts`. Unifies all
+ * three version tracks under one Bun CLI authority:
  *
- * Unifies all three version tracks under one Bun CLI authority:
- *  1. `workspace` — root `package.json`, `packages/*\/package.json`, `tools/registry/package.json`
- *  2. `design`    — `design/tokens.toml`, `design/branding.toml`, `design/index.ts`,
- *                   `packages/ui/src/tokens.registry.generated.ts`
- *  3. `bun`       — `.bun-version`, active `Bun.version`, `packageManager`, `engines.bun`,
- *                   `@types/bun`, and `.github/workflows/ci.yml`
+ * 1. `workspace` — root `package.json`, `packages/*\/package.json`, `tools/registry/package.json`
+ * 2. `design` — `design/tokens.toml`, `design/branding.toml`, `design/index.ts`,
+ *    `packages/ui/src/tokens.registry.generated.ts`
+ * 3. `bun` — `.bun-version`, active `Bun.version`, `packageManager`, `engines.bun`, `@types/bun`, and
+ *    `.github/workflows/ci.yml`
+ *
+ * @file Scripts/version_manager.ts
  */
 
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
@@ -171,8 +171,8 @@ function getActiveBunVersion(): string | null {
 }
 
 /**
- * Audits all repository version tracks (`workspace`, `design`, `bun`) using
- * `Bun.semver` equality (`order === 0`) and range satisfaction (`satisfies`).
+ * Audits all repository version tracks (`workspace`, `design`, `bun`) using `Bun.semver` equality
+ * (`order === 0`) and range satisfaction (`satisfies`).
  */
 export function auditUnifiedVersions(
   options: AuditUnifiedVersionsOptions = {},
@@ -500,9 +500,9 @@ export function auditUnifiedVersions(
 }
 
 /**
- * Atomically bumps the unified workspace version across root `package.json`,
- * all declared workspace packages (`packages/*\/package.json`), and optionally
- * `tools/registry/package.json`, validating progression with `Bun.semver.order`.
+ * Atomically bumps the unified workspace version across root `package.json`, all declared workspace
+ * packages (`packages/*\/package.json`), and optionally `tools/registry/package.json`, validating
+ * progression with `Bun.semver.order`.
  */
 export function bumpWorkspaceVersions(options: BumpWorkspaceVersionsOptions): VersionBumpResult {
   const rootDir = resolve(options.rootDir ?? process.cwd())

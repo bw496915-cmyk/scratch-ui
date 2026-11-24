@@ -1,10 +1,10 @@
 /**
- * @file packages/ui/src/panels/AgentHierarchyPanel.tsx
- * @description Interactive Fantasy402 `getListAgenstByAgent` (`GENERAL` / `PLAYERS`)
- * Agent Hierarchy & Sanitized Player Directory panel integrated into Rankings.
+ * Interactive Fantasy402 `getListAgenstByAgent` (`GENERAL` / `PLAYERS`) Agent Hierarchy & Sanitized
+ * Player Directory panel integrated into Rankings. Security invariant: `PLAYERS[].Password` is
+ * stripped client-side before upload AND server-side on ingest. Plaintext passwords are never
+ * transmitted or stored.
  *
- * Security invariant: `PLAYERS[].Password` is stripped client-side before upload
- * AND server-side on ingest. Plaintext passwords are never transmitted or stored.
+ * @file Packages/ui/src/panels/AgentHierarchyPanel.tsx
  */
 
 import {
@@ -43,8 +43,8 @@ const TABULAR_NUMS: React.CSSProperties = {
 }
 
 /**
- * Representative synthetic Fantasy402 hierarchy fixture for quick one-click testing.
- * Contains strictly synthetic placeholder records (zero real passwords).
+ * Representative synthetic Fantasy402 hierarchy fixture for quick one-click testing. Contains
+ * strictly synthetic placeholder records (zero real passwords).
  */
 export const SAMPLE_FANTASY402_HIERARCHY_JSON = JSON.stringify(
   {

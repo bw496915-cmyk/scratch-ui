@@ -1,13 +1,12 @@
 import { describe, expect, test } from "bun:test"
 
-import readmeText from "../../README.md" with { type: "text" }
-
 import {
   BUN_RUNTIME_RELEASE_ENHANCEMENTS,
   isMemoryAllocationError,
   safeDecodeTextBytes,
   safeReadBlobText,
 } from "../../packages/ui/src/bun_utilities.ts"
+import readmeText from "../../README.md" with { type: "text" }
 import { parseHardenedS3Endpoint } from "../../src/s3/sealed_r2_handle.ts"
 
 describe("Bun Runtime Release Contracts (Text Imports, S3 Endpoint, TextDecoder, Streams, --isolate)", () => {

@@ -1,12 +1,11 @@
 /**
- * @file packages/ui/src/panels/rankings_heatmap.ts
- * @description Pure scaling, outlier clamping, and bucket-evaluation logic for
- * the Rankings tab handle-volume heat-map overlay.
+ * Pure scaling, outlier clamping, and bucket-evaluation logic for the Rankings tab handle-volume
+ * heat-map overlay. Positive handles are normalized with log10(handle + 1) and clamped to the
+ * visible dataset's P5–P95 bounds so a single whale/syndicate outlier does not compress all other
+ * agents into bucket 1. Null, undefined, and <= 0 handles deterministically map to bucket 0 (no
+ * heat shading).
  *
- * Positive handles are normalized with log10(handle + 1) and clamped to the
- * visible dataset's P5–P95 bounds so a single whale/syndicate outlier does not
- * compress all other agents into bucket 1. Null, undefined, and <= 0 handles
- * deterministically map to bucket 0 (no heat shading).
+ * @file Packages/ui/src/panels/rankings_heatmap.ts
  */
 
 export type HeatBucket = 0 | 1 | 2 | 3 | 4 | 5
@@ -106,9 +105,9 @@ export function formatHeatExactCurrency(usd: number | null | undefined): string 
 }
 
 /**
- * Compute log10 + P5–P95 clamped intensity thresholds for the currently visible
- * dataset. Call inside `useMemo` keyed only on the filtered (unsorted) dataset
- * so sorting, scrolling, and hovering never recalculate thresholds.
+ * Compute log10 + P5–P95 clamped intensity thresholds for the currently visible dataset. Call
+ * inside `useMemo` keyed only on the filtered (unsorted) dataset so sorting, scrolling, and
+ * hovering never recalculate thresholds.
  */
 export function createHandleHeatScale(
   handles: readonly (number | null | undefined)[],
@@ -167,12 +166,11 @@ export function createHandleHeatScale(
 }
 
 /**
- * Map a single handle value to its discrete intensity bucket (0–5) and tooltip
- * metrics against a precomputed `HandleHeatScale`.
+ * Map a single handle value to its discrete intensity bucket (0–5) and tooltip metrics against a
+ * precomputed `HandleHeatScale`.
  *
- * Null, undefined, NaN, and <= 0 values strictly map to bucket 0 (unshaded).
- * Positive active values map across buckets 1–5 using log10(h + 1) clamped
- * to [P5, P95].
+ * Null, undefined, NaN, and <= 0 values strictly map to bucket 0 (unshaded). Positive active values
+ * map across buckets 1–5 using log10(h + 1) clamped to [P5, P95].
  */
 export function evaluateHandleHeatCell(
   scale: HandleHeatScale,
@@ -239,8 +237,8 @@ export function evaluateHandleHeatCell(
 }
 
 /**
- * Precompute a read-only Map of entity key -> HandleHeatCellMetrics whenever
- * the visible dataset changes, preventing per-hover or per-scroll allocations.
+ * Precompute a read-only Map of entity key -> HandleHeatCellMetrics whenever the visible dataset
+ * changes, preventing per-hover or per-scroll allocations.
  */
 export function buildHandleHeatLookup<T>(
   items: readonly T[],

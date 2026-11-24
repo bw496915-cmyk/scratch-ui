@@ -1,8 +1,9 @@
 /**
- * @file packages/ui/src/shadow_pricing/ShadowElasticityChart.tsx
- * @description SVG frontier chart plotting Retail Turnover Elasticity vs. Net Desk Savings.
- * One USD axis anchored at $0, direct end labels instead of a legend, grey context series, and a
- * single accent reserved for the actionable breakeven point.
+ * SVG frontier chart plotting Retail Turnover Elasticity vs. Net Desk Savings. One USD axis
+ * anchored at $0, direct end labels instead of a legend, grey context series, and a single accent
+ * reserved for the actionable breakeven point.
+ *
+ * @file Packages/ui/src/shadow_pricing/ShadowElasticityChart.tsx
  */
 
 import React from "react"

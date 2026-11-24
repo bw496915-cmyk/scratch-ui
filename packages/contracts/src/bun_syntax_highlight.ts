@@ -1,12 +1,11 @@
 /**
- * @file packages/contracts/src/bun_syntax_highlight.ts
- * @description Cross-runtime syntax highlighting engine powered by Bun Utilities API
- * (`Bun.color`, `Bun.stringWidth`, `Bun.stripANSI`, `Bun.escapeHTML`, `Bun.inspect`),
- * `Bun.YAML` (`parseBunYaml` / `stringifyBunYaml`), and `Bun.Terminal`-ready 24-bit
- * TrueColor ANSI SGR output.
+ * Cross-runtime syntax highlighting engine powered by Bun Utilities API (`Bun.color`,
+ * `Bun.stringWidth`, `Bun.stripANSI`, `Bun.escapeHTML`, `Bun.inspect`), `Bun.YAML` (`parseBunYaml`
+ * / `stringifyBunYaml`), and `Bun.Terminal`-ready 24-bit TrueColor ANSI SGR output. Works
+ * identically under Bun (invoking native Rust/Zig `Bun.*` APIs) and in browser/Node bundles (via
+ * deterministic zero-dependency TypeScript fallbacks).
  *
- * Works identically under Bun (invoking native Rust/Zig `Bun.*` APIs) and in
- * browser/Node bundles (via deterministic zero-dependency TypeScript fallbacks).
+ * @file Packages/contracts/src/bun_syntax_highlight.ts
  */
 
 import { type BunYamlEngine, parseBunYamlWithMeta, stringifyBunYaml } from "./bun_yaml.ts"
@@ -51,8 +50,8 @@ export interface HighlightedBlockMetrics {
 }
 
 /**
- * High-contrast dark-console syntax palette calibrated for WCAG AA+ readability
- * on `#0a101d` / `#0d1527` surfaces.
+ * High-contrast dark-console syntax palette calibrated for WCAG AA+ readability on `#0a101d` /
+ * `#0d1527` surfaces.
  */
 export const SYNTAX_TOKEN_PALETTE: Readonly<Record<SyntaxTokenType, SyntaxTokenThemeSpec>> = {
   key: {
@@ -143,8 +142,8 @@ export function detectBunUtilitiesCapabilities(): BunUtilitiesCapabilities {
 }
 
 /**
- * Resolve a CSS hex color via `Bun.color(input, "hex")` when running on Bun,
- * with a deterministic browser/Node fallback.
+ * Resolve a CSS hex color via `Bun.color(input, "hex")` when running on Bun, with a deterministic
+ * browser/Node fallback.
  */
 export function bunColorCss(input: string): string {
   const bun = getBunGlobal()
@@ -162,8 +161,8 @@ export function bunColorCss(input: string): string {
 }
 
 /**
- * Resolve a 24-bit TrueColor ANSI SGR foreground sequence via
- * `Bun.color(input, "ansi-16m")` for `Bun.Terminal` PTY output.
+ * Resolve a 24-bit TrueColor ANSI SGR foreground sequence via `Bun.color(input, "ansi-16m")` for
+ * `Bun.Terminal` PTY output.
  */
 export function bunColorAnsi16m(input: string): string {
   const bun = getBunGlobal()
@@ -184,9 +183,7 @@ export function bunColorAnsi16m(input: string): string {
 const ANSI_STRIP_RE = /\x1b\[[0-9;]*[a-zA-Z]|\x1b]8;[^\x07\x1b]*(?:\x07|\x1b\\)/g
 /* eslint-enable no-control-regex */
 
-/**
- * Strip ANSI escape sequences via `Bun.stripANSI()` when running under Bun.
- */
+/** Strip ANSI escape sequences via `Bun.stripANSI()` when running under Bun. */
 export function bunStripAnsi(text: string): string {
   const bun = getBunGlobal()
   if (typeof bun?.stripANSI === "function") {
@@ -199,9 +196,7 @@ export function bunStripAnsi(text: string): string {
   return text.replace(ANSI_STRIP_RE, "")
 }
 
-/**
- * Measure terminal column display width via `Bun.stringWidth()` when running under Bun.
- */
+/** Measure terminal column display width via `Bun.stringWidth()` when running under Bun. */
 export function bunStringWidth(text: string): number {
   const bun = getBunGlobal()
   if (typeof bun?.stringWidth === "function") {
@@ -221,9 +216,7 @@ export function bunStringWidth(text: string): number {
   return width
 }
 
-/**
- * Escape HTML entities via `Bun.escapeHTML()` when running under Bun.
- */
+/** Escape HTML entities via `Bun.escapeHTML()` when running under Bun. */
 export function bunEscapeHtml(text: string): string {
   const bun = getBunGlobal()
   if (typeof bun?.escapeHTML === "function") {
@@ -789,8 +782,8 @@ export function tokenizeSyntax(text: string, format: SyntaxFormat): readonly Syn
 }
 
 /**
- * Render syntax-highlighted text as 24-bit TrueColor ANSI escape sequences
- * via `Bun.color(hex, "ansi-16m")` for direct `Bun.Terminal` PTY output.
+ * Render syntax-highlighted text as 24-bit TrueColor ANSI escape sequences via `Bun.color(hex,
+ * "ansi-16m")` for direct `Bun.Terminal` PTY output.
  */
 export function formatSyntaxAsBunTerminalAnsi(text: string, format: SyntaxFormat): string {
   const tokens = tokenizeSyntax(text, format)
@@ -809,9 +802,9 @@ export function formatSyntaxAsBunTerminalAnsi(text: string, format: SyntaxFormat
 }
 
 /**
- * Parse a `.env` block into a structured key/value object and serialize it
- * cleanly via `Bun.YAML.stringify` (with `parseBunYaml` verification) so
- * Status Dashboard `.env.example` output can be viewed natively as YAML.
+ * Parse a `.env` block into a structured key/value object and serialize it cleanly via
+ * `Bun.YAML.stringify` (with `parseBunYaml` verification) so Status Dashboard `.env.example` output
+ * can be viewed natively as YAML.
  */
 export function convertEnvTemplateToBunYaml(envText: string): {
   readonly yaml: string
@@ -855,8 +848,8 @@ export function convertEnvTemplateToBunYaml(envText: string): {
 }
 
 /**
- * Compute token statistics and `Bun.stringWidth` column dimensions for any
- * preformatted output block.
+ * Compute token statistics and `Bun.stringWidth` column dimensions for any preformatted output
+ * block.
  */
 export function computeHighlightedBlockMetrics(
   text: string,

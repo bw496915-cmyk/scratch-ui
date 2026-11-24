@@ -1,13 +1,13 @@
 /**
- * @file docs/graph.js
- * @description Interactive controller for the SportsDesk & Fantasy402
- * ingestion data plane (bridges → Bun.cron scheduler → WS hub / R2 edge),
- * Surveillance Graph, Pending Bets Tab, Polymarket & Customer Profile
- * Registry, 4-Week Full-Customer CFB & NBA Parlay/Combo Backtest Tab, the
- * derived data API (`/api/graph/summary` + `/api/graph/stream`), and the
- * live fallback poller (`./graph-live-feed.json` / `/api/graph-feed`).
- * Externalized to comply with strict Cloudflare Pages CSP (`script-src 'self'`);
- * this file is the only controller and the page carries no inline script.
+ * Interactive controller for the SportsDesk & Fantasy402 ingestion data plane (bridges → Bun.cron
+ * scheduler → WS hub / R2 edge), Surveillance Graph, Pending Bets Tab, Polymarket & Customer
+ * Profile Registry, 4-Week Full-Customer CFB & NBA Parlay/Combo Backtest Tab, the derived data API
+ * (`/api/graph/summary` + `/api/graph/stream`), and the live fallback poller
+ * (`./graph-live-feed.json` / `/api/graph-feed`). Externalized to comply with strict Cloudflare
+ * Pages CSP (`script-src 'self'`); this file is the only controller and the page carries no inline
+ * script.
+ *
+ * @file Docs/graph.js
  */
 
 import { buildWalletStats, planGsLiveLinks } from "./assets/gslive-links.js"
@@ -38,9 +38,9 @@ import {
 
   /**
    * One tab implementation for both tab groups. Adds what the markup alone cannot: ids and
-   * `aria-controls` / `aria-labelledby` pairing, a roving tabindex (only the selected tab is
-   * in the Tab order) and the WAI-ARIA arrow/Home/End keyboard model (see `nextTabIndex`).
-   * Every lookup tolerates an empty list, so a page without the group is a no-op.
+   * `aria-controls` / `aria-labelledby` pairing, a roving tabindex (only the selected tab is in the
+   * Tab order) and the WAI-ARIA arrow/Home/End keyboard model (see `nextTabIndex`). Every lookup
+   * tolerates an empty list, so a page without the group is a no-op.
    */
   function wireTabs(buttonList, panelList, buttonAttr, panelAttr, onSelect) {
     const btns = Array.from(buttonList)

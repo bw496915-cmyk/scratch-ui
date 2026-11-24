@@ -1,8 +1,9 @@
 /**
- * @file packages/backend/src/agent_hierarchy.ts
- * @description Fantasy402 `getListAgenstByAgent` (`{ EXTRA, GENERAL, PLAYERS }`)
- * pre-order `(SeqNumber, Level)` hierarchy reconstructor, rate-card aggregator,
- * zero-password-retention player directory sanitizer, and stateful in-memory store.
+ * Fantasy402 `getListAgenstByAgent` (`{ EXTRA, GENERAL, PLAYERS }`) pre-order `(SeqNumber, Level)`
+ * hierarchy reconstructor, rate-card aggregator, zero-password-retention player directory
+ * sanitizer, and stateful in-memory store.
+ *
+ * @file Packages/backend/src/agent_hierarchy.ts
  */
 
 import { existsSync, readFileSync } from "node:fs"
@@ -395,11 +396,11 @@ function finalizeHierarchySnapshot(input: {
 }
 
 /**
- * Parse a Fantasy402 `getListAgenstByAgent` payload (`{ EXTRA, GENERAL, PLAYERS }`)
- * or raw JSON string into a reconstructed pre-order hierarchy snapshot.
+ * Parse a Fantasy402 `getListAgenstByAgent` payload (`{ EXTRA, GENERAL, PLAYERS }`) or raw JSON
+ * string into a reconstructed pre-order hierarchy snapshot.
  *
- * Security invariant: `PLAYERS[].Password` (and any sensitive variants) are
- * immediately discarded and NEVER retained anywhere in the returned snapshot.
+ * Security invariant: `PLAYERS[].Password` (and any sensitive variants) are immediately discarded
+ * and NEVER retained anywhere in the returned snapshot.
  */
 export function parseFantasy402HierarchyPayload(
   rawInput: unknown,
@@ -631,8 +632,8 @@ export function parseFantasy402HierarchyPayload(
 }
 
 /**
- * Load baseline agent hierarchy from disk (`data/agent-tree.json` +
- * `data/agent-index.json`) so the directory is immediately populated on boot.
+ * Load baseline agent hierarchy from disk (`data/agent-tree.json` + `data/agent-index.json`) so the
+ * directory is immediately populated on boot.
  */
 export function loadBaselineAgentHierarchyFromDisk(
   cwd: string = process.cwd(),
@@ -873,8 +874,8 @@ export function createAgentHierarchyStore(options: { readonly cwd?: string | und
   }
 
   /**
-   * Export legacy `data/agent-tree.json`-compatible structure so `GET /api/agent-tree`
-   * stays 100% backward-compatible while reflecting live ingested updates.
+   * Export legacy `data/agent-tree.json`-compatible structure so `GET /api/agent-tree` stays 100%
+   * backward-compatible while reflecting live ingested updates.
    */
   function toLegacyAgentTreeJson(): {
     readonly schemaVersion: 1

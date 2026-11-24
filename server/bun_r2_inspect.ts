@@ -158,8 +158,8 @@ export interface BunS3CapabilitiesSnapshot {
 }
 
 /**
- * Returns a zero-secret snapshot of Bun's native S3Client capabilities,
- * ambient `Bun.s3` seal posture, and DNS cache telemetry.
+ * Returns a zero-secret snapshot of Bun's native S3Client capabilities, ambient `Bun.s3` seal
+ * posture, and DNS cache telemetry.
  */
 export function getBunS3Capabilities(
   configuration: R2ClientConfiguration = loadR2ClientConfiguration(),
@@ -226,8 +226,8 @@ export interface RedactedWebLogsNdjsonPayload {
 }
 
 /**
- * Serializes already-redacted weblog entries (subnet-redacted IPv4/IPv6 + keyed hash)
- * into deterministic NDJSON verified against secret leakage before R2 archival.
+ * Serializes already-redacted weblog entries (subnet-redacted IPv4/IPv6 + keyed hash) into
+ * deterministic NDJSON verified against secret leakage before R2 archival.
  */
 export function buildRedactedWebLogsNdjson(
   result: RedactedWebLogArchiveSource,
@@ -293,8 +293,8 @@ export interface ArchiveWebLogsToR2Result extends S3WriteObjectResult {
 }
 
 /**
- * Archives redacted weblog entries directly to Cloudflare R2 using Bun's native
- * `S3Client` (`SealedR2Handle.writeObject`) with configurable `storageClass`.
+ * Archives redacted weblog entries directly to Cloudflare R2 using Bun's native `S3Client`
+ * (`SealedR2Handle.writeObject`) with configurable `storageClass`.
  */
 export async function archiveWebLogsToR2(
   configuration: R2ClientConfiguration,

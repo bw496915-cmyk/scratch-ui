@@ -1,7 +1,8 @@
 /**
- * @file packages/contracts/src/bun_semver.ts
- * @description Scanner-safe wrappers around `Bun.semver` (`satisfies` and `order`)
- * with deterministic SemVer 2.0 / uint64 bounds checking and Node/browser fallback.
+ * Scanner-safe wrappers around `Bun.semver` (`satisfies` and `order`) with deterministic SemVer 2.0
+ * / uint64 bounds checking and Node/browser fallback.
+ *
+ * @file Packages/contracts/src/bun_semver.ts
  */
 
 export const MAX_SEMVER_UINT64 = 18_446_744_073_709_551_615n
@@ -94,8 +95,8 @@ function makeParsed(
 }
 
 /**
- * Parses and validates an ASCII SemVer 2.0 string with uint64 (`<= 2^64 - 1`)
- * component bounds. Returns `null` on invalid, empty, overflowing, or non-ASCII input.
+ * Parses and validates an ASCII SemVer 2.0 string with uint64 (`<= 2^64 - 1`) component bounds.
+ * Returns `null` on invalid, empty, overflowing, or non-ASCII input.
  */
 export function parseSemver(version: string): ParsedSemver | null {
   if (typeof version !== "string") {
@@ -190,8 +191,8 @@ function compareParsedSemver(a: ParsedSemver, b: ParsedSemver): SemverOrderResul
 }
 
 /**
- * Guards `Bun.semver.order(a, b)` against invalid/unparseable or overflowing
- * version strings. Returns `-1 | 0 | 1`, or `null` if either input is invalid.
+ * Guards `Bun.semver.order(a, b)` against invalid/unparseable or overflowing version strings.
+ * Returns `-1 | 0 | 1`, or `null` if either input is invalid.
  */
 export function safeSemverOrder(a: string, b: string): SemverOrderResult | null {
   const pa = parseSemver(a)
@@ -404,17 +405,17 @@ function parseSemverRangeAst(range: string): readonly (readonly Comparator[])[] 
 }
 
 /**
- * Returns `true` iff `range` is a syntactically valid SemVer range expression
- * with uint64-bounded components. Rejects `""`, `"invalid"`, `"latest"`,
- * `"workspace:*"`, `"npm:..."`, `"!=..."`, and non-ASCII strings.
+ * Returns `true` iff `range` is a syntactically valid SemVer range expression with uint64-bounded
+ * components. Rejects `""`, `"invalid"`, `"latest"`, `"workspace:*"`, `"npm:..."`, `"!=..."`, and
+ * non-ASCII strings.
  */
 export function isValidSemverRange(range: string): boolean {
   return parseSemverRangeAst(range) !== null
 }
 
 /**
- * Scanner-safe replacement for `Bun.semver.satisfies(version, range)` that
- * rejects malformed, empty, or dist-tag/protocol ranges before matching.
+ * Scanner-safe replacement for `Bun.semver.satisfies(version, range)` that rejects malformed,
+ * empty, or dist-tag/protocol ranges before matching.
  */
 export function safeSatisfies(version: string, range: string): boolean {
   const parsedVersion = parseSemver(version)
@@ -479,8 +480,8 @@ export function bunSemverAvailable(): boolean {
 }
 
 /**
- * Normalizes display version strings such as `v1.01.23-next` into canonical
- * SemVer 2.0 (`1.1.23-next`) verified by `parseSemver` / `Bun.semver`.
+ * Normalizes display version strings such as `v1.01.23-next` into canonical SemVer 2.0
+ * (`1.1.23-next`) verified by `parseSemver` / `Bun.semver`.
  */
 export function normalizeSemver(raw: string): string | null {
   if (typeof raw !== "string") {
@@ -508,8 +509,8 @@ export function normalizeSemver(raw: string): string | null {
 }
 
 /**
- * Sorts valid SemVer strings using `Bun.semver.order` (via `safeSemverOrder`).
- * Throws a descriptive error if any entry is not a valid SemVer 2.0 string.
+ * Sorts valid SemVer strings using `Bun.semver.order` (via `safeSemverOrder`). Throws a descriptive
+ * error if any entry is not a valid SemVer 2.0 string.
  */
 export function sortSemver(
   versions: readonly string[],
@@ -528,8 +529,8 @@ export function sortSemver(
 }
 
 /**
- * Returns the highest version in `versions` satisfying `range` using
- * `Bun.semver.satisfies` and `Bun.semver.order`, or `null` if none match.
+ * Returns the highest version in `versions` satisfying `range` using `Bun.semver.satisfies` and
+ * `Bun.semver.order`, or `null` if none match.
  */
 export function maxSatisfying(versions: readonly string[], range: string): string | null {
   const matching = versions.filter((v) => safeSatisfies(v, range))
@@ -541,8 +542,8 @@ export function maxSatisfying(versions: readonly string[], range: string): strin
 }
 
 /**
- * Returns the lowest version in `versions` satisfying `range` using
- * `Bun.semver.satisfies` and `Bun.semver.order`, or `null` if none match.
+ * Returns the lowest version in `versions` satisfying `range` using `Bun.semver.satisfies` and
+ * `Bun.semver.order`, or `null` if none match.
  */
 export function minSatisfying(versions: readonly string[], range: string): string | null {
   const matching = versions.filter((v) => safeSatisfies(v, range))
@@ -554,9 +555,9 @@ export function minSatisfying(versions: readonly string[], range: string): strin
 }
 
 /**
- * Computes the next SemVer 2.0 version for a release bump (`major`, `minor`,
- * `patch`, `premajor`, `preminor`, `prepatch`, `prerelease`) and asserts
- * strict monotonic progression via `Bun.semver.order(next, version) === 1`.
+ * Computes the next SemVer 2.0 version for a release bump (`major`, `minor`, `patch`, `premajor`,
+ * `preminor`, `prepatch`, `prerelease`) and asserts strict monotonic progression via
+ * `Bun.semver.order(next, version) === 1`.
  */
 export function bumpSemver(
   version: string,

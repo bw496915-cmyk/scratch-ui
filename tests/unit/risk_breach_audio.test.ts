@@ -152,9 +152,7 @@ describe("risk_breach_audio", () => {
   })
 
   test("synthesizes Web Audio tones cleanly and degrades gracefully when audio is unavailable", () => {
-    expect(
-      playRiskBreachTone({ tone: "subtle-ping", volume: 0.4 }, { audioContext: null }),
-    ).toEqual({
+    expect(playRiskBreachTone({ tone: "subtle-ping", volume: 0.4 }, { audioContext: null })).toEqual({
       played: false,
       reason: "audio_unavailable",
     })

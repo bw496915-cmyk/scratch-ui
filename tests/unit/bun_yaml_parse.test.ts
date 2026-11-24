@@ -126,10 +126,9 @@ node: &self
   parent: *self
 `
     const nativeCyclic = parseBunYamlWithMeta<Record<string, Record<string, unknown>>>(cyclicYaml)
-    const fallbackCyclic = parseBunYamlWithMeta<Record<string, Record<string, unknown>>>(
-      cyclicYaml,
-      { forceFallback: true },
-    )
+    const fallbackCyclic = parseBunYamlWithMeta<Record<string, Record<string, unknown>>>(cyclicYaml, {
+      forceFallback: true,
+    })
 
     expect(nativeCyclic.hasCircularRefs).toBe(true)
     expect(fallbackCyclic.hasCircularRefs).toBe(true)

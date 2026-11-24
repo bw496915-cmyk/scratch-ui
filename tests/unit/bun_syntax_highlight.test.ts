@@ -40,24 +40,18 @@ describe("Bun Utilities API, Bun.YAML & Bun.Terminal Syntax Highlighting", () =>
     expect(ansiSeq).toContain("\x1b[38;2;")
     expect(bunStripAnsi(`${ansiSeq}hello\x1b[0m`)).toBe("hello")
     expect(bunStringWidth(`${ansiSeq}hello\x1b[0m`)).toBe(5)
-    expect(bunEscapeHtml('<script>"ok"</script>')).toBe(
-      "&lt;script&gt;&quot;ok&quot;&lt;/script&gt;",
-    )
+    expect(bunEscapeHtml('<script>"ok"</script>')).toBe("&lt;script&gt;&quot;ok&quot;&lt;/script&gt;")
   })
 
   test("tokenizes JSON, YAML, TOML, .env, and Markdown briefs into keys, strings, numbers, and booleans", () => {
-    const jsonTokens = tokenizeJson(
-      '{"autoExecute": false, "port": 3000, "host": "sportsdesk", "note": null}',
-    )
+    const jsonTokens = tokenizeJson('{"autoExecute": false, "port": 3000, "host": "sportsdesk", "note": null}')
     expect(jsonTokens.some((t) => t.type === "key" && t.value === '"autoExecute"')).toBe(true)
     expect(jsonTokens.some((t) => t.type === "boolean" && t.value === "false")).toBe(true)
     expect(jsonTokens.some((t) => t.type === "number" && t.value === "3000")).toBe(true)
     expect(jsonTokens.some((t) => t.type === "string" && t.value === '"sportsdesk"')).toBe(true)
     expect(jsonTokens.some((t) => t.type === "null" && t.value === "null")).toBe(true)
 
-    const yamlTokens = tokenizeYaml(
-      "---\nschemaVersion: 1\nenabled: true\ntitle: Live Odds\n# comment\n",
-    )
+    const yamlTokens = tokenizeYaml("---\nschemaVersion: 1\nenabled: true\ntitle: Live Odds\n# comment\n")
     expect(yamlTokens.some((t) => t.type === "section" && t.value === "---")).toBe(true)
     expect(yamlTokens.some((t) => t.type === "key" && t.value === "schemaVersion")).toBe(true)
     expect(yamlTokens.some((t) => t.type === "number" && t.value === "1")).toBe(true)
@@ -84,9 +78,7 @@ describe("Bun Utilities API, Bun.YAML & Bun.Terminal Syntax Highlighting", () =>
     const mdTokens = tokenizeMarkdownBrief(
       '# Status Brief\n- **autoExecute**: false\n- Latency: 12.4ms "healthy"\n```yaml\nenabled: true\nlimit: 500\n```',
     )
-    expect(mdTokens.some((t) => t.type === "section" && t.value.includes("Status Brief"))).toBe(
-      true,
-    )
+    expect(mdTokens.some((t) => t.type === "section" && t.value.includes("Status Brief"))).toBe(true)
     expect(mdTokens.some((t) => t.type === "key" && t.value === "autoExecute")).toBe(true)
     expect(mdTokens.some((t) => t.type === "boolean" && t.value === "false")).toBe(true)
     expect(mdTokens.some((t) => t.type === "number" && t.value === "12.4ms")).toBe(true)
@@ -172,17 +164,13 @@ describe("Bun Utilities API, Bun.YAML & Bun.Terminal Syntax Highlighting", () =>
     expect(survHtml).toContain('data-syntax-token="number"')
     expect(survHtml).toContain('data-syntax-token="string"')
 
-    const npmrcHtml = renderToStaticMarkup(
-      React.createElement(NpmrcSupportSection, { summary: null }),
-    )
+    const npmrcHtml = renderToStaticMarkup(React.createElement(NpmrcSupportSection, { summary: null }))
     expect(npmrcHtml).toContain('data-bunfig-preview="true"')
     expect(npmrcHtml).toContain('data-syntax-format="toml"')
     expect(npmrcHtml).toContain('data-syntax-token="key"')
     expect(npmrcHtml).toContain('data-syntax-token="boolean"')
 
-    const yamlHtml = renderToStaticMarkup(
-      React.createElement(YamlRuntimeSection, { summary: null }),
-    )
+    const yamlHtml = renderToStaticMarkup(React.createElement(YamlRuntimeSection, { summary: null }))
     expect(yamlHtml).toContain('data-bun-yaml-json-preview="true"')
     expect(yamlHtml).toContain('data-syntax-format="json"')
     expect(yamlHtml).toContain('data-bun-yaml-stringify-preview="true"')

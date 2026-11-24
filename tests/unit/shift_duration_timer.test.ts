@@ -25,12 +25,8 @@ describe("Header Shift Duration Timer & 8-Hour Handoff Alert", () => {
 
   test("resolveShiftDurationTone transitions cleanly at 7.5h warning and 8h handoff thresholds", () => {
     expect(resolveShiftDurationTone(120).statusLabel).toBe("Active Shift")
-    expect(resolveShiftDurationTone(SHIFT_HANDOFF_WARN_SECONDS).statusLabel).toBe(
-      "Approaching 8h Handoff",
-    )
-    expect(resolveShiftDurationTone(SHIFT_HANDOFF_DUE_SECONDS).statusLabel).toBe(
-      "Handoff Due (8h+)",
-    )
+    expect(resolveShiftDurationTone(SHIFT_HANDOFF_WARN_SECONDS).statusLabel).toBe("Approaching 8h Handoff")
+    expect(resolveShiftDurationTone(SHIFT_HANDOFF_DUE_SECONDS).statusLabel).toBe("Handoff Due (8h+)")
   })
 
   test("shouldTriggerShiftHandoffAlert fires only when >= 8h and handoff has not been initiated or dismissed", () => {

@@ -1,6 +1,7 @@
 /**
- * @file src/shims/bun_bundle.ts
- * @description Node.js/Vite runtime shim for `import { feature } from "bun:bundle"`.
+ * Node.js/Vite runtime shim for `import { feature } from "bun:bundle"`.
+ *
+ * @file Src/shims/bun_bundle.ts
  */
 
 const ACTIVE_FEATURES = new Set<string>(

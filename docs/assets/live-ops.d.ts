@@ -1,9 +1,9 @@
 /**
  * Types for `docs/assets/live-ops.js` (the /graph Live Wagers & Our Positions helpers).
  *
- * The module is plain browser JS shipped as-is, so this declaration file is the contract
- * the TS tests and the typechecker see. Keep it structural: unknown feed fields stay
- * `unknown` and every accessor is defensive on the runtime side.
+ * The module is plain browser JS shipped as-is, so this declaration file is the contract the TS
+ * tests and the typechecker see. Keep it structural: unknown feed fields stay `unknown` and every
+ * accessor is defensive on the runtime side.
  */
 
 export interface WalletProfileRow {

@@ -1,22 +1,21 @@
 /**
- * @file packages/api/src/npmrc_loader.ts
- * @description Server-side filesystem discovery and loading for Bun `.npmrc`
- * and `bunfig.toml` configuration layers.
+ * Server-side filesystem discovery and loading for Bun `.npmrc` and `bunfig.toml` configuration
+ * layers. Load order (later overrides earlier):
  *
- * Load order (later overrides earlier):
- * 1. User `.npmrc`: `NPM_CONFIG_USERCONFIG` (relative to cwd, supports `~/`),
- *    else `$XDG_CONFIG_HOME/.npmrc` if it exists, else `$HOME/.npmrc`.
+ * 1. User `.npmrc`: `NPM_CONFIG_USERCONFIG` (relative to cwd, supports `~/`), else
+ *    `$XDG_CONFIG_HOME/.npmrc` if it exists, else `$HOME/.npmrc`.
  * 2. Project `.npmrc` next to root `package.json`.
  * 3. Global `bunfig.toml` (`$XDG_CONFIG_HOME/.bunfig.toml` or `$HOME/.bunfig.toml`).
  * 4. Project `./bunfig.toml`.
  * 5. Environment variables (`BUN_CONFIG_REGISTRY`/`NPM_CONFIG_REGISTRY`,
  *    `BUN_CONFIG_TOKEN`/`NPM_CONFIG_TOKEN`, `NPM_CONFIG_IGNORE_SCRIPTS`).
- * 6. CLI flags (optional override).
+ * 6. CLI flags (optional override). Security invariants:
  *
- * Security invariants:
  * - Unreadable or missing files are skipped silently (matching Bun/npm).
- * - Public `loadRedactedNpmrcStatusSummary()` strictly strips all secret values
- *   before returning telemetry to `/api/config/status`.
+ * - Public `loadRedactedNpmrcStatusSummary()` strictly strips all secret values before returning
+ *   telemetry to `/api/config/status`.
+ *
+ * @file Packages/api/src/npmrc_loader.ts
  */
 
 import { existsSync, readFileSync } from "node:fs"
@@ -66,6 +65,7 @@ function tryReadTextFile(filePath: string): string | null {
 
 /**
  * Resolve the user-level `.npmrc` path using Bun's exact rules:
+ *
  * 1. `NPM_CONFIG_USERCONFIG` (relative to `cwd`, expanding leading `~/`)
  * 2. `$XDG_CONFIG_HOME/.npmrc` if it exists
  * 3. `$HOME/.npmrc`
@@ -90,9 +90,7 @@ export function resolveUserNpmrcPath(options: {
   return resolve(options.homeDir, ".npmrc")
 }
 
-/**
- * Resolve the global `bunfig.toml` path (`$XDG_CONFIG_HOME/.bunfig.toml` or `$HOME/.bunfig.toml`).
- */
+/** Resolve the global `bunfig.toml` path (`$XDG_CONFIG_HOME/.bunfig.toml` or `$HOME/.bunfig.toml`). */
 export function resolveGlobalBunfigPath(options: {
   readonly homeDir: string
   readonly env: Readonly<Record<string, string | undefined>>
@@ -187,9 +185,7 @@ function summarizeBunfigActiveKeys(parsed: ParsedBunfigInstallConfig): readonly 
   return keys
 }
 
-/**
- * Discover, parse, and merge `.npmrc`, `bunfig.toml`, env, and CLI layers.
- */
+/** Discover, parse, and merge `.npmrc`, `bunfig.toml`, env, and CLI layers. */
 export function loadBunNpmrcFromDisk(
   options: LoadBunNpmrcFromDiskOptions = {},
 ): LoadedBunNpmrcDiskResult {
@@ -377,8 +373,8 @@ export function loadBunNpmrcFromDisk(
 }
 
 /**
- * Return a strictly redacted `.npmrc` & `bunfig.toml` status summary safe for
- * HTTP responses (`/api/config/status`) and browser rendering.
+ * Return a strictly redacted `.npmrc` & `bunfig.toml` status summary safe for HTTP responses
+ * (`/api/config/status`) and browser rendering.
  */
 export function loadRedactedNpmrcStatusSummary(
   options: LoadBunNpmrcFromDiskOptions = {},

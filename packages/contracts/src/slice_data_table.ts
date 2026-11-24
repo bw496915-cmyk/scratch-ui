@@ -1,12 +1,12 @@
 /**
- * @file packages/contracts/src/slice_data_table.ts
- * @description Structure-of-Arrays (SoA) TypedArray DataTable spine for `SliceMetrics`.
+ * Structure-of-Arrays (SoA) TypedArray DataTable spine for `SliceMetrics`. Wiring contract:
  *
- * Wiring contract:
  * - Adds `vig_capture_pct`, `directional_pnl_usd`, `net_position_usd`, `gross_hold_usd`,
  *   `floor_delta_pct`, and `flags` (`Uint32Array` bitmask) as columnar SoA buffers.
  * - Computes derived columns and flags ONCE per stream `flush()`, never per render read.
  * - Uses fixed-capacity TypedArrays and `Uint32Array` bitsets (zero `Map`, `Set`, or `boolean[]`).
+ *
+ * @file Packages/contracts/src/slice_data_table.ts
  */
 
 import {
@@ -235,9 +235,9 @@ export class SliceMetricsSoASpine {
   /**
    * Predicate read over the encapsulated `blockEnforcedBits` `Uint32Array` bitset.
    *
-   * @param rowIndex - Active **SoA flush-batch row index** (`0..rowCount - 1`),
-   *   NOT a `SLICE_REGISTRY` index (`flush()` accepts arbitrary filtered/ordered batches;
-   *   use {@link isSliceBlockEnforced} when querying by canonical `slice_id`).
+   * @param rowIndex - Active **SoA flush-batch row index** (`0..rowCount - 1`), NOT a
+   *   `SLICE_REGISTRY` index (`flush()` accepts arbitrary filtered/ordered batches; use
+   *   {@link isSliceBlockEnforced} when querying by canonical `slice_id`).
    */
   isBlockEnforcedAt(rowIndex: number): boolean {
     if (rowIndex < 0 || rowIndex >= this.activeRowCount) {
@@ -247,10 +247,10 @@ export class SliceMetricsSoASpine {
   }
 
   /**
-   * Policy-boundary predicate read of `block_enforced` by canonical `slice_id`
-   * over active flushed rows. Never fails silently on an absent `slice_id`:
-   * increments `slice_unknown_total{slice_id}` and throws `UnknownSliceIdError`
-   * in dev/test profiles (or returns `false` when `onUnknownSlice === "telemetry"`).
+   * Policy-boundary predicate read of `block_enforced` by canonical `slice_id` over active flushed
+   * rows. Never fails silently on an absent `slice_id`: increments `slice_unknown_total{slice_id}`
+   * and throws `UnknownSliceIdError` in dev/test profiles (or returns `false` when `onUnknownSlice
+   * === "telemetry"`).
    */
   isSliceBlockEnforced(slice_id: string, options?: SlicePredicateOptions): boolean {
     for (let rowIndex = 0; rowIndex < this.activeRowCount; rowIndex++) {
@@ -264,8 +264,8 @@ export class SliceMetricsSoASpine {
   /**
    * Predicate read over the encapsulated `flagsMask` `Uint32Array` bitset.
    *
-   * @param rowIndex - Active **SoA flush-batch row index** (`0..rowCount - 1`),
-   *   NOT a `SLICE_REGISTRY` index.
+   * @param rowIndex - Active **SoA flush-batch row index** (`0..rowCount - 1`), NOT a
+   *   `SLICE_REGISTRY` index.
    */
   hasFlagAt(rowIndex: number, flag: SliceFlag): boolean {
     if (rowIndex < 0 || rowIndex >= this.activeRowCount) {
@@ -275,8 +275,8 @@ export class SliceMetricsSoASpine {
   }
 
   /**
-   * Ingests a stream flush batch, computing all derived columns and gate flags
-   * once and writing them into the pre-allocated SoA TypedArray buffers.
+   * Ingests a stream flush batch, computing all derived columns and gate flags once and writing
+   * them into the pre-allocated SoA TypedArray buffers.
    */
   flush(inputs: readonly (SliceMetricsInput | SliceMetrics)[]): number {
     if (inputs.length > this.capacity) {
@@ -333,9 +333,9 @@ export class SliceMetricsSoASpine {
   }
 
   /**
-   * Projects row `rowIndex` (SoA flush-batch row position `0..rowCount - 1`,
-   * NOT a `SLICE_REGISTRY` index) directly from the SoA TypedArray columns
-   * without invoking any derivation or gate evaluation functions.
+   * Projects row `rowIndex` (SoA flush-batch row position `0..rowCount - 1`, NOT a `SLICE_REGISTRY`
+   * index) directly from the SoA TypedArray columns without invoking any derivation or gate
+   * evaluation functions.
    */
   readRowAt(rowIndex: number): SliceMetrics {
     if (rowIndex < 0 || rowIndex >= this.activeRowCount) {
@@ -374,9 +374,7 @@ export class SliceMetricsSoASpine {
     }
   }
 
-  /**
-   * Render-path read of all active rows from SoA columns (zero derivation recomputation).
-   */
+  /** Render-path read of all active rows from SoA columns (zero derivation recomputation). */
   readAllRows(): SliceMetrics[] {
     this.totalRenderReads += 1
     const out: SliceMetrics[] = []

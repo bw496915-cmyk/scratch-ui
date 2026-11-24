@@ -303,9 +303,7 @@ describe("StatusDashboardPanel UI rendering", () => {
     expect(html).toContain("`")
     // Verify Ctrl+1..9 and Ctrl+0 tab shortcuts are all represented
     for (const digit of ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]) {
-      expect(
-        GLOBAL_KEYBOARD_SHORTCUTS.some((s) => s.keys[0] === "Ctrl" && s.keys[1] === digit),
-      ).toBe(true)
+      expect(GLOBAL_KEYBOARD_SHORTCUTS.some((s) => s.keys[0] === "Ctrl" && s.keys[1] === digit)).toBe(true)
     }
 
     // Verify scope filtering and collapsed mode

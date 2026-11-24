@@ -1,18 +1,17 @@
 /**
- * @file scripts/sportsdesk_cli.ts
- * @description Unified Bun CLI entrypoint (`bun run cli <command>`) for SportsDesk Ops Dashboard.
+ * Unified Bun CLI entrypoint (`bun run cli <command>`) for SportsDesk Ops Dashboard. Unifies:
  *
- * Unifies:
- *  - Generated artifacts & design token compilation (`cli artifacts generate|check|status`)
- *  - Markdown documentation link/staleness audit & terminal rendering (`cli docs check|list|render`)
- *  - Live Bun Runtime Surface introspection (`cli surface [--kinds|--deep|--json]`)
- *  - Repository integrity gates (`cli check [all|lockfile|route-surface|bundle-hygiene|shell-boundary|snapshots|artifacts|docs]`)
- *  - Grouped package.json scripts catalog (`cli scripts [filter]`)
+ * - Generated artifacts & design token compilation (`cli artifacts generate|check|status`)
+ * - Markdown documentation link/staleness audit & terminal rendering (`cli docs check|list|render`)
+ * - Live Bun Runtime Surface introspection (`cli surface [--kinds|--deep|--json]`)
+ * - Repository integrity gates (`cli check
+ *   [all|lockfile|route-surface|bundle-hygiene|shell-boundary|snapshots|artifacts|docs]`)
+ * - Grouped package.json scripts catalog (`cli scripts [filter]`) Security:
+ * - Enforces `assertSafeExecArgv()` on startup to block unallowlisted `--env-file` bleed.
+ * - Uses fixed-argv `Bun.spawnSync` / `execFileSync` (zero raw shells).
+ * - Never reads or prints `Bun.env` or `Bun.secrets` values.
  *
- * Security:
- *  - Enforces `assertSafeExecArgv()` on startup to block unallowlisted `--env-file` bleed.
- *  - Uses fixed-argv `Bun.spawnSync` / `execFileSync` (zero raw shells).
- *  - Never reads or prints `Bun.env` or `Bun.secrets` values.
+ * @file Scripts/sportsdesk_cli.ts
  */
 
 import { execFileSync } from "node:child_process"

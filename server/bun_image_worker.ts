@@ -1,9 +1,9 @@
 /**
- * @file server/bun_image_worker.ts
- * @description Native Bun 1.4.4 worker for `Bun.Image` scanning, byte-level format sniffing,
- * ThumbHash placeholder generation, SHA-256 hashing, and chained image transformations.
+ * Native Bun 1.4.4 worker for `Bun.Image` scanning, byte-level format sniffing, ThumbHash
+ * placeholder generation, SHA-256 hashing, and chained image transformations. Executed via `bun run
+ * server/bun_image_worker.ts <scan|transform>` with JSON on stdin.
  *
- * Executed via `bun run server/bun_image_worker.ts <scan|transform>` with JSON on stdin.
+ * @file Server/bun_image_worker.ts
  */
 import { readdir, stat } from "node:fs/promises"
 import { extname, join, relative, resolve } from "node:path"
@@ -11,10 +11,7 @@ import { extname, join, relative, resolve } from "node:path"
 import type { Image } from "bun"
 
 import { sha256HexBytes } from "../lib/binary.ts"
-import {
-  encodeImageWithAvifFallback,
-  toImageRpcPayload,
-} from "../lib/image_avif_fallback.ts"
+import { encodeImageWithAvifFallback, toImageRpcPayload } from "../lib/image_avif_fallback.ts"
 import {
   buildSportsdeskProvenanceXmp,
   type ImageProvenanceContextInput,
@@ -51,10 +48,12 @@ interface TransformRequest {
   readonly colors?: number | undefined
   readonly dither?: boolean | undefined
   readonly xmpXml?: string | undefined
-  readonly metadataContext?: (ImageProvenanceContextInput & {
-    readonly streamId?: string | undefined
-    readonly genU32?: number | undefined
-  }) | undefined
+  readonly metadataContext?:
+    | (ImageProvenanceContextInput & {
+        readonly streamId?: string | undefined
+        readonly genU32?: number | undefined
+      })
+    | undefined
   readonly rotate?: 0 | 90 | 180 | 270 | undefined
   readonly flip?: boolean | undefined
   readonly flop?: boolean | undefined

@@ -1,8 +1,9 @@
 /**
- * @file server/adapters.ts
- * @description Node.js 22 runtime adapters for SportsDesk Enhanced Surveillance Dashboard APIs.
- * Replaces Bun-only runtime primitives (Bun.dns, Bun.Terminal, Bun.Image, Bun.build, bun:sqlite)
- * with standard Node.js implementations and in-memory database mocks.
+ * Node.js 22 runtime adapters for SportsDesk Enhanced Surveillance Dashboard APIs. Replaces
+ * Bun-only runtime primitives (Bun.dns, Bun.Terminal, Bun.Image, Bun.build, bun:sqlite) with
+ * standard Node.js implementations and in-memory database mocks.
+ *
+ * @file Server/adapters.ts
  */
 
 import { createHash } from "node:crypto"

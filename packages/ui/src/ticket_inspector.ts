@@ -1,6 +1,4 @@
-/**
- * Pure helpers for the Live Wagers Ticket Inspector (taxonomy, price math, PTY, deep links).
- */
+/** Pure helpers for the Live Wagers Ticket Inspector (taxonomy, price math, PTY, deep links). */
 
 import { WAGER_CHANNEL_LABELS, type WagerChannel, wagerChannelOf } from "@sportsdesk-ops/contracts"
 
@@ -312,7 +310,10 @@ export function formatImpliedProbability(oddsAmerican: string): string {
   return `${(p * 100).toFixed(1)}%`
 }
 
-/** Break-even implied win probability derived from ticket risk & to-win payout when explicit odds are absent. */
+/**
+ * Break-even implied win probability derived from ticket risk & to-win payout when explicit odds
+ * are absent.
+ */
 export function formatImpliedProbabilityFromPayout(riskUsd: number, toWinUsd: number): string {
   if (!Number.isFinite(riskUsd) || !Number.isFinite(toWinUsd) || riskUsd <= 0 || toWinUsd <= 0) {
     return "—"

@@ -1,8 +1,8 @@
 /**
  * Pure WebSocket heartbeat sync-status evaluation and exact elapsed-time formatter.
  *
- * Evaluates stream stability against the 5-second WebSocket ping/pong heartbeat cadence
- * so operators get immediate, deterministic feedback without layout jitter.
+ * Evaluates stream stability against the 5-second WebSocket ping/pong heartbeat cadence so
+ * operators get immediate, deterministic feedback without layout jitter.
  */
 
 export type WsSyncStabilityState = "stable" | "delayed" | "stale" | "connecting" | "offline"
@@ -42,8 +42,8 @@ export function parseHeartbeatTimestampMs(
 }
 
 /**
- * Format exact elapsed duration since the last WebSocket heartbeat.
- * Examples: `0s`, `4s`, `59s`, `1m 04s`, `1h 02m 09s`.
+ * Format exact elapsed duration since the last WebSocket heartbeat. Examples: `0s`, `4s`, `59s`,
+ * `1m 04s`, `1h 02m 09s`.
  */
 export function formatHeartbeatElapsed(elapsedMs: number | null): string {
   if (elapsedMs === null || !Number.isFinite(elapsedMs)) return "—"
@@ -61,8 +61,8 @@ export function formatHeartbeatElapsed(elapsedMs: number | null): string {
 }
 
 /**
- * Compute deterministic stream stability state and human-readable telemetry labels
- * from the WebSocket connection flag and last received pong heartbeat timestamp.
+ * Compute deterministic stream stability state and human-readable telemetry labels from the
+ * WebSocket connection flag and last received pong heartbeat timestamp.
  */
 export function evaluateWsSyncStatus(input: WsSyncStatusInput): WsSyncStatusView {
   const nowMs = input.nowMs ?? Date.now()

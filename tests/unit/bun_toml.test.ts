@@ -141,9 +141,7 @@ truncated = 1979-05-27T07:32:00.123456789999Z
 
     expect(() => parseToml('a = "hello"\n', { maxBytes: 4 })).toThrow(ERR_TOML_TOO_LARGE)
 
-    const clean = parseToml<Record<string, unknown>>(
-      `["__proto__"]\npolluted = true\n[safe]\nok = 1\n`,
-    )
+    const clean = parseToml<Record<string, unknown>>(`["__proto__"]\npolluted = true\n[safe]\nok = 1\n`)
     expect(Object.prototype.hasOwnProperty.call(clean, "__proto__")).toBe(false)
     expect(clean.safe).toEqual({ ok: 1 })
   })
@@ -256,9 +254,7 @@ describe("Bun.TOML.stringify() & TS fallback parity", () => {
       ).toBe('keep = "yes"\n')
 
       // Special floats
-      expect(stringifyToml({ a: Infinity, b: -Infinity, c: NaN }, opts)).toBe(
-        "a = inf\nb = -inf\nc = nan\n",
-      )
+      expect(stringifyToml({ a: Infinity, b: -Infinity, c: NaN }, opts)).toBe("a = inf\nb = -inf\nc = nan\n")
 
       // Top-level non-object throws
       expect(() => stringifyToml(null, opts)).toThrow()

@@ -1,11 +1,11 @@
 /**
- * @file packages/ui/src/panels/BunAssetsTabPanel.tsx
- * @description Native Bun 1.4.4 `Bun.Image` Asset Diagnostics & Format Studio.
+ * Native Bun 1.4.4 `Bun.Image` Asset Diagnostics & Format Studio. Consumes `GET
+ * /api/diagnostics/image-assets`, `GET /api/diagnostics/image-assets/raw`, and `POST
+ * /api/diagnostics/image-assets/transform` to inspect real workspace assets, surface byte-level
+ * format vs extension mismatches, preview ThumbHash placeholders, and execute live chained
+ * `Bun.Image` resize/modulate/transcode pipelines.
  *
- * Consumes `GET /api/diagnostics/image-assets`, `GET /api/diagnostics/image-assets/raw`,
- * and `POST /api/diagnostics/image-assets/transform` to inspect real workspace assets,
- * surface byte-level format vs extension mismatches, preview ThumbHash placeholders,
- * and execute live chained `Bun.Image` resize/modulate/transcode pipelines.
+ * @file Packages/ui/src/panels/BunAssetsTabPanel.tsx
  */
 import type React from "react"
 import { useCallback, useEffect, useMemo, useState } from "react"
@@ -578,7 +578,8 @@ export function BunAssetsTabPanel({
           brightness,
           saturation,
           metadataContext:
-            embedXmpContext && (targetFormat === "webp" || targetFormat === "png" || targetFormat === "avif")
+            embedXmpContext &&
+            (targetFormat === "webp" || targetFormat === "png" || targetFormat === "avif")
               ? {
                   streamId: metaStreamId.trim() || undefined,
                   title: metaTitle.trim() || undefined,
@@ -587,11 +588,7 @@ export function BunAssetsTabPanel({
                     `Generated via SportsDesk Bun.Image Format Studio from ${selectedAsset.source}`,
                   assetRole: metaAssetRole.trim() || undefined,
                   surfaceContext: metaSurfaceContext.trim() || undefined,
-                  subjects: [
-                    "sportsdesk-ops",
-                    metaAssetRole.trim() || "brand-asset",
-                    targetFormat,
-                  ],
+                  subjects: ["sportsdesk-ops", metaAssetRole.trim() || "brand-asset", targetFormat],
                 }
               : undefined,
         }),
@@ -2148,8 +2145,7 @@ export function BunAssetsTabPanel({
                                       borderRadius: "4px",
                                       borderWidth: "1px",
                                       borderStyle: "solid",
-                                      borderColor:
-                                        pngColors === preset ? "#38bdf8" : "#334155",
+                                      borderColor: pngColors === preset ? "#38bdf8" : "#334155",
                                       backgroundColor:
                                         pngColors === preset
                                           ? "rgba(56, 189, 248, 0.16)"
@@ -2414,7 +2410,9 @@ export function BunAssetsTabPanel({
                             gap: "8px",
                           }}
                         >
-                          <label style={{ display: "block", color: "#94a3b8", gridColumn: "1 / -1" }}>
+                          <label
+                            style={{ display: "block", color: "#94a3b8", gridColumn: "1 / -1" }}
+                          >
                             dc:title
                             <input
                               type="text"
@@ -2482,7 +2480,9 @@ export function BunAssetsTabPanel({
                               }}
                             />
                           </label>
-                          <label style={{ display: "block", color: "#94a3b8", gridColumn: "1 / -1" }}>
+                          <label
+                            style={{ display: "block", color: "#94a3b8", gridColumn: "1 / -1" }}
+                          >
                             sportsdesk:streamId
                             <input
                               type="text"

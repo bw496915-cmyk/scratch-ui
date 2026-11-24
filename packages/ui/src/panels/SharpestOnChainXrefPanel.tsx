@@ -472,8 +472,8 @@ export interface ProfileOnChainXrefCardProps {
 }
 
 /**
- * Per-profile on-chain wager tracking cross-reference audit card rendered inside
- * the Profile Drilldown Forensics tab.
+ * Per-profile on-chain wager tracking cross-reference audit card rendered inside the Profile
+ * Drilldown Forensics tab.
  */
 export function ProfileOnChainXrefCard({
   xref,

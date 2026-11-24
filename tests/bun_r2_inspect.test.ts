@@ -6,15 +6,7 @@ describe("Bun R2 inspection", () => {
   test("checks object key size in UTF-8 bytes and rejects malformed keys", () => {
     expect(isR2ObjectProbeKey("a".repeat(1_024))).toBe(true)
     expect(isR2ObjectProbeKey("東".repeat(341) + "a")).toBe(true)
-    for (const key of [
-      "",
-      "a".repeat(1_025),
-      "東".repeat(342),
-      "a\\b",
-      "a/./b",
-      "a/../b",
-      "a\nb",
-    ]) {
+    for (const key of ["", "a".repeat(1_025), "東".repeat(342), "a\\b", "a/./b", "a/../b", "a\nb"]) {
       expect(isR2ObjectProbeKey(key)).toBe(false)
     }
   })
@@ -61,9 +53,7 @@ describe("Bun R2 inspection", () => {
     ]) {
       expect(() => assertNoSecretLeak(surface, [secret])).toThrow("ERR_INSP_SECRET_REDACTION_LEAK")
     }
-    expect(() =>
-      assertNoSecretLeak("Bearer REDACTED; GSLIVE_SESSION_ID=[REDACTED_SECRET]; sd_session="),
-    ).not.toThrow()
+    expect(() => assertNoSecretLeak("Bearer REDACTED; GSLIVE_SESSION_ID=[REDACTED_SECRET]; sd_session=")).not.toThrow()
   })
 
   test("seals Bun.s3 and keeps explicitly selected S3 credentials out of every diagnostic view", async () => {

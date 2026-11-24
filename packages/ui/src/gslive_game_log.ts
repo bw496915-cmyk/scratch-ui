@@ -1,10 +1,10 @@
 /**
- * @file packages/ui/src/gslive_game_log.ts
- * @description GSLIVE game log (one row per game) and event log (one row per ticket),
- * derived only from the wager rows the dashboard already holds.
+ * GSLIVE game log (one row per game) and event log (one row per ticket), derived only from the
+ * wager rows the dashboard already holds. The feed gives a wall-clock string (`7:45:03 PM ET`) and
+ * no epoch, so ordering is parsed from that string; an unparseable stamp is kept but sorts last
+ * instead of being guessed.
  *
- * The feed gives a wall-clock string (`7:45:03 PM ET`) and no epoch, so ordering is parsed
- * from that string; an unparseable stamp is kept but sorts last instead of being guessed.
+ * @file Packages/ui/src/gslive_game_log.ts
  */
 
 import { wagerChannelOf } from "@sportsdesk-ops/contracts"
@@ -75,7 +75,7 @@ export interface GsliveGameRow {
   readonly top3CustomerSharePct: number
   /** Busiest 60-second window: how many tickets landed inside it. */
   readonly maxTicketsIn60s: number
-  /** Alert mix, so a game row says *why* it is risky, not only how much. */
+  /** Alert mix, so a game row says _why_ it is risky, not only how much. */
   readonly alertCounts: {
     readonly critical: number
     readonly steam: number

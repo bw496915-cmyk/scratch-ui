@@ -11,6 +11,12 @@
     "./ws": "./src/ws.ts",
     "./router": "./src/router.ts"
   },
+  "scripts": {
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "lint": "tsc --noEmit --project tsconfig.json",
+    "format": "bun fmt .",
+    "format:check": "bun fmt --check ."
+  },
   "dependencies": {
     "@sportsdesk-ops/backend": "*",
     "@sportsdesk-ops/contracts": "*"

@@ -1,10 +1,9 @@
 /**
- * @file packages/ui/src/alert_audit.ts
- * @description Audit-stream helpers for the Alerts / DLQ tab: a stable JSONL
- * projection of each delivery, a free-text matcher, and status counts.
+ * Audit-stream helpers for the Alerts / DLQ tab: a stable JSONL projection of each delivery, a
+ * free-text matcher, and status counts. The JSONL projection fixes the field order so two exports
+ * of the same stream diff cleanly, and spells missing values as `null` instead of dropping keys.
  *
- * The JSONL projection fixes the field order so two exports of the same stream
- * diff cleanly, and spells missing values as `null` instead of dropping keys.
+ * @file Packages/ui/src/alert_audit.ts
  */
 
 import type { DashboardAlertRecord } from "./types.ts"
@@ -65,8 +64,8 @@ export function alertAuditJson(alert: DashboardAlertRecord): string {
 }
 
 /**
- * Newline-delimited JSON for the visible audit stream, one record per line and
- * a trailing newline; empty input returns an empty string rather than a blank line.
+ * Newline-delimited JSON for the visible audit stream, one record per line and a trailing newline;
+ * empty input returns an empty string rather than a blank line.
  */
 export function formatAlertAuditJsonl(alerts: readonly DashboardAlertRecord[]): string {
   if (alerts.length === 0) return ""
@@ -74,9 +73,9 @@ export function formatAlertAuditJsonl(alerts: readonly DashboardAlertRecord[]): 
 }
 
 /**
- * Case-insensitive match over everything an operator can identify an alert by:
- * delivery id, ticket, customer, tier/status, error, lineage, ack note and the
- * payload's event/selection/odds. An empty query matches everything.
+ * Case-insensitive match over everything an operator can identify an alert by: delivery id, ticket,
+ * customer, tier/status, error, lineage, ack note and the payload's event/selection/odds. An empty
+ * query matches everything.
  */
 export function alertMatchesQuery(alert: DashboardAlertRecord, rawQuery: string): boolean {
   const query = rawQuery.trim().toLowerCase()

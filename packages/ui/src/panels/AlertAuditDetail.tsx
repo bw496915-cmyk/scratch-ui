@@ -46,9 +46,9 @@ function card(): React.CSSProperties {
 }
 
 /**
- * Full audit record for one delivery: the ticket payload that was screened, the
- * delivery lineage (attempts, message id, final error, replay origin), and the
- * explicit ack. The list row shows only the directive; this is the evidence view.
+ * Full audit record for one delivery: the ticket payload that was screened, the delivery lineage
+ * (attempts, message id, final error, replay origin), and the explicit ack. The list row shows only
+ * the directive; this is the evidence view.
  */
 export function AlertAuditDetail({ alert, now }: AlertAuditDetailProps): React.ReactElement {
   const age = formatRelativeAge(

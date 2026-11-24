@@ -1,9 +1,9 @@
 /**
- * @file packages/contracts/src/bun_file_loader.ts
- * @description Canonical contracts, loader matrices, BunFile/Blob specifications,
- * verified Bun 1.4.4 runtime edge cases (WASM, SQLite embed, N-API TSFN, metafile),
- * hashed asset emission simulator, dashboard UI contract, and end-to-end
- * `Bun.build` / `--compile` pipeline snippet generator.
+ * Canonical contracts, loader matrices, BunFile/Blob specifications, verified Bun 1.4.4 runtime
+ * edge cases (WASM, SQLite embed, N-API TSFN, metafile), hashed asset emission simulator, dashboard
+ * UI contract, and end-to-end `Bun.build` / `--compile` pipeline snippet generator.
+ *
+ * @file Packages/contracts/src/bun_file_loader.ts
  */
 
 export type BunAssetLoaderKind = "file" | "yaml" | "napi" | "sqlite"
@@ -480,8 +480,8 @@ export const DEFAULT_BUN_FILE_LOADER_PIPELINE: BunFileLoaderPipelineConfig = {
 }
 
 /**
- * Deterministic 8-hex-char FNV-1a content fingerprint used for illustrating
- * content-hashed `assets/<name>-<hash>.<ext>` emission in pure TS/browser mode.
+ * Deterministic 8-hex-char FNV-1a content fingerprint used for illustrating content-hashed
+ * `assets/<name>-<hash>.<ext>` emission in pure TS/browser mode.
  */
 export function deterministicAssetHash8(seed: string): string {
   let hash = 0x811c9dc5

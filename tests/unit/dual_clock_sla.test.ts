@@ -84,9 +84,7 @@ describe("DualClock SLA Evaluator — MonotonicClock & WallClock transitions", (
     // 1. Fresh probe (80ms < 125ms warn for ALERT 250ms SLA)
     evaluator.beginProbe()
     monoNs += 80_000_000
-    expect(evaluator.tickScalars(40, 0, 2, 0, 10, 42, wallMs - 1_000, wallMs - 2_000)).toBe(
-      SLA_STATE_FRESH,
-    )
+    expect(evaluator.tickScalars(40, 0, 2, 0, 10, 42, wallMs - 1_000, wallMs - 2_000)).toBe(SLA_STATE_FRESH)
     expect(evaluator.reasonMask).toBe(SLA_REASON_NONE)
     expect(evaluator.lastElapsedMs).toBe(80)
     expect(evaluator.getToken().stateId).toBe("SLA_FRESH")
@@ -95,9 +93,7 @@ describe("DualClock SLA Evaluator — MonotonicClock & WallClock transitions", (
     // 2. Half-window aging advisory (125ms >= 125ms warn, <= 250ms stale)
     evaluator.beginProbe()
     monoNs += 150_000_000
-    expect(evaluator.tickScalars(40, 0, 2, 0, 10, 42, wallMs - 1_000, wallMs - 2_000)).toBe(
-      SLA_STATE_WARN,
-    )
+    expect(evaluator.tickScalars(40, 0, 2, 0, 10, 42, wallMs - 1_000, wallMs - 2_000)).toBe(SLA_STATE_WARN)
     expect((evaluator.reasonMask & SLA_REASON_PROBE_WARN) !== 0).toBe(true)
     expect(evaluator.getToken().stateId).toBe("SLA_WARN")
     expect(evaluator.getToken().glyph).toBe("◐")
@@ -105,9 +101,7 @@ describe("DualClock SLA Evaluator — MonotonicClock & WallClock transitions", (
     // 3. Stale probe (> 250ms ALERT SLA)
     evaluator.beginProbe()
     monoNs += 280_000_000
-    expect(evaluator.tickScalars(40, 0, 2, 0, 10, 42, wallMs - 1_000, wallMs - 2_000)).toBe(
-      SLA_STATE_STALE,
-    )
+    expect(evaluator.tickScalars(40, 0, 2, 0, 10, 42, wallMs - 1_000, wallMs - 2_000)).toBe(SLA_STATE_STALE)
     expect((evaluator.reasonMask & SLA_REASON_PROBE_STALE) !== 0).toBe(true)
     expect(evaluator.getToken().stateId).toBe("SLA_STALE")
     expect(evaluator.getToken().borderStyle).toBe("dashed")
@@ -116,48 +110,41 @@ describe("DualClock SLA Evaluator — MonotonicClock & WallClock transitions", (
     evaluator.selectChannelSla(CHANNEL_ID.INTERNET)
     evaluator.beginProbe()
     monoNs += 280_000_000
-    expect(evaluator.tickScalars(40, 0, 2, 0, 10, 42, wallMs - 1_000, wallMs - 2_000)).toBe(
-      SLA_STATE_FRESH,
-    )
+    expect(evaluator.tickScalars(40, 0, 2, 0, 10, 42, wallMs - 1_000, wallMs - 2_000)).toBe(SLA_STATE_FRESH)
   })
 
   test("evaluates wall-clock publish age, window lag, and future clock skew", () => {
     const monoNs = 500_000_000
     const wallMs = 1_760_000_100_000
 
-    const evaluator = new DualClockSlaEvaluator(
-      {},
-      { monotonicNs: () => monoNs, wallEpochMs: () => wallMs },
-    )
+    const evaluator = new DualClockSlaEvaluator({}, { monotonicNs: () => monoNs, wallEpochMs: () => wallMs })
 
     // Half-window publish age (20s >= 15s warn, <= 30s stale)
-    expect(
-      evaluator.tickScalars(30, 0, 1, 0, 5, 31, wallMs - 20_000, wallMs - 5_000, 0, 10_000_000),
-    ).toBe(SLA_STATE_WARN)
+    expect(evaluator.tickScalars(30, 0, 1, 0, 5, 31, wallMs - 20_000, wallMs - 5_000, 0, 10_000_000)).toBe(
+      SLA_STATE_WARN,
+    )
     expect((evaluator.reasonMask & SLA_REASON_PUBLISH_WARN) !== 0).toBe(true)
 
     // BLK_R2_PUBLISH_STALE (35s > 30s)
-    expect(
-      evaluator.tickScalars(30, 0, 1, 0, 5, 31, wallMs - 35_000, wallMs - 5_000, 0, 10_000_000),
-    ).toBe(SLA_STATE_STALE)
+    expect(evaluator.tickScalars(30, 0, 1, 0, 5, 31, wallMs - 35_000, wallMs - 5_000, 0, 10_000_000)).toBe(
+      SLA_STATE_STALE,
+    )
     expect((evaluator.reasonMask & SLA_REASON_PUBLISH_STALE) !== 0).toBe(true)
 
     // Half-window upstream data lag (40s >= 30s warn)
-    expect(
-      evaluator.tickScalars(30, 0, 1, 0, 5, 31, wallMs - 2_000, wallMs - 40_000, 0, 10_000_000),
-    ).toBe(SLA_STATE_WARN)
+    expect(evaluator.tickScalars(30, 0, 1, 0, 5, 31, wallMs - 2_000, wallMs - 40_000, 0, 10_000_000)).toBe(
+      SLA_STATE_WARN,
+    )
     expect((evaluator.reasonMask & SLA_REASON_WINDOW_LAG_WARN) !== 0).toBe(true)
 
     // BLK_R2_WINDOW_LAG_STALE (65s > 60s)
-    expect(
-      evaluator.tickScalars(30, 0, 1, 0, 5, 31, wallMs - 2_000, wallMs - 65_000, 0, 10_000_000),
-    ).toBe(SLA_STATE_STALE)
+    expect(evaluator.tickScalars(30, 0, 1, 0, 5, 31, wallMs - 2_000, wallMs - 65_000, 0, 10_000_000)).toBe(
+      SLA_STATE_STALE,
+    )
     expect((evaluator.reasonMask & SLA_REASON_WINDOW_LAG_STALE) !== 0).toBe(true)
 
     // Future wall-clock skew (> 5s in the future) latches SLA_POISON
-    expect(evaluator.tickScalars(30, 0, 1, 0, 5, 31, wallMs + 10_000, wallMs, 0, 10_000_000)).toBe(
-      SLA_STATE_POISON,
-    )
+    expect(evaluator.tickScalars(30, 0, 1, 0, 5, 31, wallMs + 10_000, wallMs, 0, 10_000_000)).toBe(SLA_STATE_POISON)
     expect((evaluator.reasonMask & SLA_REASON_CLOCK_SKEW_POISON) !== 0).toBe(true)
     expect(evaluator.poisonLatched).toBe(true)
   })
@@ -401,10 +388,7 @@ describe("DualClock SLA Evaluator — Bun.dns.getCacheStats() binding & poison l
   test("zero-allocation hot-path contract: 50,000 ticks reuse pre-allocated frozen token references", () => {
     let monoNs = 0
     let wallMs = 1_760_000_000_000
-    const evaluator = new DualClockSlaEvaluator(
-      {},
-      { monotonicNs: () => monoNs, wallEpochMs: () => wallMs },
-    )
+    const evaluator = new DualClockSlaEvaluator({}, { monotonicNs: () => monoNs, wallEpochMs: () => wallMs })
 
     const freshTokenRef = SLA_TOKEN_TABLE[SLA_STATE_FRESH]
     const warnTokenRef = SLA_TOKEN_TABLE[SLA_STATE_WARN]

@@ -1,7 +1,8 @@
 /**
- * @file packages/ui/src/shadow_pricing/ShadowSimulationTablesSection.tsx
- * @description Two-column Elasticity Frontier + Preset Matrix, Key-Number Margin Clustering
- * audit table, and Top Impacted Sharp Point-Buyers Leaderboard.
+ * Two-column Elasticity Frontier + Preset Matrix, Key-Number Margin Clustering audit table, and Top
+ * Impacted Sharp Point-Buyers Leaderboard.
+ *
+ * @file Packages/ui/src/shadow_pricing/ShadowSimulationTablesSection.tsx
  */
 
 import React from "react"

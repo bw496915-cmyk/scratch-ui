@@ -534,9 +534,7 @@ describe("60-minute Recent Alerts sidebar history builder", () => {
     expect(brief).toContain("Customer ZZCUST22. (VIP) · Agent ZZAGENT1")
     expect(brief).toContain("Effective Line: Alpha -110")
     expect(brief).toContain("Implied 52.4%")
-    expect(brief).toContain(
-      "60m Window Exposure: $40,850 vs $40,000 warn threshold ($50,000 breach limit)",
-    )
+    expect(brief).toContain("60m Window Exposure: $40,850 vs $40,000 warn threshold ($50,000 breach limit)")
 
     // Single-wager cap breach compares ticket stake vs single-wager cap (never 60m cumulative vs single-wager cap)
     const overCapWager = makeWager({
@@ -588,9 +586,9 @@ describe("60-minute Recent Alerts sidebar history builder", () => {
     expect(extractAmericanOddsFromText("BOS -4.5")).toBeNull()
     expect(extractAmericanOddsFromText("Rams EV")).toBe("+100")
 
-    expect(
-      formatWagerSelection({ selection: "Alpha -110", lineDisplay: "Alpha -110", oddsAmerican: "—" }),
-    ).toBe("Alpha -110")
+    expect(formatWagerSelection({ selection: "Alpha -110", lineDisplay: "Alpha -110", oddsAmerican: "—" })).toBe(
+      "Alpha -110",
+    )
     expect(
       formatWagerSelection({
         selection: "Alpha -110",
@@ -598,9 +596,9 @@ describe("60-minute Recent Alerts sidebar history builder", () => {
         oddsAmerican: "-110",
       }),
     ).toBe("Alpha -110")
-    expect(
-      formatWagerSelection({ selection: "BOS -4.5", lineDisplay: "-4.5", oddsAmerican: "-110" }),
-    ).toBe("BOS -4.5 (-110)")
+    expect(formatWagerSelection({ selection: "BOS -4.5", lineDisplay: "-4.5", oddsAmerican: "-110" })).toBe(
+      "BOS -4.5 (-110)",
+    )
     expect(
       resolveWagerOddsAmerican({
         betType: "Parlay",

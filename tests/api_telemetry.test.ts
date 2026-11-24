@@ -2,10 +2,7 @@ import { describe, expect, test } from "bun:test"
 import { createServer, request } from "node:http"
 
 import { createAgentDetailService } from "../packages/backend/src/agents.ts"
-import {
-  API_TELEMETRY_INSPECT_PATH,
-  API_TELEMETRY_PATH,
-} from "../packages/contracts/src/api_telemetry.ts"
+import { API_TELEMETRY_INSPECT_PATH, API_TELEMETRY_PATH } from "../packages/contracts/src/api_telemetry.ts"
 import { ApiTelemetry, observeApiExchange } from "../server/api_telemetry.ts"
 import { createPrivateDashboardRoutes } from "../server/private_dashboard_routes.ts"
 
@@ -102,11 +99,7 @@ describe("API telemetry", () => {
     telemetry.declareRoute("/api/customer/profile")
     telemetry.declareRoute("/api/agents/:id")
     const profileRoute = telemetry.resolveRoute("/api/customer/profile")
-    const profile = telemetry.start(
-      "GET",
-      profileRoute,
-      "id=privateAccount&id=another&privateKey=data",
-    )
+    const profile = telemetry.start("GET", profileRoute, "id=privateAccount&id=another&privateKey=data")
     profile(200, {
       etag: 'W/"profile-revision"',
       contentType: 'Application/Problem+JSON; Charset="UTF-8"; boundary=privateBoundary',
@@ -162,9 +155,7 @@ describe("API telemetry", () => {
       lastResponse: { etag: null, contentType: "text/html", type: "HTML" },
     })
     telemetry.start("GET", profileRoute)(null, { contentType: "application/json" })
-    expect(
-      telemetry.snapshot("bun-native").rows.find((row) => row.route === profileRoute)?.lastResponse,
-    ).toBeNull()
+    expect(telemetry.snapshot("bun-native").rows.find((row) => row.route === profileRoute)?.lastResponse).toBeNull()
   })
 
   test("observes chunked input and streamed output over HTTP without consuming the request", async () => {
@@ -196,8 +187,7 @@ describe("API telemetry", () => {
             path: "/api/agents/private-agent",
             headers: {
               "Content-Type": "text/plain",
-              cookie:
-                "sd_csrf=csrf-private; private_name=private_value; sd_session=private-session",
+              cookie: "sd_csrf=csrf-private; private_name=private_value; sd_session=private-session",
             },
             agent: false,
             signal: AbortSignal.timeout(2000),
@@ -311,9 +301,7 @@ describe("API telemetry", () => {
     try {
       for (const alias of ["agent", "agents"]) {
         const route = `http://dashboard.test/api/${alias}`
-        const response = await native.dispatchAgent(
-          new Request(`${route}/desk%252Fprobe?private=ignored`),
-        )
+        const response = await native.dispatchAgent(new Request(`${route}/desk%252Fprobe?private=ignored`))
         expect(response?.status).toBe(200)
         expect(await response?.json()).toMatchObject({ agentId: "DESK%2FPROBE" })
         const malformed = await native.dispatchAgent(new Request(`${route}/%ZZ`))

@@ -6,8 +6,8 @@
  *
  * As of Bun 1.4.4 — the version pinned in `.bun-version` — Bun documents no text-clipboard API
  * (`writeText` and `readText` both return no results in the docs index; `Bun.Image.fromClipboard`
- * is read-only and image-only). That snapshot is not load-bearing: the failing context is a
- * browser page, where `navigator.clipboard` is the standard, permission-policed API, so a future
+ * is read-only and image-only). That snapshot is not load-bearing: the failing context is a browser
+ * page, where `navigator.clipboard` is the standard, permission-policed API, so a future
  * `Bun.clipboard` would not change this guard.
  *
  * Failure is a typed result rather than a boolean because the reasons need different words — a page

@@ -7,9 +7,9 @@ import { formatWagerSelection } from "./wager_display.ts"
 const SAFE_SIGNED_NUMBER_RE = /^[+-]\d+(?:\.\d+)?$/
 
 /**
- * Escapes a single CSV cell per RFC 4180 and neutralizes spreadsheet formula
- * injection while preserving legitimate signed numeric values (such as
- * American odds "-110", "+145" or point spreads "-3.5").
+ * Escapes a single CSV cell per RFC 4180 and neutralizes spreadsheet formula injection while
+ * preserving legitimate signed numeric values (such as American odds "-110", "+145" or point
+ * spreads "-3.5").
  */
 export function escapeRiskCsvCell(value: string | number | boolean | null | undefined): string {
   if (value === null || value === undefined) return ""
@@ -228,8 +228,8 @@ export interface CsvDownloadEnv {
 }
 
 /**
- * Triggers a client-side CSV download with a UTF-8 BOM for reliable Excel
- * parsing and cleans up the temporary object URL.
+ * Triggers a client-side CSV download with a UTF-8 BOM for reliable Excel parsing and cleans up the
+ * temporary object URL.
  */
 export function downloadRiskCsvBlob(
   csvContent: string,

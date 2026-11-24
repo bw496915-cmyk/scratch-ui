@@ -144,9 +144,7 @@ describe("WebMCP browser-native integration (packages/ui/src/web_mcp.ts)", () =>
         document: { modelContext: docCtx },
       }),
     ).toBe(navCtx)
-    expect(resolveBrowserModelContext({ navigator: {}, document: { modelContext: docCtx } })).toBe(
-      docCtx,
-    )
+    expect(resolveBrowserModelContext({ navigator: {}, document: { modelContext: docCtx } })).toBe(docCtx)
     expect(resolveBrowserModelContext({ navigator: {}, document: {} })).toBeNull()
   })
 
@@ -316,10 +314,7 @@ describe("WebMCP browser-native integration (packages/ui/src/web_mcp.ts)", () =>
     // Approved operator confirmation persists mutation
     const approvedThresh = await tools
       .get("desk_set_risk_thresholds")!
-      .execute(
-        { warningLimitUsd: 35_000, breachLimitUsd: 50_000 },
-        { requestUserInteraction: async (cb) => cb() },
-      )
+      .execute({ warningLimitUsd: 35_000, breachLimitUsd: 50_000 }, { requestUserInteraction: async (cb) => cb() })
     expect(approvedThresh.isError).toBeUndefined()
     expect(savedThresholds).toEqual({ warningLimitUsd: 35_000, breachLimitUsd: 50_000 })
 

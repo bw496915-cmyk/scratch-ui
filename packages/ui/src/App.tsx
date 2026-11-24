@@ -223,8 +223,8 @@ export * from "./types.ts"
  * Why the profile cards are empty: no endpoint serves the per-customer card list, and two of the
  * three fields the UI used to promise have no source at all — the cohort file carries a scalar
  * `sharp_score` (no components) and no VaR. The copy names only what the data supports, so filling
- * the cards later cannot quietly omit them.
- * `GET /api/customer/profile?id=` returns one book profile by ID in a different shape.
+ * the cards later cannot quietly omit them. `GET /api/customer/profile?id=` returns one book
+ * profile by ID in a different shape.
  */
 export const PROFILES_UNAVAILABLE_REASON =
   "Profile cards are limited to what the curated cohort file records: wager limit, delay, CLV and " +

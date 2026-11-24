@@ -1,6 +1,7 @@
 /**
- * @file lib/audit_log.ts
- * @description In-memory audit log adapter for AI Studio Node.js runtime.
+ * In-memory audit log adapter for AI Studio Node.js runtime.
+ *
+ * @file Lib/audit_log.ts
  */
 
 export interface AuditEntry {

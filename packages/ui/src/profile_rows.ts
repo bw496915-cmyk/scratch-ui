@@ -1,13 +1,13 @@
 import { parseCustomerRetainedHistory } from "@sportsdesk-ops/contracts"
 
 /**
- * Map the customer book's rows (`/api/customers` `bookRows`, or explicit legacy fixtures) onto the shape the
- * Profiles tab renders.
+ * Map the customer book's rows (`/api/customers` `bookRows`, or explicit legacy fixtures) onto the
+ * shape the Profiles tab renders.
  *
  * Only derivable values are computed: sharpness from `sharp_score`, CLV from `clv_bps`, sizing
  * strategy and Gini from the row's recent tickets, specialization from the most common
- * league/market. Fields the book does not carry (syndicate probability, line shading, LTV) are
- * left at their explicit zero/none values rather than guessed.
+ * league/market. Fields the book does not carry (syndicate probability, line shading, LTV) are left
+ * at their explicit zero/none values rather than guessed.
  */
 import { extractBacktestParlayMetrics, mergeForensicDossiers } from "./customer_forensics.ts"
 import { computeStakeDistribution, reconcileSharpnessAxes } from "./profile_formulas.ts"
@@ -228,10 +228,10 @@ export function bookRowsToProfiles(
 }
 
 /**
- * Map the backtest leaderboard (`/api/customers` `backtestAll`) onto the Profiles shape.
- * Populates every measured backtest metric (baseline hold, desk net LTV, parlay correlation,
- * guard attribution, and CFB/NBA parlay protection savings) while keeping genuinely unmeasured
- * per-ticket book fields (Gini, VaR, cap, delay) explicitly marked in `unknown`.
+ * Map the backtest leaderboard (`/api/customers` `backtestAll`) onto the Profiles shape. Populates
+ * every measured backtest metric (baseline hold, desk net LTV, parlay correlation, guard
+ * attribution, and CFB/NBA parlay protection savings) while keeping genuinely unmeasured per-ticket
+ * book fields (Gini, VaR, cap, delay) explicitly marked in `unknown`.
  */
 export function backtestRowsToProfiles(rows: ReadonlyArray<Row>): ShowcaseCustomer[] {
   return rows.map((row, idx) => {
@@ -350,7 +350,10 @@ export function backtestRowsToProfiles(rows: ReadonlyArray<Row>): ShowcaseCustom
   })
 }
 
-/** Union by customer ID; earlier groups win on base fields while merging any attached forensicDossier. */
+/**
+ * Union by customer ID; earlier groups win on base fields while merging any attached
+ * forensicDossier.
+ */
 export function mergeProfileRows(
   ...groups: ReadonlyArray<ReadonlyArray<ShowcaseCustomer>>
 ): ShowcaseCustomer[] {
@@ -374,8 +377,8 @@ export function mergeProfileRows(
 }
 
 /**
- * Which array is the data? `provenance.kind` answers it, so an empty capture stays empty instead
- * of falling back to the fixture corpus (a loaded-but-empty book is not "no book").
+ * Which array is the data? `provenance.kind` answers it, so an empty capture stays empty instead of
+ * falling back to the fixture corpus (a loaded-but-empty book is not "no book").
  */
 export function selectProfileRows(payload: {
   readonly book?: ReadonlyArray<Row> | undefined

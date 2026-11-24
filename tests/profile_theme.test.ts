@@ -1,8 +1,8 @@
 /**
- * @file tests/profile_theme.test.ts
- * @description Bun-native unit & route tests for profile theme validation,
- * Bun.markdown.ansi / Bun.inspect / Bun.color rendering, and CSRF/Origin-guarded
- * `/api/profile`, `/api/profile/theme`, and `/api/profile/render.md` routes.
+ * Bun-native unit & route tests for profile theme validation, Bun.markdown.ansi / Bun.inspect / Bun.color rendering,
+ * and CSRF/Origin-guarded `/api/profile`, `/api/profile/theme`, and `/api/profile/render.md` routes.
+ *
+ * @file Tests/profile_theme.test.ts
  */
 
 import { Database } from "bun:sqlite"
@@ -16,12 +16,7 @@ import { ApiTelemetry } from "../server/api_telemetry.ts"
 import { openDashboardState } from "../server/dashboard_sessions.ts"
 import { createPrivateDashboardRoutes } from "../server/private_dashboard_routes.ts"
 import { profileRoutes } from "../src/http/profile_routes.ts"
-import {
-  ansiThemeFor,
-  colorize,
-  inspectFor,
-  renderMarkdownForTerminal,
-} from "../src/profile/render.ts"
+import { ansiThemeFor, colorize, inspectFor, renderMarkdownForTerminal } from "../src/profile/render.ts"
 import { createMemoryProfileStore, profileOrDefault } from "../src/profile/store.ts"
 import { DEFAULT_PROFILE_THEME, type ProfileTheme } from "../src/profile/types.ts"
 import { parseProfileTheme } from "../src/profile/validate.ts"
@@ -341,8 +336,7 @@ describe("Profile Routes (/api/profile, /api/profile/theme, /api/profile/render.
   })
 
   it("verifies origin and session CSRF before a native Bun profile write", async () => {
-    const { routes, sessionCookieHeader, csrfToken, resolveSessionId } =
-      await setupAuthenticatedFixture()
+    const { routes, sessionCookieHeader, csrfToken, resolveSessionId } = await setupAuthenticatedFixture()
     const native = createPrivateDashboardRoutes(new ApiTelemetry(), {
       profile: {
         read: routes["/api/profile"].GET,
@@ -389,9 +383,7 @@ describe("Profile Routes (/api/profile, /api/profile/theme, /api/profile/render.
     expect(pRes.headers.get("cache-control")).toBe("no-store")
     expect(pRes.headers.get("vary")).toBe("Cookie")
 
-    const rRes = routes["/api/profile/render.md"].GET(
-      new Request("https://desk.bookdeskops.com/api/profile/render.md"),
-    )
+    const rRes = routes["/api/profile/render.md"].GET(new Request("https://desk.bookdeskops.com/api/profile/render.md"))
     expect(rRes.status).toBe(401)
     expect((await rRes.json()) as { error: string }).toEqual({
       error: "ERR_UNAUTHENTICATED",

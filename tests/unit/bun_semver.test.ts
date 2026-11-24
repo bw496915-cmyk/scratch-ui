@@ -1,8 +1,8 @@
 /**
- * @file tests/unit/bun_semver.test.ts
- * @description Verifies scanner-safe SemVer wrappers against `Bun.semver`
- * silent-wildcard traps, throwing `order()` inputs, uint64 overflow (> 2^64 - 1),
- * and non-ASCII registry/lockfile strings.
+ * Verifies scanner-safe SemVer wrappers against `Bun.semver` silent-wildcard traps, throwing `order()` inputs, uint64
+ * overflow (> 2^64 - 1), and non-ASCII registry/lockfile strings.
+ *
+ * @file Tests/unit/bun_semver.test.ts
  */
 
 import { describe, expect, test } from "bun:test"

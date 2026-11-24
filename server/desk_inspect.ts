@@ -1,8 +1,9 @@
 /**
- * @file server/desk_inspect.ts
- * @description Bun.inspect.custom / util.inspect.custom formatted desk views,
- * full Bun.inspect options formatting & CLI `--options` parser, and
- * Bun.inspect.table()-compatible renderer for Node.js 22 & Bun 1.4.4 parity.
+ * Bun.inspect.custom / util.inspect.custom formatted desk views, full Bun.inspect options
+ * formatting & CLI `--options` parser, and Bun.inspect.table()-compatible renderer for Node.js 22 &
+ * Bun 1.4.4 parity.
+ *
+ * @file Server/desk_inspect.ts
  */
 
 import { inspect } from "node:util"
@@ -114,9 +115,9 @@ export function padVisibleStart(input: string, width: number): string {
 }
 
 /**
- * Truncates a string to `maxLen` visible columns while preserving ANSI escape
- * sequences cleanly (via SIMD `Bun.sliceAnsi` when running under Bun) and closing
- * active styles with reset when clipped.
+ * Truncates a string to `maxLen` visible columns while preserving ANSI escape sequences cleanly
+ * (via SIMD `Bun.sliceAnsi` when running under Bun) and closing active styles with reset when
+ * clipped.
  */
 export function truncateVisible(input: string, maxLen: number): string {
   if (maxLen <= 0) return ""
@@ -289,8 +290,8 @@ export function formatInspectCliFlags(
 }
 
 /**
- * Parses an inline `--options=...` bundle in either JSON (`{"depth":3,"compact":true}`)
- * or comma-separated `key=val` syntax (`depth=3,compact=true,showHidden,numericSeparator`).
+ * Parses an inline `--options=...` bundle in either JSON (`{"depth":3,"compact":true}`) or
+ * comma-separated `key=val` syntax (`depth=3,compact=true,showHidden,numericSeparator`).
  */
 export function parseInlineOptionsBundle(raw: string): BunInspectOptions {
   const trimmed = raw.trim().replace(/^['"]|['"]$/g, "")
@@ -488,9 +489,7 @@ const VALUE_TAKING_FLAGS = new Set([
   "-a",
 ])
 
-/**
- * Splits a terminal command line into tokens respecting single/double quotes.
- */
+/** Splits a terminal command line into tokens respecting single/double quotes. */
 export function tokenizeCliCommand(raw: string): string[] {
   const tokens: string[] = []
   let current = ""
@@ -522,8 +521,8 @@ export function tokenizeCliCommand(raw: string): string[] {
 }
 
 /**
- * Parses CLI `--options` and standard `Bun.inspect` flags in both `--flag=val`
- * and `--flag val` forms alongside domain flags & positional arguments.
+ * Parses CLI `--options` and standard `Bun.inspect` flags in both `--flag=val` and `--flag val`
+ * forms alongside domain flags & positional arguments.
  */
 export function parseInspectCliArgs(
   tokens: readonly string[],
@@ -688,8 +687,8 @@ export function parseInspectCliArgs(
 }
 
 /**
- * Renders a crisp, aligned diagnostic block documenting the active
- * `Bun.inspect(value, options)` parameters and equivalent `--options` CLI flags.
+ * Renders a crisp, aligned diagnostic block documenting the active `Bun.inspect(value, options)`
+ * parameters and equivalent `--options` CLI flags.
  */
 export function renderInspectOptionsBanner(
   options: BunInspectOptions = {},
@@ -742,10 +741,9 @@ export function renderInspectOptionsBanner(
 }
 
 /**
- * Shared base class for custom-formatted desk views.
- * Bun and Node use the same inspect symbol. Use inspectDeskValue when callers
- * need the full option set. Bun 1.4.4 only forwards depth, colors and stylize
- * to a native custom inspect callback.
+ * Shared base class for custom-formatted desk views. Bun and Node use the same inspect symbol. Use
+ * inspectDeskValue when callers need the full option set. Bun 1.4.4 only forwards depth, colors and
+ * stylize to a native custom inspect callback.
  */
 export abstract class DeskView<T> {
   public readonly rows: readonly T[]
@@ -777,9 +775,9 @@ export abstract class DeskView<T> {
 }
 
 /**
- * Invokes a value's custom Bun/Node inspect hook if present (short-circuiting
- * recursion when a string is returned), otherwise delegates to util.inspect
- * with the full normalized BunInspectOptions contract.
+ * Invokes a value's custom Bun/Node inspect hook if present (short-circuiting recursion when a
+ * string is returned), otherwise delegates to util.inspect with the full normalized
+ * BunInspectOptions contract.
  */
 export function inspectDeskValue(
   value: unknown,
@@ -842,9 +840,9 @@ function formatTableCellValue(
 }
 
 /**
- * Bun.inspect.table(data, properties?, options)-compatible formatter.
- * Returns a formatted Unicode box-drawing table string honoring colors, compact,
- * sorted, maxArrayLength, maxStringLength, and numericSeparator.
+ * Bun.inspect.table(data, properties?, options)-compatible formatter. Returns a formatted Unicode
+ * box-drawing table string honoring colors, compact, sorted, maxArrayLength, maxStringLength, and
+ * numericSeparator.
  */
 export function inspectTable<T extends Record<string, unknown>>(
   data: readonly T[],

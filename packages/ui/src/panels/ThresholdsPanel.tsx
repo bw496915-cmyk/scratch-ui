@@ -91,8 +91,8 @@ const API_ROUTE_ENTRIES: readonly (readonly [string, string])[] = [
  * `packages/ui/src/config/dashboard.toml`.
  *
  * Reading `DASHBOARD_THRESHOLDS.sharp` keeps the tree-shake probe honest:
- * `scripts/validate_dashboard_config.ts` asserts `"sharp"` is inlined in
- * `dist/dashboard/*.js` while unimported `[churn]` is eliminated.
+ * `scripts/validate_dashboard_config.ts` asserts `"sharp"` is inlined in `dist/dashboard/*.js`
+ * while unimported `[churn]` is eliminated.
  */
 export function ThresholdsPanel({
   dataUpdatedAt = null,

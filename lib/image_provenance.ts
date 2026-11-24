@@ -1,8 +1,9 @@
 /**
- * @file lib/image_provenance.ts
- * @description Header-only `sportsdesk:*`, Dublin Core (`dc:*`), and XMP Core (`xmp:*`)
- * image provenance inspector & contextual XMP packet builder.
- * Delegates all binary sniffing and container chunk walking to `lib/xmp_container.ts`.
+ * Header-only `sportsdesk:*`, Dublin Core (`dc:*`), and XMP Core (`xmp:*`) image provenance
+ * inspector & contextual XMP packet builder. Delegates all binary sniffing and container chunk
+ * walking to `lib/xmp_container.ts`.
+ *
+ * @file Lib/image_provenance.ts
  */
 import type {
   ImageProvenanceChannel,
@@ -81,9 +82,9 @@ function buildElement(prefix: string, name: string, value?: string | null): stri
 }
 
 /**
- * Builds a canonical UTF-8 XMP packet carrying core `sportsdesk:*` provenance
- * (`streamId`, `genU32`, `merkleRoot`) plus optional Dublin Core (`dc:*`),
- * XMP Core (`xmp:*`), and extended `sportsdesk:*` branding/operational context.
+ * Builds a canonical UTF-8 XMP packet carrying core `sportsdesk:*` provenance (`streamId`,
+ * `genU32`, `merkleRoot`) plus optional Dublin Core (`dc:*`), XMP Core (`xmp:*`), and extended
+ * `sportsdesk:*` branding/operational context.
  */
 export function buildSportsdeskProvenanceXmp(
   fields: Partial<ImageProvenanceFields>,
@@ -305,9 +306,9 @@ function normalizeProvenanceContext(
 }
 
 /**
- * Inspects `sportsdesk:*`, `dc:*`, and `xmp:*` provenance & branding context across
- * WebP (`webp-xmp`), PNG (`png-text`, `png-xmp`), and explicit AVIF (`image/avif`)
- * containers by delegating container walking to `lib/xmp_container.ts`.
+ * Inspects `sportsdesk:*`, `dc:*`, and `xmp:*` provenance & branding context across WebP
+ * (`webp-xmp`), PNG (`png-text`, `png-xmp`), and explicit AVIF (`image/avif`) containers by
+ * delegating container walking to `lib/xmp_container.ts`.
  */
 export async function inspectImageProvenance(input: BinaryInput): Promise<ImageProvenanceReport> {
   const meta = await extractContainerMetadata(input)
@@ -375,8 +376,8 @@ export interface ProbeR2ImageProvenanceOptions {
 }
 
 /**
- * Fetches a bounded prefix (or full image up to `maxBytes`) from a public R2 URL
- * and runs `inspectImageProvenance` via `lib/binary.ts` + `lib/xmp_container.ts`.
+ * Fetches a bounded prefix (or full image up to `maxBytes`) from a public R2 URL and runs
+ * `inspectImageProvenance` via `lib/binary.ts` + `lib/xmp_container.ts`.
  */
 export async function probeR2ImageProvenance(
   options: ProbeR2ImageProvenanceOptions,

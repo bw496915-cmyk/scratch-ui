@@ -1,7 +1,8 @@
 /**
- * @file packages/ui/src/viz/perceptual.ts
- * @description Pure staging, conservation, scale, regime, outlier, label and contrast rules for
- * dashboard charts. Browser-safe: standard Web APIs only. See docs/dashboard-perceptual-makeover.md.
+ * Pure staging, conservation, scale, regime, outlier, label and contrast rules for dashboard
+ * charts. Browser-safe: standard Web APIs only. See docs/dashboard-perceptual-makeover.md.
+ *
+ * @file Packages/ui/src/viz/perceptual.ts
  */
 
 export const STAGING_CONTRACT = "dash-stage/1" as const

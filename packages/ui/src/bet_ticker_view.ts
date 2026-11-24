@@ -1,10 +1,9 @@
 /**
- * @file packages/ui/src/bet_ticker_view.ts
- * @description Pure view helpers for the Bet-Ticker panel: deterministic row
- * sorting and a TSV export of the filtered stream.
- *
- * The panel renders at most `BET_TICKER_RENDER_LIMIT` rows; the export always
+ * Pure view helpers for the Bet-Ticker panel: deterministic row sorting and a TSV export of the
+ * filtered stream. The panel renders at most `BET_TICKER_RENDER_LIMIT` rows; the export always
  * covers the whole filtered set so "copy rows" cannot silently equal the page.
+ *
+ * @file Packages/ui/src/bet_ticker_view.ts
  */
 
 import type { BetTickerTicketRow } from "./types.ts"
@@ -49,8 +48,8 @@ function compareByField(
 }
 
 /**
- * Sorted copy of the filtered stream. Rows compare on the selected field with a
- * stable `wagerNumber` tie-break, so equal amounts keep a deterministic order.
+ * Sorted copy of the filtered stream. Rows compare on the selected field with a stable
+ * `wagerNumber` tie-break, so equal amounts keep a deterministic order.
  */
 export function sortBetTickerRows(
   rows: readonly BetTickerTicketRow[],

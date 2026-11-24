@@ -199,10 +199,7 @@ describe("60-minute aggregate risk threshold evaluation", () => {
     })
 
     // Writing custom pair persists both keys cleanly
-    const saved = writeStoredRiskExposureThresholds(
-      { breachLimitUsd: 120_000, warningLimitUsd: 85_000 },
-      fakeStorage,
-    )
+    const saved = writeStoredRiskExposureThresholds({ breachLimitUsd: 120_000, warningLimitUsd: 85_000 }, fakeStorage)
     expect(saved).toEqual({ breachLimitUsd: 120_000, warningLimitUsd: 85_000 })
     expect(backing.get(RISK_EXPOSURE_LIMIT_STORAGE_KEY)).toBe("120000")
     expect(backing.get(RISK_EXPOSURE_WARNING_LIMIT_STORAGE_KEY)).toBe("85000")
@@ -282,15 +279,11 @@ describe("Customer profile drilldown summaries", () => {
   })
 
   test("computes VaR-to-cap headroom and respects unknown fields", () => {
-    const overCap = computeProfileRiskHeadroom(
-      makeCustomer({ var95Usd: 14500, recommendedLimitUsd: 10000 }),
-    )
+    const overCap = computeProfileRiskHeadroom(makeCustomer({ var95Usd: 14500, recommendedLimitUsd: 10000 }))
     expect(overCap.varToCapPct).toBe(145)
     expect(overCap.isVarOverCap).toBe(true)
 
-    const unmeasured = computeProfileRiskHeadroom(
-      makeCustomer({ unknown: ["var95", "limit", "holdPct", "ltv"] }),
-    )
+    const unmeasured = computeProfileRiskHeadroom(makeCustomer({ unknown: ["var95", "limit", "holdPct", "ltv"] }))
     expect(unmeasured.varToCapPct).toBeNull()
     expect(unmeasured.isVarOverCap).toBe(false)
     expect(unmeasured.hasMeasuredVar).toBe(false)

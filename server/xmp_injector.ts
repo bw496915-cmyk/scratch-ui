@@ -1,7 +1,8 @@
 /**
- * @file server/xmp_injector.ts
- * @description Compatibility facade delegating to `lib/xmp_container.ts` so there is
- * one authoritative RIFF/PNG/AVIF container implementation across server and library code.
+ * Compatibility facade delegating to `lib/xmp_container.ts` so there is one authoritative
+ * RIFF/PNG/AVIF container implementation across server and library code.
+ *
+ * @file Server/xmp_injector.ts
  */
 export {
   type ContainerMetadataSnapshot,

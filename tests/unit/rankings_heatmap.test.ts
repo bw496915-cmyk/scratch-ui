@@ -14,10 +14,7 @@ import {
   readStoredRankingsHeatMap,
   writeStoredRankingsHeatMap,
 } from "../../packages/ui/src/panels/rankings_heatmap.ts"
-import {
-  RankingsHeatMapLegend,
-  RankingsTabPanel,
-} from "../../packages/ui/src/panels/RankingsTabPanel.tsx"
+import { RankingsHeatMapLegend, RankingsTabPanel } from "../../packages/ui/src/panels/RankingsTabPanel.tsx"
 import { buildDashboardSearch, readDashboardUrlState } from "../../packages/ui/src/url_state.ts"
 
 describe("Rankings Handle Volume Heat-Map Overlay", () => {
@@ -112,19 +109,11 @@ describe("Rankings Handle Volume Heat-Map Overlay", () => {
     expect(serializedOff).toContain("heatmap=0")
 
     // Default-on keeps URL clean (omits heatmap param)
-    const serializedOn = buildDashboardSearch(
-      { ...parsedOff, rankingsHeatmap: true },
-      "?tab=rankings&heatmap=0",
-      "/",
-    )
+    const serializedOn = buildDashboardSearch({ ...parsedOff, rankingsHeatmap: true }, "?tab=rankings&heatmap=0", "/")
     expect(serializedOn).not.toContain("heatmap=")
 
     // Leaving rankings scrubs heatmap param
-    const serializedAway = buildDashboardSearch(
-      { ...parsedOff, tab: "wagers" },
-      "?tab=rankings&heatmap=0",
-      "/",
-    )
+    const serializedAway = buildDashboardSearch({ ...parsedOff, tab: "wagers" }, "?tab=rankings&heatmap=0", "/")
     expect(serializedAway).not.toContain("heatmap=")
   })
 

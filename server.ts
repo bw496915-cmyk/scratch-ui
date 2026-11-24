@@ -1,7 +1,8 @@
 /**
- * @file server.ts
- * @description Node.js 22 Express + Vite + WebSocket server for the SportsDesk Enhanced Surveillance Dashboard.
+ * Node.js 22 Express + Vite + WebSocket server for the SportsDesk Enhanced Surveillance Dashboard.
  * Binds to 0.0.0.0:3000 as a single unified process (API + WebSocket pub/sub + Vite SPA).
+ *
+ * @file Server.ts
  */
 
 import "dotenv/config"
@@ -1220,9 +1221,7 @@ async function startServer() {
       process.env.SPORTSDESK_TLS_CERT_PATH && process.env.SPORTSDESK_TLS_KEY_PATH,
     )
     const serverBaseUrl = `${hasTls ? "https" : "http"}://${HOST}:${PORT}`
-    console.log(
-      `\n⚡ SportsDesk Ops Enhanced Surveillance Dashboard running on ${serverBaseUrl}`,
-    )
+    console.log(`\n⚡ SportsDesk Ops Enhanced Surveillance Dashboard running on ${serverBaseUrl}`)
     console.log(`   ➜ Runtime:   Node.js ${process.version} (Express + ${uiMode} + ws)`)
     console.log(`   ➜ Auth Gate: ${authMode}`)
     console.log(`   ➜ Health:    ${serverBaseUrl}/health`)

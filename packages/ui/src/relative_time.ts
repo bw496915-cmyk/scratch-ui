@@ -1,13 +1,13 @@
 /**
- * @file packages/ui/src/relative_time.ts
- * @description One compact relative-age formatter for every "how old is this?"
- * label on the dashboard (feed freshness, alert audit rows).
+ * One compact relative-age formatter for every "how old is this?" label on the dashboard (feed
+ * freshness, alert audit rows).
+ *
+ * @file Packages/ui/src/relative_time.ts
  */
 
 /**
- * Compact age for a timestamp, or `null` when there is no usable value.
- * Sub-second and clock-skewed (future) values read as `just now` rather than
- * negative seconds.
+ * Compact age for a timestamp, or `null` when there is no usable value. Sub-second and clock-skewed
+ * (future) values read as `just now` rather than negative seconds.
  */
 export function formatRelativeAge(nowMs: number, atMs: number | null): string | null {
   if (atMs === null || !Number.isFinite(atMs)) return null

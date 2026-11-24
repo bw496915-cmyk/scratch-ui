@@ -146,8 +146,8 @@ export interface HandleTrendSummary {
 }
 
 /**
- * Format a 24-hour handle percentage shift into direction, signed text, and
- * accessible semantic color.
+ * Format a 24-hour handle percentage shift into direction, signed text, and accessible semantic
+ * color.
  */
 export function resolveHandleTrend24h(
   deltaPct: number | null | undefined,
@@ -240,9 +240,8 @@ export function HandleTrendIndicator({
 }
 
 /**
- * Derive a deterministic Master Forest -> Sub-Agent -> Customer hierarchy from
- * normalized rankings payloads (falling back gracefully when a legacy payload
- * omits `subAgents` or `masterAgents`).
+ * Derive a deterministic Master Forest -> Sub-Agent -> Customer hierarchy from normalized rankings
+ * payloads (falling back gracefully when a legacy payload omits `subAgents` or `masterAgents`).
  */
 export function buildDownlineForests(
   players: readonly RankedPlayer30d[],
@@ -408,9 +407,7 @@ export interface BuildDownlinesCsvOptions {
   readonly heatByKey?: ReadonlyMap<string, HandleHeatCellMetrics> | undefined
 }
 
-/**
- * Format filtered downline player rows as RFC-4180 CSV for instant Blob export.
- */
+/** Format filtered downline player rows as RFC-4180 CSV for instant Blob export. */
 export function buildDownlinesCsv(
   players: readonly RankedPlayer30d[],
   options: BuildDownlinesCsvOptions = {},
@@ -472,10 +469,7 @@ export function buildDownlinesCsv(
   return lines.join("\r\n")
 }
 
-/**
- * Format filtered proxy conduit rows as RFC-4180 CSV when exporting from the
- * Agencies view mode.
- */
+/** Format filtered proxy conduit rows as RFC-4180 CSV when exporting from the Agencies view mode. */
 export function buildConduitsCsv(
   conduits: readonly ProxyConduit30d[],
   heatByKey?: ReadonlyMap<string, HandleHeatCellMetrics> | undefined,
@@ -514,8 +508,8 @@ export function buildConduitsCsv(
 }
 
 /**
- * Format filtered sub-agent hierarchy rows as RFC-4180 CSV when exporting from
- * the Hierarchy (`TREE`) view mode.
+ * Format filtered sub-agent hierarchy rows as RFC-4180 CSV when exporting from the Hierarchy
+ * (`TREE`) view mode.
  */
 export function buildSubAgentsCsv(
   subAgents: readonly DownlineSubAgentNode[],
@@ -625,8 +619,8 @@ export interface CsvDownloadEnvironment {
 }
 
 /**
- * Trigger a client-side CSV file download with UTF-8 BOM for spreadsheet
- * compatibility and clean ObjectURL revocation.
+ * Trigger a client-side CSV file download with UTF-8 BOM for spreadsheet compatibility and clean
+ * ObjectURL revocation.
  */
 export function downloadRankingsCsvBlob(
   csvContent: string,

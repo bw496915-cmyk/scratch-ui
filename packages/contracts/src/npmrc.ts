@@ -1,21 +1,18 @@
 /**
- * @file packages/contracts/src/npmrc.ts
- * @description Pure TypeScript implementation of Bun's `.npmrc` configuration
- * parser, multi-layer precedence resolver, npm/Bun credential matcher, and
- * `bunfig.toml` migration generator.
+ * Pure TypeScript implementation of Bun's `.npmrc` configuration parser, multi-layer precedence
+ * resolver, npm/Bun credential matcher, and `bunfig.toml` migration generator. Zero Node.js runtime
+ * dependencies so it executes identically on the server (Bun/Node) and in the browser (Status &
+ * Config Dashboard). Security invariants:
  *
- * Zero Node.js runtime dependencies so it executes identically on the server
- * (Bun/Node) and in the browser (Status & Config Dashboard).
- *
- * Security invariants:
  * - Rejects any credential containing CR (`\r`), LF (`\n`), or NUL (`\0`).
  * - Rejects non-`http:` / non-`https:` registry URLs before any request.
- * - Never sends a registry's credentials to a different origin; cross-origin
- *   tarballs and `publishConfig.registry` receive `.npmrc` credentials ONLY
- *   over `https:` and ONLY when project-named (never for transitive tarballs).
- * - Public redaction helpers (`redactResolvedBunPackageConfig`,
- *   `auditRegistryCredentialMatch`) strip all secret values before returning
- *   snapshots to HTTP responses or UI state.
+ * - Never sends a registry's credentials to a different origin; cross-origin tarballs and
+ *   `publishConfig.registry` receive `.npmrc` credentials ONLY over `https:` and ONLY when
+ *   project-named (never for transitive tarballs).
+ * - Public redaction helpers (`redactResolvedBunPackageConfig`, `auditRegistryCredentialMatch`) strip
+ *   all secret values before returning snapshots to HTTP responses or UI state.
+ *
+ * @file Packages/contracts/src/npmrc.ts
  */
 
 import { type BunLockFile, type BunLockFileSummary, summarizeBunLockFile } from "./bun_lockfile.ts"
@@ -371,6 +368,7 @@ function normalizePosixPath(input: string): string {
 
 /**
  * Resolve a path from `.npmrc` (`cache`, `cafile`) or `NPM_CONFIG_USERCONFIG`.
+ *
  * - Expands leading `~/` (or `~`) to `homeDir`.
  * - Resolves relative paths against `baseDir`.
  */
@@ -395,8 +393,8 @@ export function resolveNpmrcPath(rawPath: string, baseDir?: string, homeDir?: st
 // ── Validation & Encoding Helpers ─────────────────────────────────────────────
 
 /**
- * Throws `ERR_NPMRC_INVALID_CREDENTIAL` if a credential contains `\r`, `\n`,
- * or `\0` (NUL byte) — matching Bun's fail-closed header-injection guard.
+ * Throws `ERR_NPMRC_INVALID_CREDENTIAL` if a credential contains `\r`, `\n`, or `\0` (NUL byte) —
+ * matching Bun's fail-closed header-injection guard.
  */
 export function assertSafeCredentialValue(value: string, label = "credential"): void {
   if (/[\r\n\0]/.test(value)) {
@@ -407,8 +405,8 @@ export function assertSafeCredentialValue(value: string, label = "credential"): 
 }
 
 /**
- * Validates that a registry URL uses `http:` or `https:`.
- * Rejects other schemes or schemeless URLs before any request.
+ * Validates that a registry URL uses `http:` or `https:`. Rejects other schemes or schemeless URLs
+ * before any request.
  */
 export function parseValidatedHttpUrl(rawUrl: string, label = "registry URL"): URL {
   const trimmed = rawUrl.trim()
@@ -452,9 +450,7 @@ function decodeBase64Utf8(input: string): string {
   return input
 }
 
-/**
- * Strip embedded `user:pass@` from a URL so safe display URLs never leak creds.
- */
+/** Strip embedded `user:pass@` from a URL so safe display URLs never leak creds. */
 export function stripUrlCredentials(rawUrl: string): string {
   try {
     const u = new URL(rawUrl)
@@ -467,9 +463,9 @@ export function stripUrlCredentials(rawUrl: string): string {
 }
 
 /**
- * Normalize an `.npmrc` `//host/path/` credential prefix for lookup.
- * Ensures leading `//` and trailing `/`, lowercases host, and strips default
- * ports only when a scheme is supplied for lookup.
+ * Normalize an `.npmrc` `//host/path/` credential prefix for lookup. Ensures leading `//` and
+ * trailing `/`, lowercases host, and strips default ports only when a scheme is supplied for
+ * lookup.
  */
 export function normalizeNpmrcRegistryPrefix(rawPrefix: string): string {
   let clean = rawPrefix.trim()
@@ -486,13 +482,9 @@ export function normalizeNpmrcRegistryPrefix(rawPrefix: string): string {
 }
 
 /**
- * Return candidate `.npmrc` prefixes for a validated `http:`/`https:` URL in
- * exact npm/Bun matching order:
- *   https://npm.example.com/team/a/ ->
- *     //npm.example.com/team/a/
- *     //npm.example.com/team/
- *     //npm.example.com/
- * Treats `:443` on `https:` and `:80` on `http:` identically to no port.
+ * Return candidate `.npmrc` prefixes for a validated `http:`/`https:` URL in exact npm/Bun matching
+ * order: https://npm.example.com/team/a/ -> //npm.example.com/team/a/ //npm.example.com/team/
+ * //npm.example.com/ Treats `:443` on `https:` and `:80` on `http:` identically to no port.
  */
 export function buildRegistryCredentialLookupKeys(url: URL): readonly string[] {
   const host = url.hostname.toLowerCase()
@@ -522,9 +514,8 @@ export function buildRegistryCredentialLookupKeys(url: URL): readonly string[] {
 // ── Syntax Helpers ────────────────────────────────────────────────────────────
 
 /**
- * Bun/npm boolean semantics:
- * `false`, `null`, `undefined`, and `0` turn an option off.
- * Every other value turns it on, including an empty string `""`, `1`, and `True`.
+ * Bun/npm boolean semantics: `false`, `null`, `undefined`, and `0` turn an option off. Every other
+ * value turns it on, including an empty string `""`, `1`, and `True`.
  */
 export function parseNpmrcBoolean(rawValue: string): boolean {
   const lower = rawValue.trim().toLowerCase()
@@ -536,6 +527,7 @@ export function parseNpmrcBoolean(rawValue: string): boolean {
 
 /**
  * Expand `${NAME}` and `${NAME?}` environment variable placeholders.
+ *
  * - `${NAME}`: replaced with `env[NAME]` when defined, otherwise left as-is.
  * - `${NAME?}`: replaced with `env[NAME]` when defined, otherwise `""`.
  */
@@ -556,8 +548,8 @@ export function expandNpmrcEnvVars(
 }
 
 /**
- * Extract the `${ENV_NAME}` reference if the raw unexpanded value is a single
- * env placeholder (used safely for `bunfig.toml` migration templates).
+ * Extract the `${ENV_NAME}` reference if the raw unexpanded value is a single env placeholder (used
+ * safely for `bunfig.toml` migration templates).
  */
 function extractEnvPlaceholderName(rawUnexpanded: string): string | undefined {
   const match = /^\$\{([A-Za-z_][A-Za-z0-9_]*)\??\}$/.exec(rawUnexpanded.trim())
@@ -566,10 +558,11 @@ function extractEnvPlaceholderName(rawUnexpanded: string): string | undefined {
 
 /**
  * Parse the raw value slice after `=` in an `.npmrc` line:
- * - Quoted values (`"..."` or `'...'`) preserve `#` and `;` inside quotes and
- *   unescape `\n`, `\r`, `\t`, `\\`, `\"`, `\'`.
- * - Unquoted values end at the first unescaped `;` or `#`; `\;` and `\#` keep
- *   literal characters; surrounding whitespace is stripped.
+ *
+ * - Quoted values (`"..."` or `'...'`) preserve `#` and `;` inside quotes and unescape `\n`, `\r`,
+ *   `\t`, `\\`, `\"`, `\'`.
+ * - Unquoted values end at the first unescaped `;` or `#`; `\;` and `\#` keep literal characters;
+ *   surrounding whitespace is stripped.
  */
 function parseNpmrcRawValue(rawAfterEq: string): string {
   const trimmedLeft = rawAfterEq.trimStart()
@@ -1045,8 +1038,8 @@ function parseTomlInlineObject(raw: string): Record<string, string> | null {
 }
 
 /**
- * Parse relevant `[install]`, `[install.scopes]`, and `[install.cache]` keys
- * from a `bunfig.toml` file (pure TypeScript so it runs in browser & server).
+ * Parse relevant `[install]`, `[install.scopes]`, and `[install.cache]` keys from a `bunfig.toml`
+ * file (pure TypeScript so it runs in browser & server).
  */
 export function parseBunfigInstallToml(
   rawToml: string,
@@ -1334,12 +1327,13 @@ function hasRegistryAuthEntryForUrl(
 
 /**
  * Resolve effective Bun package manager configuration in Bun's exact load order:
+ *
  * 1. User `.npmrc` (`NPM_CONFIG_USERCONFIG` / `$XDG_CONFIG_HOME/.npmrc` / `$HOME/.npmrc`)
  * 2. Project `./.npmrc`
  * 3. Global `bunfig.toml`
  * 4. Project `bunfig.toml`
- * 5. Environment variables (`BUN_CONFIG_REGISTRY` / `NPM_CONFIG_REGISTRY`,
- *    `BUN_CONFIG_TOKEN` / `NPM_CONFIG_TOKEN`, `NPM_CONFIG_IGNORE_SCRIPTS`)
+ * 5. Environment variables (`BUN_CONFIG_REGISTRY` / `NPM_CONFIG_REGISTRY`, `BUN_CONFIG_TOKEN` /
+ *    `NPM_CONFIG_TOKEN`, `NPM_CONFIG_IGNORE_SCRIPTS`)
  * 6. CLI flags (`--registry`, `--ca`, `--cafile`, `--ignore-scripts`, `--dry-run`, `--exact`)
  */
 export function resolveBunPackageConfig(
@@ -1933,7 +1927,9 @@ export interface MatchRegistryCredentialsRequest {
   readonly packageRegistryUrl?: string | undefined
   /**
    * For `kind: "tarball"`:
-   * - `"project"`: named directly in root, workspace, `file:` dep, `overrides`, catalog, or `packageExtensions`.
+   *
+   * - `"project"`: named directly in root, workspace, `file:` dep, `overrides`, catalog, or
+   *   `packageExtensions`.
    * - `"transitive"`: named only by another package -> receives NO configured credentials.
    */
   readonly namedBy?: "project" | "transitive" | undefined
@@ -2202,8 +2198,8 @@ export function matchRegistryCredentials(
 }
 
 /**
- * Safe redacted audit wrapper around `matchRegistryCredentials` for UI/API use.
- * Never returns raw tokens, passwords, or Authorization headers.
+ * Safe redacted audit wrapper around `matchRegistryCredentials` for UI/API use. Never returns raw
+ * tokens, passwords, or Authorization headers.
  */
 export function auditRegistryCredentialMatch(
   config: ResolvedBunPackageConfig,
@@ -2233,8 +2229,8 @@ export function auditRegistryCredentialMatch(
 // ── bunfig.toml Migration Generator (Secret-Safe) ─────────────────────────────
 
 /**
- * Convert a resolved `.npmrc` / Bun package config into a clean, secret-safe
- * `bunfig.toml` representation. Never emits literal tokens or decoded passwords.
+ * Convert a resolved `.npmrc` / Bun package config into a clean, secret-safe `bunfig.toml`
+ * representation. Never emits literal tokens or decoded passwords.
  */
 export function convertNpmrcToBunfigToml(config: ResolvedBunPackageConfig): string {
   const lines: string[] = [

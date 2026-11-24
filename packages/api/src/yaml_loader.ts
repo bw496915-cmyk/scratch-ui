@@ -1,16 +1,14 @@
 /**
- * @file packages/api/src/yaml_loader.ts
- * @description Server-side read-only loader for workspace YAML configuration
- * (`config/bet-flags.yml`) powered by `Bun.YAML.parse` (with pure-TS YAML 1.2
- * fallback under Node.js / `tsx`).
+ * Server-side read-only loader for workspace YAML configuration (`config/bet-flags.yml`) powered by
+ * `Bun.YAML.parse` (with pure-TS YAML 1.2 fallback under Node.js / `tsx`). Security invariants:
  *
- * Security invariants:
- * - Confines filesystem resolution strictly inside `projectRoot` using a
- *   trailing `path.sep` boundary check (`resolved.startsWith(root + sep)`).
- * - Enforces byte-length caps and prototype-pollution stripping via
- *   `parseBunYamlWithMeta`.
- * - Redacts sensitive keys via `redactYamlSensitiveValues` before summarizing
- *   for `/api/config/status`.
+ * - Confines filesystem resolution strictly inside `projectRoot` using a trailing `path.sep` boundary
+ *   check (`resolved.startsWith(root + sep)`).
+ * - Enforces byte-length caps and prototype-pollution stripping via `parseBunYamlWithMeta`.
+ * - Redacts sensitive keys via `redactYamlSensitiveValues` before summarizing for
+ *   `/api/config/status`.
+ *
+ * @file Packages/api/src/yaml_loader.ts
  */
 
 import { readFileSync } from "node:fs"

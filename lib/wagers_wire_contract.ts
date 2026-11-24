@@ -1,18 +1,15 @@
 /**
- * @file lib/wagers_wire_contract.ts
- * @description Executable form of `schema/wagers_field_contract.json`.
+ * Executable form of `schema/wagers_field_contract.json`. The registry owns semantics; the captures
+ * own wire shape. This module reads both and checks raw `getBetTicker` rows against the capture's
+ * `type` and `nullable` for each registered field:
  *
- * The registry owns semantics; the captures own wire shape. This module reads
- * both and checks raw `getBetTicker` rows against the capture's `type` and
- * `nullable` for each registered field:
+ * - A type mismatch or a null where `nullable: false` is a violation;
+ * - An enum difference is **not** a violation: `enum_source` is `observed` (see
+ *   scripts/capture/schema.ts:191), so an unobserved code is a sample boundary, not a contract
+ *   break. The host wires this into the live-wagers payload as `wire_contract`, which is the same
+ *   pattern as `policy_version`: a stable probe instead of a build hash.
  *
- *  - a type mismatch or a null where `nullable: false` is a violation;
- *  - an enum difference is **not** a violation: `enum_source` is `observed`
- *    (see scripts/capture/schema.ts:191), so an unobserved code is a sample
- *    boundary, not a contract break.
- *
- * The host wires this into the live-wagers payload as `wire_contract`, which is
- * the same pattern as `policy_version`: a stable probe instead of a build hash.
+ * @file Lib/wagers_wire_contract.ts
  */
 
 import { existsSync } from "node:fs"
@@ -76,10 +73,9 @@ let cache: {
 /**
  * `WAGERS_WIRE_CONTRACT_PATH` overrides the checkout-relative registry path.
  *
- * The env value goes through `assertRelativePath`: the adapter is the chokepoint
- * for user-supplied paths, so an absolute path cannot enter the filesystem read
- * (or the payload's `registry` label) even though the label itself is only a
- * basename.
+ * The env value goes through `assertRelativePath`: the adapter is the chokepoint for user-supplied
+ * paths, so an absolute path cannot enter the filesystem read (or the payload's `registry` label)
+ * even though the label itself is only a basename.
  */
 export function wagersWireContractPath(): string {
   const override = process.env.WAGERS_WIRE_CONTRACT_PATH?.trim()
@@ -198,11 +194,10 @@ function render(value: unknown): string {
 /**
  * One summary per (row array, contract).
  *
- * The loader hands back a frozen row array until the source file changes, and
- * `loadContract` returns a new contract object whenever the registry or the cited
- * capture changes (its own stat cache). Keying on both means a `bun --hot` config
- * reload cannot serve a scan computed against the previous contract, and the
- * frozen rows mean an in-place edit cannot outlive its scan.
+ * The loader hands back a frozen row array until the source file changes, and `loadContract`
+ * returns a new contract object whenever the registry or the cited capture changes (its own stat
+ * cache). Keying on both means a `bun --hot` config reload cannot serve a scan computed against the
+ * previous contract, and the frozen rows mean an in-place edit cannot outlive its scan.
  */
 const scanCache = new WeakMap<
   readonly Record<string, unknown>[],

@@ -1,9 +1,8 @@
 /**
- * Minimal structural Cloudflare Worker binding types for `sports-ops-desk`.
- * Avoids global `/// <reference types="@cloudflare/workers-types" />`
- * augmentation so the shared Node/Bun Express server and Vite client share
- * standard Fetch `Request`/`Response` and `NodeJS.ProcessEnv` definitions
- * while staying 100% assignable from Wrangler's generated `worker-configuration.d.ts`.
+ * Minimal structural Cloudflare Worker binding types for `sports-ops-desk`. Avoids global `///
+ * <reference types="@cloudflare/workers-types" />` augmentation so the shared Node/Bun Express
+ * server and Vite client share standard Fetch `Request`/`Response` and `NodeJS.ProcessEnv`
+ * definitions while staying 100% assignable from Wrangler's generated `worker-configuration.d.ts`.
  */
 
 export interface WorkerR2ObjectLike {
@@ -50,9 +49,9 @@ export interface WorkerExecutionContextLike {
 }
 
 /**
- * Runtime environment contract for the `sports-ops-desk` Cloudflare Worker.
- * Mirrors native R2 bindings, `MCP_LIMITER` Durable Object binding, and
- * `secrets.required` declared in `wrangler.jsonc` / `worker-configuration.d.ts`.
+ * Runtime environment contract for the `sports-ops-desk` Cloudflare Worker. Mirrors native R2
+ * bindings, `MCP_LIMITER` Durable Object binding, and `secrets.required` declared in
+ * `wrangler.jsonc` / `worker-configuration.d.ts`.
  */
 export interface SportsOpsDeskEnv {
   // Native R2 bucket bindings

@@ -36,8 +36,8 @@ export interface ParlayProtectionImpactPanelProps {
 }
 
 /**
- * Displays 4-week CFB/NBA parlay protection economics: baseline unprotected vs. protected
- * desk net, hold swing, desk savings, sport split, and blocked Probit/subset guard attribution.
+ * Displays 4-week CFB/NBA parlay protection economics: baseline unprotected vs. protected desk net,
+ * hold swing, desk savings, sport split, and blocked Probit/subset guard attribution.
  */
 export function ParlayProtectionImpactPanel({
   metrics,
@@ -200,8 +200,8 @@ export interface ForensicBridgeSummaryCalloutProps {
 }
 
 /**
- * Compact, single-elevation alert strip in Overview alerting the operator to an active
- * Cross-Office Beard Bridge or stale Mode 1 telemetry collection gap with one-click drill-through.
+ * Compact, single-elevation alert strip in Overview alerting the operator to an active Cross-Office
+ * Beard Bridge or stale Mode 1 telemetry collection gap with one-click drill-through.
  */
 export function ForensicBridgeSummaryCallout({
   dossier,
@@ -354,6 +354,7 @@ export interface GraphForensicsDossierPanelProps {
 
 /**
  * Full 10-Mode Graph Forensics panel rendered inside the Forensics & IP drilldown tab:
+ *
  * - Cross-Office Beard Bridge (`perOfficeIpTrackerClusters` + `mode3SharedIpOverview`)
  * - Mode 6 Activity Overlap Non-Overlap Distinction (`mode6ActivityOverlap`)
  * - Mode 1 Telemetry Freshness & Collection Gap Warnings (`mode1CustomerOverview` + `walletProfiles`)

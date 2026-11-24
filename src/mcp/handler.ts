@@ -40,8 +40,8 @@ const SAFE_OBJECT_KEY_RE = /^[a-zA-Z0-9._/-]{1,512}$/
 const textEncoder = new TextEncoder()
 
 /**
- * Constant-time UTF-8 comparison to prevent timing side-channels when verifying
- * `DESK_ADMIN_TOKEN`. Compares full byte length without early return.
+ * Constant-time UTF-8 comparison to prevent timing side-channels when verifying `DESK_ADMIN_TOKEN`.
+ * Compares full byte length without early return.
  */
 export function constantTimeEqualUtf8(a: string, b: string): boolean {
   const bytesA = textEncoder.encode(a)
@@ -55,8 +55,8 @@ export function constantTimeEqualUtf8(a: string, b: string): boolean {
 }
 
 /**
- * Parses an HTTP Host header (with optional port or IPv6 brackets) into a
- * normalized lowercase hostname. Returns null on malformed input.
+ * Parses an HTTP Host header (with optional port or IPv6 brackets) into a normalized lowercase
+ * hostname. Returns null on malformed input.
  */
 export function parseHostHeaderHostname(hostHeader: string | null): string | null {
   if (!hostHeader) return null
@@ -164,9 +164,7 @@ export function validateMcpHostAndOrigin(
   return { ok: true, allowedOriginHeader: parsedOrigin.origin }
 }
 
-/**
- * Extracts raw Bearer token from `Authorization` header (never logged).
- */
+/** Extracts raw Bearer token from `Authorization` header (never logged). */
 function extractBearerToken(request: Request): string | null {
   const auth = request.headers.get("Authorization")
   if (!auth) return null
@@ -175,9 +173,9 @@ function extractBearerToken(request: Request): string | null {
 }
 
 /**
- * Computes a deterministic, zero-PII SHA-256 caller identifier (`callerHash`)
- * used exclusively as the `MCP_LIMITER` Durable Object key and log field.
- * Raw tokens, client IPs, and emails are never stored or logged.
+ * Computes a deterministic, zero-PII SHA-256 caller identifier (`callerHash`) used exclusively as
+ * the `MCP_LIMITER` Durable Object key and log field. Raw tokens, client IPs, and emails are never
+ * stored or logged.
  */
 export async function deriveCallerHash(request: Request): Promise<string> {
   const bearer = extractBearerToken(request)
@@ -221,8 +219,8 @@ interface LimiterConsumeOutcomeDenied {
 }
 
 /**
- * Gates an MCP tool or resource call through `env.MCP_LIMITER` BEFORE touching
- * R2, Analytics Engine, or any other Durable Object.
+ * Gates an MCP tool or resource call through `env.MCP_LIMITER` BEFORE touching R2, Analytics
+ * Engine, or any other Durable Object.
  */
 export async function consumeMcpLimiterBudget(
   env: Pick<SportsOpsDeskEnv, "MCP_LIMITER">,
@@ -322,9 +320,9 @@ function makeJsonRpcErrorResponse(
 }
 
 /**
- * Fresh per-request SDK v2 `McpServer` factory using `registerTool()` and
- * `registerResource()`. Every tool and resource gates through `env.MCP_LIMITER`
- * before touching R2, Analytics Engine, or other Durable Objects.
+ * Fresh per-request SDK v2 `McpServer` factory using `registerTool()` and `registerResource()`.
+ * Every tool and resource gates through `env.MCP_LIMITER` before touching R2, Analytics Engine, or
+ * other Durable Objects.
  */
 export function createServer(env: SportsOpsDeskEnv, authCtx: McpRequestAuthContext): McpServer {
   const server = new McpServer(
@@ -678,6 +676,7 @@ export interface HandleMcpRequestOptions {
 
 /**
  * Primary fail-closed Streamable HTTP `/mcp` handler for `sports-ops-desk`.
+ *
  * - Enforces Host & Origin allowlists (`403` on mismatch)
  * - Rejects bare `GET /mcp` without valid Streamable HTTP session/accept headers (`405`)
  * - Enforces constant-time Bearer `DESK_ADMIN_TOKEN` on mutating tools (`401`)

@@ -19,16 +19,21 @@ bun run docs:check
 bun run format
 bun run format:check
 bun run format:debug
+bun run format:doctor
 bun run lint
 bun run build
 bun run check:runtime
 bun run check:ci
 ```
 
-Formatting uses the existing `[fmt]` settings in `bunfig.toml` (100 columns,
-no semicolons). `format` writes files; `format:check` is read-only. Imported
-files may have pre-existing formatting differences; do not sweep them into an
-unrelated change. Check a bounded change with `bun fmt --check --changed=HEAD`.
+Formatting uses the `[fmt]` settings in `bunfig.toml` (100 columns, no semicolons,
+`[fmt.sortImports]`, `sortTailwindcss = true`, `sortPackageJson = true`, `jsdoc = true`,
+and a `*.test.ts` override at 120 columns). `bun fmt` invokes the native formatter directly
+while `bun run format` / `bun format` runs the `format` script; `format:check` is read-only
+and `format:doctor` (`bun fmt --doctor`) reports how Bun interprets the config and whether
+any Prettier packages can be removed. Imported files may have pre-existing formatting
+differences; do not sweep them into an unrelated change. Check a bounded change with
+`bun fmt --check --changed=HEAD`.
 
 `hooks:install` configures this checkout's local `core.hooksPath` to the tracked
 `.githooks` directory. Run it after cloning; dependency installation does not
@@ -53,6 +58,38 @@ rejecting false and identifier returns in the production authentication guard.
 `bun fmt`, `bun pm fetch`, cache packing, and recursive publication. The existing
 CI keeps its frozen/offline install and lockfile checks. Bun's shared install
 cache is separate from a package registry.
+
+### Monorepo filtering with `bun --filter`
+
+All four workspace packages (`@sportsdesk-ops/contracts`, `@sportsdesk-ops/backend`,
+`@sportsdesk-ops/api`, and `@sportsdesk-ops/ui`) define `typecheck`, `lint`, `format`,
+and `format:check` scripts so Bun's `--filter` (`-F`), `--workspaces`, `--parallel`,
+and `--sequential` flags can target subsets in dependency order:
+
+```sh
+# Package name glob + Foreman-style parallel output
+bun run --parallel --filter '@sportsdesk-ops/*' lint
+
+# Sequential dependency-ordered workspace typecheck
+bun run --sequential --filter '@sportsdesk-ops/*' typecheck
+
+# Directory selector for everything under packages/
+bun run --parallel --filter '{./packages}' format:check
+
+# Dependency relations: api + transitive workspace deps (contracts -> backend -> api)
+bun --filter '@sportsdesk-ops/api...' typecheck
+
+# Reverse dependency relation: packages depending on contracts (excluding contracts)
+bun --filter '...^@sportsdesk-ops/contracts' typecheck
+
+# Exclude a package or root workspace
+bun run --parallel --filter '!./' --filter './packages/*' --filter '!@sportsdesk-ops/ui' format:check
+
+# Package-manager subcommands place --filter after the subcommand
+bun install --filter '@sportsdesk-ops/api...'
+bun outdated --filter './packages/*'
+bun pm licenses --filter './packages/*'
+```
 
 ## Local package registry
 

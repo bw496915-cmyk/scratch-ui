@@ -1,6 +1,7 @@
 /**
- * @file packages/contracts/src/markdown_telemetry.ts
- * @description Browser-safe UTF-8, non-ASCII glyph, and Markdown section telemetry helpers.
+ * Browser-safe UTF-8, non-ASCII glyph, and Markdown section telemetry helpers.
+ *
+ * @file Packages/contracts/src/markdown_telemetry.ts
  */
 
 const utf8Encoder = new TextEncoder()
@@ -44,7 +45,10 @@ export function utf8ByteLength(text: string): number {
   return utf8Encoder.encode(text).byteLength
 }
 
-/** Extracts title, level-2 section outline + HTML ids, table count, UTF-8 sizes, and non-ASCII glyph count. */
+/**
+ * Extracts title, level-2 section outline + HTML ids, table count, UTF-8 sizes, and non-ASCII glyph
+ * count.
+ */
 export function extractMarkdownTelemetry(
   markdown: string,
   html: string,

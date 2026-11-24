@@ -48,14 +48,12 @@ describe("terminal Markdown", () => {
       process.env.FORCE_COLOR = "1"
       expect(isColorEnabled(true)).toBe(true)
       expect(isColorEnabled(false)).toBe(false)
-      expect(resolveAnsiTheme({ columns: undefined, colors: undefined, hyperlinks: true })).toEqual(
-        {
-          colors: false,
-          columns: 76,
-          hyperlinks: false,
-          kittyGraphics: false,
-        },
-      )
+      expect(resolveAnsiTheme({ columns: undefined, colors: undefined, hyperlinks: true })).toEqual({
+        colors: false,
+        columns: 76,
+        hyperlinks: false,
+        kittyGraphics: false,
+      })
       expect(formatKeyValueRows([["Seal", "UNSEALED"]], { colors: true })).toContain(
         TRUECOLOR_PALETTE.warn + "UNSEALED" + ANSI_SGR.reset,
       )
@@ -89,9 +87,7 @@ describe("terminal Markdown", () => {
     const label = ANSI_SGR.bold + "Help\x9d\npage" + ANSI_SGR.reset
     const controlFreeLabel = ANSI_SGR.bold + "Help page" + ANSI_SGR.reset
     const url = "https://example.invalid/help"
-    expect(osc8Link(label, url, true)).toBe(
-      "\x1b]8;;" + url + "\x07" + controlFreeLabel + "\x1b]8;;\x07",
-    )
+    expect(osc8Link(label, url, true)).toBe("\x1b]8;;" + url + "\x07" + controlFreeLabel + "\x1b]8;;\x07")
     expect(osc8Link("Help", url, false)).toBe("Help (" + url + ")")
     for (const rejected of [url + "%1b", url + "?X-Amz-Signature=fixture"]) {
       expect(osc8Link(label, rejected, true)).toBe(controlFreeLabel)
@@ -188,9 +184,7 @@ describe("terminal Markdown", () => {
       expect(padGrapheme("東", columns)).toBe("東")
     }
     expect(padGrapheme("東", Number.MAX_VALUE).length).toBe(65_534)
-    expect(formatKeyValueRows([["東\x1b", "ready\x9d\nnow"]], { keyWidth: 4 })).toBe(
-      "東   ready now",
-    )
+    expect(formatKeyValueRows([["東\x1b", "ready\x9d\nnow"]], { keyWidth: 4 })).toBe("東   ready now")
   })
 
   test("renders GFM aligned tables, tasklists, and captures heading meta IDs", () => {
@@ -221,8 +215,6 @@ describe("terminal Markdown", () => {
     expect(plain).toContain("[ ] Pending")
     expect(captured?.tableCount).toBe(1)
     expect(captured?.taskSummary).toEqual({ total: 2, checked: 1, unchecked: 1 })
-    expect(captured?.headingIds).toEqual([
-      { level: 1, id: "docs-table-meta-id", text: "Docs Table & Meta ID" },
-    ])
+    expect(captured?.headingIds).toEqual([{ level: 1, id: "docs-table-meta-id", text: "Docs Table & Meta ID" }])
   })
 })

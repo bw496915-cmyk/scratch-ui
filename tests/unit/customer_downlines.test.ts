@@ -23,29 +23,17 @@ describe("Customer URL Focus Scoping & Enhanced Customer Downlines", () => {
     expect(parsed.customer).toBe("BGD101")
 
     // Clearing customer focus removes ?customer=BGD101 immediately
-    const cleared = buildDashboardSearch(
-      { ...parsed, customer: "" },
-      "?customer=BGD101&tab=rankings",
-      "/",
-    )
+    const cleared = buildDashboardSearch({ ...parsed, customer: "" }, "?customer=BGD101&tab=rankings", "/")
     expect(cleared).toBe("tab=rankings")
     expect(cleared).not.toContain("BGD101")
 
     // Navigating to a non-customer tab removes stale ?customer=
-    const onWagers = buildDashboardSearch(
-      { ...parsed, tab: "wagers" },
-      "?customer=BGD101&tab=rankings",
-      "/",
-    )
+    const onWagers = buildDashboardSearch({ ...parsed, tab: "wagers" }, "?customer=BGD101&tab=rankings", "/")
     expect(onWagers).toBe("tab=wagers")
     expect(onWagers).not.toContain("customer=")
 
     // Default Profiles view without explicit customer focus produces a clean URL
-    const cleanHome = buildDashboardSearch(
-      { ...DEFAULT_DASHBOARD_URL_STATE, customer: "" },
-      "?customer=BGD101",
-      "/",
-    )
+    const cleanHome = buildDashboardSearch({ ...DEFAULT_DASHBOARD_URL_STATE, customer: "" }, "?customer=BGD101", "/")
     expect(cleanHome).toBe("")
   })
 

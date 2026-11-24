@@ -135,8 +135,8 @@ export function formatAutoRefreshStatus(
 export interface R2PipelineTabPanelProps {
   readonly data: R2PipelineApiResponse | null
   /**
-   * Process-local freshness series from `/api/r2/pipeline/history`. Optional:
-   * without it the cards render their SLA math but no trend block.
+   * Process-local freshness series from `/api/r2/pipeline/history`. Optional: without it the cards
+   * render their SLA math but no trend block.
    */
   readonly history?: R2PipelineHistoryApiResponse | null
   readonly historyError?: string | null
@@ -167,8 +167,8 @@ function formatSla(slaSeconds: number): string {
 }
 
 /**
- * One line under the publish age: when the breach began, or how long the sink has
- * left. Text only — no numbers are derived here that the payload does not carry.
+ * One line under the publish age: when the breach began, or how long the sink has left. Text only —
+ * no numbers are derived here that the payload does not carry.
  */
 function slaTimingLine(sink: R2SinkDetail): string {
   const sla = sink.sla
@@ -197,9 +197,9 @@ const SPARK_WIDTH = 150
 const SPARK_HEIGHT = 30
 
 /**
- * Publish-age sparkline for one sink. The dashed rule is the SLA; the solid line
- * is the recorded age on the same scale, so "above the line" is overdue. Fewer
- * than two numeric samples render nothing (a single dot is not a trend).
+ * Publish-age sparkline for one sink. The dashed rule is the SLA; the solid line is the recorded
+ * age on the same scale, so "above the line" is overdue. Fewer than two numeric samples render
+ * nothing (a single dot is not a trend).
  */
 function SlaSparkline({
   samples,

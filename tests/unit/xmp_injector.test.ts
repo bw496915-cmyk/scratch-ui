@@ -1,7 +1,8 @@
-import { XML } from "bun"
 import { describe, expect, test } from "bun:test"
 import { resolve } from "node:path"
 import { deflateSync } from "node:zlib"
+
+import { XML } from "bun"
 
 import { crc32Bytes } from "../../lib/binary.ts"
 import { transformBunImageAsset } from "../../server/bun_image_engine.ts"
@@ -71,12 +72,7 @@ function makeRgbaPngFixture(width = 16, height = 16): Uint8Array {
 }
 
 function readFourCC(buf: Uint8Array, offset: number): string {
-  return String.fromCharCode(
-    buf[offset]!,
-    buf[offset + 1]!,
-    buf[offset + 2]!,
-    buf[offset + 3]!,
-  )
+  return String.fromCharCode(buf[offset]!, buf[offset + 1]!, buf[offset + 2]!, buf[offset + 3]!)
 }
 
 function extractWebpXmp(webp: Uint8Array): {
@@ -151,8 +147,7 @@ function assertValidXmpXml(xmp: string | null, expectedCreator?: string): void {
       string,
       Record<string, Record<string, Record<string, Record<string, Record<string, unknown>>>>>
     >
-    const creator =
-      xmpmeta["rdf:RDF"]?.["rdf:Description"]?.["dc:creator"]?.["rdf:Seq"]?.["rdf:li"]
+    const creator = xmpmeta["rdf:RDF"]?.["rdf:Description"]?.["dc:creator"]?.["rdf:Seq"]?.["rdf:li"]
     expect(creator).toBe(expectedCreator)
   }
 }
@@ -163,9 +158,7 @@ describe("xmp-injector round-trip with Bun.Image + Bun.XML", () => {
   const rgbaFixture = makeRgbaPngFixture(WIDTH, HEIGHT)
 
   test("WebP (lossy alpha VP8X+ALPH+VP8 ): patches VP8X flags in place, injects XMP, validates via Bun.XML, and re-decodes cleanly", async () => {
-    const encoded = new Uint8Array(
-      await new Bun.Image(rgbaFixture).webp({ lossless: false, quality: 85 }).toBuffer(),
-    )
+    const encoded = new Uint8Array(await new Bun.Image(rgbaFixture).webp({ lossless: false, quality: 85 }).toBuffer())
     const before = extractWebpXmp(encoded)
     expect(before.chunkTypes).toEqual(["VP8X", "ALPH", "VP8 "])
     expect(before.vp8xFlags).toBe(0x10)
@@ -207,9 +200,7 @@ describe("xmp-injector round-trip with Bun.Image + Bun.XML", () => {
 
   test("Indexed PNG (color-type 3 with PLTE/tRNS): stamps iTXt before IEND and re-decodes cleanly", async () => {
     const indexed = new Uint8Array(
-      await new Bun.Image(rgbaFixture)
-        .png({ colors: 64, compressionLevel: 9, dither: true, palette: true })
-        .toBuffer(),
+      await new Bun.Image(rgbaFixture).png({ colors: 64, compressionLevel: 9, dither: true, palette: true }).toBuffer(),
     )
 
     expect(indexed[25]).toBe(3)
@@ -230,9 +221,7 @@ describe("xmp-injector round-trip with Bun.Image + Bun.XML", () => {
   })
 
   test("injectXmp auto-detects lossless WebP (VP8L -> VP8X with alpha bit 28) & PNG and replaces existing XMP idempotently", async () => {
-    const webp = new Uint8Array(
-      await new Bun.Image(rgbaFixture).webp({ lossless: true, quality: 100 }).toBuffer(),
-    )
+    const webp = new Uint8Array(await new Bun.Image(rgbaFixture).webp({ lossless: true, quality: 100 }).toBuffer())
     const beforeWebp = extractWebpXmp(webp)
     expect(beforeWebp.chunkTypes).toEqual(["VP8L"])
 
@@ -276,9 +265,7 @@ describe("xmp-injector round-trip with Bun.Image + Bun.XML", () => {
     expect(pngResult.xmpInjected).toBe(true)
     expect(pngResult.xmpBytes).toBeGreaterThan(0)
 
-    const pngBytes = Uint8Array.from(
-      Buffer.from(pngResult.dataUrl.replace("data:image/png;base64,", ""), "base64"),
-    )
+    const pngBytes = Uint8Array.from(Buffer.from(pngResult.dataUrl.replace("data:image/png;base64,", ""), "base64"))
     const pngParsed = extractPngXmp(pngBytes)
     expect(pngParsed.count).toBe(1)
     assertValidXmpXml(pngParsed.xmp, CREATOR_VALUE)

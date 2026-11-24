@@ -1,14 +1,15 @@
 /**
- * @file schema/rsk06_telemetry_matrix.ts
+ * Decouples register_def (static definitions) from register_state (runtime snapshot). Enforces
+ * pure-shape Resource_Type (COUNT, CURRENCY_CENTS), role-gated Measurement_Confidence, one-rule
+ * Bound (populated iff boundType != EXACT), paired divergenceCount + divergenceUnit, structured
+ * Health, boundaryOp, and predicateExpression, complete Monotonicity across all CURSOR/EPOCH types,
+ * pure deriveLag() + deriveValidity() with zero magic constants, and strictly prefix-free column
+ * naming across all attributes.
+ *
+ * @file Schema/rsk06_telemetry_matrix.ts
  * @artifact ART-SCHEMA-RSK06-TELEMETRY-MATRIX
  * @taxonomy L0_SCHEMA_AND_TYPES / RUNTIME (DOC-33 / DOC-37)
  * @specification Formal Enforceable Schema Contract for the 22-Row RSK-06 Telemetry Matrix (v2.3.0)
- * @description Decouples register_def (static definitions) from register_state (runtime snapshot).
- *              Enforces pure-shape Resource_Type (COUNT, CURRENCY_CENTS), role-gated Measurement_Confidence,
- *              one-rule Bound (populated iff boundType != EXACT), paired divergenceCount + divergenceUnit,
- *              structured Health, boundaryOp, and predicateExpression, complete Monotonicity across
- *              all CURSOR/EPOCH types, pure deriveLag() + deriveValidity() with zero magic constants,
- *              and strictly prefix-free column naming across all attributes.
  */
 
 export const RSK06_MATRIX_SCHEMA_VERSION = "2.3.0" as const
@@ -23,9 +24,7 @@ export type Rsk06Layer =
 
 export type Rsk06Role = "INSTRUCTION" | "CHECK" | "HANDLE" | "OBSERVATION" | "EVIDENCE"
 
-/**
- * Pure data shape (domain subject lives in Target, Stream, or Measure).
- */
+/** Pure data shape (domain subject lives in Target, Stream, or Measure). */
 export type Rsk06ResourceType =
   | "CURSOR"
   | "INVARIANT"

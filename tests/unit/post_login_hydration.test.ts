@@ -2,12 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test"
 
 import { createHttpAuthController } from "../../lib/http_auth.ts"
 import { createDashboardApi } from "../../packages/api/src/router.ts"
-import {
-  resetApiUsage,
-  setDevCsrfToken,
-  setDevSessionToken,
-  trackedFetch,
-} from "../../packages/ui/src/api_usage.ts"
+import { resetApiUsage, setDevCsrfToken, setDevSessionToken, trackedFetch } from "../../packages/ui/src/api_usage.ts"
 import {
   fetchRankingsSlice,
   hydrateDashboardFeeds,
@@ -16,8 +11,7 @@ import {
 
 describe("Post-Login Hydration & Rankings Normalization", () => {
   const originalFetch = globalThis.fetch
-  const originalSessionStorage = (globalThis as unknown as { sessionStorage?: unknown })
-    .sessionStorage
+  const originalSessionStorage = (globalThis as unknown as { sessionStorage?: unknown }).sessionStorage
 
   afterEach(() => {
     globalThis.fetch = originalFetch
@@ -230,8 +224,7 @@ describe("Post-Login Hydration & Rankings Normalization", () => {
     })
 
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-      const rawUrl =
-        typeof input === "string" ? input : input instanceof URL ? input.href : input.url
+      const rawUrl = typeof input === "string" ? input : input instanceof URL ? input.href : input.url
       const absUrl = rawUrl.startsWith("http") ? rawUrl : `http://127.0.0.1:3000${rawUrl}`
       return api.fetch(new Request(absUrl, init))
     }) as typeof fetch

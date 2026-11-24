@@ -1,7 +1,8 @@
 /**
- * @file scripts/check_bundle_hygiene.ts
- * @description Phase 3 guardrail: scans compiled dist/ assets to ensure zero server
- * tokens, admin secrets, or raw weblog fixture IPs are compiled into the client SPA bundle.
+ * Phase 3 guardrail: scans compiled dist/ assets to ensure zero server tokens, admin secrets, or
+ * raw weblog fixture IPs are compiled into the client SPA bundle.
+ *
+ * @file Scripts/check_bundle_hygiene.ts
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"

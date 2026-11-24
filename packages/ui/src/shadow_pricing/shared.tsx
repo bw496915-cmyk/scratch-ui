@@ -1,7 +1,8 @@
 /**
- * @file packages/ui/src/shadow_pricing/shared.tsx
- * @description Pure formatters, badge helpers, and client preset definitions for
- * the Hierarchical Taxonomy Cube & Shadow-Pricing Simulator.
+ * Pure formatters, badge helpers, and client preset definitions for the Hierarchical Taxonomy Cube
+ * & Shadow-Pricing Simulator.
+ *
+ * @file Packages/ui/src/shadow_pricing/shared.tsx
  */
 
 import React from "react"

@@ -46,11 +46,7 @@ describe("packages/api Hardened API Base & URL Validation", () => {
     }
     expect(hasCompiledApiBasePatterns(BrokenPattern as unknown as typeof URLPattern)).toBe(false)
     expect(
-      validateApiBaseWithPattern(
-        "https://api.bookdeskops.com",
-        false,
-        BrokenPattern as unknown as typeof URLPattern,
-      ),
+      validateApiBaseWithPattern("https://api.bookdeskops.com", false, BrokenPattern as unknown as typeof URLPattern),
     ).toEqual({
       ok: false,
       code: "ERR_API_BASE_PATTERN_UNAVAILABLE",
@@ -83,11 +79,7 @@ describe("packages/api Hardened API Base & URL Validation", () => {
       code: "ERR_API_BASE_QUERY_OR_HASH_FORBIDDEN",
     })
 
-    expect(
-      extractSingleApiBaseParam(
-        "?apiBase=https://api.bookdeskops.com&apiBase=https://evil.example",
-      ),
-    ).toEqual({
+    expect(extractSingleApiBaseParam("?apiBase=https://api.bookdeskops.com&apiBase=https://evil.example")).toEqual({
       present: true,
       ok: false,
       code: "ERR_API_BASE_DUPLICATE_PARAM",
@@ -101,14 +93,9 @@ describe("packages/api Hardened API Base & URL Validation", () => {
         id: "AG-7",
       }),
     ).toBe("https://api.bookdeskops.com/v1/api/agents/AG-7")
+    expect(() => buildApiUrl("https://api.bookdeskops.com\\v1", DASHBOARD_ROUTES.health)).toThrow()
     expect(() =>
-      buildApiUrl("https://api.bookdeskops.com\\v1", DASHBOARD_ROUTES.health),
-    ).toThrow()
-    expect(() =>
-      buildApiUrl(
-        `https://api.bookdeskops.com/${"a".repeat(MAX_API_BASE_INPUT)}`,
-        DASHBOARD_ROUTES.health,
-      ),
+      buildApiUrl(`https://api.bookdeskops.com/${"a".repeat(MAX_API_BASE_INPUT)}`, DASHBOARD_ROUTES.health),
     ).toThrow()
 
     // validateConfigHttpUrl & createConfigStatusStore normalize repetitive slashes and reject unsafe URLs
@@ -179,20 +166,14 @@ describe("packages/api Hardened API Base & URL Validation", () => {
     })
 
     const dupRes = await api.fetch(
-      new Request(
-        "https://ops.example.com/health?apiBase=https://api.bookdeskops.com&apiBase=https://evil.example",
-      ),
+      new Request("https://ops.example.com/health?apiBase=https://api.bookdeskops.com&apiBase=https://evil.example"),
     )
     expect(dupRes.status).toBe(400)
     expect(((await dupRes.json()) as { code: string }).code).toBe("ERR_API_BASE_DUPLICATE_PARAM")
 
-    const prodLoopbackRes = await api.fetch(
-      new Request("https://ops.example.com/health?apiBase=http://127.0.0.1:4022"),
-    )
+    const prodLoopbackRes = await api.fetch(new Request("https://ops.example.com/health?apiBase=http://127.0.0.1:4022"))
     expect(prodLoopbackRes.status).toBe(400)
-    expect(((await prodLoopbackRes.json()) as { code: string }).code).toBe(
-      "ERR_API_BASE_ORIGIN_UNTRUSTED",
-    )
+    expect(((await prodLoopbackRes.json()) as { code: string }).code).toBe("ERR_API_BASE_ORIGIN_UNTRUSTED")
 
     const validRes = await api.fetch(
       new Request("https://ops.example.com/health?apiBase=https://api.bookdeskops.com//v2/"),
@@ -285,7 +266,7 @@ describe("Local :4022 SPA Decoupling & All 19 Bun Runtime Utilities", () => {
     expect(df.outputBytes).toBeGreaterThan(0)
     expect(df.outputBytes).toBeLessThan(df.inputBytes)
 
-    expect(escapeHtmlSafe('<script>"x" & \'y\'</script>')).toBe(
+    expect(escapeHtmlSafe("<script>\"x\" & 'y'</script>")).toBe(
       "&lt;script&gt;&quot;x&quot; &amp; &#x27;y&#x27;&lt;/script&gt;",
     )
     expect(deepEqualsSafe({ a: 1, b: [2, 3] }, { b: [2, 3], a: 1 }, true)).toBe(true)

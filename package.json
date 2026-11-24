@@ -1,23 +1,20 @@
 {
   "name": "sportsdesk-ops",
-  "private": true,
   "version": "0.1.0",
-  "type": "module",
-  "packageManager": "bun@1.4.4",
-  "engines": {
-    "bun": "1.4.4"
-  },
-  "publishConfig": {
-    "tag": "next",
-    "registry": "https://registry.npmjs.org/"
-  },
+  "private": true,
   "workspaces": [
     "packages/*"
   ],
+  "type": "module",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "tag": "next"
+  },
   "scripts": {
     "format": "bun fmt",
     "format:check": "bun fmt --check",
     "format:debug": "bun fmt --debug-check",
+    "format:doctor": "bun fmt --doctor",
     "hooks:install": "git config --local core.hooksPath .githooks",
     "registry:install": "bun install --cwd tools/registry --frozen-lockfile",
     "registry:start": "bun run --cwd tools/registry start",
@@ -41,6 +38,13 @@
     "preview": "vite preview --host 0.0.0.0 --port 3000",
     "clean": "rm -rf dist server.js server.mjs",
     "lint": "tsc --noEmit && tsc --noEmit --project scripts/tsconfig.runtime.json && tsc --noEmit --project packages/ui/tsconfig.json",
+    "ws:lint": "bun run --parallel --filter '@sportsdesk-ops/*' lint",
+    "ws:typecheck": "bun run --sequential --filter '@sportsdesk-ops/*' typecheck",
+    "ws:format:check": "bun run --parallel --filter '{./packages}' format:check",
+    "ws:check:api": "bun --filter '@sportsdesk-ops/api...' typecheck",
+    "ws:check:contracts-dependents": "bun --filter '...^@sportsdesk-ops/contracts' typecheck",
+    "ws:outdated": "bun outdated --filter './packages/*'",
+    "ws:licenses": "bun pm licenses --filter './packages/*'",
     "test": "bun test",
     "test:isolate": "bun test --isolate",
     "test:update-snapshots": "TZ=UTC bun test --update-snapshots",
@@ -86,5 +90,9 @@
     "lightningcss": "^1.33.0",
     "tsx": "^4.21.0",
     "typescript": "^7.0.2"
-  }
+  },
+  "engines": {
+    "bun": "1.4.4"
+  },
+  "packageManager": "bun@1.4.4"
 }

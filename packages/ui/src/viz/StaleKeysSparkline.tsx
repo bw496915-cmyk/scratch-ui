@@ -113,10 +113,10 @@ export function writeStoredStaleKeysDangerThreshold(
 }
 
 /**
- * Reconstruct the aggregate `staleKeys` count (`state !== "fresh"`) across all
- * sinks over the last `windowMinutes` from process-local `r2PipelineHistory`.
- * Carries forward each sink's last known state prior to the window so partial
- * state-change samples still report an accurate fleet-wide count.
+ * Reconstruct the aggregate `staleKeys` count (`state !== "fresh"`) across all sinks over the last
+ * `windowMinutes` from process-local `r2PipelineHistory`. Carries forward each sink's last known
+ * state prior to the window so partial state-change samples still report an accurate fleet-wide
+ * count.
  */
 export function buildStaleKeysTrendSeries(
   history: R2PipelineHistoryApiResponse | null | undefined,
@@ -195,8 +195,8 @@ export function buildStaleKeysTrendSeries(
 }
 
 /**
- * Pure D3 scale + path geometry builder for the 60-minute `staleKeys` sparkline.
- * Uses `d3.scaleTime`, `d3.scaleLinear`, `d3.line`, and `d3.area` with `curveMonotoneX`.
+ * Pure D3 scale + path geometry builder for the 60-minute `staleKeys` sparkline. Uses
+ * `d3.scaleTime`, `d3.scaleLinear`, `d3.line`, and `d3.area` with `curveMonotoneX`.
  */
 export function computeStaleKeysSparklineGeometry({
   points,

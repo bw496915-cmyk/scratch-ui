@@ -1,7 +1,8 @@
 /**
- * @file src/http/csrf_origin_guard.ts
- * @description Reusable Origin allowlist + session-bound `x-csrf-token` guard
- * for cookie-authenticated POST routes (e.g., `/api/profile/theme`).
+ * Reusable Origin allowlist + session-bound `x-csrf-token` guard for cookie-authenticated POST
+ * routes (e.g., `/api/profile/theme`).
+ *
+ * @file Src/http/csrf_origin_guard.ts
  */
 
 const NO_STORE = { "Cache-Control": "no-store", Vary: "Cookie" } as const
@@ -11,9 +12,7 @@ export interface CsrfOriginGuardConfig {
   readonly allowedOrigins: ReadonlySet<string> | readonly string[]
   /** Verify the submitted CSRF token against the authenticated session. */
   readonly verifyCsrfToken: (sessionId: string, token: string) => boolean
-  /**
-   * When true, also accept the request URL's origin for direct preview URLs.
-   */
+  /** When true, also accept the request URL's origin for direct preview URLs. */
   readonly allowSameOrigin?: boolean | undefined
 }
 

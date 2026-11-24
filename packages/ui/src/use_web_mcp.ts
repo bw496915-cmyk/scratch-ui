@@ -1,8 +1,9 @@
 /**
- * @file packages/ui/src/use_web_mcp.ts
- * @description React lifecycle hook that registers Sports Ops Desk WebMCP tools
- * once on mount when `navigator.modelContext` (or `document.modelContext`) is
- * available, keeping live state refs fresh without churning browser registrations.
+ * React lifecycle hook that registers Sports Ops Desk WebMCP tools once on mount when
+ * `navigator.modelContext` (or `document.modelContext`) is available, keeping live state refs fresh
+ * without churning browser registrations.
+ *
+ * @file Packages/ui/src/use_web_mcp.ts
  */
 
 import { useEffect, useRef, useState } from "react"

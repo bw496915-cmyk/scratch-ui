@@ -1,8 +1,8 @@
 /**
- * @file tests/unit/bun_cli_and_artifacts.test.ts
- * @description Verifies the deterministic artifact generator (`scripts/gen_artifacts.ts`),
- * zero-drift design tokens & pipeline hashes, Markdown link/staleness hygiene, and the
- * unified Bun CLI (`scripts/sportsdesk_cli.ts`).
+ * Verifies the deterministic artifact generator (`scripts/gen_artifacts.ts`), zero-drift design tokens & pipeline
+ * hashes, Markdown link/staleness hygiene, and the unified Bun CLI (`scripts/sportsdesk_cli.ts`).
+ *
+ * @file Tests/unit/bun_cli_and_artifacts.test.ts
  */
 
 import { describe, expect, test } from "bun:test"
@@ -45,10 +45,7 @@ describe("deterministic artifact generator (scripts/gen_artifacts.ts)", () => {
     expect(parsed.aliases.length).toBeGreaterThanOrEqual(25)
     expect(parsed.casStates.length).toBe(4)
 
-    const onDiskTs = readFileSync(
-      resolve(ROOT_DIR, "packages/ui/src/tokens.registry.generated.ts"),
-      "utf8",
-    )
+    const onDiskTs = readFileSync(resolve(ROOT_DIR, "packages/ui/src/tokens.registry.generated.ts"), "utf8")
     const onDiskCss = readFileSync(resolve(ROOT_DIR, "src/dashboard/tokens.generated.css"), "utf8")
 
     expect(emitTokensRegistryTs(parsed)).toBe(onDiskTs)
@@ -135,28 +132,12 @@ describe("unified Bun CLI (scripts/sportsdesk_cli.ts)", () => {
   })
 
   test("docs render formats Markdown with Bun.markdown.ansi and Bun.markdown.render", () => {
-    const ansiRes = runCli([
-      "docs",
-      "render",
-      "design/README.md",
-      "--mode",
-      "ansi",
-      "--columns",
-      "80",
-    ])
+    const ansiRes = runCli(["docs", "render", "design/README.md", "--mode", "ansi", "--columns", "80"])
     expect(ansiRes.exitCode).toBe(0)
     expect(ansiRes.stdout.length).toBeGreaterThan(100)
     expect(ansiRes.stdout).toContain("Design Token SSOT")
 
-    const renderRes = runCli([
-      "docs",
-      "render",
-      "design/README.md",
-      "--mode",
-      "render",
-      "--columns",
-      "80",
-    ])
+    const renderRes = runCli(["docs", "render", "design/README.md", "--mode", "render", "--columns", "80"])
     expect(renderRes.exitCode).toBe(0)
     expect(renderRes.stdout.length).toBeGreaterThan(100)
     expect(renderRes.stdout).toContain("Design Token SSOT")
@@ -193,9 +174,7 @@ describe("unified Bun CLI (scripts/sportsdesk_cli.ts)", () => {
       readonly headingIds: readonly { readonly id: string }[]
     }[]
     expect(listPayload.some((d) => d.metaId === "SD-DOC-ROOT-README")).toBe(true)
-    expect(
-      listPayload.find((d) => d.metaId === "SD-DOC-DESIGN-TOKENS")?.headingIds.length,
-    ).toBeGreaterThanOrEqual(5)
+    expect(listPayload.find((d) => d.metaId === "SD-DOC-DESIGN-TOKENS")?.headingIds.length).toBeGreaterThanOrEqual(5)
 
     const idsJson = runCli(["docs", "ids", "SD-DOC-DESIGN-TOKENS", "--json"])
     expect(idsJson.exitCode).toBe(0)

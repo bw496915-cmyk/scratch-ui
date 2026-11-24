@@ -35,9 +35,7 @@ describe("URLPattern apiBase Validation (Production & Local Dev)", () => {
         return false
       }
     }
-    expect(
-      hasCompiledApiBasePatterns(FakeNoRegexURLPattern as unknown as typeof URLPattern),
-    ).toBe(false)
+    expect(hasCompiledApiBasePatterns(FakeNoRegexURLPattern as unknown as typeof URLPattern)).toBe(false)
     expect(
       validateApiBaseWithPattern(
         "https://api.bookdeskops.com",
@@ -56,13 +54,11 @@ describe("URLPattern apiBase Validation (Production & Local Dev)", () => {
       normalized: "https://api.bookdeskops.com",
       sub: "api",
     })
-    expect(validateApiBaseWithPattern("https://desk-01.bookdeskops.com//v2///ops/", false)).toEqual(
-      {
-        ok: true,
-        normalized: "https://desk-01.bookdeskops.com/v2/ops",
-        sub: "desk-01",
-      },
-    )
+    expect(validateApiBaseWithPattern("https://desk-01.bookdeskops.com//v2///ops/", false)).toEqual({
+      ok: true,
+      normalized: "https://desk-01.bookdeskops.com/v2/ops",
+      sub: "desk-01",
+    })
     expect(validateApiBaseWithPattern("https://A.BOOKDESKOPS.COM///", false)).toEqual({
       ok: true,
       normalized: "https://a.bookdeskops.com",
@@ -263,8 +259,7 @@ describe("URLPattern apiBase Validation (Production & Local Dev)", () => {
 
     // Duplicate-key query smuggling: get() would silently return the first (trusted) value,
     // while getAll() exposes the second (untrusted) value and fails closed.
-    const smuggledQuery =
-      "?apiBase=https://api.bookdeskops.com&apiBase=https://evil.example&tab=customers"
+    const smuggledQuery = "?apiBase=https://api.bookdeskops.com&apiBase=https://evil.example&tab=customers"
     expect(extractSingleApiBaseParam(smuggledQuery)).toEqual({
       present: true,
       ok: false,
@@ -273,10 +268,7 @@ describe("URLPattern apiBase Validation (Production & Local Dev)", () => {
 
     const smuggledParams = new URLSearchParams(smuggledQuery)
     expect(smuggledParams.get("apiBase")).toBe("https://api.bookdeskops.com")
-    expect(smuggledParams.getAll("apiBase")).toEqual([
-      "https://api.bookdeskops.com",
-      "https://evil.example",
-    ])
+    expect(smuggledParams.getAll("apiBase")).toEqual(["https://api.bookdeskops.com", "https://evil.example"])
     stripApiBaseParam(smuggledParams)
     expect(smuggledParams.getAll("apiBase")).toEqual([])
     expect(smuggledParams.toString()).toBe("tab=customers")
@@ -304,11 +296,7 @@ describe("URLPattern apiBase Validation (Production & Local Dev)", () => {
     })
     expect(devApiBaseOverride(smuggledWin, false)).toBeNull()
 
-    const scrubbedSmuggledSearch = buildDashboardSearch(
-      DEFAULT_DASHBOARD_URL_STATE,
-      smuggledQuery,
-      "/",
-    )
+    const scrubbedSmuggledSearch = buildDashboardSearch(DEFAULT_DASHBOARD_URL_STATE, smuggledQuery, "/")
     expect(scrubbedSmuggledSearch).not.toContain("apiBase")
 
     const scrubbedSmuggledHref = buildCanonicalDashboardHref(

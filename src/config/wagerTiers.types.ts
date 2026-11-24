@@ -1,6 +1,7 @@
 /**
- * @file src/config/wagerTiers.types.ts
- * @description Types for declarative wager tier & surveillance configuration (schema v3).
+ * Types for declarative wager tier & surveillance configuration (schema v3).
+ *
+ * @file Src/config/wagerTiers.types.ts
  */
 
 export type WagerTierKey = "ORIGINATOR_HIGH_RISK" | "STEAM_MOVE" | "LATENCY_ARB" | "BASELINE"

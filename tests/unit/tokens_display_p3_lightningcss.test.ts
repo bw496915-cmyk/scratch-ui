@@ -1,16 +1,17 @@
 /**
- * @file tests/unit/tokens_display_p3_lightningcss.test.ts
- * @description Uses LightningCSS's native AST (`visitor.StyleSheet`) and Bun's `HTMLRewriter`
- * to verify:
- * 1. Wide-gamut `@supports` Display P3 chromatic overrides in `packages/ui/src/styles/tokens.css`
- *    survive unminified, minified, and legacy-target transforms.
- * 2. `.sd-badge--*` rules in `desk.css` and `.sd-pill-*` rules in `dashboard.css` consume the
- *    chromatic tokens with zero hardcoded color literals.
- * 3. Stack-accumulated 3-valued `@supports` polarity (`not`/`and`/`or`, nested contradictions,
- *    and arbitrary color-accepting Display P3 probes).
- * 4. `light-dark()` & juxtaposed two-token AST integrity across single-color longhands,
- *    `--color-*` custom properties, shorthands, `color-scheme` co-presence, and inline `<style>`
- *    blocks extracted from standalone HTML templates via `HTMLRewriter`.
+ * Uses LightningCSS's native AST (`visitor.StyleSheet`) and Bun's `HTMLRewriter` to verify:
+ *
+ * 1. Wide-gamut `@supports` Display P3 chromatic overrides in `packages/ui/src/styles/tokens.css` survive unminified,
+ *    minified, and legacy-target transforms.
+ * 2. `.sd-badge--*` rules in `desk.css` and `.sd-pill-*` rules in `dashboard.css` consume the chromatic tokens with zero
+ *    hardcoded color literals.
+ * 3. Stack-accumulated 3-valued `@supports` polarity (`not`/`and`/`or`, nested contradictions, and arbitrary
+ *    color-accepting Display P3 probes).
+ * 4. `light-dark()` & juxtaposed two-token AST integrity across single-color longhands, `--color-*` custom properties,
+ *    shorthands, `color-scheme` co-presence, and inline `<style>` blocks extracted from standalone HTML templates via
+ *    `HTMLRewriter`.
+ *
+ * @file Tests/unit/tokens_display_p3_lightningcss.test.ts
  */
 import { describe, expect, test } from "bun:test"
 import { readFileSync } from "node:fs"
@@ -39,13 +40,7 @@ const STANDALONE_HTML_TEMPLATES = [
   "docs/graph.html",
 ] as const
 
-const CHROMATIC_TOKENS = [
-  "--color-red",
-  "--color-amber",
-  "--color-green",
-  "--color-blue",
-  "--color-violet",
-] as const
+const CHROMATIC_TOKENS = ["--color-red", "--color-amber", "--color-green", "--color-blue", "--color-violet"] as const
 
 const FORBIDDEN_LIGHT_DARK_POLYFILL_VARS = new Set([
   "--lightningcss-light",
@@ -120,20 +115,14 @@ function notPolarity(p: DisplayP3SupportsPolarity): DisplayP3SupportsPolarity {
 }
 
 /** Exact 3-valued conjunction: `forbids-p3` dominates (contradiction), else `requires-p3`, else `unrelated`. */
-function andPolarity(
-  a: DisplayP3SupportsPolarity,
-  b: DisplayP3SupportsPolarity,
-): DisplayP3SupportsPolarity {
+function andPolarity(a: DisplayP3SupportsPolarity, b: DisplayP3SupportsPolarity): DisplayP3SupportsPolarity {
   if (a === "forbids-p3" || b === "forbids-p3") return "forbids-p3"
   if (a === "requires-p3" || b === "requires-p3") return "requires-p3"
   return "unrelated"
 }
 
 /** Exact 3-valued disjunction: `requires-p3` iff both require; `forbids-p3` iff both forbid; else `unrelated`. */
-function orPolarity(
-  a: DisplayP3SupportsPolarity,
-  b: DisplayP3SupportsPolarity,
-): DisplayP3SupportsPolarity {
+function orPolarity(a: DisplayP3SupportsPolarity, b: DisplayP3SupportsPolarity): DisplayP3SupportsPolarity {
   if (a === "requires-p3" && b === "requires-p3") return "requires-p3"
   if (a === "forbids-p3" && b === "forbids-p3") return "forbids-p3"
   return "unrelated"
@@ -148,9 +137,7 @@ function isDisplayP3ProbeDeclaration(property: string, rawValue: string): boolea
 function evaluateDisplayP3SupportsCondition(cond: SupportsCondition): DisplayP3SupportsPolarity {
   switch (cond.type) {
     case "declaration":
-      return isDisplayP3ProbeDeclaration(cond.propertyId.property, cond.value)
-        ? "requires-p3"
-        : "unrelated"
+      return isDisplayP3ProbeDeclaration(cond.propertyId.property, cond.value) ? "requires-p3" : "unrelated"
     case "parens":
       return evaluateDisplayP3SupportsCondition(cond.value)
     case "not":
@@ -216,11 +203,7 @@ function collectStyleRulesFromAst(filename: string, code: Uint8Array): VisitedSt
     code,
     visitor: {
       StyleSheet(sheet) {
-        walkRules(
-          sheet.rules,
-          { p3SupportsPolarity: "unrelated", layers: [], scopes: 0 },
-          collected,
-        )
+        walkRules(sheet.rules, { p3SupportsPolarity: "unrelated", layers: [], scopes: 0 }, collected)
       },
     },
   })
@@ -254,9 +237,7 @@ function extractInlineStylesFromHtml(html: string): string[] {
 }
 
 function isRootSelector(selector: Selector): boolean {
-  return (
-    selector.length === 1 && selector[0]?.type === "pseudo-class" && selector[0].kind === "root"
-  )
+  return selector.length === 1 && selector[0]?.type === "pseudo-class" && selector[0].kind === "root"
 }
 
 function hasLightThemeAttribute(selector: Selector): boolean {
@@ -278,18 +259,11 @@ function hasClassSelector(selector: Selector, className: string): boolean {
 }
 
 function getAllDeclarations(rule: StyleRule): readonly Declaration[] {
-  return [
-    ...(rule.declarations.declarations ?? []),
-    ...(rule.declarations.importantDeclarations ?? []),
-  ]
+  return [...(rule.declarations.declarations ?? []), ...(rule.declarations.importantDeclarations ?? [])]
 }
 
 /** Walks LightningCSS TokenOrValue trees (including `unresolved-color` / `light-dark`) to collect vars & literal colors. */
-function inspectTokenTree(
-  tokens: readonly TokenOrValue[],
-  vars: Set<string>,
-  hardcodedColors: string[],
-): void {
+function inspectTokenTree(tokens: readonly TokenOrValue[], vars: Set<string>, hardcodedColors: string[]): void {
   for (const node of tokens) {
     switch (node.type) {
       case "var":
@@ -345,19 +319,17 @@ function inspectStyleRuleColors(rule: StyleRule): {
 }
 
 function isNonWhitespaceToken(node: TokenOrValue): boolean {
-  return !(
-    node.type === "token" &&
-    (node.value.type === "white-space" || node.value.type === "comment")
-  )
+  return !(node.type === "token" && (node.value.type === "white-space" || node.value.type === "comment"))
 }
 
 /**
- * Inspects AST declarations across all visited style rules to guard against lowered `light-dark()`
- * rewrites and broken color-scheme contracts:
- * 1. Walks ALL declarations (longhands, shorthands like `background`/`border`/`outline`/`box-shadow`,
- *    and `--*` custom properties) for forbidden `--lightningcss-light`/`--buncss-light` vars.
- * 2. Enforces single top-level non-whitespace node on all single-color longhands and `--color-*`
- *    custom properties (catching juxtaposed `var(...) var(...)` rewrites directly in the AST).
+ * Inspects AST declarations across all visited style rules to guard against lowered `light-dark()` rewrites and broken
+ * color-scheme contracts:
+ *
+ * 1. Walks ALL declarations (longhands, shorthands like `background`/`border`/`outline`/`box-shadow`, and `--*` custom
+ *    properties) for forbidden `--lightningcss-light`/`--buncss-light` vars.
+ * 2. Enforces single top-level non-whitespace node on all single-color longhands and `--color-*` custom properties
+ *    (catching juxtaposed `var(...) var(...)` rewrites directly in the AST).
  * 3. Asserts `color-scheme` co-presence whenever any `light-dark()` AST node appears in the stylesheet.
  */
 function auditLightDarkAst(visited: readonly VisitedStyleRule[]): LightDarkAstViolation[] {
@@ -522,32 +494,15 @@ describe("Display P3 chromatic tokens & LightningCSS AST survival", () => {
       }
 
       for (const token of CHROMATIC_TOKENS) {
-        expect(darkSrgb.get(token), `Missing dark sRGB fallback for ${token} (${label})`).toBe(
-          "rgb",
-        )
-        expect(lightSrgb.get(token), `Missing light sRGB fallback for ${token} (${label})`).toBe(
-          "rgb",
-        )
+        expect(darkSrgb.get(token), `Missing dark sRGB fallback for ${token} (${label})`).toBe("rgb")
+        expect(lightSrgb.get(token), `Missing light sRGB fallback for ${token} (${label})`).toBe("rgb")
 
         const darkCoord = darkP3.get(token)
         const lightCoord = lightP3.get(token)
-        expect(
-          darkCoord,
-          `Missing dark display-p3 AST override for ${token} (${label})`,
-        ).toBeDefined()
-        expect(
-          lightCoord,
-          `Missing light display-p3 AST override for ${token} (${label})`,
-        ).toBeDefined()
+        expect(darkCoord, `Missing dark display-p3 AST override for ${token} (${label})`).toBeDefined()
+        expect(lightCoord, `Missing light display-p3 AST override for ${token} (${label})`).toBeDefined()
 
-        for (const channel of [
-          darkCoord!.r,
-          darkCoord!.g,
-          darkCoord!.b,
-          lightCoord!.r,
-          lightCoord!.g,
-          lightCoord!.b,
-        ]) {
+        for (const channel of [darkCoord!.r, darkCoord!.g, darkCoord!.b, lightCoord!.r, lightCoord!.g, lightCoord!.b]) {
           expect(channel).toBeGreaterThanOrEqual(0)
           expect(channel).toBeLessThanOrEqual(1)
         }
@@ -577,9 +532,7 @@ describe("Display P3 chromatic tokens & LightningCSS AST survival", () => {
 
     for (const [className, token] of expectedBadgeTokens) {
       const darkMatches = visited.filter(({ rule }) =>
-        rule.selectors.some(
-          (sel) => hasClassSelector(sel, className) && !hasLightThemeAttribute(sel),
-        ),
+        rule.selectors.some((sel) => hasClassSelector(sel, className) && !hasLightThemeAttribute(sel)),
       )
       expect(darkMatches.length, `Expected dark AST rule for .${className}`).toBeGreaterThan(0)
       for (const { rule } of darkMatches) {
@@ -589,19 +542,14 @@ describe("Display P3 chromatic tokens & LightningCSS AST survival", () => {
       }
     }
 
-    const expectedLightBadgeTokens = expectedBadgeTokens.filter(
-      ([className]) => className !== "sd-badge--selected",
-    )
+    const expectedLightBadgeTokens = expectedBadgeTokens.filter(([className]) => className !== "sd-badge--selected")
     for (const [className, token] of expectedLightBadgeTokens) {
       const lightMatches = visited.filter(({ rule }) =>
-        rule.selectors.some(
-          (sel) => hasClassSelector(sel, className) && hasLightThemeAttribute(sel),
-        ),
+        rule.selectors.some((sel) => hasClassSelector(sel, className) && hasLightThemeAttribute(sel)),
       )
-      expect(
-        lightMatches.length,
-        `Expected [data-dashboard-theme="light"] AST rule for .${className}`,
-      ).toBeGreaterThan(0)
+      expect(lightMatches.length, `Expected [data-dashboard-theme="light"] AST rule for .${className}`).toBeGreaterThan(
+        0,
+      )
       for (const { rule } of lightMatches) {
         const { vars, hardcodedColors } = inspectStyleRuleColors(rule)
         expect(vars.has(token), `light .${className} should reference var(${token})`).toBe(true)
@@ -628,9 +576,7 @@ describe("Display P3 chromatic tokens & LightningCSS AST survival", () => {
     ]
 
     for (const [className, token] of expectedPillTokens) {
-      const matches = visited.filter(({ rule }) =>
-        rule.selectors.some((sel) => hasClassSelector(sel, className)),
-      )
+      const matches = visited.filter(({ rule }) => rule.selectors.some((sel) => hasClassSelector(sel, className)))
       expect(matches.length, `Expected AST rule for .${className}`).toBeGreaterThan(0)
       for (const { rule } of matches) {
         const { vars, hardcodedColors } = inspectStyleRuleColors(rule)
@@ -749,9 +695,7 @@ describe("Display P3 chromatic tokens & LightningCSS AST survival", () => {
       code: validLightDarkCss,
       targets: { chrome: 125 << 16 },
     })
-    expect(
-      auditLightDarkAst(collectStyleRulesFromAst("pair-table.module.css", modernOut.code)),
-    ).toEqual([])
+    expect(auditLightDarkAst(collectStyleRulesFromAst("pair-table.module.css", modernOut.code))).toEqual([])
 
     // Missing `color-scheme` locks `light-dark()` silently to the light branch.
     const missingSchemeCss = Buffer.from(`
@@ -775,24 +719,14 @@ describe("Display P3 chromatic tokens & LightningCSS AST survival", () => {
       code: validLightDarkCss,
       targets: { chrome: 100 << 16 },
     })
-    const legacyViolations = auditLightDarkAst(
-      collectStyleRulesFromAst("pair-table.module.css", legacyOut.code),
+    const legacyViolations = auditLightDarkAst(collectStyleRulesFromAst("pair-table.module.css", legacyOut.code))
+    expect(legacyViolations.some((v) => v.kind === "polyfill-var" && v.property === "--color-red")).toBe(true)
+    expect(legacyViolations.some((v) => v.kind === "juxtaposed-color-tokens" && v.property === "--color-red")).toBe(
+      true,
     )
+    expect(legacyViolations.some((v) => v.kind === "juxtaposed-color-tokens" && v.property === "color")).toBe(true)
     expect(
-      legacyViolations.some((v) => v.kind === "polyfill-var" && v.property === "--color-red"),
-    ).toBe(true)
-    expect(
-      legacyViolations.some(
-        (v) => v.kind === "juxtaposed-color-tokens" && v.property === "--color-red",
-      ),
-    ).toBe(true)
-    expect(
-      legacyViolations.some((v) => v.kind === "juxtaposed-color-tokens" && v.property === "color"),
-    ).toBe(true)
-    expect(
-      legacyViolations.some(
-        (v) => v.kind === "juxtaposed-color-tokens" && v.property === "background-color",
-      ),
+      legacyViolations.some((v) => v.kind === "juxtaposed-color-tokens" && v.property === "background-color"),
     ).toBe(true)
 
     // Shorthands & additional single-color longhands with `--buncss-light` / `--lightningcss-light`:
@@ -809,24 +743,14 @@ describe("Display P3 chromatic tokens & LightningCSS AST survival", () => {
     const mixedViolations = auditLightDarkAst(
       collectStyleRulesFromAst("pair-table.module.css", shorthandAndLonghandCss),
     )
-    expect(mixedViolations.some((v) => v.kind === "polyfill-var" && v.property === "border")).toBe(
+    expect(mixedViolations.some((v) => v.kind === "polyfill-var" && v.property === "border")).toBe(true)
+    expect(mixedViolations.some((v) => v.kind === "juxtaposed-color-tokens" && v.property === "border")).toBe(false)
+    expect(mixedViolations.some((v) => v.kind === "polyfill-var" && v.property === "box-shadow")).toBe(true)
+    expect(mixedViolations.some((v) => v.kind === "juxtaposed-color-tokens" && v.property === "outline-color")).toBe(
       true,
     )
     expect(
-      mixedViolations.some((v) => v.kind === "juxtaposed-color-tokens" && v.property === "border"),
-    ).toBe(false)
-    expect(
-      mixedViolations.some((v) => v.kind === "polyfill-var" && v.property === "box-shadow"),
-    ).toBe(true)
-    expect(
-      mixedViolations.some(
-        (v) => v.kind === "juxtaposed-color-tokens" && v.property === "outline-color",
-      ),
-    ).toBe(true)
-    expect(
-      mixedViolations.some(
-        (v) => v.kind === "juxtaposed-color-tokens" && v.property === "text-decoration-color",
-      ),
+      mixedViolations.some((v) => v.kind === "juxtaposed-color-tokens" && v.property === "text-decoration-color"),
     ).toBe(true)
   })
 
@@ -837,10 +761,7 @@ describe("Display P3 chromatic tokens & LightningCSS AST survival", () => {
       const fullPath = resolve(WORKSPACE_ROOT, relPath)
       const html = readFileSync(fullPath, "utf8")
       const styleBlocks = extractInlineStylesFromHtml(html)
-      expect(
-        styleBlocks.length,
-        `Expected at least one <style> block in ${relPath}`,
-      ).toBeGreaterThan(0)
+      expect(styleBlocks.length, `Expected at least one <style> block in ${relPath}`).toBeGreaterThan(0)
 
       for (let i = 0; i < styleBlocks.length; i += 1) {
         const blockName = `${relPath}#style[${i}]`
@@ -868,9 +789,7 @@ describe("Display P3 chromatic tokens & LightningCSS AST survival", () => {
 
     const v0 = auditLightDarkAst(collectStyleRulesFromAst("inline#0", Buffer.from(extracted[0]!)))
     expect(v0.some((v) => v.kind === "polyfill-var" && v.detail === "--buncss-light")).toBe(true)
-    expect(v0.some((v) => v.kind === "juxtaposed-color-tokens" && v.property === "color")).toBe(
-      true,
-    )
+    expect(v0.some((v) => v.kind === "juxtaposed-color-tokens" && v.property === "color")).toBe(true)
 
     const v1 = auditLightDarkAst(collectStyleRulesFromAst("inline#1", Buffer.from(extracted[1]!)))
     expect(v1.some((v) => v.kind === "missing-color-scheme")).toBe(true)

@@ -3,18 +3,9 @@ import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 
 const root = resolve(import.meta.dir, "../..")
-const statusBarSource = readFileSync(
-  resolve(root, "packages/ui/src/panels/UnifiedStatusBar.tsx"),
-  "utf8",
-)
-const tickerOverlaySource = readFileSync(
-  resolve(root, "packages/ui/src/panels/LiveTickerOverlay.tsx"),
-  "utf8",
-)
-const customersSource = readFileSync(
-  resolve(root, "packages/ui/src/panels/CustomersTabPanel.tsx"),
-  "utf8",
-)
+const statusBarSource = readFileSync(resolve(root, "packages/ui/src/panels/UnifiedStatusBar.tsx"), "utf8")
+const tickerOverlaySource = readFileSync(resolve(root, "packages/ui/src/panels/LiveTickerOverlay.tsx"), "utf8")
+const customersSource = readFileSync(resolve(root, "packages/ui/src/panels/CustomersTabPanel.tsx"), "utf8")
 const appSource = readFileSync(resolve(root, "packages/ui/src/App.tsx"), "utf8")
 const deskCss = readFileSync(resolve(root, "packages/ui/src/desk.css"), "utf8")
 

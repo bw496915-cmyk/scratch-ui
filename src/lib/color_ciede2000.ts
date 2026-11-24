@@ -1,10 +1,10 @@
 /**
- * @file src/lib/color_ciede2000.ts
- * @description Perceptual color science utilities: sRGB <-> HSL <-> CIE XYZ (D65) <-> CIE L*a*b*,
- * exact Sharma, Wu, Dalal (2005) CIEDE2000 (\Delta E_{00}), and WCAG 2.1 contrast ratio.
+ * Perceptual color science utilities: sRGB <-> HSL <-> CIE XYZ (D65) <-> CIE L_a_b*, exact Sharma,
+ * Wu, Dalal (2005) CIEDE2000 (\Delta E_{00}), and WCAG 2.1 contrast ratio. Used to validate
+ * signal-channel HSL tokens against dark and light surveillance surfaces using perceptual \Delta
+ * E_{00} instead of perceptually non-uniform raw HSL distance.
  *
- * Used to validate signal-channel HSL tokens against dark and light surveillance surfaces
- * using perceptual \Delta E_{00} instead of perceptually non-uniform raw HSL distance.
+ * @file Src/lib/color_ciede2000.ts
  */
 
 export type RgbTuple = readonly [number, number, number]
@@ -138,8 +138,8 @@ export function hslToLab(hsl: HslColor): LabTuple {
 }
 
 /**
- * Exact Sharma, Wu, Dalal (2005) CIEDE2000 perceptual color difference (\Delta E_{00})
- * with parametric weighting factors kL = kC = kH = 1.
+ * Exact Sharma, Wu, Dalal (2005) CIEDE2000 perceptual color difference (\Delta E_{00}) with
+ * parametric weighting factors kL = kC = kH = 1.
  */
 export function ciede2000(first: LabTuple, second: LabTuple): number {
   const [l1, a1, b1] = first
@@ -228,9 +228,9 @@ export function ciede2000Hsl(first: HslColor, second: HslColor): number {
 }
 
 /**
- * Naive Euclidean distance in normalized HSL space (`[0..100]` per axis, shortest hue arc).
- * Exposed strictly for contrast tests proving why raw HSL distance is perceptually broken
- * compared to CIEDE2000 (\Delta E_{00}).
+ * Naive Euclidean distance in normalized HSL space (`[0..100]` per axis, shortest hue arc). Exposed
+ * strictly for contrast tests proving why raw HSL distance is perceptually broken compared to
+ * CIEDE2000 (\Delta E_{00}).
  */
 export function rawHslDistance(first: HslColor, second: HslColor): number {
   const rawHueDiff = Math.abs(first.h - second.h)

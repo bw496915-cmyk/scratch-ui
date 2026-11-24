@@ -1,7 +1,8 @@
 /**
- * @file packages/contracts/src/shadow_pricing.ts
- * @description Shared browser-safe & server-safe contracts for Hierarchical Taxonomy Cube
- * (Sport -> SubSport -> Period per SubSport -> Market) & Shadow-Pricing Elasticity (#135).
+ * Shared browser-safe & server-safe contracts for Hierarchical Taxonomy Cube (Sport -> SubSport ->
+ * Period per SubSport -> Market) & Shadow-Pricing Elasticity (#135).
+ *
+ * @file Packages/contracts/src/shadow_pricing.ts
  */
 
 import type { SlicePolicyDiffReport } from "./slice_diff_view.ts"
@@ -39,8 +40,10 @@ export interface SliceMetricsDashboardBundle {
 export type ShadowProvenance = "live_db" | "fixture"
 
 /**
- * - `exact`: Applies the shadow ladder odds directly onto matching key numbers (verbatim parity with `./bin/dx shadow-price`).
- * - `floor`: Clamps key-number buys so bettors never get a cheaper price than `priceTaken` (protects existing -145/-150 1.0–1.5pt buys).
+ * - `exact`: Applies the shadow ladder odds directly onto matching key numbers (verbatim parity with
+ *   `./bin/dx shadow-price`).
+ * - `floor`: Clamps key-number buys so bettors never get a cheaper price than `priceTaken` (protects
+ *   existing -145/-150 1.0–1.5pt buys).
  */
 export type ShadowRepriceMode = "exact" | "floor"
 

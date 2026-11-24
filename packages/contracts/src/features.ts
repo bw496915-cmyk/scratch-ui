@@ -1,6 +1,7 @@
 /**
- * @file packages/contracts/src/features.ts
- * @description Canonical SSOT for compile-time bun:bundle feature flags and build targets.
+ * Canonical SSOT for compile-time bun:bundle feature flags and build targets.
+ *
+ * @file Packages/contracts/src/features.ts
  */
 
 export const FEATURES = ["DEBUG", "PROD", "TEST", "ANALYTICS", "EXPERIMENTAL"] as const

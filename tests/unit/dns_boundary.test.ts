@@ -15,12 +15,8 @@ describe("L1: Bun.dns Hostname & IP Family Boundaries", () => {
   })
 
   test("assertCleanHostname rejects schemes, ports, brackets, and IPv6 zone IDs", () => {
-    expect(() => assertCleanHostname("https://desk.bookdeskops.com")).toThrow(
-      "ERR_DNS_INVALID_HOSTNAME",
-    )
-    expect(() => assertCleanHostname("desk.bookdeskops.com:443")).toThrow(
-      "ERR_DNS_INVALID_HOSTNAME",
-    )
+    expect(() => assertCleanHostname("https://desk.bookdeskops.com")).toThrow("ERR_DNS_INVALID_HOSTNAME")
+    expect(() => assertCleanHostname("desk.bookdeskops.com:443")).toThrow("ERR_DNS_INVALID_HOSTNAME")
     expect(() => assertCleanHostname("[::1]")).toThrow("ERR_DNS_INVALID_HOSTNAME")
     expect(() => assertCleanHostname("fe80::1%eth0")).toThrow("ERR_DNS_IPV6_ZONE_FORBIDDEN")
     expect(() => assertCleanHostname("fe80::1%25en0")).toThrow("ERR_DNS_IPV6_ZONE_FORBIDDEN")
@@ -134,9 +130,7 @@ describe("L1: auditDnsDrift detection (mocked Bun.dns)", () => {
   })
 
   test("does not emit DRIFT_ZERO_TTL_ON_EXTERNAL when c-ares returns positive TTL", async () => {
-    lookupSpy = spyOn(Bun.dns, "lookup").mockResolvedValue([
-      { address: "104.21.10.5", family: 4, ttl: 300 },
-    ])
+    lookupSpy = spyOn(Bun.dns, "lookup").mockResolvedValue([{ address: "104.21.10.5", family: 4, ttl: 300 }])
     statsSpy = spyOn(Bun.dns, "getCacheStats").mockReturnValue({
       cacheHitsCompleted: 25,
       cacheHitsInflight: 0,
@@ -156,9 +150,7 @@ describe("L1: auditDnsDrift detection (mocked Bun.dns)", () => {
   })
 
   test("does not emit DRIFT_ZERO_TTL_ON_EXTERNAL under system backend even when ttl=0", async () => {
-    lookupSpy = spyOn(Bun.dns, "lookup").mockResolvedValue([
-      { address: "127.0.0.1", family: 4, ttl: 0 },
-    ])
+    lookupSpy = spyOn(Bun.dns, "lookup").mockResolvedValue([{ address: "127.0.0.1", family: 4, ttl: 0 }])
     statsSpy = spyOn(Bun.dns, "getCacheStats").mockReturnValue({
       cacheHitsCompleted: 5,
       cacheHitsInflight: 0,
@@ -178,9 +170,7 @@ describe("L1: auditDnsDrift detection (mocked Bun.dns)", () => {
   })
 
   test("emits DRIFT_CACHE_HIGH_MISS_RATIO when total >= 20 and miss ratio > 80%", async () => {
-    lookupSpy = spyOn(Bun.dns, "lookup").mockResolvedValue([
-      { address: "104.21.10.5", family: 4, ttl: 120 },
-    ])
+    lookupSpy = spyOn(Bun.dns, "lookup").mockResolvedValue([{ address: "104.21.10.5", family: 4, ttl: 120 }])
     statsSpy = spyOn(Bun.dns, "getCacheStats").mockReturnValue({
       cacheHitsCompleted: 3,
       cacheHitsInflight: 0,

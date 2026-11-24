@@ -1,13 +1,15 @@
 /**
- * @file packages/contracts/src/slice_registry.ts
- * @description Canonical Array-of-Structures (AoS) `SLICE_REGISTRY` source of truth.
+ * Canonical Array-of-Structures (AoS) `SLICE_REGISTRY` source of truth. Design contract:
  *
- * Design contract:
- * - `SLICE_REGISTRY` remains readable, diffable AoS policy data (`as const satisfies readonly SliceSpec[]`).
+ * - `SLICE_REGISTRY` remains readable, diffable AoS policy data (`as const satisfies readonly
+ *   SliceSpec[]`).
  * - Array indices are strictly internal derived handles (`buildSliceIndexLookup`), never bit-packed
- *   with upper-bit flags/axes, and never exposed as canonical join keys in TOML, docs, tests, or telemetry.
- * - Per-slice booleans live in derived `Uint32Array` bitsets keyed by registry index — never a `boolean[]`,
- *   never packed into the index — exposed only through predicates.
+ *   with upper-bit flags/axes, and never exposed as canonical join keys in TOML, docs, tests, or
+ *   telemetry.
+ * - Per-slice booleans live in derived `Uint32Array` bitsets keyed by registry index — never a
+ *   `boolean[]`, never packed into the index — exposed only through predicates.
+ *
+ * @file Packages/contracts/src/slice_registry.ts
  */
 
 import type { MarketCode, PeriodCode, SportCode, SubSportCode } from "./shadow_pricing.ts"
@@ -154,8 +156,8 @@ const SLICE_SEGMENT_RE = /^[a-z0-9_]+:[a-z0-9_]+:[a-z0-9_]+:[a-z0-9_]+$/
 const NUMERIC_INDEX_RE = /^\d+$/
 
 /**
- * Validates that an AoS registry has unique, 4-segment `slice_id` keys and
- * non-empty split display metadata.
+ * Validates that an AoS registry has unique, 4-segment `slice_id` keys and non-empty split display
+ * metadata.
  */
 export function assertValidSliceRegistry(registry: readonly SliceSpec[] = SLICE_REGISTRY): void {
   if (registry.length === 0) {
@@ -188,6 +190,7 @@ export function assertValidSliceRegistry(registry: readonly SliceSpec[] = SLICE_
  * Builds an internal derived index lookup from a `SliceSpec[]` AoS registry.
  *
  * No-packing invariant:
+ *
  * - Returns plain `0..registry.length - 1` positions in registry order (`-1` when absent).
  * - Never packs policy, axis, specificity, or flag bits into upper bits of the handle.
  * - Never persist or emit these positions in place of canonical `slice_id`.
@@ -284,8 +287,10 @@ function readRuntimeNodeEnv(): string | undefined {
 
 /**
  * Resolves the default non-silent unknown-slice behavior:
+ *
  * - `"production"` -> `"telemetry"` (increments `slice_unknown_total{slice_id}`, returns `false`)
- * - all non-production profiles (`development`, `test`, unset) -> `"throw"` (`UnknownSliceIdError` + telemetry)
+ * - All non-production profiles (`development`, `test`, unset) -> `"throw"` (`UnknownSliceIdError` +
+ *   telemetry)
  */
 export function resolveDefaultUnknownSlicePolicy(
   nodeEnv: string | undefined = readRuntimeNodeEnv(),
@@ -312,8 +317,8 @@ export function resetSliceUnknownTelemetry(): void {
 }
 
 /**
- * Records `slice_unknown_total{slice_id}` and enforces `UnknownSlicePolicy`
- * so unregistered `slice_id` lookups are never silent.
+ * Records `slice_unknown_total{slice_id}` and enforces `UnknownSlicePolicy` so unregistered
+ * `slice_id` lookups are never silent.
  */
 export function recordUnknownSliceId(
   slice_id: string,
@@ -330,9 +335,9 @@ export function recordUnknownSliceId(
 }
 
 /**
- * Derives an encapsulated `Uint32Array` bitset keyed by `SLICE_REGISTRY` index
- * from `predicate(spec)` — never a `boolean[]`, never packed into the index —
- * and exposes it strictly as a `(slice_id: string) => boolean` predicate.
+ * Derives an encapsulated `Uint32Array` bitset keyed by `SLICE_REGISTRY` index from
+ * `predicate(spec)` — never a `boolean[]`, never packed into the index — and exposes it strictly as
+ * a `(slice_id: string) => boolean` predicate.
  */
 export function deriveSliceBitsetPredicate(
   predicate: (spec: SliceSpec) => boolean,

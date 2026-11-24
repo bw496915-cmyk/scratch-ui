@@ -1,13 +1,12 @@
 /**
- * @file packages/ui/src/capture_text.ts
- * @description Display sanitizer for capture text fields.
+ * Display sanitizer for capture text fields. Some portal captures carry HTML in plain text:
+ * `TicketWriter` arrives as `<strong style="color:#D90000">ALERT </strong>`, and
+ * `ShortDesc`-derived selections carry numeric references such as `Thunder/Kings U 112&#189; -110`.
+ * React escapes those strings, so the tape prints the markup instead of the pick. This only cleans
+ * the rendered text — the stored capture is never rewritten, so provenance and audit remain
+ * unchanged.
  *
- * Some portal captures carry HTML in plain text: `TicketWriter` arrives as
- * `<strong style="color:#D90000">ALERT </strong>`, and `ShortDesc`-derived
- * selections carry numeric references such as `Thunder/Kings U 112&#189; -110`.
- * React escapes those strings, so the tape prints the markup instead of the
- * pick. This only cleans the rendered text — the stored capture is never
- * rewritten, so provenance and audit remain unchanged.
+ * @file Packages/ui/src/capture_text.ts
  */
 
 const MARKUP_TAG =
@@ -66,9 +65,9 @@ function decodeEntities(text: string): string {
 }
 
 /**
- * Strip portal markup and decode entities for display. Handles one level of
- * double encoding (`&amp;#189;`) because captures can be re-escaped. Unknown
- * entities and lone `<` characters are preserved rather than guessed at.
+ * Strip portal markup and decode entities for display. Handles one level of double encoding
+ * (`&amp;#189;`) because captures can be re-escaped. Unknown entities and lone `<` characters are
+ * preserved rather than guessed at.
  */
 export function sanitizeCaptureText(raw: string): string {
   let text = raw.replace(MARKUP_TAG, " ")

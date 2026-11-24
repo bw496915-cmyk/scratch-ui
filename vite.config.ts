@@ -6,7 +6,10 @@ import { defineConfig, type Plugin } from "vite"
 
 import { parseToml } from "./lib/bun_toml.ts"
 
-/** Transform static `.toml` ES module imports into tree-shakeable named + default exports (Bun parity). */
+/**
+ * Transform static `.toml` ES module imports into tree-shakeable named + default exports (Bun
+ * parity).
+ */
 function tomlImportPlugin(): Plugin {
   return {
     name: "sportsdesk-toml-import",

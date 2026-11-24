@@ -30,9 +30,7 @@ describe("L1: Shell, Bun.Terminal & ProfileTheme Boundaries", () => {
       command: "cron */5 * * * *",
       head: "cron",
     })
-    expect(
-      validateTerminalCommand("md --theme dark --columns 110 --linkify-symbols dashboard.md").ok,
-    ).toBe(true)
+    expect(validateTerminalCommand("md --theme dark --columns 110 --linkify-symbols dashboard.md").ok).toBe(true)
     expect(validateTerminalCommand("sh").ok).toBe(true)
     expect(validateTerminalCommand("rank-all").ok).toBe(true)
     expect(validateTerminalCommand("d fantasy402.com").ok).toBe(true)
@@ -57,9 +55,7 @@ describe("L1: Shell, Bun.Terminal & ProfileTheme Boundaries", () => {
     ).toEqual(["git", "diff", "--exit-code", "--", "bun.lock"])
 
     expect(() => assertSafeSpawnArgv(["sh", "-c", "ls"])).toThrow(ShellBoundaryError)
-    expect(() => assertSafeSpawnArgv(["/bin/bash", "-lc", "env"])).toThrow(
-      "ERR_SHELL_SUBSHELL_FORBIDDEN",
-    )
+    expect(() => assertSafeSpawnArgv(["/bin/bash", "-lc", "env"])).toThrow("ERR_SHELL_SUBSHELL_FORBIDDEN")
     expect(() => assertSafeSpawnArgv(["git", "status\0"])).toThrow("ERR_SHELL_NULL_BYTE")
     expect(() =>
       assertSafeSpawnArgv(["git", "diff", "--upload-pack=evil"], {
@@ -259,8 +255,6 @@ describe("L1: Shell, Bun.Terminal & ProfileTheme Boundaries", () => {
 
   test("benchmarkNodeDns rejects invalid hostnames via assertCleanHostname", async () => {
     await expect(benchmarkNodeDns("fe80::1%eth0")).rejects.toThrow(DnsBoundaryError)
-    await expect(benchmarkNodeDns("https://desk.bookdeskops.com")).rejects.toThrow(
-      "ERR_DNS_INVALID_HOSTNAME",
-    )
+    await expect(benchmarkNodeDns("https://desk.bookdeskops.com")).rejects.toThrow("ERR_DNS_INVALID_HOSTNAME")
   })
 })

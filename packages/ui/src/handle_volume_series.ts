@@ -1,7 +1,8 @@
 /**
- * @file packages/ui/src/handle_volume_series.ts
- * @description Rolling 60-minute aggregate handle volume series builder for the
- * Live Wagers Recharts line chart, synchronized to WebSocket feed ticks.
+ * Rolling 60-minute aggregate handle volume series builder for the Live Wagers Recharts line chart,
+ * synchronized to WebSocket feed ticks.
+ *
+ * @file Packages/ui/src/handle_volume_series.ts
  */
 
 import { wagerChannelOf } from "@sportsdesk-ops/contracts"
@@ -53,8 +54,8 @@ export interface HandleVolumeSeriesResult {
 }
 
 /**
- * Returns true for non-wager sentinel channels (`ALERT` / `BLOCKED`) that mirror
- * or block stakes and must never inflate aggregate handle volume.
+ * Returns true for non-wager sentinel channels (`ALERT` / `BLOCKED`) that mirror or block stakes
+ * and must never inflate aggregate handle volume.
  */
 export function isSentinelWager(w: LiveWager): boolean {
   const channel = w.writer ?? wagerChannelOf(w.ticketWriter)
@@ -62,8 +63,8 @@ export function isSentinelWager(w: LiveWager): boolean {
 }
 
 /**
- * Resolves a wager's handle contribution in USD. Prefers positive `volumeUsd`
- * when present, falling back to `riskUsd`, and returns `0` for sentinel rows.
+ * Resolves a wager's handle contribution in USD. Prefers positive `volumeUsd` when present, falling
+ * back to `riskUsd`, and returns `0` for sentinel rows.
  */
 export function handleUsdOf(w: LiveWager): number {
   if (isSentinelWager(w)) return 0
@@ -77,9 +78,9 @@ export function handleUsdOf(w: LiveWager): number {
 }
 
 /**
- * Parses ISO 8601 (`2026-11-19T08:22:10Z`), SQL (`2026-11-01 17:15:02.770`),
- * and desk wall-clock (`7:45:03 PM ET`, `14:32:01 ET`) timestamps into epoch ms.
- * Wall-clock-only timestamps are resolved against `anchorMs` with midnight wraparound.
+ * Parses ISO 8601 (`2026-11-19T08:22:10Z`), SQL (`2026-11-01 17:15:02.770`), and desk wall-clock
+ * (`7:45:03 PM ET`, `14:32:01 ET`) timestamps into epoch ms. Wall-clock-only timestamps are
+ * resolved against `anchorMs` with midnight wraparound.
  */
 export function parseWagerTimestampMs(
   raw: string | undefined | null,
@@ -140,10 +141,10 @@ export function formatHandleCompactUsd(usd: number): string {
 }
 
 /**
- * Aggregates live wager handle volume into 60 one-minute buckets over the last
- * 60 minutes. Anchors to `anchorMs` for live streaming feeds; if all parsed
- * wagers are from an older static capture (>60m behind `anchorMs`), anchors to
- * the capture's latest wager timestamp so historical snapshots remain readable.
+ * Aggregates live wager handle volume into 60 one-minute buckets over the last 60 minutes. Anchors
+ * to `anchorMs` for live streaming feeds; if all parsed wagers are from an older static capture
+ * (>60m behind `anchorMs`), anchors to the capture's latest wager timestamp so historical snapshots
+ * remain readable.
  */
 export function buildRolling60MinHandleSeries(
   wagers: readonly LiveWager[],

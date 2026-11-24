@@ -5,10 +5,7 @@ import { resolve } from "node:path"
 import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 
-import {
-  normalizeRankingsResponse,
-  PENDING_WAGERS_PROVENANCE,
-} from "../../packages/ui/src/hydration.ts"
+import { normalizeRankingsResponse, PENDING_WAGERS_PROVENANCE } from "../../packages/ui/src/hydration.ts"
 import {
   AlertsTabPanel,
   BetTickerTabPanel,
@@ -40,15 +37,11 @@ describe("Dashboard Panel Skeletal Loading UI", () => {
     expect(customersHtml).toContain('data-skeleton="auth-customers-workspace"')
     expect(customersHtml).toContain('class="sd-skeleton')
 
-    const wagersHtml = renderToStaticMarkup(
-      React.createElement(DashboardAuthShellSkeleton, { activeTab: "wagers" }),
-    )
+    const wagersHtml = renderToStaticMarkup(React.createElement(DashboardAuthShellSkeleton, { activeTab: "wagers" }))
     expect(wagersHtml).toContain('data-skeleton="auth-wagers-chart"')
     expect(wagersHtml).toContain('data-skeleton="auth-wagers-table"')
 
-    const r2Html = renderToStaticMarkup(
-      React.createElement(DashboardAuthShellSkeleton, { activeTab: "r2" }),
-    )
+    const r2Html = renderToStaticMarkup(React.createElement(DashboardAuthShellSkeleton, { activeTab: "r2" }))
     expect(r2Html).toContain('data-skeleton="auth-r2-grid"')
 
     const survHtml = renderToStaticMarkup(

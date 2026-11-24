@@ -84,8 +84,8 @@ export interface SkeletonTableRowsProps {
 }
 
 /**
- * Geometry-matched <tr> skeleton rows for existing <tbody> slots so column headers
- * stay aligned and layout shift stays <= 2px when hydrated rows arrive.
+ * Geometry-matched <tr> skeleton rows for existing <tbody> slots so column headers stay aligned and
+ * layout shift stays <= 2px when hydrated rows arrive.
  */
 export function SkeletonTableRows({
   columnWidths,
@@ -631,9 +631,9 @@ export interface DashboardAuthShellSkeletonProps {
 }
 
 /**
- * Full-workspace skeletal frame displayed while operator session authentication
- * completes (`!authReady`), eliminating the bare placeholder screen and giving
- * immediate structural presence tailored to the selected tab.
+ * Full-workspace skeletal frame displayed while operator session authentication completes
+ * (`!authReady`), eliminating the bare placeholder screen and giving immediate structural presence
+ * tailored to the selected tab.
  */
 export function DashboardAuthShellSkeleton({
   activeTab = "customers",

@@ -318,7 +318,10 @@ export function GlobalHeaderSearch({
                 fontSize: "10px",
                 fontWeight: 700,
                 fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                color: totalMatches > 0 ? "var(--accent-primary, #38bdf8)" : "var(--text-muted, #94a3b8)",
+                color:
+                  totalMatches > 0
+                    ? "var(--accent-primary, #38bdf8)"
+                    : "var(--text-muted, #94a3b8)",
                 backgroundColor: "var(--surface-elevated, rgba(30, 41, 59, 0.9))",
                 padding: "1px 6px",
                 borderRadius: "4px",

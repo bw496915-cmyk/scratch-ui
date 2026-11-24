@@ -1,11 +1,10 @@
 /**
- * @file packages/ui/src/build_matrix_evidence.ts
- * @description Plain-text evidence for the DCE build matrix: one line per target
- * and a Markdown table, so a probe result can be pasted into a PR, an issue or the
- * evidence ledger with the numbers copied rather than re-typed.
+ * Plain-text evidence for the DCE build matrix: one line per target and a Markdown table, so a
+ * probe result can be pasted into a PR, an issue or the evidence ledger with the numbers copied
+ * rather than re-typed. The drawer renders its own display formatting; this module is the copy path
+ * and is deliberately independent of React so the wording is unit-tested.
  *
- * The drawer renders its own display formatting; this module is the copy path and
- * is deliberately independent of React so the wording is unit-tested.
+ * @file Packages/ui/src/build_matrix_evidence.ts
  */
 
 import { FEATURES } from "@sportsdesk-ops/contracts"
@@ -87,8 +86,8 @@ function formatFlags(features: readonly string[]): string {
 }
 
 /**
- * One self-contained line per target: exact byte counts plus branch retention, so
- * a quoted number can be traced back to the probe that produced it.
+ * One self-contained line per target: exact byte counts plus branch retention, so a quoted number
+ * can be traced back to the probe that produced it.
  */
 export function formatMatrixRowEvidence(
   row: BuildMatrixRow,
@@ -134,8 +133,8 @@ function metaLine(meta: MatrixEvidenceMeta | undefined): string {
 }
 
 /**
- * The whole probe as a Markdown table: header/meta line, table, one row per target.
- * Empty input returns an explicit note rather than an empty table.
+ * The whole probe as a Markdown table: header/meta line, table, one row per target. Empty input
+ * returns an explicit note rather than an empty table.
  */
 export function formatMatrixEvidenceTable(
   rows: readonly BuildMatrixRow[],

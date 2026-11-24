@@ -8,9 +8,7 @@ import { parseDeskClock } from "../packages/ui/src/gslive_game_log.ts"
 import { normalizeLiveWagersResponse } from "../packages/ui/src/hydration.ts"
 import { quickJumpFeedState } from "../packages/ui/src/quick_jump_feed.ts"
 
-async function withWagerCapture(
-  run: (path: string, load: () => Promise<unknown>) => Promise<void>,
-) {
+async function withWagerCapture(run: (path: string, load: () => Promise<unknown>) => Promise<void>) {
   const directory = await mkdtemp(join(tmpdir(), "sportsdesk-wager-capture-"))
   const path = join(directory, "live-wagers.json")
   const { buildLiveWagersPayload } = createDevLiveWagersLoader({
@@ -66,10 +64,8 @@ describe("wager ticker capture evidence", () => {
           latestTicketTime: "2025-11-20 00:00:00.000",
         })
         expect(
-          quickJumpFeedState(
-            Date.parse(normalized?.provenance.observedAt ?? ""),
-            Date.parse(observedAt) + 120_000,
-          ).stale,
+          quickJumpFeedState(Date.parse(normalized?.provenance.observedAt ?? ""), Date.parse(observedAt) + 120_000)
+            .stale,
         ).toBe(true)
       }
     })

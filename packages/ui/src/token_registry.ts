@@ -1,11 +1,11 @@
 /**
- * @file packages/ui/src/token_registry.ts
- * @description Palette + Copy-registry source for the Build-Matrix drawer.
+ * Palette + Copy-registry source for the Build-Matrix drawer. Values, membership and aliases come
+ * from the generated tokens.toml registry, so the drawer cannot show a token the SSOT does not
+ * define. Labels and detail strings are editorial (presentation) and live here; a token without an
+ * annotation still renders, using its own name, so adding a token to tokens.toml never leaves the
+ * palette short.
  *
- * Values, membership and aliases come from the generated tokens.toml registry, so the
- * drawer cannot show a token the SSOT does not define. Labels and detail strings are
- * editorial (presentation) and live here; a token without an annotation still renders,
- * using its own name, so adding a token to tokens.toml never leaves the palette short.
+ * @file Packages/ui/src/token_registry.ts
  */
 
 import {
@@ -234,9 +234,9 @@ export const TOKEN_ALIAS_SPECS: readonly TokenAliasSpec[] = TOKEN_ALIASES.map((a
 })
 
 /**
- * The `:root` block the generated stylesheet carries, rebuilt from the same registry
- * data. Kept byte-comparable (after whitespace normalisation) to
- * `src/dashboard/tokens.generated.css` — see tests/dashboard_ui_panels.test.tsx.
+ * The `:root` block the generated stylesheet carries, rebuilt from the same registry data. Kept
+ * byte-comparable (after whitespace normalisation) to `src/dashboard/tokens.generated.css` — see
+ * tests/dashboard_ui_panels.test.tsx.
  */
 export function buildRegistryRootCss(): string {
   const canonical = HOUDINI_TOKENS.map((token) => `  ${token.token}: ${token.hex};`).join("\n")

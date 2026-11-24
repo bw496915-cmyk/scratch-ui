@@ -1,6 +1,7 @@
 /**
- * @file packages/ui/src/panels/TicketInspectorPanel.tsx
- * @description Deep drill-down for a selected live wager (exposure, taxonomy, channel, PTY).
+ * Deep drill-down for a selected live wager (exposure, taxonomy, channel, PTY).
+ *
+ * @file Packages/ui/src/panels/TicketInspectorPanel.tsx
  */
 
 import type React from "react"

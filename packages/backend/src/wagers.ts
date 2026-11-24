@@ -1,6 +1,7 @@
 /**
- * @file packages/backend/src/wagers.ts
- * @description Live wager normalization and risk classification (`autoExecute: false`).
+ * Live wager normalization and risk classification (`autoExecute: false`).
+ *
+ * @file Packages/backend/src/wagers.ts
  */
 
 import { readFile } from "node:fs/promises"
@@ -38,9 +39,8 @@ export interface ProjectedDevWagerRow {
   /** Operator label derived from {@link ProjectedDevWagerRow.wagerTypeCode}. */
   readonly betType: string
   /**
-   * Raw wire `WagerType`, upper-cased and trimmed, preserved so the derivation
-   * is auditable. The wire value is never rewritten; `betType` is a separate
-   * declared projection of it.
+   * Raw wire `WagerType`, upper-cased and trimmed, preserved so the derivation is auditable. The
+   * wire value is never rewritten; `betType` is a separate declared projection of it.
    */
   readonly wagerTypeCode: string
   /** True when the wire carried a code the projection cannot label statically. */
@@ -222,14 +222,13 @@ export function projectLiveWagerRow(
  * Wire `WagerType` -> operator label.
  *
  * Mirrors the pinned vendor bundle's `getTypeInfo` switch
- * (`verification/manager-boot-oracle/pinned/util.js`, v43.0.27), ported as
- * `getVendorWagerTypeInfo` in `lib/f402_core_vendor.ts`. The two contextual
- * codes (`I`, `G`) are deliberately absent: the vendor resolves them from
- * `birdCage`/`ARLink`/`PlacedOn`, which this projection does not receive, so
- * they surface as `Unknown (<code>)` instead of being guessed.
+ * (`verification/manager-boot-oracle/pinned/util.js`, v43.0.27), ported as `getVendorWagerTypeInfo`
+ * in `lib/f402_core_vendor.ts`. The two contextual codes (`I`, `G`) are deliberately absent: the
+ * vendor resolves them from `birdCage`/`ARLink`/`PlacedOn`, which this projection does not receive,
+ * so they surface as `Unknown (<code>)` instead of being guessed.
  *
- * `tests/wagers_field_roundtrip.test.ts` asserts this table agrees with the
- * vendor function for every code it covers.
+ * `tests/wagers_field_roundtrip.test.ts` asserts this table agrees with the vendor function for
+ * every code it covers.
  */
 const WAGER_TYPE_LABELS: Readonly<Record<string, string>> = Object.freeze({
   A: "Manual Play",
@@ -273,15 +272,15 @@ export interface DevLiveWagersLoaderOptions {
   readonly candidatePaths?: readonly string[] | undefined
   readonly loadSharpDeps: () => Promise<ProjectLiveWagerDeps>
   /**
-   * Optional raw-row inspector, called with the pre-projection rows. The host
-   * injects the vendor contract check here so this package stays vendor-agnostic.
-   * A throw is reported as `{ error }` rather than failing the feed.
+   * Optional raw-row inspector, called with the pre-projection rows. The host injects the vendor
+   * contract check here so this package stays vendor-agnostic. A throw is reported as `{ error }`
+   * rather than failing the feed.
    */
   readonly inspectRawRows?:
     ((rows: readonly Record<string, unknown>[]) => unknown | Promise<unknown>) | undefined
   /**
-   * Optional slab-policy descriptor. The host injects the validated
-   * `config/slab.toml` summary so this package stays config-agnostic.
+   * Optional slab-policy descriptor. The host injects the validated `config/slab.toml` summary so
+   * this package stays config-agnostic.
    */
   readonly describeSlab?: (() => unknown) | undefined
 }
@@ -305,7 +304,10 @@ export interface DevLiveWagersLoadResult {
   readonly source: WagerSourceDescriptor | null
 }
 
-/** Classify a candidate wager JSON path as `"capture"` vs `"fixture"` without leaking absolute host paths. */
+/**
+ * Classify a candidate wager JSON path as `"capture"` vs `"fixture"` without leaking absolute host
+ * paths.
+ */
 export function classifyWagerCandidateSource(
   candidatePath: string,
   cwd: string,

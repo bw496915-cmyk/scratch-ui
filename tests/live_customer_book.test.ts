@@ -5,10 +5,7 @@ import { join } from "node:path"
 
 import { computeCustomersCohortPayload } from "../packages/backend/src/customers.ts"
 import { createLiveCustomerBook } from "../packages/backend/src/live_customer_book.ts"
-import {
-  deriveCustomerCohortKpiCards,
-  normalizeCustomersCohortResponse,
-} from "../packages/ui/src/hydration.ts"
+import { deriveCustomerCohortKpiCards, normalizeCustomersCohortResponse } from "../packages/ui/src/hydration.ts"
 import { bookRowsToProfiles } from "../packages/ui/src/profile_rows.ts"
 import { classifyCustomerProfileType } from "../packages/ui/src/profile_taxonomy.ts"
 import { buildCustomerProfileFromRow, buildCustomerRatingFromRow } from "../server/adapters.ts"
@@ -47,9 +44,7 @@ test("live roster projects identities, deduplicates and never invents risk metri
   expect(buildCustomerProfileFromRow(book!.rows[0]!, "ACCOUNT1").lifetimeVolumeUsd).toBeNull()
   expect(buildCustomerRatingFromRow(book!.rows[0]!, "ACCOUNT1").bayesianSkill).toBeNull()
   const mapped = bookRowsToProfiles(book?.rows ?? [], "book")[0]!
-  expect(mapped.unknown).toEqual(
-    expect.arrayContaining(["sharpness", "clv", "limit", "ltv", "holdPct"]),
-  )
+  expect(mapped.unknown).toEqual(expect.arrayContaining(["sharpness", "clv", "limit", "ltv", "holdPct"]))
   expect(mapped.action).toBe("UNMEASURED")
   expect(classifyCustomerProfileType(mapped).id).toBe("UNMEASURED")
   const payload = computeCustomersCohortPayload({
@@ -77,9 +72,6 @@ test("missing and invalid sources cannot fall back to fixtures", async () => {
   const file = join(dir, "roster.json")
   await writeFile(file, JSON.stringify([{ customer_id: "SYNTH_DEMO" }]))
   await expect(createLiveCustomerBook(file).load()).rejects.toThrow("projected manager roster")
-  await writeFile(
-    file,
-    JSON.stringify({ schemaVersion: 1, agents: [], players: [{ customerId: "SYNTH_DEMO" }] }),
-  )
+  await writeFile(file, JSON.stringify({ schemaVersion: 1, agents: [], players: [{ customerId: "SYNTH_DEMO" }] }))
   await expect(createLiveCustomerBook(file).load()).rejects.toThrow("Synthetic identity")
 })

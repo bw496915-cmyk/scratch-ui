@@ -8,10 +8,7 @@ const seed = Buffer.from(
   "base64",
 )
 // JPEG APP1 EXIF with orientation 6 (rotate 90° clockwise).
-const orientation6 = Buffer.from(
-  "ffe100224578696600004d4d002a00000008000101120003000000010006000000000000",
-  "hex",
-)
+const orientation6 = Buffer.from("ffe100224578696600004d4d002a00000008000101120003000000010006000000000000", "hex")
 let fixtureDir: string
 let pngPath: string
 let rotatedPath: string
@@ -39,9 +36,7 @@ async function transform(
 ) {
   const proc = Bun.spawn({
     cmd: [process.execPath, "--no-env-file", "server/bun_image_worker.ts", "transform"],
-    stdin: new Blob([
-      JSON.stringify({ fullPath: path, source: "fixture", format: "png", ...resize }),
-    ]),
+    stdin: new Blob([JSON.stringify({ fullPath: path, source: "fixture", format: "png", ...resize })]),
     stdout: "pipe",
     stderr: "pipe",
   })

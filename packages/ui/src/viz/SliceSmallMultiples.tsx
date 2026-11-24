@@ -1,7 +1,8 @@
 /**
- * @file packages/ui/src/viz/SliceSmallMultiples.tsx
- * @description Handle (extensive, $) and hold % (intensive) as separate aligned small multiples,
- * sharing one sorted slice order. Fails closed when staged handle does not conserve to the SLO total.
+ * Handle (extensive, $) and hold % (intensive) as separate aligned small multiples, sharing one
+ * sorted slice order. Fails closed when staged handle does not conserve to the SLO total.
+ *
+ * @file Packages/ui/src/viz/SliceSmallMultiples.tsx
  */
 
 import React from "react"

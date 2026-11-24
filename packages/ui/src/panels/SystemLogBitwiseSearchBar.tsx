@@ -27,16 +27,18 @@ import {
 const MONO_FONT = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
 
 /**
- * Applies the active bitwise severity mask + search terms directly to an
- * already-mounted `<tbody>` DOM tree via `tr.hidden` without calling React
- * `setState`, guaranteeing rapid sub-millisecond lookup with zero parent or
- * table re-renders on keystrokes.
+ * Applies the active bitwise severity mask + search terms directly to an already-mounted `<tbody>`
+ * DOM tree via `tr.hidden` without calling React `setState`, guaranteeing rapid sub-millisecond
+ * lookup with zero parent or table re-renders on keystrokes.
  */
 export function useBitwiseTableDomFilter(params: {
   readonly tbodyRef: React.RefObject<HTMLTableSectionElement | null>
   readonly index: BitwiseLogIndex
   readonly store: BitwiseLogFilterStore | null | undefined
-  /** Optional revision token (e.g. expandedRowId) that triggers re-applying hidden state after a structural row update. */
+  /**
+   * Optional revision token (e.g. expandedRowId) that triggers re-applying hidden state after a
+   * structural row update.
+   */
   readonly revision?: string | number | null | undefined
 }): void {
   const { tbodyRef, index, store, revision } = params
@@ -126,9 +128,9 @@ function countForBit(
 }
 
 /**
- * Isolated client-side bitwise severity search bar. Subscribes directly to
- * `BitwiseLogFilterStore` via `useSyncExternalStore` so keystrokes and flag
- * toggles update only this compact bar and mutate matching table rows in place.
+ * Isolated client-side bitwise severity search bar. Subscribes directly to `BitwiseLogFilterStore`
+ * via `useSyncExternalStore` so keystrokes and flag toggles update only this compact bar and mutate
+ * matching table rows in place.
  */
 export const SystemLogBitwiseSearchBar = memo(function SystemLogBitwiseSearchBar({
   store,

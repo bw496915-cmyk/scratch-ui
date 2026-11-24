@@ -1,15 +1,15 @@
 /**
- * @file src/lib/dual_clock_sla.ts
- * @description Zero-allocation DualClock (MonotonicClock + WallClock) SLA evaluator
- * wired to `design/tokens.toml` SLA tokens and `Bun.dns.getCacheStats()` telemetry.
+ * Zero-allocation DualClock (MonotonicClock + WallClock) SLA evaluator wired to
+ * `design/tokens.toml` SLA tokens and `Bun.dns.getCacheStats()` telemetry. Hot-path invariants:
  *
- * Hot-path invariants:
- * - Elapsed probe intervals come strictly from `MonotonicClock` (`Bun.nanoseconds()`
- *   when running on Bun, monotonic `performance.now() * 1e6` fallback otherwise).
+ * - Elapsed probe intervals come strictly from `MonotonicClock` (`Bun.nanoseconds()` when running on
+ *   Bun, monotonic `performance.now() * 1e6` fallback otherwise).
  * - Freshness stamps and data-window lag come strictly from `WallClock` (`Date.now()`).
- * - `beginProbe()`, `endProbe()`, `tick()`, `tickDnsStats()`, and `getToken()` perform
- *   zero heap allocations (no object literals, no arrays, no template strings).
+ * - `beginProbe()`, `endProbe()`, `tick()`, `tickDnsStats()`, and `getToken()` perform zero heap
+ *   allocations (no object literals, no arrays, no template strings).
  * - All threshold comparisons use integer milliseconds / integer basis points (`0..10_000`).
+ *
+ * @file Src/lib/dual_clock_sla.ts
  */
 
 import { readFileSync } from "node:fs"
@@ -45,8 +45,8 @@ export interface SlaTokenSpec {
 }
 
 /**
- * Canonical SLA state tokens locked 1:1 to `design/tokens.toml` `[sla.*]`.
- * Pre-allocated and frozen so `SLA_TOKEN_TABLE[code]` is O(1) with zero allocation.
+ * Canonical SLA state tokens locked 1:1 to `design/tokens.toml` `[sla.*]`. Pre-allocated and frozen
+ * so `SLA_TOKEN_TABLE[code]` is O(1) with zero allocation.
  */
 export const SLA_TOKEN_TABLE: readonly [SlaTokenSpec, SlaTokenSpec, SlaTokenSpec, SlaTokenSpec] =
   Object.freeze([
@@ -120,14 +120,14 @@ export const SLA_REASON_POISON_BIT_LATCHED = STALE_SNAPSHOT_POISON_BIT
 // ── 3. Ingestion Channel SLA Table (ms) Mapped from `design/tokens.toml` ─────
 
 /**
- * Channel count (`channel_id` 0..10 in `design/tokens.toml` `[ingestion.*]`).
- * `0` indicates `sentinel_drop` (no latency budget).
+ * Channel count (`channel_id` 0..10 in `design/tokens.toml` `[ingestion.*]`). `0` indicates
+ * `sentinel_drop` (no latency budget).
  */
 export const INGESTION_CHANNEL_COUNT = 11 as const
 
 /**
- * Precomputed `Uint16Array` of latency SLA budgets in milliseconds indexed by
- * `channel_id` (`0..10`) from `design/tokens.toml` `[ingestion.*]`.
+ * Precomputed `Uint16Array` of latency SLA budgets in milliseconds indexed by `channel_id`
+ * (`0..10`) from `design/tokens.toml` `[ingestion.*]`.
  *
  * - 0: NON_SPORTS (sentinel_drop -> 0)
  * - 1: Internet (1500ms)
@@ -173,9 +173,8 @@ interface BunRuntimeClockLike {
 }
 
 /**
- * Default monotonic clock reading `Bun.nanoseconds()` when running under Bun,
- * falling back to `Math.trunc(performance.now() * 1_000_000)` on Node/browser.
- * Zero allocations.
+ * Default monotonic clock reading `Bun.nanoseconds()` when running under Bun, falling back to
+ * `Math.trunc(performance.now() * 1_000_000)` on Node/browser. Zero allocations.
  */
 export function defaultMonotonicNs(): number {
   const bun = (globalThis as unknown as { Bun?: BunRuntimeClockLike }).Bun
@@ -229,9 +228,9 @@ export interface DualClockSlaThresholds {
 }
 
 /**
- * Default operational SLA thresholds derived from `design/tokens.toml`
- * (`ALERT` / `GSLIVE` / `Internet` latency windows, 30s R2/DNS TTL, and
- * `dns_drift_audit.ts` / `bun_r2_inspect.ts` DNS guardrails).
+ * Default operational SLA thresholds derived from `design/tokens.toml` (`ALERT` / `GSLIVE` /
+ * `Internet` latency windows, 30s R2/DNS TTL, and `dns_drift_audit.ts` / `bun_r2_inspect.ts` DNS
+ * guardrails).
  */
 export const DEFAULT_DUAL_CLOCK_SLA_THRESHOLDS: DualClockSlaThresholds = Object.freeze({
   probeWarnMs: 500, // Half of 1000ms GATEWAY/GSBUILDER SLA window
@@ -251,8 +250,8 @@ export const DEFAULT_DUAL_CLOCK_SLA_THRESHOLDS: DualClockSlaThresholds = Object.
 })
 
 /**
- * Builds channel-scoped SLA thresholds from `CHANNEL_SLA_MS_TABLE` (`design/tokens.toml`).
- * For `sentinel_drop` channels (`slaMs === 0`), falls back to `DEFAULT_DUAL_CLOCK_SLA_THRESHOLDS`.
+ * Builds channel-scoped SLA thresholds from `CHANNEL_SLA_MS_TABLE` (`design/tokens.toml`). For
+ * `sentinel_drop` channels (`slaMs === 0`), falls back to `DEFAULT_DUAL_CLOCK_SLA_THRESHOLDS`.
  */
 export function thresholdsForChannel(
   channelId: number,
@@ -325,8 +324,8 @@ const SLA_STATE_ORDER: readonly { readonly key: string; readonly code: SlaStateC
 ]
 
 /**
- * Cold-path loader that parses `design/tokens.toml` and extracts the authoritative
- * SLA tokens, per-channel latency SLA `Uint16Array` tables, and `STALE_SNAPSHOT_POISON_BIT`.
+ * Cold-path loader that parses `design/tokens.toml` and extracts the authoritative SLA tokens,
+ * per-channel latency SLA `Uint16Array` tables, and `STALE_SNAPSHOT_POISON_BIT`.
  */
 export function loadSlaTokensFromToml(
   tomlPath: string = resolve(process.cwd(), "design/tokens.toml"),
@@ -431,9 +430,9 @@ export interface DualClockSlaSnapshot {
 // ── 7. Zero-Allocation DualClock SLA Evaluator ───────────────────────────────
 
 /**
- * Pre-allocated mutable evaluation buffer indices (`Float64Array` / `Uint32Array`)
- * are kept directly as primitive scalar fields on the evaluator instance so V8/JSC
- * keep them unboxed with zero heap allocations on every probe/tick call.
+ * Pre-allocated mutable evaluation buffer indices (`Float64Array` / `Uint32Array`) are kept
+ * directly as primitive scalar fields on the evaluator instance so V8/JSC keep them unboxed with
+ * zero heap allocations on every probe/tick call.
  */
 export class DualClockSlaEvaluator {
   private readonly monotonicNsFn: MonotonicClockFn
@@ -532,8 +531,8 @@ export class DualClockSlaEvaluator {
   }
 
   /**
-   * Ends the active monotonic probe interval and returns elapsed nanoseconds (>= 0).
-   * Zero allocations.
+   * Ends the active monotonic probe interval and returns elapsed nanoseconds (>= 0). Zero
+   * allocations.
    */
   endProbe(): number {
     const endNs = this.monotonicNsFn()
@@ -546,13 +545,13 @@ export class DualClockSlaEvaluator {
   }
 
   /**
-   * Zero-allocation scalar hot-path tick.
-   * Evaluates monotonic probe elapsed interval, wall-clock freshness stamps,
-   * UI poison bitmask, and DNS cache telemetry counters into a deterministic `SlaStateCode`.
+   * Zero-allocation scalar hot-path tick. Evaluates monotonic probe elapsed interval, wall-clock
+   * freshness stamps, UI poison bitmask, and DNS cache telemetry counters into a deterministic
+   * `SlaStateCode`.
    *
-   * Pass `-1` for `publishedEpochMs` or `dataWindowMaxEpochMs` when not applicable.
-   * Pass `-1` for `elapsedNsOverride` to measure from the active `beginProbe()` stamp
-   * (or reuse `_lastElapsedNs` if `endProbe()` already completed).
+   * Pass `-1` for `publishedEpochMs` or `dataWindowMaxEpochMs` when not applicable. Pass `-1` for
+   * `elapsedNsOverride` to measure from the active `beginProbe()` stamp (or reuse `_lastElapsedNs`
+   * if `endProbe()` already completed).
    */
   tickScalars(
     cacheHitsCompleted: number,
@@ -703,8 +702,8 @@ export class DualClockSlaEvaluator {
   }
 
   /**
-   * Evaluates a `Bun.dns.getCacheStats()` object (supporting both `cacheMisses`
-   * and `cacheMissesCompleted` property names) with zero allocations.
+   * Evaluates a `Bun.dns.getCacheStats()` object (supporting both `cacheMisses` and
+   * `cacheMissesCompleted` property names) with zero allocations.
    */
   tickDnsStats(
     stats: BunDnsCacheStats | null | undefined,
@@ -734,10 +733,7 @@ export class DualClockSlaEvaluator {
     )
   }
 
-  /**
-   * Probes live `Bun.dns.getCacheStats()` directly on the hot path with zero
-   * evaluator allocations.
-   */
+  /** Probes live `Bun.dns.getCacheStats()` directly on the hot path with zero evaluator allocations. */
   probeLiveDns(
     publishedEpochMs: number = -1,
     dataWindowMaxEpochMs: number = -1,
@@ -836,8 +832,8 @@ export class DualClockSlaEvaluator {
   }
 
   /**
-   * Cold-path serializer for API responses / diagnostics.
-   * Do NOT call on the hot probe loop; use `stateCode`, `reasonMask`, and `getToken()` there.
+   * Cold-path serializer for API responses / diagnostics. Do NOT call on the hot probe loop; use
+   * `stateCode`, `reasonMask`, and `getToken()` there.
    */
   snapshot(): DualClockSlaSnapshot {
     const token = SLA_TOKEN_TABLE[this._stateCode]

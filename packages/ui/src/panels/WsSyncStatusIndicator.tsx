@@ -12,8 +12,8 @@ export interface WsSyncStatusIndicatorProps {
 }
 
 /**
- * Displays live WebSocket stream stability and the exact time elapsed since the
- * last heartbeat directly beside the Refresh Telemetry control.
+ * Displays live WebSocket stream stability and the exact time elapsed since the last heartbeat
+ * directly beside the Refresh Telemetry control.
  */
 export function WsSyncStatusIndicator({
   wsConnected,

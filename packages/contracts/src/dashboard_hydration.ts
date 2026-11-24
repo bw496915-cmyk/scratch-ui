@@ -1,7 +1,8 @@
 /**
- * @file packages/contracts/src/dashboard_hydration.ts
- * @description Browser-safe contracts for dashboard feed provenance, `/api/wagers` & `/api/customers`
- * hydration payloads, and WebSocket topic frame parsing.
+ * Browser-safe contracts for dashboard feed provenance, `/api/wagers` & `/api/customers` hydration
+ * payloads, and WebSocket topic frame parsing.
+ *
+ * @file Packages/contracts/src/dashboard_hydration.ts
  */
 
 import type { Fantasy402RateCard, SanitizedFantasy402Player } from "./agent_hierarchy.ts"
@@ -77,10 +78,9 @@ export interface WagersWireViolation {
 }
 
 /**
- * Result of checking raw `getBetTicker` rows against the capture-owned wire
- * shape (type + nullability only). `enum_source` travels with it: when the
- * registry says `observed`, an enum difference is a sample boundary and is
- * never counted as a violation.
+ * Result of checking raw `getBetTicker` rows against the capture-owned wire shape (type +
+ * nullability only). `enum_source` travels with it: when the registry says `observed`, an enum
+ * difference is a sample boundary and is never counted as a violation.
  */
 export interface WagersWireContractSummary {
   readonly ok: boolean
@@ -107,9 +107,9 @@ export interface LiveWagersApiResponse {
   readonly timestamp: string
   readonly provenance: DashboardSourceProvenance
   /**
-   * Wagers-tab policy identity read from `packages/ui/src/config/wagers.toml`
-   * at request time. Optional: a host without the UI package serves the feed
-   * unstamped. Probe with `jq -r .policy_version`.
+   * Wagers-tab policy identity read from `packages/ui/src/config/wagers.toml` at request time.
+   * Optional: a host without the UI package serves the feed unstamped. Probe with `jq -r
+   * .policy_version`.
    */
   readonly policy_version?: string
   readonly policy_schema?: string
@@ -474,17 +474,17 @@ export interface R2SinkDiagnostic {
 }
 
 /**
- * Publish-SLA arithmetic for one sink, derived from `ageSeconds` (never invented).
- * `breachSeconds` is 0 while the sink is inside its SLA; `utilizationPct` is
- * `ageSeconds / slaSeconds * 100`, so 100% is exactly at the SLA and 21000% is a
- * long-dead publish. Both are null when the publish age is unknown.
+ * Publish-SLA arithmetic for one sink, derived from `ageSeconds` (never invented). `breachSeconds`
+ * is 0 while the sink is inside its SLA; `utilizationPct` is `ageSeconds / slaSeconds * 100`, so
+ * 100% is exactly at the SLA and 21000% is a long-dead publish. Both are null when the publish age
+ * is unknown.
  */
 export interface R2SinkSlaStatus {
   readonly breachSeconds: number | null
   readonly utilizationPct: number | null
   /**
-   * The exact moment the publish age exceeded the SLA (`Last-Modified + SLA`).
-   * Null when the sink is fresh or the publish age is unknown.
+   * The exact moment the publish age exceeded the SLA (`Last-Modified + SLA`). Null when the sink
+   * is fresh or the publish age is unknown.
    */
   readonly breachStartedAt: string | null
   /** Seconds until the SLA is exceeded while fresh; null when breached or unknown. */
@@ -610,9 +610,9 @@ export interface R2SinkHistory {
 /**
  * Freshness history for the R2 publish sinks.
  *
- * The samples live in the serving process's memory, so the window starts when the
- * dashboard server started and resets on restart. `source` states that provenance
- * so an empty series reads as "not sampled yet", never as "the sink was fine".
+ * The samples live in the serving process's memory, so the window starts when the dashboard server
+ * started and resets on restart. `source` states that provenance so an empty series reads as "not
+ * sampled yet", never as "the sink was fine".
  */
 export interface R2PipelineHistoryApiResponse {
   readonly schemaVersion: 1
@@ -655,8 +655,8 @@ export interface ImageProvenanceContext {
 }
 
 /**
- * Header-only provenance of one WebP/PNG artifact. `available` reports whether
- * `Bun.Image` could read the container header, not whether the metadata is complete.
+ * Header-only provenance of one WebP/PNG artifact. `available` reports whether `Bun.Image` could
+ * read the container header, not whether the metadata is complete.
  */
 export interface ImageProvenanceReport {
   readonly available: boolean

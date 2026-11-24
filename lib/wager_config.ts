@@ -1,7 +1,8 @@
 /**
- * @file lib/wager_config.ts
- * @description Declarative wager tier & surveillance configuration loader (`config/wager_tiers.toml`).
- * Parsed with native Bun.TOML and validated with Zod, with token resolution from `design/tokens.toml`.
+ * Declarative wager tier & surveillance configuration loader (`config/wager_tiers.toml`). Parsed
+ * with native Bun.TOML and validated with Zod, with token resolution from `design/tokens.toml`.
+ *
+ * @file Lib/wager_config.ts
  */
 
 import { existsSync } from "node:fs"
@@ -212,8 +213,8 @@ export async function parseAndValidateWagerConfig(
 }
 
 /**
- * Compares two WagerTiersConfig structures using native Bun.deepEquals in strict mode.
- * Returns true if the configuration has changed, false if strictly identical.
+ * Compares two WagerTiersConfig structures using native Bun.deepEquals in strict mode. Returns true
+ * if the configuration has changed, false if strictly identical.
  */
 export function hasConfigChanged(prev: WagerTiersConfig, next: WagerTiersConfig): boolean {
   return !isDeepStrictEqual(prev, next)
@@ -225,9 +226,9 @@ function getDistinctTiersCount(cfg: WagerTiersConfig): number {
 }
 
 /**
- * Loads and validates declarative wager tier configuration from a TOML file.
- * Uses native Bun.TOML with strict Zod schema validation and @token:* resolution.
- * When options.dedupeAudit is true, suppresses redundant audit log entries if config is unchanged.
+ * Loads and validates declarative wager tier configuration from a TOML file. Uses native Bun.TOML
+ * with strict Zod schema validation and @token:* resolution. When options.dedupeAudit is true,
+ * suppresses redundant audit log entries if config is unchanged.
  */
 export async function loadTomlConfig(
   path: string = DEFAULT_WAGER_TIERS_CONFIG_PATH,
@@ -262,8 +263,8 @@ export async function loadTomlConfig(
 }
 
 /**
- * Reloads configuration and returns whether it changed compared to the last loaded state.
- * Uses native Bun.deepEquals strict comparison. Emits audit log only when changed.
+ * Reloads configuration and returns whether it changed compared to the last loaded state. Uses
+ * native Bun.deepEquals strict comparison. Emits audit log only when changed.
  */
 export async function reloadTomlConfigIfChanged(
   path: string = DEFAULT_WAGER_TIERS_CONFIG_PATH,
@@ -295,9 +296,7 @@ export async function reloadTomlConfigIfChanged(
   return { config: next, changed }
 }
 
-/**
- * Resets the in-memory cached configuration state (useful for test isolation).
- */
+/** Resets the in-memory cached configuration state (useful for test isolation). */
 export function resetConfigCache(): void {
   lastLoadedConfig = null
 }

@@ -1,27 +1,24 @@
 /**
- * @file packages/contracts/src/bun_yaml.ts
- * @description First-class `Bun.YAML.parse` / `Bun.YAML.stringify` wrapper with
- * a zero-dependency YAML 1.2 pure-TypeScript fallback for Node.js (`tsx`) and
- * browser runtimes (Status & Config Dashboard).
- *
+ * First-class `Bun.YAML.parse` / `Bun.YAML.stringify` wrapper with a zero-dependency YAML 1.2
+ * pure-TypeScript fallback for Node.js (`tsx`) and browser runtimes (Status & Config Dashboard).
  * Parity with Bun's native Rust YAML 1.2 engine (`import { YAML } from "bun"`):
- * - Multi-document streams (`---`) automatically return an array of documents.
- * - Anchors (`&name`) and aliases (`*name`) preserve object reference identity
- *   (`===`), support merge keys (`<<`), and safely represent cyclic structures.
- * - Supports YAML 1.2 Core Schema scalars, block/flow mappings & sequences
- *   (including multi-line flow collections), literal/folded block scalars
- *   (`|`, `|-`, `|+`, `>`, `>-`, `>+`), and explicit tags (`!!str`, `!!int`,
- *   `!!float`, `!!bool`, `!!null`).
- * - `stringifyBunYaml(value, space?)` emits single-line flow YAML when `space`
- *   is omitted and multi-line block YAML when `space` is provided.
  *
- * Security invariants:
+ * - Multi-document streams (`---`) automatically return an array of documents.
+ * - Anchors (`&name`) and aliases (`*name`) preserve object reference identity (`===`), support merge
+ *   keys (`<<`), and safely represent cyclic structures.
+ * - Supports YAML 1.2 Core Schema scalars, block/flow mappings & sequences (including multi-line flow
+ *   collections), literal/folded block scalars (`|`, `|-`, `|+`, `>`, `>-`, `>+`), and explicit
+ *   tags (`!!str`, `!!int`, `!!float`, `!!bool`, `!!null`).
+ * - `stringifyBunYaml(value, space?)` emits single-line flow YAML when `space` is omitted and
+ *   multi-line block YAML when `space` is provided. Security invariants:
  * - Enforces byte-length caps, nesting depth limits, and alias expansion caps.
- * - Strips prototype-polluting keys (`__proto__`, `constructor`, `prototype`)
- *   on both native `Bun.YAML.parse` and pure-TS fallback outputs while keeping
- *   object identity and cyclic references intact.
- * - Provides cycle-safe JSON preview serialization and recursive secret key
- *   redaction for HTTP/UI telemetry.
+ * - Strips prototype-polluting keys (`__proto__`, `constructor`, `prototype`) on both native
+ *   `Bun.YAML.parse` and pure-TS fallback outputs while keeping object identity and cyclic
+ *   references intact.
+ * - Provides cycle-safe JSON preview serialization and recursive secret key redaction for HTTP/UI
+ *   telemetry.
+ *
+ * @file Packages/contracts/src/bun_yaml.ts
  */
 
 export const MAX_YAML_INPUT_BYTES = 262_144 // 256 KiB
@@ -134,8 +131,8 @@ function isSafeObjectKey(key: string): boolean {
 }
 
 /**
- * Strip prototype-polluting keys in-place across parsed YAML structures while
- * preserving object reference identity and handling cyclic graphs safely.
+ * Strip prototype-polluting keys in-place across parsed YAML structures while preserving object
+ * reference identity and handling cyclic graphs safely.
  */
 function sanitizeParsedYamlGraph<T>(root: T): {
   readonly value: T
@@ -178,9 +175,7 @@ function sanitizeParsedYamlGraph<T>(root: T): {
   return { value: root, hasCircularRefs }
 }
 
-/**
- * Detect whether a YAML text stream contains multiple explicit documents (`---`).
- */
+/** Detect whether a YAML text stream contains multiple explicit documents (`---`). */
 export function countYamlDocuments(rawText: string): number {
   const docs = splitYamlDocuments(rawText)
   return docs.length
@@ -1154,9 +1149,9 @@ function parseYamlWithFallback(
 }
 
 /**
- * Parse YAML using Bun's native `Bun.YAML.parse` when running under Bun, or the
- * YAML 1.2 pure-TypeScript fallback in Node.js / browser runtimes, returning
- * parsed output plus execution metadata.
+ * Parse YAML using Bun's native `Bun.YAML.parse` when running under Bun, or the YAML 1.2
+ * pure-TypeScript fallback in Node.js / browser runtimes, returning parsed output plus execution
+ * metadata.
  */
 export function parseBunYamlWithMeta<T = unknown>(
   input: string | Uint8Array | ArrayBuffer,
@@ -1199,8 +1194,8 @@ export function parseBunYamlWithMeta<T = unknown>(
 }
 
 /**
- * Convenience wrapper matching `Bun.YAML.parse(input)` with prototype-pollution
- * sanitization and cross-runtime fallback support.
+ * Convenience wrapper matching `Bun.YAML.parse(input)` with prototype-pollution sanitization and
+ * cross-runtime fallback support.
  */
 export function parseBunYaml<T = unknown>(
   input: string | Uint8Array | ArrayBuffer,
@@ -1333,9 +1328,9 @@ function stringifyYamlFallback(root: unknown, space: number | string | undefined
 }
 
 /**
- * Serialize a JS value to YAML via `Bun.YAML.stringify` when running on Bun
- * (or pure-TS fallback otherwise). Omit `space` for single-line flow YAML;
- * pass a number/string (e.g. `2`) for multi-line block YAML.
+ * Serialize a JS value to YAML via `Bun.YAML.stringify` when running on Bun (or pure-TS fallback
+ * otherwise). Omit `space` for single-line flow YAML; pass a number/string (e.g. `2`) for
+ * multi-line block YAML.
  */
 export function stringifyBunYaml(value: unknown, options: StringifyBunYamlOptions = {}): string {
   const nativeApi = options.forceFallback ? null : getNativeBunYaml()
@@ -1353,8 +1348,8 @@ const SENSITIVE_YAML_KEY_RE =
   /(secret|token|password|passwd|api[_-]?key|access[_-]?key|private[_-]?key|salt|authorization|cookie)/i
 
 /**
- * Return a deep copy of a parsed YAML value with any sensitive keys redacted
- * (`"[REDACTED]"`), safe against circular object references.
+ * Return a deep copy of a parsed YAML value with any sensitive keys redacted (`"[REDACTED]"`), safe
+ * against circular object references.
  */
 export function redactYamlSensitiveValues(root: unknown): unknown {
   const seen = new WeakMap<object, unknown>()
@@ -1389,8 +1384,8 @@ export function redactYamlSensitiveValues(root: unknown): unknown {
 }
 
 /**
- * Cycle-safe JSON pretty printer for displaying parsed YAML structures
- * (including cyclic `&self` / `*self` aliases supported by `Bun.YAML.parse`).
+ * Cycle-safe JSON pretty printer for displaying parsed YAML structures (including cyclic `&self` /
+ * `*self` aliases supported by `Bun.YAML.parse`).
  */
 export function safeJsonPreview(value: unknown, space = 2): string {
   const ancestors: object[] = []

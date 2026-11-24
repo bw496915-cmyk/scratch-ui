@@ -1,6 +1,4 @@
-/**
- * Cross-desk quick-jump: shadow slice from URL ↔ live wager tape correlation.
- */
+/** Cross-desk quick-jump: shadow slice from URL ↔ live wager tape correlation. */
 
 import type {
   MarketCode,

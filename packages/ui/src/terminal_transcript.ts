@@ -1,11 +1,9 @@
 /**
- * @file packages/ui/src/terminal_transcript.ts
- * @description Pure helpers behind the Operator Terminal's history filter, run
- * statistics and session export.
+ * Pure helpers behind the Operator Terminal's history filter, run statistics and session export. No
+ * DOM and no fetch: every function is total over `TerminalHistoryEntry[]`, so the panel stays a
+ * renderer and the filtering/stats/export behaviour is testable without a browser.
  *
- * No DOM and no fetch: every function is total over `TerminalHistoryEntry[]`, so
- * the panel stays a renderer and the filtering/stats/export behaviour is
- * testable without a browser.
+ * @file Packages/ui/src/terminal_transcript.ts
  */
 
 import type { TerminalHistoryEntry } from "./types.ts"
@@ -20,9 +18,9 @@ const ANSI_ESCAPE_PATTERN =
 const CONTROL_PATTERN = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g
 
 /**
- * Strip ANSI colour, OSC-8 link wrappers and stray control characters, keeping
- * the visible text. Carriage returns collapse to newlines so a PTY progress
- * line does not search as one broken string.
+ * Strip ANSI colour, OSC-8 link wrappers and stray control characters, keeping the visible text.
+ * Carriage returns collapse to newlines so a PTY progress line does not search as one broken
+ * string.
  */
 export function stripAnsi(raw: string): string {
   return raw.replace(ANSI_ESCAPE_PATTERN, "").replace(/\r\n?/g, "\n").replace(CONTROL_PATTERN, "")
@@ -61,9 +59,8 @@ export interface TerminalHistoryMatches {
 }
 
 /**
- * Filter history by a case-insensitive substring over the command and its
- * ANSI-stripped output. An inactive filter returns every entry so callers can
- * render one code path.
+ * Filter history by a case-insensitive substring over the command and its ANSI-stripped output. An
+ * inactive filter returns every entry so callers can render one code path.
  */
 export function matchTerminalHistory(
   entries: readonly TerminalHistoryEntry[],
@@ -124,10 +121,10 @@ function nearestRank(sorted: readonly number[], percentile: number): number {
 }
 
 /**
- * Run count, failure count and p50/p95 duration. The seeded welcome buffer is
- * excluded by its explicit `synthetic` marker rather than by a magic duration:
- * a real run can report `durationMs: 0` when it finishes inside a millisecond.
- * Latency percentiles use only the runs that measured above zero.
+ * Run count, failure count and p50/p95 duration. The seeded welcome buffer is excluded by its
+ * explicit `synthetic` marker rather than by a magic duration: a real run can report `durationMs:
+ * 0` when it finishes inside a millisecond. Latency percentiles use only the runs that measured
+ * above zero.
  */
 export function summarizeTerminalHistory(
   entries: readonly TerminalHistoryEntry[],
@@ -170,8 +167,8 @@ function formatStat(value: number | null): string {
 }
 
 /**
- * Deterministic plain-text transcript: ANSI stripped, ISO timestamps, one block
- * per command. Suitable for a ticket, a diff or a downloaded `.txt`.
+ * Deterministic plain-text transcript: ANSI stripped, ISO timestamps, one block per command.
+ * Suitable for a ticket, a diff or a downloaded `.txt`.
  */
 export function formatTerminalTranscript(
   entries: readonly TerminalHistoryEntry[],

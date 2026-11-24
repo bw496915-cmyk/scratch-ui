@@ -1,15 +1,14 @@
 /**
- * @file packages/ui/src/fast_signin.ts
- * @description Hidden URL parameter extraction, immediate address-bar scrubbing,
- * and bookmark URL generation for temporary operator Fast Sign-In tokens.
+ * Hidden URL parameter extraction, immediate address-bar scrubbing, and bookmark URL generation for
+ * temporary operator Fast Sign-In tokens. Security notes:
  *
- * Security notes:
- * - Reads `?fast_signin=<token>` once on page load and immediately removes the
- *   parameter via `history.replaceState` so the temporary secret does not linger
- *   in the address bar, copy-pasted links, or Referer headers.
- * - Preserves all other dashboard query parameters (`tab`, `wSport`, `agent`,
- *   `customer`, `ticket`, etc.) and hash fragments so saved bookmarks land on
- *   the exact operator view.
+ * - Reads `?fast_signin=<token>` once on page load and immediately removes the parameter via
+ *   `history.replaceState` so the temporary secret does not linger in the address bar, copy-pasted
+ *   links, or Referer headers.
+ * - Preserves all other dashboard query parameters (`tab`, `wSport`, `agent`, `customer`, `ticket`,
+ *   etc.) and hash fragments so saved bookmarks land on the exact operator view.
+ *
+ * @file Packages/ui/src/fast_signin.ts
  */
 
 import QRCode from "qrcode/lib/browser.js"
@@ -45,8 +44,8 @@ function defaultWindow(): FastSignInWindowLike | null {
 }
 
 /**
- * Extract the hidden `?fast_signin=<token>` query parameter and immediately
- * scrub it from browser history while preserving all other query params & hash.
+ * Extract the hidden `?fast_signin=<token>` query parameter and immediately scrub it from browser
+ * history while preserving all other query params & hash.
  */
 export function extractAndScrubFastSignInToken(
   win: FastSignInWindowLike | null = defaultWindow(),
@@ -85,8 +84,8 @@ export function extractAndScrubFastSignInToken(
 const NON_FETCHING_PARSE_BASE = "https://non-fetching.invalid"
 
 /**
- * Build a bookmarkable dashboard URL embedding the temporary `?fast_signin=`
- * token while preserving the current origin, route, safe query params, and hash.
+ * Build a bookmarkable dashboard URL embedding the temporary `?fast_signin=` token while preserving
+ * the current origin, route, safe query params, and hash.
  */
 export function buildFastSignInBookmarkUrl(currentHref: string, token: string): string {
   const cleanToken = token.trim()
@@ -104,8 +103,8 @@ function looksLikeUrlOrQuery(value: string): boolean {
 }
 
 /**
- * Extract the `fast_signin` token from either a full/relative bookmark URL
- * or a raw token string. Returns null when empty or when a URL omits `fast_signin`.
+ * Extract the `fast_signin` token from either a full/relative bookmark URL or a raw token string.
+ * Returns null when empty or when a URL omits `fast_signin`.
  */
 export function extractFastSignInTokenFromInput(rawInput: string): string | null {
   const trimmed = rawInput.trim()
@@ -126,8 +125,8 @@ export function extractFastSignInTokenFromInput(rawInput: string): string | null
 }
 
 /**
- * Resolve either a pasted Fast Sign-In bookmark URL or a raw token into a
- * canonical Fast Sign-In bookmark URL bound to the current view when needed.
+ * Resolve either a pasted Fast Sign-In bookmark URL or a raw token into a canonical Fast Sign-In
+ * bookmark URL bound to the current view when needed.
  */
 export function resolveFastSignInBookmarkUrl(currentHref: string, rawInput: string): string | null {
   const trimmed = rawInput.trim()
@@ -151,8 +150,8 @@ export function resolveFastSignInBookmarkUrl(currentHref: string, rawInput: stri
 }
 
 /**
- * Encode arbitrary text (such as a Fast Sign-In bookmark URL) into a crisp
- * run-length SVG path QR matrix completely client-side without external calls.
+ * Encode arbitrary text (such as a Fast Sign-In bookmark URL) into a crisp run-length SVG path QR
+ * matrix completely client-side without external calls.
  */
 export function buildFastSignInQrMatrix(text: string): QrMatrixSvgSpec | null {
   const value = text.trim()

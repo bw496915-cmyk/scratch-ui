@@ -1,21 +1,15 @@
 /**
- * @file lib/slab_config.ts
- * @description Validated adapter for `config/slab.toml` — the server slab policy.
+ * Validated adapter for `config/slab.toml` — the server slab policy. TOML is the SSOT for
+ * fixed-capacity read windows, wire sentinels and the relative paths the server may read. Load it
+ * by text. `Bun.TOML.parse(Bun.file(...))` throws ("File blob cannot be used here"); `new
+ * Blob([text])` is accepted but the adapters read text. Parse-level facts measured on 1.4.4
+ * (https://bun.com/reference/bun/TOML): unquoted dates become Temporal.* and integers outside
+ * ±(2^53 − 1) throw. So a BigInt64 column sentinel must be a string parsed outside TOML, and
+ * `assertSafeInt` remains a backstop for programmatic input that never went through `parse`. The
+ * adapter is the chokepoint for user-supplied paths: `assertRelativePath` rejects absolute paths
+ * and `..` traversal before a value can reach the filesystem or the wire-contract payload.
  *
- * TOML is the SSOT for fixed-capacity read windows, wire sentinels and the
- * relative paths the server may read.
- *
- * Load it by text. `Bun.TOML.parse(Bun.file(...))` throws ("File blob cannot be
- * used here"); `new Blob([text])` is accepted but the adapters read text.
- * Parse-level facts measured on 1.4.4 (https://bun.com/reference/bun/TOML):
- * unquoted dates become Temporal.* and integers outside ±(2^53 − 1) throw. So a
- * BigInt64 column sentinel must be a string parsed outside TOML, and
- * `assertSafeInt` remains a backstop for programmatic input that never went
- * through `parse`.
- *
- * The adapter is the chokepoint for user-supplied paths: `assertRelativePath`
- * rejects absolute paths and `..` traversal before a value can reach the
- * filesystem or the wire-contract payload.
+ * @file Lib/slab_config.ts
  */
 
 import { existsSync, readFileSync } from "node:fs"

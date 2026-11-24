@@ -28,11 +28,7 @@ import {
   verifyCsrfToken,
   withCsrf,
 } from "../../packages/api/src/index.ts"
-import {
-  dashboardUrl,
-  DEFAULT_DASHBOARD_URL_STATE,
-  NON_FETCHING_PARSE_BASE,
-} from "../../packages/ui/src/url_state.ts"
+import { dashboardUrl, DEFAULT_DASHBOARD_URL_STATE, NON_FETCHING_PARSE_BASE } from "../../packages/ui/src/url_state.ts"
 
 const ROOT = resolve(import.meta.dir, "../..")
 
@@ -146,9 +142,7 @@ describe("Lane C — Bun.CSRF bound to sessionId with withCsrf", () => {
     const guard = createCsrfGuard({ secret: SECRET })
     const guarded = guard.withCsrf(async () => Response.json({ reset: true }))
 
-    const noCookie = await guarded(
-      new Request("https://desk.bookdeskops.com/api/weblogs/reset", { method: "POST" }),
-    )
+    const noCookie = await guarded(new Request("https://desk.bookdeskops.com/api/weblogs/reset", { method: "POST" }))
     expect(noCookie.status).toBe(403)
 
     const tok = guard.issueCsrf("sess-123")
@@ -194,9 +188,7 @@ describe("Lane C — Bun.CSRF bound to sessionId with withCsrf", () => {
 
 describe("Lane D — Derive ws:// and wss:// from origin protocol", () => {
   test("derives wss:// under https:// and ws:// under http://", () => {
-    expect(deriveWebSocketUrl("https://desk.bookdeskops.com/wagers")).toBe(
-      "wss://desk.bookdeskops.com/ws",
-    )
+    expect(deriveWebSocketUrl("https://desk.bookdeskops.com/wagers")).toBe("wss://desk.bookdeskops.com/ws")
     expect(deriveWebSocketUrl("http://127.0.0.1:3000/app", "/ws", { dev_session: "abc" })).toBe(
       "ws://127.0.0.1:3000/ws?dev_session=abc",
     )
@@ -229,10 +221,14 @@ describe("Lanes E, F, G — Boot-validated origins, outboundFetch, proxy/target 
     const mockOk = async () => new Response(JSON.stringify({ ok: true }), { status: 200 })
 
     await expect(
-      outboundFetch(new URL("https://evil.example/health"), {}, {
-        allow: ["fantasy402.com"],
-        fetchImpl: mockOk,
-      }),
+      outboundFetch(
+        new URL("https://evil.example/health"),
+        {},
+        {
+          allow: ["fantasy402.com"],
+          fetchImpl: mockOk,
+        },
+      ),
     ).rejects.toBeInstanceOf(EgressPolicyError)
 
     let cancelled = false
@@ -249,10 +245,14 @@ describe("Lanes E, F, G — Boot-validated origins, outboundFetch, proxy/target 
     }
 
     await expect(
-      outboundFetch(new URL("https://fantasy402.com/api"), {}, {
-        allow: ["fantasy402.com"],
-        fetchImpl: mockRedirect,
-      }),
+      outboundFetch(
+        new URL("https://fantasy402.com/api"),
+        {},
+        {
+          allow: ["fantasy402.com"],
+          fetchImpl: mockRedirect,
+        },
+      ),
     ).rejects.toThrow("redirect refused")
     expect(cancelled).toBe(true)
   })

@@ -7,10 +7,7 @@ import React from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 
 import { createConfigStatusStore } from "../../packages/api/src/config_status.ts"
-import {
-  loadBunNpmrcFromDisk,
-  loadRedactedNpmrcStatusSummary,
-} from "../../packages/api/src/npmrc_loader.ts"
+import { loadBunNpmrcFromDisk, loadRedactedNpmrcStatusSummary } from "../../packages/api/src/npmrc_loader.ts"
 import {
   parseBunLockFile,
   resolveDefaultInstallLinkerStrategy,
@@ -257,10 +254,7 @@ describe("Bun .npmrc support — credential matching & security invariants", () 
 
     const config = resolveBunPackageConfig({
       userNpmrc: parseNpmrc(
-        [
-          "//npm.example.com/:_authToken=root-token",
-          "//npm.example.com/team/:_authToken=team-token",
-        ].join("\n"),
+        ["//npm.example.com/:_authToken=root-token", "//npm.example.com/team/:_authToken=team-token"].join("\n"),
         { source: "user-npmrc" },
       ),
       projectNpmrc: parseNpmrc("//npm.example.com/team/:_authToken=project-team-token", {
@@ -302,9 +296,7 @@ describe("Bun .npmrc support — credential matching & security invariants", () 
       targetUrl: "https://basic.example.com/pkg",
     })
     expect(m1.scheme).toBe("Basic")
-    expect(m1.authorizationHeader).toBe(
-      `Basic ${Buffer.from("alice:s3cret!", "utf8").toString("base64")}`,
-    )
+    expect(m1.authorizationHeader).toBe(`Basic ${Buffer.from("alice:s3cret!", "utf8").toString("base64")}`)
 
     const m2 = matchRegistryCredentials(config, {
       kind: "registry",
@@ -317,10 +309,9 @@ describe("Bun .npmrc support — credential matching & security invariants", () 
     // 1. .npmrc //host/ replaces inline creds inside .npmrc registry= line
     const npmrcReplaced = resolveBunPackageConfig({
       projectNpmrc: parseNpmrc(
-        [
-          "registry=https://olduser:oldpass@reg.example.com/",
-          "//reg.example.com/:_authToken=host-line-token",
-        ].join("\n"),
+        ["registry=https://olduser:oldpass@reg.example.com/", "//reg.example.com/:_authToken=host-line-token"].join(
+          "\n",
+        ),
       ),
     })
     const res1 = matchRegistryCredentials(npmrcReplaced, {
@@ -333,10 +324,7 @@ describe("Bun .npmrc support — credential matching & security invariants", () 
     const bunfigWins = resolveBunPackageConfig({
       projectNpmrc: parseNpmrc("//reg.example.com/:_authToken=npmrc-token"),
       projectBunfig: parseBunfigInstallToml(
-        [
-          "[install.scopes]",
-          'myorg = { url = "https://reg.example.com/", token = "$BF_TOK" }',
-        ].join("\n"),
+        ["[install.scopes]", 'myorg = { url = "https://reg.example.com/", token = "$BF_TOK" }'].join("\n"),
         "project-bunfig",
         { BF_TOK: "bunfig-token" },
       ),
@@ -352,9 +340,7 @@ describe("Bun .npmrc support — credential matching & security invariants", () 
     // 3. BUN_CONFIG_TOKEN wins over .npmrc //host/ line for default registry
     const envWins = resolveBunPackageConfig({
       projectNpmrc: parseNpmrc(
-        ["registry=https://reg.example.com/", "//reg.example.com/:_authToken=npmrc-token"].join(
-          "\n",
-        ),
+        ["registry=https://reg.example.com/", "//reg.example.com/:_authToken=npmrc-token"].join("\n"),
       ),
       env: { BUN_CONFIG_TOKEN: "env-override-token" },
     })
@@ -596,17 +582,11 @@ describe("Bun bunfig.toml Package Manager & [run] configuration", () => {
 
   test("honors install.globalDir and install.globalBinDir only from global bunfig.toml or env, ignoring project-local overrides", () => {
     const globalBf = parseBunfigInstallToml(
-      ["[install]", 'globalDir = "~/.bun/install/global"', 'globalBinDir = "~/.bun/bin"'].join(
-        "\n",
-      ),
+      ["[install]", 'globalDir = "~/.bun/install/global"', 'globalBinDir = "~/.bun/bin"'].join("\n"),
       "global-bunfig",
     )
     const projectBf = parseBunfigInstallToml(
-      [
-        "[install]",
-        'globalDir = "/tmp/should-be-ignored"',
-        'globalBinDir = "/tmp/bin-ignored"',
-      ].join("\n"),
+      ["[install]", 'globalDir = "/tmp/should-be-ignored"', 'globalBinDir = "/tmp/bin-ignored"'].join("\n"),
       "project-bunfig",
     )
 

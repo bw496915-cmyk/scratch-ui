@@ -1,9 +1,9 @@
 /**
- * @file server/profile_inspect.ts
- * @description Bun.inspect.custom formatters for SportsDesk Customer Profiles
- * (ProfileView, ProfileCohortView, ProfileRadarView, and Bun.inspect.table()),
- * mirroring the WebLogView / WebLogVectorView architecture with full
- * Bun.inspect.options & CLI `--options` parity.
+ * Bun.inspect.custom formatters for SportsDesk Customer Profiles (ProfileView, ProfileCohortView,
+ * ProfileRadarView, and Bun.inspect.table()), mirroring the WebLogView / WebLogVectorView
+ * architecture with full Bun.inspect.options & CLI `--options` parity.
+ *
+ * @file Server/profile_inspect.ts
  */
 
 import {
@@ -223,8 +223,8 @@ function clampAxis(value: number, max: number): number {
 }
 
 /**
- * Reconciles derived 5-axis sharpness scores (3.0 + 2.5 + 1.5 + 2.0 + 1.0 = 10.0)
- * so their sum equals the composite score without exceeding any axis cap.
+ * Reconciles derived 5-axis sharpness scores (3.0 + 2.5 + 1.5 + 2.0 + 1.0 = 10.0) so their sum
+ * equals the composite score without exceeding any axis cap.
  */
 export function deriveSharpnessAxes(score: number, clvBps = 0) {
   const clampedScore = Number(Math.min(10, Math.max(0, score)).toFixed(2))
@@ -410,12 +410,7 @@ export function normalizeRawCustomerToProfileRecord(
       : rawLifetimeNet !== null && lifetimeVol > 0
         ? Number(((lifetimeNet / lifetimeVol) * 100).toFixed(2))
         : 4.5
-  const rawSharpInput = firstFinite(
-    row.score,
-    row.compositeScore,
-    row.sharpScore,
-    row.sharp_score,
-  )
+  const rawSharpInput = firstFinite(row.score, row.compositeScore, row.sharpScore, row.sharp_score)
   const rawSharpScore =
     rawSharpInput !== null ? (rawSharpInput > 10 ? rawSharpInput / 10 : rawSharpInput) : null
   const score =
@@ -532,8 +527,7 @@ export function normalizeRawCustomerToProfileRecord(
         row.correlatedRisk !== "UNMEASURED"))
   if (!correlationKnown) unknownSet.add("correlation")
   const correlatedExploitRate = correlationKnown
-    ? (rawCorrRate ??
-      Number(Math.min(0.95, Math.max(0.25, Math.abs(holdPct) / 100)).toFixed(2)))
+    ? (rawCorrRate ?? Number(Math.min(0.95, Math.max(0.25, Math.abs(holdPct) / 100)).toFixed(2)))
     : 0
   const correlatedRisk = correlationKnown
     ? String(

@@ -1,7 +1,8 @@
 /**
- * @file packages/ui/src/hydration.ts
- * @description Browser-safe hydration normalizers, dynamic cohort KPI derivation,
- * Signal-Honesty provenance badges, and zero-DOM feed loader for `@sportsdesk-ops/ui`.
+ * Browser-safe hydration normalizers, dynamic cohort KPI derivation, Signal-Honesty provenance
+ * badges, and zero-DOM feed loader for `@sportsdesk-ops/ui`.
+ *
+ * @file Packages/ui/src/hydration.ts
  */
 
 import {
@@ -463,7 +464,10 @@ function computeSharePct(count: number, total: number): number | null {
   return Math.round((count / total) * 1000) / 10
 }
 
-/** Derive the 6 customer cohort KPI cards dynamically (missing is never hardcoded as non-zero or zero). */
+/**
+ * Derive the 6 customer cohort KPI cards dynamically (missing is never hardcoded as non-zero or
+ * zero).
+ */
 export function deriveCustomerCohortKpiCards(options: {
   readonly report: CustomersApiResponse | null
   readonly status: "pending" | "ready" | "unavailable"
@@ -613,7 +617,10 @@ async function fetchJsonSlice<T>(
   }
 }
 
-/** Hydrate `/api/wagers`, `/api/customers`, and `/api/config/tiers` in parallel using any `fetch` implementation. */
+/**
+ * Hydrate `/api/wagers`, `/api/customers`, and `/api/config/tiers` in parallel using any `fetch`
+ * implementation.
+ */
 export async function hydrateDashboardFeeds(
   fetchImpl: (input: string) => Promise<Response>,
 ): Promise<DashboardFeedsHydrationBundle> {
@@ -691,8 +698,8 @@ function nonEmptyString(val: unknown): string | null {
 
 /**
  * Normalize a `GET /api/rankings/all` (`BatchedRankingResult`) payload. Returns null when the
- * envelope is not that shape; rows missing a required field are counted in `rejectedRows`
- * instead of being coerced.
+ * envelope is not that shape; rows missing a required field are counted in `rejectedRows` instead
+ * of being coerced.
  */
 export function normalizeRankingsResponse(raw: unknown): NormalizedRankingsResult | null {
   if (typeof raw !== "object" || raw === null) return null
@@ -937,8 +944,8 @@ export function normalizeRankingsResponse(raw: unknown): NormalizedRankingsResul
 }
 
 /**
- * Fetch and normalize `GET /api/rankings/all`. A non-2xx reply carries the server's
- * `{ error }` text (for example a missing bets corpus) into the failure message.
+ * Fetch and normalize `GET /api/rankings/all`. A non-2xx reply carries the server's `{ error }`
+ * text (for example a missing bets corpus) into the failure message.
  */
 export async function fetchRankingsSlice(
   fetchImpl: (input: string) => Promise<Response>,

@@ -1,6 +1,7 @@
 /**
- * @file packages/api/src/ws.ts
- * @description WebSocket topic pub/sub state machine and status telemetry for the dashboard API.
+ * WebSocket topic pub/sub state machine and status telemetry for the dashboard API.
+ *
+ * @file Packages/api/src/ws.ts
  */
 
 import { DASHBOARD_WS_TOPICS, type DashboardWsTopic } from "../../contracts/src/index.ts"
@@ -132,12 +133,13 @@ export function createDashboardWebSocketHandler<TWs extends WsLike>(clients: Set
 }
 
 /**
- * Broadcast a topic message once to every connected client subscribed to `topic` (or all if un-scoped).
+ * Broadcast a topic message once to every connected client subscribed to `topic` (or all if
+ * un-scoped).
  *
  * `Bun.serve` drops frames instead of closing once a socket's send buffer is over
  * `backpressureLimit`; measured on 1.4.4, frames vanish before the server eventually evicts the
- * socket. A closed socket is recoverable (the dashboard reconnects and re-subscribes); a silent
- * gap is not, so the first non-delivery closes with 1011 "backpressure".
+ * socket. A closed socket is recoverable (the dashboard reconnects and re-subscribes); a silent gap
+ * is not, so the first non-delivery closes with 1011 "backpressure".
  */
 export function publishDashboardTopicEvent<TWs extends WsLike>(
   clients: Iterable<TWs>,

@@ -1,14 +1,12 @@
 /**
- * @file packages/ui/src/config/wagers.ts
- * @description Sole TypeScript entrypoint for `wagers.toml`.
+ * Sole TypeScript entrypoint for `wagers.toml`. Bun parses and tree-shakes static TOML named
+ * exports at bundle time, so the Live Wagers tab's filter vocabulary, CLV ramp and table bounds
+ * ship inside the JS bundle with no runtime fetch and no JSON parse. `meta`, `thresholds`, `table`
+ * and the three pill lists are all imported: the validator asserts `table.policy_tag` is inlined
+ * (proving the import happened) while the unimported `[unused]` table is eliminated from
+ * `dist/dashboard/*.js`.
  *
- * Bun parses and tree-shakes static TOML named exports at bundle time, so the
- * Live Wagers tab's filter vocabulary, CLV ramp and table bounds ship inside the
- * JS bundle with no runtime fetch and no JSON parse.
- *
- * `meta`, `thresholds`, `table` and the three pill lists are all imported: the
- * validator asserts `table.policy_tag` is inlined (proving the import happened)
- * while the unimported `[unused]` table is eliminated from `dist/dashboard/*.js`.
+ * @file Packages/ui/src/config/wagers.ts
  */
 
 import { isWagerSortField, type WagerSortField } from "../types.ts"
@@ -84,8 +82,8 @@ export const WAGERS_DEFAULTS = Object.freeze({
 })
 
 /**
- * CLV edge color ramp, driven by `thresholds.clv_hot_cents` / `clv_warm_cents`.
- * Positive means the customer beat the closing line (desk liability).
+ * CLV edge color ramp, driven by `thresholds.clv_hot_cents` / `clv_warm_cents`. Positive means the
+ * customer beat the closing line (desk liability).
  */
 export function clvEdgeTone(cents: number | null): string {
   if (cents === null) return "#94a3b8"

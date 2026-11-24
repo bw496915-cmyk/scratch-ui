@@ -1,10 +1,10 @@
 /**
- * @file packages/ui/src/system_log_bitwise_filter.ts
- * @description High-speed client-side bitwise severity flag filter engine and
- * external store for the System Logs panel. Designed so typing in the search
- * input or toggling severity bit flags evaluates a contiguous Uint8Array index
- * in microseconds and updates DOM row visibility without triggering full React
- * panel or table re-renders.
+ * High-speed client-side bitwise severity flag filter engine and external store for the System Logs
+ * panel. Designed so typing in the search input or toggling severity bit flags evaluates a
+ * contiguous Uint8Array index in microseconds and updates DOM row visibility without triggering
+ * full React panel or table re-renders.
+ *
+ * @file Packages/ui/src/system_log_bitwise_filter.ts
  */
 
 export const LOG_SEVERITY_BIT_INFO = 1 << 0 // 0x01 — INFO / NORMAL
@@ -206,8 +206,9 @@ function tokenizeBitwiseSearchInput(trimmed: string): TokenizedSearchTerm[] {
 }
 
 /**
- * Parses a client-side search string combining bitwise severity expressions
- * and free-text message terms:
+ * Parses a client-side search string combining bitwise severity expressions and free-text message
+ * terms:
+ *
  * - Prefixed bitmask expressions: `sev:crit|warn`, `flag:0x0c`, `mask:0b1100`
  * - Bare compound/single severity flags: `crit|high`, `error`, `warn,watch`
  * - Negation (bitwise AND-NOT): `-info`, `!normal`, `~watch`, `-sev:info|watch`
@@ -342,8 +343,8 @@ export interface BitwiseSeverityCounts {
 }
 
 /**
- * Contiguous Structure-of-Arrays (SoA) index over a rendered log list.
- * Built once when the log list changes; queried in microseconds on each keystroke.
+ * Contiguous Structure-of-Arrays (SoA) index over a rendered log list. Built once when the log list
+ * changes; queried in microseconds on each keystroke.
  */
 export interface BitwiseLogIndex {
   readonly length: number
@@ -394,9 +395,9 @@ export interface BitwiseEvaluationResult {
 }
 
 /**
- * Evaluates a parsed bitwise query against the contiguous SoA `BitwiseLogIndex`.
- * Bitwise flag check `(flags[i] & effectiveMask) === 0` short-circuits before
- * any string comparison, reusing `outBitmap` to avoid per-keystroke allocations.
+ * Evaluates a parsed bitwise query against the contiguous SoA `BitwiseLogIndex`. Bitwise flag check
+ * `(flags[i] & effectiveMask) === 0` short-circuits before any string comparison, reusing
+ * `outBitmap` to avoid per-keystroke allocations.
  */
 export function evaluateBitwiseLogIndex(
   index: BitwiseLogIndex,
@@ -497,9 +498,9 @@ const EMPTY_STATS: BitwiseFilterStats = {
 }
 
 /**
- * Lightweight external store holding the System Logs bitwise search query and
- * severity bitmask outside React parent state so keystrokes and bit toggles
- * never trigger full re-renders of the System Logs panel or table rows.
+ * Lightweight external store holding the System Logs bitwise search query and severity bitmask
+ * outside React parent state so keystrokes and bit toggles never trigger full re-renders of the
+ * System Logs panel or table rows.
  */
 export class BitwiseLogFilterStore {
   private snapshot: BitwiseFilterSnapshot

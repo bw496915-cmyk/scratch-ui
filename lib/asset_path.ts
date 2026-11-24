@@ -4,13 +4,12 @@
  * Extracted because it is a pure decision — name plus directory in, path or null out — and because
  * it has to be tested against cases the route cannot easily produce (symlinks that escape).
  *
- * Why it matters on this Bun: the docs for directory routes say a symlink never leads out of
- * `dir` (openat2 RESOLVE_IN_ROOT semantics). Measured on 1.4.4 / macOS, it does. A symlink at
+ * Why it matters on this Bun: the docs for directory routes say a symlink never leads out of `dir`
+ * (openat2 RESOLVE_IN_ROOT semantics). Measured on 1.4.4 / macOS, it does. A symlink at
  * `assets/link.txt` pointing outside the directory is served with the outside file's content, for
  * both absolute and relative targets:
  *
- *   /assets/abs-link.txt  200  "SECRET-OUTSIDE"
- *   /assets/rel-link.txt  200  "SECRET-OUTSIDE"
+ * /assets/abs-link.txt 200 "SECRET-OUTSIDE" /assets/rel-link.txt 200 "SECRET-OUTSIDE"
  *
  * `docs/assets` has no symlinks today, so nothing leaks; this function keeps it that way rather
  * than relying on the platform.
@@ -47,8 +46,8 @@ export function isSafeAssetName(name: string): boolean {
 /**
  * The real path to serve, or null when the name is unsafe, missing, or resolves outside `dir`.
  *
- * `name` is a URL path segment, so it is decoded first (`arch%20guide.png` → `arch guide.png`);
- * a malformed escape is simply not a name this handler can serve. `realpath` is what catches a
+ * `name` is a URL path segment, so it is decoded first (`arch%20guide.png` → `arch guide.png`); a
+ * malformed escape is simply not a name this handler can serve. `realpath` is what catches a
  * symlink: the lexical check above cannot see one, and neither can `Bun.file(...).exists()`.
  */
 export function containedAssetPath(dir: string, name: string): string | null {

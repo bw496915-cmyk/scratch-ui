@@ -1,13 +1,12 @@
 /**
- * @file packages/ui/src/web_mcp.ts
- * @description W3C / Chrome WebMCP (`navigator.modelContext` / `document.modelContext`)
- * browser-native tool registry for Sports Ops Desk.
+ * W3C / Chrome WebMCP (`navigator.modelContext` / `document.modelContext`) browser-native tool
+ * registry for Sports Ops Desk. Exposes structured, JSON-Schema-backed operational tools directly
+ * inside the authenticated operator tab without screen scraping, fragile DOM actuation, or separate
+ * external API tokens. Fails closed on invalid inputs, gates sensitive mutations through
+ * `ModelContextClient.requestUserInteraction()` when available, and never exposes cookies, CSRF
+ * tokens, session tokens, or raw PII.
  *
- * Exposes structured, JSON-Schema-backed operational tools directly inside the
- * authenticated operator tab without screen scraping, fragile DOM actuation, or
- * separate external API tokens. Fails closed on invalid inputs, gates sensitive
- * mutations through `ModelContextClient.requestUserInteraction()` when available,
- * and never exposes cookies, CSRF tokens, session tokens, or raw PII.
+ * @file Packages/ui/src/web_mcp.ts
  */
 
 import { wagerChannelOf } from "@sportsdesk-ops/contracts"
@@ -162,10 +161,9 @@ function isWebMcpModelContext(value: unknown): value is WebMcpModelContext {
 }
 
 /**
- * Resolves the browser's native WebMCP `ModelContext` surface, checking
- * `navigator.modelContext` first (W3C / Chrome primary entry point) and
- * falling back to `document.modelContext` (updated draft alias).
- * Returns `null` cleanly when WebMCP is unavailable.
+ * Resolves the browser's native WebMCP `ModelContext` surface, checking `navigator.modelContext`
+ * first (W3C / Chrome primary entry point) and falling back to `document.modelContext` (updated
+ * draft alias). Returns `null` cleanly when WebMCP is unavailable.
  */
 export function resolveBrowserModelContext(
   env?: BrowserModelContextEnv,
@@ -1466,9 +1464,9 @@ export function buildSportsDeskWebMcpTools(
 }
 
 /**
- * Registers all Sports Ops Desk WebMCP tools on the given browser `ModelContext`
- * using `registerTool` + `AbortSignal` (or `provideContext` fallback) for clean
- * teardown and duplicate prevention.
+ * Registers all Sports Ops Desk WebMCP tools on the given browser `ModelContext` using
+ * `registerTool` + `AbortSignal` (or `provideContext` fallback) for clean teardown and duplicate
+ * prevention.
  */
 export function registerSportsDeskWebMcpTools(
   modelContext: WebMcpModelContext | null,

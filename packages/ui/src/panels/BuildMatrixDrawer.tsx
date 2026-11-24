@@ -1,13 +1,12 @@
 /**
- * @file packages/ui/src/panels/BuildMatrixDrawer.tsx
- * @description Compile-time `bun:bundle` DCE matrix probe and the CSS Houdini token
- * registry rendered beside it.
+ * Compile-time `bun:bundle` DCE matrix probe and the CSS Houdini token registry rendered beside it.
+ * The table rows come from `GET /api/build-matrix`, which runs `Bun.build` once per target (`prod`,
+ * `dev`, `test`). The header describes the runtime actually serving this page, which is not always
+ * one of those targets: under the Bun HTML dev server the modules are unbundled, so `feature()`
+ * resolves `false` and no branch was eliminated. The two states are labelled separately rather than
+ * merged into one "DCE" claim.
  *
- * The table rows come from `GET /api/build-matrix`, which runs `Bun.build` once per
- * target (`prod`, `dev`, `test`). The header describes the runtime actually serving this
- * page, which is not always one of those targets: under the Bun HTML dev server the
- * modules are unbundled, so `feature()` resolves `false` and no branch was eliminated.
- * The two states are labelled separately rather than merged into one "DCE" claim.
+ * @file Packages/ui/src/panels/BuildMatrixDrawer.tsx
  */
 
 import type React from "react"
@@ -69,8 +68,8 @@ const VISUALLY_HIDDEN: React.CSSProperties = {
 }
 
 /**
- * Branch sentinel probes: core 3 (`PROD`, `DEBUG`, `EXPERIMENTAL`) plus `TEST` &
- * `ANALYTICS` when rows report `hasTestSentinel` / `hasAnalyticsSentinel`.
+ * Branch sentinel probes: core 3 (`PROD`, `DEBUG`, `EXPERIMENTAL`) plus `TEST` & `ANALYTICS` when
+ * rows report `hasTestSentinel` / `hasAnalyticsSentinel`.
  */
 const CORE_SENTINEL_PROBES = [
   { feature: "PROD", key: "hasProdSentinel", label: "PROD Branch" },
@@ -114,8 +113,8 @@ function activeProbesForRow(row: BuildMatrixRow): readonly SentinelProbeDef[] {
 }
 
 /**
- * Flag → description, keyed by plain string so a probe payload carrying an
- * unregistered flag is detectable without a cast.
+ * Flag → description, keyed by plain string so a probe payload carrying an unregistered flag is
+ * detectable without a cast.
  */
 const FEATURE_DESCRIPTIONS: ReadonlyMap<string, string> = new Map(
   FEATURES.map((feature) => [feature, DESCRIPTIONS[feature]] as const),

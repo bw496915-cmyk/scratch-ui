@@ -1,9 +1,9 @@
 /**
  * Browser-safe customer forensic dossier extraction and enrichment helpers.
  *
- * Hydrates structured 4-week parlay protection economics (`docs/backtest-4wk-cfb-nba.json`)
- * and 10-mode graph intelligence (`docs/graph-live-feed.json`) onto `ShowcaseCustomer`
- * rows without guessing unmeasured values.
+ * Hydrates structured 4-week parlay protection economics (`docs/backtest-4wk-cfb-nba.json`) and
+ * 10-mode graph intelligence (`docs/graph-live-feed.json`) onto `ShowcaseCustomer` rows without
+ * guessing unmeasured values.
  */
 import type {
   CustomerActivityOverlapEvent,
@@ -190,8 +190,8 @@ function extractLeadingIpv4(text: string | null): string | null {
 
 /**
  * Index `docs/graph-live-feed.json` (served by `GET /api/graph/live-feed`) by uppercase customer ID
- * so every customer in the feed receives its real Cross-Office Beard Bridge, Mode 6 Activity Overlap,
- * Mode 1 Telemetry Overview, Wallet Profile links, and Flagged Tickets.
+ * so every customer in the feed receives its real Cross-Office Beard Bridge, Mode 6 Activity
+ * Overlap, Mode 1 Telemetry Overview, Wallet Profile links, and Flagged Tickets.
  */
 export function indexGraphLiveFeedForensics(
   rawFeed: unknown,
@@ -420,8 +420,8 @@ export function mergeForensicDossiers(
 }
 
 /**
- * Enrich profile rows with graph-live-feed forensic intelligence (Cross-Office Beard Bridge,
- * Mode 6 non-overlap distinction, Mode 1 telemetry freshness, and blocked flagged tickets).
+ * Enrich profile rows with graph-live-feed forensic intelligence (Cross-Office Beard Bridge, Mode 6
+ * non-overlap distinction, Mode 1 telemetry freshness, and blocked flagged tickets).
  */
 export function applyGraphForensicsToProfiles(
   profiles: readonly ShowcaseCustomer[],

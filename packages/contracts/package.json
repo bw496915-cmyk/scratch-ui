@@ -16,5 +16,11 @@
     "./shadow-pricing": "./src/shadow_pricing.ts",
     "./features": "./src/features.ts",
     "./dashboard-hydration": "./src/dashboard_hydration.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "lint": "tsc --noEmit --project tsconfig.json",
+    "format": "bun fmt .",
+    "format:check": "bun fmt --check ."
   }
 }

@@ -1,6 +1,8 @@
 /**
- * @file packages/backend/src/bet_ticker.ts
- * @description Bet-Ticker (`getBetTicker` + `Report/Pending` + R2 Bridge 3a) service with sentinel `ALERT`/`BLOCKED` twin exclusion.
+ * Bet-Ticker (`getBetTicker` + `Report/Pending` + R2 Bridge 3a) service with sentinel
+ * `ALERT`/`BLOCKED` twin exclusion.
+ *
+ * @file Packages/backend/src/bet_ticker.ts
  */
 
 import { readFile } from "node:fs/promises"

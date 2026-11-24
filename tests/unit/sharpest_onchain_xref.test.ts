@@ -2,10 +2,7 @@ import { describe, expect, test } from "bun:test"
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 
-import {
-  applyGraphForensicsToProfiles,
-  indexGraphLiveFeedForensics,
-} from "../../packages/ui/src/customer_forensics.ts"
+import { applyGraphForensicsToProfiles, indexGraphLiveFeedForensics } from "../../packages/ui/src/customer_forensics.ts"
 import { backtestRowsToProfiles } from "../../packages/ui/src/profile_rows.ts"
 import {
   buildSharpestOnChainXrefReport,

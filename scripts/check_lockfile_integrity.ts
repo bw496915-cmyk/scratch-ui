@@ -1,11 +1,16 @@
 /**
- * @file scripts/check_lockfile_integrity.ts
- * @description Composite CI gate verifying:
- * 1. Installed Bun runtime matches pinned `.bun-version` (preventing silent `hasInstallScript` / `libc` drops).
+ * Composite CI gate verifying:
+ *
+ * 1. Installed Bun runtime matches pinned `.bun-version` (preventing silent `hasInstallScript` /
+ *    `libc` drops).
  * 2. `bun.lock` retains `lockfileVersion >= 2`, `hasInstallScript`, and `libc` optional-dep metadata.
- * 3. `bunfig.toml` enforces `env = false`, `[install].ignoreScripts = true`, and `[install].minimumReleaseAge`.
- * 4. `package.json` declares `publishConfig.tag` (guarding prerelease versions such as `v1.01.23-next`).
+ * 3. `bunfig.toml` enforces `env = false`, `[install].ignoreScripts = true`, and
+ *    `[install].minimumReleaseAge`.
+ * 4. `package.json` declares `publishConfig.tag` (guarding prerelease versions such as
+ *    `v1.01.23-next`).
  * 5. `bun.lock` has no uncommitted schema drift when running inside a git repository.
+ *
+ * @file Scripts/check_lockfile_integrity.ts
  */
 
 import { execFileSync } from "node:child_process"

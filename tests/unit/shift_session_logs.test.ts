@@ -223,9 +223,7 @@ describe("Shift Session Logs API (/api/shift/logs)", () => {
     expect(sweepRes.status).toBe(200)
 
     // Query scoped to current shift start
-    const listRes = await api.fetch(
-      new Request(`http://localhost/api/shift/logs?since=${shiftStartMs}&limit=25`),
-    )
+    const listRes = await api.fetch(new Request(`http://localhost/api/shift/logs?since=${shiftStartMs}&limit=25`))
     expect(listRes.status).toBe(200)
     expect(listRes.headers.get("x-sportsdesk-endpoint")).toBe("/api/shift/logs")
     const payload = (await listRes.json()) as ShiftSessionLogsResponse

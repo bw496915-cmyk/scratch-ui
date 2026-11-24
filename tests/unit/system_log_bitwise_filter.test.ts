@@ -122,36 +122,20 @@ describe("system_log_bitwise_filter: SoA index & rapid evaluation", () => {
     expect(index.bitCounts).toEqual({ error: 2, warn: 1, watch: 1, info: 1 })
 
     const reusableBitmap = new Uint8Array(index.length)
-    const res1 = evaluateBitwiseLogIndex(
-      index,
-      parseBitwiseSeverityQuery("crit|high BB55103"),
-      reusableBitmap,
-    )
+    const res1 = evaluateBitwiseLogIndex(index, parseBitwiseSeverityQuery("crit|high BB55103"), reusableBitmap)
     expect(res1.visible).toBe(reusableBitmap)
     expect(res1.matchedCount).toBe(2)
     expect(Array.from(res1.visible)).toEqual([1, 1, 0, 0, 0])
 
-    const res2 = evaluateBitwiseLogIndex(
-      index,
-      parseBitwiseSeverityQuery("-info -watch"),
-      reusableBitmap,
-    )
+    const res2 = evaluateBitwiseLogIndex(index, parseBitwiseSeverityQuery("-info -watch"), reusableBitmap)
     expect(res2.matchedCount).toBe(3)
     expect(Array.from(res2.visible)).toEqual([1, 1, 0, 0, 1])
 
-    const resZero = evaluateBitwiseLogIndex(
-      index,
-      parseBitwiseSeverityQuery("mask:0x00"),
-      reusableBitmap,
-    )
+    const resZero = evaluateBitwiseLogIndex(index, parseBitwiseSeverityQuery("mask:0x00"), reusableBitmap)
     expect(resZero.matchedCount).toBe(0)
     expect(Array.from(resZero.visible)).toEqual([0, 0, 0, 0, 0])
 
-    const resPhrase = evaluateBitwiseLogIndex(
-      index,
-      parseBitwiseSeverityQuery('"webhook 502"'),
-      reusableBitmap,
-    )
+    const resPhrase = evaluateBitwiseLogIndex(index, parseBitwiseSeverityQuery('"webhook 502"'), reusableBitmap)
     expect(resPhrase.matchedCount).toBe(1)
     expect(Array.from(resPhrase.visible)).toEqual([1, 0, 0, 0, 0])
 
@@ -163,11 +147,7 @@ describe("system_log_bitwise_filter: SoA index & rapid evaluation", () => {
     expect(resLiteralAndExclude.matchedCount).toBe(3)
     expect(Array.from(resLiteralAndExclude.visible)).toEqual([1, 1, 1, 0, 0])
 
-    const resLiteralWatch = evaluateBitwiseLogIndex(
-      index,
-      parseBitwiseSeverityQuery("msg:watch"),
-      reusableBitmap,
-    )
+    const resLiteralWatch = evaluateBitwiseLogIndex(index, parseBitwiseSeverityQuery("msg:watch"), reusableBitmap)
     expect(resLiteralWatch.matchedCount).toBe(1)
     expect(Array.from(resLiteralWatch.visible)).toEqual([0, 0, 1, 0, 0])
 

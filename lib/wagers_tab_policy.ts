@@ -1,19 +1,14 @@
 /**
- * @file lib/wagers_tab_policy.ts
- * @description Runtime reader for `packages/ui/src/config/wagers.toml`.
- *
- * The UI inlines that TOML at bundle time. The API reads the *same file* at
- * runtime so an operator can verify which panel policy the running server
- * carries without knowing the bundle's content hash:
- *
- *   curl -s http://127.0.0.1:4021/api/wagers | jq -r .policy_version
- *   → wagers-policy/v1
- *
- * `Bun.TOML.parse` is native, and the stat cache means editing the file is
- * picked up on the next request — no restart and no rebuild (the UI still needs
- * its dev watcher to re-bundle). Read the file as text: a file-backed Blob
- * (`Bun.file(path)`) throws in `TOML.parse` on 1.4.4; quoted dates only, since an
+ * Runtime reader for `packages/ui/src/config/wagers.toml`. The UI inlines that TOML at bundle time.
+ * The API reads the _same file_ at runtime so an operator can verify which panel policy the running
+ * server carries without knowing the bundle's content hash: curl -s
+ * http://127.0.0.1:4021/api/wagers | jq -r .policy_version → wagers-policy/v1 `Bun.TOML.parse` is
+ * native, and the stat cache means editing the file is picked up on the next request — no restart
+ * and no rebuild (the UI still needs its dev watcher to re-bundle). Read the file as text: a
+ * file-backed Blob (`Bun.file(path)`) throws in `TOML.parse` on 1.4.4; quoted dates only, since an
  * unquoted date parses to `Temporal.PlainDate`.
+ *
+ * @file Lib/wagers_tab_policy.ts
  */
 
 import { existsSync } from "node:fs"
@@ -56,11 +51,11 @@ export function wagersTabPolicyPath(): string {
 }
 
 /**
- * Read the policy stamp, or `null` when the file is absent (a deployment that
- * ships without the UI package still serves the feed, just without the probe).
+ * Read the policy stamp, or `null` when the file is absent (a deployment that ships without the UI
+ * package still serves the feed, just without the probe).
  *
- * A present-but-invalid file throws: a silently missing version would make the
- * probe lie, which is worse than an error.
+ * A present-but-invalid file throws: a silently missing version would make the probe lie, which is
+ * worse than an error.
  */
 export async function loadWagersTabPolicyStamp(
   path: string = wagersTabPolicyPath(),

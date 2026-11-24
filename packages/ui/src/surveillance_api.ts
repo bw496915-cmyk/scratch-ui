@@ -1,7 +1,8 @@
 /**
- * @file packages/ui/src/surveillance_api.ts
- * @description Canonical Surveillance API URL builders, header alignment helpers,
- * Bun/Window runtime inspection, and Blob export builders for `/?tab=surveillance`.
+ * Canonical Surveillance API URL builders, header alignment helpers, Bun/Window runtime inspection,
+ * and Blob export builders for `/?tab=surveillance`.
+ *
+ * @file Packages/ui/src/surveillance_api.ts
  */
 
 import type { ReverseDnsForensicsView } from "../../../lib/reverse_dns_forensics.ts"
@@ -59,8 +60,8 @@ function defaultSurveillanceWindow(): SurveillanceWindowLike | null {
 }
 
 /**
- * Build independent `URL` objects for every Surveillance API endpoint against the
- * resolved Base URL, keeping each endpoint as its own mutable-safe `URL` instance.
+ * Build independent `URL` objects for every Surveillance API endpoint against the resolved Base
+ * URL, keeping each endpoint as its own mutable-safe `URL` instance.
  */
 export function buildSurveillanceEndpointUrls(
   options: {
@@ -108,8 +109,8 @@ export function buildSurveillanceEndpointUrls(
 }
 
 /**
- * Build a separate `URL` object representing `/?tab=surveillance` state without
- * mutating `Window.location`.
+ * Build a separate `URL` object representing `/?tab=surveillance` state without mutating
+ * `Window.location`.
  */
 export function buildSurveillanceWindowUrl(
   patch: {
@@ -209,8 +210,8 @@ export interface SurveillanceSnapshotExportInput {
 }
 
 /**
- * Serialize the complete Surveillance URL state, separate endpoint URLs,
- * aligned headers, Bun/Window globals, and telemetry into a `Blob`.
+ * Serialize the complete Surveillance URL state, separate endpoint URLs, aligned headers,
+ * Bun/Window globals, and telemetry into a `Blob`.
  */
 export function buildSurveillanceSnapshotBlob(input: SurveillanceSnapshotExportInput): Blob {
   const urls = buildSurveillanceEndpointUrls({

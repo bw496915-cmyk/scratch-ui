@@ -1,7 +1,8 @@
 /**
- * @file scripts/check_route_surface.ts
- * @description Phase 3 guardrail: statically inspects server.ts and packages/api/src/router.ts
- * to guarantee no unauthenticated bypass routes or fail-open auth hooks are reintroduced.
+ * Phase 3 guardrail: statically inspects server.ts and packages/api/src/router.ts to guarantee no
+ * unauthenticated bypass routes or fail-open auth hooks are reintroduced.
+ *
+ * @file Scripts/check_route_surface.ts
  */
 
 import { readFileSync } from "node:fs"

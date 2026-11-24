@@ -33,11 +33,7 @@ describe("DashboardBreadcrumbs — Hierarchy & Parent Navigation", () => {
 
   test("child tabs navigate up to their parent section landing tab", () => {
     const downlinesTrail = buildDashboardBreadcrumbs({ activeTab: "rankings" })
-    expect(downlinesTrail.map((t) => t.label)).toEqual([
-      "Dashboard",
-      "Bettor Intelligence",
-      "Downlines",
-    ])
+    expect(downlinesTrail.map((t) => t.label)).toEqual(["Dashboard", "Bettor Intelligence", "Downlines"])
     const parent = resolveParentBreadcrumb(downlinesTrail)
     expect(parent?.label).toBe("Bettor Intelligence")
     expect(parent?.action).toEqual({
@@ -47,11 +43,7 @@ describe("DashboardBreadcrumbs — Hierarchy & Parent Navigation", () => {
     })
 
     const r2Trail = buildDashboardBreadcrumbs({ activeTab: "r2" })
-    expect(r2Trail.map((t) => t.label)).toEqual([
-      "Dashboard",
-      "Platform & Infrastructure",
-      "R2 Pipeline",
-    ])
+    expect(r2Trail.map((t) => t.label)).toEqual(["Dashboard", "Platform & Infrastructure", "R2 Pipeline"])
     expect(resolveParentBreadcrumb(r2Trail)?.action).toEqual({
       kind: "navigate-tab",
       tab: "status-dashboard",
@@ -105,36 +97,21 @@ describe("DashboardBreadcrumbs — Hierarchy & Parent Navigation", () => {
       activeTab: "rankings",
       selectedAgentId: "BIGDAD",
     })
-    expect(agentTrail.map((t) => t.label)).toEqual([
-      "Dashboard",
-      "Bettor Intelligence",
-      "Downlines",
-      "Agent BIGDAD",
-    ])
+    expect(agentTrail.map((t) => t.label)).toEqual(["Dashboard", "Bettor Intelligence", "Downlines", "Agent BIGDAD"])
     expect(resolveParentBreadcrumb(agentTrail)?.label).toBe("Downlines")
 
     const alertsTrail = buildDashboardBreadcrumbs({
       activeTab: "alerts",
       alertFilter: "FAILED",
     })
-    expect(alertsTrail.map((t) => t.label)).toEqual([
-      "Dashboard",
-      "Operations & Telemetry",
-      "DLQ & Alerts",
-      "FAILED",
-    ])
+    expect(alertsTrail.map((t) => t.label)).toEqual(["Dashboard", "Operations & Telemetry", "DLQ & Alerts", "FAILED"])
     expect(resolveParentBreadcrumb(alertsTrail)?.label).toBe("DLQ & Alerts")
 
     const logsTrail = buildDashboardBreadcrumbs({
       activeTab: "system-logs",
       systemLogSeverityFilter: "CRITICAL",
     })
-    expect(logsTrail.map((t) => t.label)).toEqual([
-      "Dashboard",
-      "Operations & Telemetry",
-      "System Logs",
-      "CRITICAL",
-    ])
+    expect(logsTrail.map((t) => t.label)).toEqual(["Dashboard", "Operations & Telemetry", "System Logs", "CRITICAL"])
     expect(resolveParentBreadcrumb(logsTrail)?.label).toBe("System Logs")
   })
 
@@ -153,9 +130,8 @@ describe("DashboardBreadcrumbs — Hierarchy & Parent Navigation", () => {
       resolveDiscoveryDimensionId,
       serializeDashboardHash,
     } = await import("../../packages/ui/src/discovery_hash.ts")
-    const { buildDashboardSearch, readDashboardUrlState, writeDashboardUrl } = await import(
-      "../../packages/ui/src/url_state.ts"
-    )
+    const { buildDashboardSearch, readDashboardUrlState, writeDashboardUrl } =
+      await import("../../packages/ui/src/url_state.ts")
 
     expect(DISCOVERY_DIMENSION_IDS).toEqual([
       "directional-asymmetry",
@@ -252,9 +228,9 @@ describe("DashboardBreadcrumbs — Hierarchy & Parent Navigation", () => {
     expect(permalink).toBe(
       "https://ops.example.com/app?tab=shadow&dim=live-realized-net-spread&apiBase=http%3A%2F%2F127.0.0.1%3A4021#/risk-exposure/shadow/dim:live-realized-net-spread",
     )
-    expect(
-      buildCanonicalDashboardHref({ activeTab: "risk-overview" }),
-    ).toBe("?tab=risk-overview#/risk-exposure/risk-overview")
+    expect(buildCanonicalDashboardHref({ activeTab: "risk-overview" })).toBe(
+      "?tab=risk-overview#/risk-exposure/risk-overview",
+    )
 
     // URL state reads structured hash & writes optional canonical hash cleanly
     const fromHash = readDashboardUrlState(

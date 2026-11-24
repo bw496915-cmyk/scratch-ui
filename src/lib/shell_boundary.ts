@@ -1,11 +1,13 @@
 /**
- * @file src/lib/shell_boundary.ts
- * @description L1 boundary module unifying:
- *  1. Strict Bun.Terminal / operator command + flag validation (no shell metacharacters,
- *     globs, quotes, subshells, or unallowlisted CLI flag injection).
- *  2. Bun.$ & subprocess guardrails (banning `{ raw }`, `sh -c`/`bash -c`, and
- *     unguarded `--flag` positional operand injection).
- *  3. Bun Profile (`ProfileTheme`) <-> Bun.Terminal PTY dimension & inspect bridging.
+ * L1 boundary module unifying:
+ *
+ * 1. Strict Bun.Terminal / operator command + flag validation (no shell metacharacters, globs, quotes,
+ *    subshells, or unallowlisted CLI flag injection).
+ * 2. Bun.$ & subprocess guardrails (banning `{ raw }`, `sh -c`/`bash -c`, and unguarded `--flag`
+ *    positional operand injection).
+ * 3. Bun Profile (`ProfileTheme`) <-> Bun.Terminal PTY dimension & inspect bridging.
+ *
+ * @file Src/lib/shell_boundary.ts
  */
 
 import { DEFAULT_PROFILE_THEME, type ProfileTheme } from "../profile/types.ts"
@@ -30,8 +32,8 @@ export class ShellBoundaryError extends Error {
 export const MAX_TERMINAL_CMD_LEN = 256
 
 /**
- * Canonical allowlist of read-only desk terminal command heads.
- * Shared by HTTP auth, API router, and terminal query engine.
+ * Canonical allowlist of read-only desk terminal command heads. Shared by HTTP auth, API router,
+ * and terminal query engine.
  */
 export const ALLOWED_TERMINAL_COMMAND_HEADS = new Set<string>([
   "help",
@@ -152,8 +154,8 @@ export const ALLOWED_TERMINAL_COMMAND_HEADS = new Set<string>([
 ])
 
 /**
- * Explicit allowlist of CLI flags permitted inside operator terminal commands.
- * Prevents arbitrary `--flag` smuggling even inside read-only terminal queries.
+ * Explicit allowlist of CLI flags permitted inside operator terminal commands. Prevents arbitrary
+ * `--flag` smuggling even inside read-only terminal queries.
  */
 export const ALLOWED_TERMINAL_FLAGS = new Set<string>([
   "--depth",
@@ -210,8 +212,8 @@ export const ALLOWED_TERMINAL_FLAGS = new Set<string>([
 ])
 
 /**
- * Base metacharacters forbidden everywhere (pipes, chains, redirections,
- * backticks, variable substitution, quotes, subshells, braces, brackets, globs, tilde, history, NUL/CRLF).
+ * Base metacharacters forbidden everywhere (pipes, chains, redirections, backticks, variable
+ * substitution, quotes, subshells, braces, brackets, globs, tilde, history, NUL/CRLF).
  */
 export const SHELL_METACHAR_RE = /[;|&`$><\r\n\0\\"'\(\){}\[\]?~!]/
 
@@ -222,8 +224,8 @@ export type TerminalCommandValidationResult =
   | { readonly ok: false; readonly error: string }
 
 /**
- * Validates an operator terminal command against length, shell metacharacters,
- * command-head allowlist, and CLI flag allowlist rules.
+ * Validates an operator terminal command against length, shell metacharacters, command-head
+ * allowlist, and CLI flag allowlist rules.
  */
 export function validateTerminalCommand(rawCommand: unknown): TerminalCommandValidationResult {
   if (typeof rawCommand !== "string") {
@@ -307,8 +309,8 @@ function basenameLower(binary: string): string {
 
 export interface SafeSpawnArgvOptions {
   /**
-   * When true, requires positional operand arguments after any flags to be preceded
-   * by `--` (preventing `--upload-pack` / `-oProxyCommand` flag smuggling).
+   * When true, requires positional operand arguments after any flags to be preceded by `--`
+   * (preventing `--upload-pack` / `-oProxyCommand` flag smuggling).
    */
   readonly requireDoubleDashBeforeOperands?: boolean
   /** Minimum index where user-supplied positional operands start (default: 1). */
@@ -316,9 +318,9 @@ export interface SafeSpawnArgvOptions {
 }
 
 /**
- * Runtime guard for `Bun.spawn` / `execFileSync` argument arrays:
- * blocks nested shell invocations (`sh -c`, `bash -c`, `cmd /c`), NUL bytes,
- * and optional unguarded `--flag` smuggling in positional operands.
+ * Runtime guard for `Bun.spawn` / `execFileSync` argument arrays: blocks nested shell invocations
+ * (`sh -c`, `bash -c`, `cmd /c`), NUL bytes, and optional unguarded `--flag` smuggling in
+ * positional operands.
  */
 export function assertSafeSpawnArgv(
   argv: readonly string[],
@@ -380,8 +382,8 @@ const SHELL_TRUE_RE = /\bshell\s*:\s*true\b/
 const SH_C_SUBSHELL_RE = /\b(?:sh|bash|zsh|dash|ksh|ash)\b[^;\n]*?\s-[a-zA-Z]*c\b/
 
 /**
- * Static audit scanner detecting `Bun.$` `{ raw: ... }` escaping bypasses,
- * `shell: true` subprocess spawns, and `sh -c`/`bash -c` handoffs.
+ * Static audit scanner detecting `Bun.$` `{ raw: ... }` escaping bypasses, `shell: true` subprocess
+ * spawns, and `sh -c`/`bash -c` handoffs.
  */
 export function scanSourceForUnsafeShellPatterns(
   sourceText: string,
@@ -442,8 +444,8 @@ function clampBoundedInt(value: unknown, fallback: number, min: number, max: num
 }
 
 /**
- * Safely bridges a session's `ProfileTheme` with bounded `Bun.Terminal` PTY
- * dimensions and `Bun.inspect` / `Bun.markdown.ansi` options.
+ * Safely bridges a session's `ProfileTheme` with bounded `Bun.Terminal` PTY dimensions and
+ * `Bun.inspect` / `Bun.markdown.ansi` options.
  */
 export function resolveProfileTerminalOptions(
   profileTheme?: ProfileTheme,
@@ -478,8 +480,8 @@ export function resolveProfileTerminalOptions(
 }
 
 /**
- * Builds scrubbed, dimension-bounded options for `Bun.Terminal` PTY spawning
- * (never forwarding `BUN_OPTIONS` or server secret env vars into child PTYs).
+ * Builds scrubbed, dimension-bounded options for `Bun.Terminal` PTY spawning (never forwarding
+ * `BUN_OPTIONS` or server secret env vars into child PTYs).
  */
 export function buildBunTerminalSpawnOptions(options: {
   readonly profileTheme?: ProfileTheme

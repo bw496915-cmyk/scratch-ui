@@ -9,18 +9,16 @@ import {
   parseProbitRho,
 } from "../../packages/ui/src/customer_forensics.ts"
 import { backtestRowsToProfiles } from "../../packages/ui/src/profile_rows.ts"
-import {
-  classifyCustomerProfile,
-  customerMatchesSearch,
-} from "../../packages/ui/src/profile_taxonomy.ts"
+import { classifyCustomerProfile, customerMatchesSearch } from "../../packages/ui/src/profile_taxonomy.ts"
 
 const ROOT = resolve(import.meta.dir, "../..")
-const backtestRaw = JSON.parse(
-  readFileSync(resolve(ROOT, "docs/backtest-4wk-cfb-nba.json"), "utf8"),
-) as { customerLeaderboard: Record<string, unknown>[] }
-const graphLiveFeedRaw = JSON.parse(
-  readFileSync(resolve(ROOT, "docs/graph-live-feed.json"), "utf8"),
-) as Record<string, unknown>
+const backtestRaw = JSON.parse(readFileSync(resolve(ROOT, "docs/backtest-4wk-cfb-nba.json"), "utf8")) as {
+  customerLeaderboard: Record<string, unknown>[]
+}
+const graphLiveFeedRaw = JSON.parse(readFileSync(resolve(ROOT, "docs/graph-live-feed.json"), "utf8")) as Record<
+  string,
+  unknown
+>
 
 describe("CHURN_059 forensic backtest & 10-mode graph enrichment", () => {
   test("parses Probit rho and formats stale telemetry freshness durations", () => {
@@ -89,14 +87,10 @@ describe("CHURN_059 forensic backtest & 10-mode graph enrichment", () => {
     expect(dossier.beardBridge!.mfcsCompositeScore).toBe(93)
     expect(dossier.beardBridge!.modeASessionDwellSeconds).toBe(4.6)
     expect(dossier.beardBridge!.activeRotations).toEqual(["ROT 5501", "ROT 501"])
-    expect(dossier.beardBridge!.crossOfficeTwins).toEqual([
-      { loginId: "CHURN_049", officeAgentId: "SOUTHSHORE" },
-    ])
+    expect(dossier.beardBridge!.crossOfficeTwins).toEqual([{ loginId: "CHURN_049", officeAgentId: "SOUTHSHORE" }])
 
     expect(dossier.activityOverlap).toBeDefined()
-    expect(dossier.activityOverlap!.distinctionVerdict).toBe(
-      "NEARBY_POINT_EVENTS_WITHOUT_SESSION_OVERLAP",
-    )
+    expect(dossier.activityOverlap!.distinctionVerdict).toBe("NEARBY_POINT_EVENTS_WITHOUT_SESSION_OVERLAP")
     expect(dossier.activityOverlap!.gapBetweenWindowsSeconds).toBe(24)
     expect(dossier.activityOverlap!.overlapDurationSeconds).toBe(0)
 
@@ -119,9 +113,7 @@ describe("CHURN_059 forensic backtest & 10-mode graph enrichment", () => {
 
     // Symmetric twin linkage on CHURN_049
     const churn049Dossier = forensicsIndex.get("CHURN_049")
-    expect(churn049Dossier?.beardBridge?.crossOfficeTwins).toEqual([
-      { loginId: "CHURN_059", officeAgentId: "LAKERS" },
-    ])
+    expect(churn049Dossier?.beardBridge?.crossOfficeTwins).toEqual([{ loginId: "CHURN_059", officeAgentId: "LAKERS" }])
   })
 
   test("derives forensic taxonomy tags and matches forensic search terms for CHURN_059", () => {

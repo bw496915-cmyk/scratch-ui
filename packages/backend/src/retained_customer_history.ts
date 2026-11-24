@@ -1,4 +1,7 @@
-/** Offline graded-export projection. Inputs are retained source observations, not verified lifecycle records. */
+/**
+ * Offline graded-export projection. Inputs are retained source observations, not verified lifecycle
+ * records.
+ */
 import type { CustomerRetainedHistory } from "@sportsdesk-ops/contracts"
 function record(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v)

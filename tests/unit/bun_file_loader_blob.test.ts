@@ -26,18 +26,16 @@ import { BunRuntimeSurfaceSection } from "../../packages/ui/src/panels/BunRuntim
 const SAMPLE_PNG_SOURCE = resolve("public/assets/branding/sportsdesk-emblem-64.png")
 const NODE_INCLUDE_DIR = "/usr/local/include/node"
 
-/**
- * Minimal valid WebAssembly module exporting `add(i32, i32) -> i32`.
- */
+/** Minimal valid WebAssembly module exporting `add(i32, i32) -> i32`. */
 const MINIMAL_ADD_WASM = new Uint8Array([
-  0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x07, 0x01, 0x60, 0x02, 0x7f, 0x7f, 0x01,
-  0x7f, 0x03, 0x02, 0x01, 0x00, 0x07, 0x07, 0x01, 0x03, 0x61, 0x64, 0x64, 0x00, 0x00, 0x0a, 0x09,
-  0x01, 0x07, 0x00, 0x20, 0x00, 0x20, 0x01, 0x6a, 0x0b,
+  0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x07, 0x01, 0x60, 0x02, 0x7f, 0x7f, 0x01, 0x7f, 0x03, 0x02,
+  0x01, 0x00, 0x07, 0x07, 0x01, 0x03, 0x61, 0x64, 0x64, 0x00, 0x00, 0x0a, 0x09, 0x01, 0x07, 0x00, 0x20, 0x00, 0x20,
+  0x01, 0x6a, 0x0b,
 ])
 
 /**
- * Minimal C N-API v4 addon using `pthread` + `napi_create_threadsafe_function`
- * (`startWorkerThread(input, callback)`) + `addonVersion()`.
+ * Minimal C N-API v4 addon using `pthread` + `napi_create_threadsafe_function` (`startWorkerThread(input, callback)`) +
+ * `addonVersion()`.
  */
 const NAPI_TSFN_ADDON_C = `
 #define NAPI_VERSION 4
@@ -126,16 +124,7 @@ function compileTsfnAddon(dir: string): string {
   const cPath = join(dir, "addon.c")
   const outPath = join(dir, "addon.node")
   writeFileSync(cPath, NAPI_TSFN_ADDON_C)
-  const res = Bun.spawnSync([
-    "cc",
-    "-shared",
-    "-fPIC",
-    "-pthread",
-    `-I${NODE_INCLUDE_DIR}`,
-    cPath,
-    "-o",
-    outPath,
-  ])
+  const res = Bun.spawnSync(["cc", "-shared", "-fPIC", "-pthread", `-I${NODE_INCLUDE_DIR}`, cPath, "-o", outPath])
   if (res.exitCode !== 0) {
     throw new Error(`Failed to compile N-API TSFN addon: ${res.stderr.toString()}`)
   }
@@ -144,9 +133,7 @@ function compileTsfnAddon(dir: string): string {
 
 function createSeedSqliteDb(dbPath: string): void {
   const db = new Database(dbPath)
-  db.exec(
-    "CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT); INSERT INTO items (name) VALUES ('alpha');",
-  )
+  db.exec("CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT); INSERT INTO items (name) VALUES ('alpha');")
   db.close()
 }
 
@@ -178,12 +165,7 @@ describe("1. Contracts, Dashboard Schema & Pipeline Snippet Generator", () => {
       "unknown-ext-compile-mime",
     ])
     expect(BUN_FILE_BLOB_CONSUMERS).toHaveLength(6)
-    expect(BUN_ASSET_LOADER_COMPARISON.map((r) => r.loader)).toEqual([
-      "file",
-      "napi",
-      "yaml",
-      "sqlite",
-    ])
+    expect(BUN_ASSET_LOADER_COMPARISON.map((r) => r.loader)).toEqual(["file", "napi", "yaml", "sqlite"])
     expect(BUN_FILE_LOADER_DASHBOARD_CONTRACT.subTabId).toBe("file-loader")
     expect(BUN_FILE_LOADER_DASHBOARD_CONTRACT.probeStripFields).toHaveLength(4)
     expect(BUN_FILE_LOADER_DASHBOARD_CONTRACT.workbenchCodeTabs).toEqual([
@@ -208,9 +190,7 @@ describe("1. Contracts, Dashboard Schema & Pipeline Snippet Generator", () => {
       outdir: "./dist",
     })
     expect(bunEmissions).toHaveLength(5)
-    expect(bunEmissions.find((e) => e.id === "png")?.emittedPath).toMatch(
-      /^\.\/dist\/assets\/logo-[0-9a-f]{8}\.png$/,
-    )
+    expect(bunEmissions.find((e) => e.id === "png")?.emittedPath).toMatch(/^\.\/dist\/assets\/logo-[0-9a-f]{8}\.png$/)
     expect(bunEmissions.find((e) => e.id === "wasm")?.inferredMime).toBe("application/wasm")
     expect(bunEmissions.find((e) => e.id === "node")?.emittedPath).toBe("./dist/addon.node")
     expect(bunEmissions.find((e) => e.id === "sqlite")?.runtimeValueType).toBe("database")
@@ -231,13 +211,9 @@ describe("1. Contracts, Dashboard Schema & Pipeline Snippet Generator", () => {
     expect(snippets.compileCommand).toContain("--compile --outfile ./dist/app")
     expect(snippets.buildApiTs).toContain("metafile: true")
     expect(snippets.runtimeAppTs).toContain('require("./addon.node")')
-    expect(snippets.runtimeAppTs).toContain(
-      "WebAssembly.instantiate(await Bun.file(wasmUrl).bytes())",
-    )
+    expect(snippets.runtimeAppTs).toContain("WebAssembly.instantiate(await Bun.file(wasmUrl).bytes())")
     expect(snippets.runtimeAppTs).toContain('seedDb.exec("PRAGMA query_only = ON")')
-    expect(snippets.ciPackageJson).toContain(
-      "bun test --reporter=junit --reporter-outfile=reports/junit.xml",
-    )
+    expect(snippets.ciPackageJson).toContain("bun test --reporter=junit --reporter-outfile=reports/junit.xml")
   })
 })
 
@@ -293,10 +269,7 @@ describe("2. Loaders / Hashing & Bun.build({ metafile: true }) Byte Attribution"
         result as unknown as {
           metafile?: {
             inputs: Record<string, { bytes: number }>
-            outputs: Record<
-              string,
-              { bytes: number; inputs: Record<string, { bytesInOutput: number }> }
-            >
+            outputs: Record<string, { bytes: number; inputs: Record<string, { bytesInOutput: number }> }>
           }
         }
       ).metafile
@@ -309,18 +282,10 @@ describe("2. Loaders / Hashing & Bun.build({ metafile: true }) Byte Attribution"
       expect(jsOutput!.bytes).toBeGreaterThan(0)
       const attributedInputs = Object.entries(jsOutput!.inputs)
       expect(attributedInputs.length).toBeGreaterThanOrEqual(4)
-      expect(attributedInputs.some(([k, v]) => k.endsWith("logo.png") && v.bytesInOutput > 0)).toBe(
-        true,
-      )
-      expect(
-        attributedInputs.some(([k, v]) => k.endsWith("payload.weird") && v.bytesInOutput > 0),
-      ).toBe(true)
-      expect(
-        attributedInputs.some(([k, v]) => k.endsWith("kernel.wasm") && v.bytesInOutput > 0),
-      ).toBe(true)
-      expect(
-        attributedInputs.some(([k, v]) => k.endsWith("config.yaml") && v.bytesInOutput > 0),
-      ).toBe(true)
+      expect(attributedInputs.some(([k, v]) => k.endsWith("logo.png") && v.bytesInOutput > 0)).toBe(true)
+      expect(attributedInputs.some(([k, v]) => k.endsWith("payload.weird") && v.bytesInOutput > 0)).toBe(true)
+      expect(attributedInputs.some(([k, v]) => k.endsWith("kernel.wasm") && v.bytesInOutput > 0)).toBe(true)
+      expect(attributedInputs.some(([k, v]) => k.endsWith("config.yaml") && v.bytesInOutput > 0)).toBe(true)
 
       // Assert CLI --metafile=<path> and --metafile-md=<path> parity
       const cliOut = join(workDir, "dist-cli")
@@ -572,14 +537,7 @@ describe("5. SQLite Embed Edge Case in --compile (Ephemeral :memory: vs SQLITE_R
 
       const binPath = join(workDir, "sqlite-app")
       const build = Bun.spawnSync(
-        [
-          process.execPath,
-          "build",
-          join(workDir, "sqlite_entry.ts"),
-          "--compile",
-          "--outfile",
-          binPath,
-        ],
+        [process.execPath, "build", join(workDir, "sqlite_entry.ts"), "--compile", "--outfile", binPath],
         { cwd: workDir },
       )
       expect(build.exitCode).toBe(0)
@@ -642,12 +600,9 @@ describe("6. Unified --compile Matrix (PNG + .weird + YAML + WASM + Real N-API T
         join(srcDir, "esm_napi_edge.ts"),
         'import addon from "./addon.node"; console.log(addon.addonVersion());',
       )
-      const esmNapiDev = Bun.spawnSync(
-        [process.execPath, "run", join(srcDir, "esm_napi_edge.ts")],
-        {
-          cwd: srcDir,
-        },
-      )
+      const esmNapiDev = Bun.spawnSync([process.execPath, "run", join(srcDir, "esm_napi_edge.ts")], {
+        cwd: srcDir,
+      })
       expect(esmNapiDev.exitCode).not.toBe(0)
       expect(esmNapiDev.stderr.toString()).toContain("use require() or process.dlopen")
 
@@ -838,9 +793,7 @@ describe("7. API Loader, ConfigStatusStore & 07. file Loader Dashboard Contract 
     expect(audit.fileLoaderProbe?.sampleAsset?.exists).toBe(true)
     expect(audit.fileLoaderProbe?.sampleAsset?.type).toBe("image/png")
     expect(audit.fileLoaderProbe?.sampleAsset?.sliceByteLength).toBe(64)
-    expect(audit.fileLoaderProbe?.sampleAsset?.unknownExtFallbackMime).toBe(
-      "application/octet-stream",
-    )
+    expect(audit.fileLoaderProbe?.sampleAsset?.unknownExtFallbackMime).toBe("application/octet-stream")
 
     const store = createConfigStatusStore({
       env: {

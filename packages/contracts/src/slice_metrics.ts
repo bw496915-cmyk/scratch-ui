@@ -1,7 +1,8 @@
 /**
- * @file packages/contracts/src/slice_metrics.ts
- * @description Typed SliceMetrics schema, pure column derivations, pure policy/risk
- * gates, and ex-blocked / ex-directional Blended Hold SLO evaluation.
+ * Typed SliceMetrics schema, pure column derivations, pure policy/risk gates, and ex-blocked /
+ * ex-directional Blended Hold SLO evaluation.
+ *
+ * @file Packages/contracts/src/slice_metrics.ts
  */
 
 export type SlicePolicy = "BLOCKED" | "LEAK" | "ADVANTAGE" | "PRESERVE"
@@ -89,9 +90,9 @@ export interface SliceMetricsInput {
   readonly policy_qualifier: string
   readonly block_enforced: boolean
   /**
-   * Stake-weighted balanced two-sided book hold percentage (e.g. ~4.545% at -110/-110).
-   * When omitted and `leg_distribution` / `vig_capture_pct` are absent, or when explicitly
-   * `null`, `vig_capture_pct` and `directional_pnl_usd` emit `null` and flag `MISSING_VIG_SPLIT`.
+   * Stake-weighted balanced two-sided book hold percentage (e.g. ~4.545% at -110/-110). When
+   * omitted and `leg_distribution` / `vig_capture_pct` are absent, or when explicitly `null`,
+   * `vig_capture_pct` and `directional_pnl_usd` emit `null` and flag `MISSING_VIG_SPLIT`.
    */
   readonly balanced_overround_pct?: number | null
   readonly leg_distribution?: BalancedBookLegDistribution | null
@@ -133,30 +134,24 @@ const EXTREME_BUY_LOW_PCT = 5
 const EXTREME_BUY_HIGH_PCT = 95
 const EXTREME_HANDLE_THRESHOLD_USD = 5_000_000
 
-/**
- * Pure derivation: `sell_share_pct = 100 - buy_share_pct`.
- */
+/** Pure derivation: `sell_share_pct = 100 - buy_share_pct`. */
 export function deriveSellShare(buy_share_pct: number): number {
   return 100 - buy_share_pct
 }
 
-/**
- * Pure derivation: `net_position_usd = handle_usd * (buy_share_pct / 100 - 0.5)`.
- */
+/** Pure derivation: `net_position_usd = handle_usd * (buy_share_pct / 100 - 0.5)`. */
 export function deriveNetPosition(handle_usd: number, buy_share_pct: number): number {
   return handle_usd * (buy_share_pct / 100 - 0.5)
 }
 
-/**
- * Pure derivation: `gross_hold_usd = handle_usd * (hold_total_pct / 100)`.
- */
+/** Pure derivation: `gross_hold_usd = handle_usd * (hold_total_pct / 100)`. */
 export function deriveGrossHold(handle_usd: number, hold_total_pct: number): number {
   return handle_usd * (hold_total_pct / 100)
 }
 
 /**
- * Pure derivation: `floor_delta_pct = hold_total_pct - hold_floor_pct` and
- * `floor_delta_usd = handle_usd * (floor_delta_pct / 100)`.
+ * Pure derivation: `floor_delta_pct = hold_total_pct - hold_floor_pct` and `floor_delta_usd =
+ * handle_usd * (floor_delta_pct / 100)`.
  */
 export function deriveFloorDelta(
   hold_total_pct: number,
@@ -169,9 +164,9 @@ export function deriveFloorDelta(
 }
 
 /**
- * Computes two-sided balanced book hold percentage from observed buy/sell leg
- * implied probabilities (`((p_buy + p_sell - 1) / (p_buy + p_sell)) * 100`).
- * Returns `null` when either side's pricing distribution is unavailable.
+ * Computes two-sided balanced book hold percentage from observed buy/sell leg implied probabilities
+ * (`((p_buy + p_sell - 1) / (p_buy + p_sell)) * 100`). Returns `null` when either side's pricing
+ * distribution is unavailable.
  */
 export function computeBalancedOverroundFromLegDistribution(
   dist: BalancedBookLegDistribution | null | undefined,
@@ -202,10 +197,9 @@ export function computeBalancedOverroundFromLegDistribution(
 }
 
 /**
- * Recomputes `vig_capture_pct` and `directional_pnl_usd` from balanced-book
- * leg distribution (`matched_fraction = 2 * min(buy_share, 1 - buy_share)`).
- * Emits `{ vig_capture_pct: null, directional_pnl_usd: null }` if the source
- * cannot split vig vs directional rather than guessing.
+ * Recomputes `vig_capture_pct` and `directional_pnl_usd` from balanced-book leg distribution
+ * (`matched_fraction = 2 * min(buy_share, 1 - buy_share)`). Emits `{ vig_capture_pct: null,
+ * directional_pnl_usd: null }` if the source cannot split vig vs directional rather than guessing.
  */
 export function deriveVigAndDirectionalSplit(params: {
   readonly handle_usd: number
@@ -257,9 +251,7 @@ export function deriveVigAndDirectionalSplit(params: {
   }
 }
 
-/**
- * Gate 1: `(buy_share_pct < 5 || buy_share_pct > 95) && handle_usd > 5_000_000`.
- */
+/** Gate 1: `(buy_share_pct < 5 || buy_share_pct > 95) && handle_usd > 5_000_000`. */
 export function gateBuyShareExtreme(
   row: Pick<SliceMetrics, "buy_share_pct" | "handle_usd">,
 ): boolean {
@@ -270,7 +262,8 @@ export function gateBuyShareExtreme(
 }
 
 /**
- * Gate 2: `(policy === "ADVANTAGE" && hold_total_pct < 0) || (policy === "BLOCKED" && !block_enforced)`.
+ * Gate 2: `(policy === "ADVANTAGE" && hold_total_pct < 0) || (policy === "BLOCKED" &&
+ * !block_enforced)`.
  */
 export function gatePolicyDataConflict(
   row: Pick<SliceMetrics, "policy" | "hold_total_pct" | "block_enforced">,
@@ -281,16 +274,14 @@ export function gatePolicyDataConflict(
   )
 }
 
-/**
- * Gate 3: `floor_delta_pct < 0`.
- */
+/** Gate 3: `floor_delta_pct < 0`. */
 export function gateHoldBelowFloor(row: Pick<SliceMetrics, "floor_delta_pct">): boolean {
   return row.floor_delta_pct < 0
 }
 
 /**
- * Gate 4: `|directional_pnl_usd| > |handle_usd * (vig_capture_pct / 100)|`.
- * Returns `false` when vig split is unavailable (`null`).
+ * Gate 4: `|directional_pnl_usd| > |handle_usd * (vig_capture_pct / 100)|`. Returns `false` when
+ * vig split is unavailable (`null`).
  */
 export function gateDirectionalDominant(
   row: Pick<SliceMetrics, "directional_pnl_usd" | "handle_usd" | "vig_capture_pct">,
@@ -302,18 +293,14 @@ export function gateDirectionalDominant(
   return Math.abs(row.directional_pnl_usd) > Math.abs(vigCaptureUsd)
 }
 
-/**
- * Data-source honesty gate: emitted when vig vs directional split is unavailable (`null`).
- */
+/** Data-source honesty gate: emitted when vig vs directional split is unavailable (`null`). */
 export function gateMissingVigSplit(
   row: Pick<SliceMetrics, "vig_capture_pct" | "directional_pnl_usd">,
 ): boolean {
   return row.vig_capture_pct === null || row.directional_pnl_usd === null
 }
 
-/**
- * Evaluates all slice risk/policy gates in deterministic canonical order.
- */
+/** Evaluates all slice risk/policy gates in deterministic canonical order. */
 export function computeFlags(row: Omit<SliceMetrics, "flags"> | SliceMetrics): SliceFlag[] {
   const flags: SliceFlag[] = []
   if (gateBuyShareExtreme(row)) {
@@ -335,8 +322,8 @@ export function computeFlags(row: Omit<SliceMetrics, "flags"> | SliceMetrics): S
 }
 
 /**
- * Pure row derivation producing a complete `SliceMetrics` record with derived columns
- * and computed gate flags. Deterministic and idempotent (`derive(derive(x))` === `derive(x)`).
+ * Pure row derivation producing a complete `SliceMetrics` record with derived columns and computed
+ * gate flags. Deterministic and idempotent (`derive(derive(x))` === `derive(x)`).
  */
 export function deriveSliceMetrics(input: SliceMetricsInput | SliceMetrics): SliceMetrics {
   const sell_share_pct = deriveSellShare(input.buy_share_pct)
@@ -405,14 +392,12 @@ export function deriveSliceMetrics(input: SliceMetricsInput | SliceMetrics): Sli
   }
 }
 
-/**
- * Alias of `deriveSliceMetrics` for `computeFlags(derive(row))` composition.
- */
+/** Alias of `deriveSliceMetrics` for `computeFlags(derive(row))` composition. */
 export const derive = deriveSliceMetrics
 
 /**
- * Computes the Blended Hold SLO summary, contrasting the naive raw blended hold
- * against ex-blocked hold and ex-blocked / ex-directional structural vig hold.
+ * Computes the Blended Hold SLO summary, contrasting the naive raw blended hold against ex-blocked
+ * hold and ex-blocked / ex-directional structural vig hold.
  */
 export function computeBlendedHoldSlo(
   rows: readonly SliceMetrics[],

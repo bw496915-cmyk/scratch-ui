@@ -1,8 +1,8 @@
 /**
- * @file tests/unit/system_logs_json_export.test.ts
- * @description Verifies filtered System Logs JSON selection, structured payload
- * formatting, descriptive filename generation, client-side Blob download cleanup,
- * and Export JSON button rendering in SystemLogBitwiseSearchBar / SystemLogsPanel.
+ * Verifies filtered System Logs JSON selection, structured payload formatting, descriptive filename generation,
+ * client-side Blob download cleanup, and Export JSON button rendering in SystemLogBitwiseSearchBar / SystemLogsPanel.
+ *
+ * @file Tests/unit/system_logs_json_export.test.ts
  */
 
 import { describe, expect, test } from "bun:test"
@@ -140,9 +140,7 @@ describe("system_logs_json_export", () => {
         query: "crit|high BB55103",
         date,
       }),
-    ).toBe(
-      "sportsdesk-system-logs-weblogs-mask-0x0c-bot-block-line-st-198-51-100-42-crit-high-bb55103-2026-11-22.json",
-    )
+    ).toBe("sportsdesk-system-logs-weblogs-mask-0x0c-bot-block-line-st-198-51-100-42-crit-high-bb55103-2026-11-22.json")
   })
 
   test("downloadSystemLogsJsonBlob writes formatted application/json Blob, triggers click, and revokes URL", async () => {
@@ -163,27 +161,23 @@ describe("system_logs_json_export", () => {
       },
     }
 
-    const ok = downloadSystemLogsJsonBlob(
-      '{\n  "ok": true\n}\n',
-      "sportsdesk-system-logs-unified-2026-11-22.json",
-      {
-        URL: {
-          createObjectURL: (blob) => {
-            createdBlobs.push(blob)
-            return "blob:json-export-1"
-          },
-          revokeObjectURL: (url) => {
-            revoked.push(url)
-          },
+    const ok = downloadSystemLogsJsonBlob('{\n  "ok": true\n}\n', "sportsdesk-system-logs-unified-2026-11-22.json", {
+      URL: {
+        createObjectURL: (blob) => {
+          createdBlobs.push(blob)
+          return "blob:json-export-1"
         },
-        document: {
-          createElement: () => fakeLink,
-          body: {
-            appendChild: (node) => appended.push(node),
-          },
+        revokeObjectURL: (url) => {
+          revoked.push(url)
         },
       },
-    )
+      document: {
+        createElement: () => fakeLink,
+        body: {
+          appendChild: (node) => appended.push(node),
+        },
+      },
+    })
 
     expect(ok).toBe(true)
     expect(clicked).toBe(1)

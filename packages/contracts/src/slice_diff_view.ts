@@ -1,9 +1,9 @@
 /**
- * @file packages/contracts/src/slice_diff_view.ts
- * @description Pre/post-trade DiffView evaluator over `{ policy, block_enforced }` pairs.
+ * Pre/post-trade DiffView evaluator over `{ policy, block_enforced }` pairs. Alert contract: raises
+ * `BLOCK_ENFORCED_FLIPPED_FALSE` whenever `block_enforced` flips `true -> false` on a `BLOCKED`
+ * slice.
  *
- * Alert contract: raises `BLOCK_ENFORCED_FLIPPED_FALSE` whenever `block_enforced`
- * flips `true -> false` on a `BLOCKED` slice.
+ * @file Packages/contracts/src/slice_diff_view.ts
  */
 
 import type { SlicePolicy } from "./slice_metrics.ts"
@@ -39,9 +39,8 @@ export interface SlicePolicyDiffReport {
 }
 
 /**
- * Compares pre-trade vs post-trade `{ policy, block_enforced }` pairs by `slice_id`
- * and flags critical regressions when `block_enforced` flips `true -> false` on a
- * `BLOCKED` slice.
+ * Compares pre-trade vs post-trade `{ policy, block_enforced }` pairs by `slice_id` and flags
+ * critical regressions when `block_enforced` flips `true -> false` on a `BLOCKED` slice.
  */
 export function diffSlicePolicyPairs(
   preRows: readonly SlicePolicyStateRow[],

@@ -87,8 +87,8 @@ function parseRawPositiveUsd(raw: string): number | null {
 }
 
 /**
- * Parse operator input such as "25000", "$25,000", "25k", "1.5m" into a valid USD limit.
- * Returns null when the input cannot be parsed into a positive finite dollar amount.
+ * Parse operator input such as "25000", "$25,000", "25k", "1.5m" into a valid USD limit. Returns
+ * null when the input cannot be parsed into a positive finite dollar amount.
  */
 export function parseRiskExposureLimitInput(raw: string): number | null {
   const parsed = parseRawPositiveUsd(raw)
@@ -101,8 +101,8 @@ export type ParseRiskThresholdPairResult =
   | { readonly ok: false; readonly field: "warning" | "breach"; readonly error: string }
 
 /**
- * Strictly validate an operator-entered Warning USD and Breach USD threshold pair
- * for the modal configurator so invalid ranges produce explicit inline feedback.
+ * Strictly validate an operator-entered Warning USD and Breach USD threshold pair for the modal
+ * configurator so invalid ranges produce explicit inline feedback.
  */
 export function parseRiskThresholdPairInput(
   warningRaw: string,

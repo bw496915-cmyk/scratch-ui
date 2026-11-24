@@ -13,11 +13,7 @@ import {
   summarizeSharpnessHeatmap,
 } from "../../packages/ui/src/profile_formulas.ts"
 import { classifyCustomerProfileType } from "../../packages/ui/src/profile_taxonomy.ts"
-import {
-  PROFILE_TYPE_IDS,
-  type RankedPlayer30d,
-  type ShowcaseCustomer,
-} from "../../packages/ui/src/types.ts"
+import { PROFILE_TYPE_IDS, type RankedPlayer30d, type ShowcaseCustomer } from "../../packages/ui/src/types.ts"
 
 function makeCustomer(overrides: Partial<ShowcaseCustomer> = {}): ShowcaseCustomer {
   const axes = reconcileSharpnessAxes(7.8, {
@@ -289,10 +285,7 @@ describe("Sharpness Heatmap rankings overlay evaluator", () => {
     expect(bookOverlay.isSharp).toBe(false)
     expect(bookOverlay.isClvLeader).toBe(false)
 
-    const { summary } = summarizeSharpnessHeatmap(
-      [clvLeaderCust, midSharpCust, recCust, unmeasuredBook],
-      rankings,
-    )
+    const { summary } = summarizeSharpnessHeatmap([clvLeaderCust, midSharpCust, recCust, unmeasuredBook], rankings)
     expect(summary.rankedTotal).toBe(3)
     expect(summary.matchedCount).toBe(3)
     expect(summary.sharpCount).toBe(2)

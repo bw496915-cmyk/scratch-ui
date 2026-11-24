@@ -1,6 +1,7 @@
 /**
- * @file src/lib/dns_drift_audit.ts
- * @description L1 DNS retryability classification and Bun.dns cache/TTL drift detection.
+ * L1 DNS retryability classification and Bun.dns cache/TTL drift detection.
+ *
+ * @file Src/lib/dns_drift_audit.ts
  */
 
 import {
@@ -52,9 +53,7 @@ const RETRYABLE_DNS_ERROR_CODES: ReadonlySet<DnsErrorCode> = new Set<DnsErrorCod
 const DEFAULT_MIN_CACHE_SAMPLES = 20
 const DEFAULT_MAX_MISS_RATIO = 0.8
 
-/**
- * Returns true only for transient DnsBoundaryError codes eligible for bounded retry.
- */
+/** Returns true only for transient DnsBoundaryError codes eligible for bounded retry. */
 export function isRetryableDnsError(err: unknown): boolean {
   if (!(err instanceof DnsBoundaryError)) {
     return false
@@ -70,9 +69,7 @@ function readBunDnsCacheStats(): BunDnsCacheStats | null {
   return null
 }
 
-/**
- * Audits external DNS lookups and Bun.dns cache telemetry for TTL/miss-ratio drift.
- */
+/** Audits external DNS lookups and Bun.dns cache telemetry for TTL/miss-ratio drift. */
 export async function auditDnsDrift(
   options: AuditDnsDriftOptions = {},
 ): Promise<readonly DnsDriftFinding[]> {

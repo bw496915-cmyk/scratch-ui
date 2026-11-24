@@ -34,9 +34,7 @@ describe("handle_volume_series: timestamp & handle helpers", () => {
   test("parseWagerTimestampMs parses ISO 8601, SQL timestamps, and desk wall clocks", () => {
     const anchor = Date.parse("2026-11-20T18:30:00.000Z")
 
-    expect(parseWagerTimestampMs("2026-11-20T18:15:10.000Z", anchor)).toBe(
-      Date.parse("2026-11-20T18:15:10.000Z"),
-    )
+    expect(parseWagerTimestampMs("2026-11-20T18:15:10.000Z", anchor)).toBe(Date.parse("2026-11-20T18:15:10.000Z"))
 
     const sqlParsed = parseWagerTimestampMs("2026-11-01 17:15:02.770", anchor)
     expect(sqlParsed).not.toBeNull()
@@ -160,9 +158,7 @@ describe("handle_volume_series: buildRolling60MinHandleSeries", () => {
 
     // Cumulative series must be monotonically non-decreasing
     for (let i = 1; i < result.points.length; i += 1) {
-      expect(result.points[i]!.cumulativeHandleUsd).toBeGreaterThanOrEqual(
-        result.points[i - 1]!.cumulativeHandleUsd,
-      )
+      expect(result.points[i]!.cumulativeHandleUsd).toBeGreaterThanOrEqual(result.points[i - 1]!.cumulativeHandleUsd)
     }
   })
 
@@ -247,10 +243,7 @@ describe("handle_volume_series: buildRolling60MinHandleSeries", () => {
     expect(result.anomalyCount).toBe(1)
     expect(result.meanMinuteHandleUsd).toBeGreaterThan(180)
     expect(result.stdDevMinuteHandleUsd).toBeGreaterThan(600)
-    expect(result.twoSigmaThresholdUsd).toBeCloseTo(
-      result.meanMinuteHandleUsd + 2 * result.stdDevMinuteHandleUsd,
-      1,
-    )
+    expect(result.twoSigmaThresholdUsd).toBeCloseTo(result.meanMinuteHandleUsd + 2 * result.stdDevMinuteHandleUsd, 1)
 
     const anomalies = result.points.filter((pt) => pt.isAnomaly)
     expect(anomalies).toHaveLength(1)

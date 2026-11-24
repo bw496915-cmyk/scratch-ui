@@ -1,7 +1,8 @@
 /**
- * @file packages/ui/src/viz/charts.tsx
- * @description Aligned-baseline SVG primitives: zero-anchored horizontal bars, dot plots, and the
- * fail-closed error card shown when a staging or conservation oracle rejects a panel.
+ * Aligned-baseline SVG primitives: zero-anchored horizontal bars, dot plots, and the fail-closed
+ * error card shown when a staging or conservation oracle rejects a panel.
+ *
+ * @file Packages/ui/src/viz/charts.tsx
  */
 
 import React from "react"

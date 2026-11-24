@@ -1,8 +1,9 @@
 /**
- * @file packages/ui/src/index.ts
- * @description Public barrel for `@sportsdesk-ops/ui` — modular React surfaces,
- * build-time TOML config contracts (`dashboard.toml` & `wagers.toml`), Signal-Honesty
- * hydration normalizers, route helpers, and strongly typed domain models.
+ * Public barrel for `@sportsdesk-ops/ui` — modular React surfaces, build-time TOML config contracts
+ * (`dashboard.toml` & `wagers.toml`), Signal-Honesty hydration normalizers, route helpers, and
+ * strongly typed domain models.
+ *
+ * @file Packages/ui/src/index.ts
  */
 
 // 1. Orchestrator & Core Risk Surfaces

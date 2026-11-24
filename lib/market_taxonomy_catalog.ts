@@ -1,14 +1,13 @@
 /**
- * @file lib/market_taxonomy_catalog.ts
- * @description Zero-allocation hierarchical market taxonomy catalog & deterministic classifier:
- *   Level 1: Sport (`SportCode`)
- *   Level 2: SubSport (`SubSportCode`)
- *   Level 3: Period per SubSport (`PeriodCode` + `portalPeriodNumber` + `allowsPointBuys`)
- *   Level 4: Market (`MarketCode`)
+ * Zero-allocation hierarchical market taxonomy catalog & deterministic classifier: Level 1: Sport
+ * (`SportCode`) Level 2: SubSport (`SubSportCode`) Level 3: Period per SubSport (`PeriodCode` +
+ * `portalPeriodNumber` + `allowsPointBuys`) Level 4: Market (`MarketCode`) Adheres strictly to
+ * AGENTS.md data-handling budgets:
  *
- * Adheres strictly to AGENTS.md data-handling budgets:
- *  - Dense Uint8 integer indices + 16-bit period validity bitmasks
- *  - Object.create(null) lookup tables (zero Map, Set, boolean[], Array.from, or .filter().map())
+ * - Dense Uint8 integer indices + 16-bit period validity bitmasks
+ * - Object.create(null) lookup tables (zero Map, Set, boolean[], Array.from, or .filter().map())
+ *
+ * @file Lib/market_taxonomy_catalog.ts
  */
 
 import type {
@@ -365,9 +364,7 @@ const LIVE_INPLAY_PERIODS: readonly SubSportPeriodSpec[] = [
   },
 ]
 
-/**
- * Canonical 18-SubSport Catalog ordered identically to `SUBSPORT_CODES`.
- */
+/** Canonical 18-SubSport Catalog ordered identically to `SUBSPORT_CODES`. */
 export const SUBSPORT_TAXONOMY_CATALOG: readonly SubSportTaxonomySpec[] = [
   {
     code: "NFL",

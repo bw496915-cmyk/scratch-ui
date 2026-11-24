@@ -4,9 +4,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 const directories: string[] = []
 afterEach(async () => {
-  await Promise.all(
-    directories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })),
-  )
+  await Promise.all(directories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })))
 })
 test("scheduled projection preserves observation time when unchanged and last good metrics on failure", async () => {
   const directory = await mkdtemp(join(tmpdir(), "customer-history-projection-"))

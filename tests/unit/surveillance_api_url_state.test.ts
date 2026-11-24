@@ -65,14 +65,9 @@ describe("Surveillance Base URL, Separate URL Objects & Window State Management"
     expect(winWithExternalOverride.location.href).toBe(
       "https://desk.example.com/?tab=surveillance&apiBase=https://evil.example.net",
     )
-    expect(
-      dashboardApiUrl(
-        SURVEILLANCE_ENDPOINTS.reverse,
-        null,
-        { ip: "8.8.8.8" },
-        winWithExternalOverride,
-      ),
-    ).toBe("/api/surveillance/dns/reverse?ip=8.8.8.8")
+    expect(dashboardApiUrl(SURVEILLANCE_ENDPOINTS.reverse, null, { ip: "8.8.8.8" }, winWithExternalOverride)).toBe(
+      "/api/surveillance/dns/reverse?ip=8.8.8.8",
+    )
   })
 
   test("buildSurveillanceEndpointUrls builds distinct URL objects for every surveillance endpoint", () => {
@@ -93,12 +88,8 @@ describe("Surveillance Base URL, Separate URL Objects & Window State Management"
     expect(urls.benchmark).not.toBe(urls.reverse)
     expect(urls.brief.href).toBe("https://ops.example.com/api/surveillance/brief")
     expect(urls.dns.href).toBe("https://ops.example.com/api/surveillance/dns")
-    expect(urls.benchmark.href).toBe(
-      "https://ops.example.com/api/surveillance/dns/benchmark?host=clob.polymarket.com",
-    )
-    expect(urls.reverse.href).toBe(
-      "https://ops.example.com/api/surveillance/dns/reverse?ip=9.9.9.9",
-    )
+    expect(urls.benchmark.href).toBe("https://ops.example.com/api/surveillance/dns/benchmark?host=clob.polymarket.com")
+    expect(urls.reverse.href).toBe("https://ops.example.com/api/surveillance/dns/reverse?ip=9.9.9.9")
   })
 
   test("readDashboardUrlState, buildDashboardSearch, and writeDashboardUrl manage surveillance URL state cleanly via Window", () => {
@@ -158,9 +149,7 @@ describe("Surveillance Base URL, Separate URL Objects & Window State Management"
     }
     const wrote = writeDashboardUrl(parsed, mockWin, { push: true })
     expect(wrote).toBe(true)
-    expect(pushedUrl).toBe(
-      "/?tab=surveillance&survView=raw&survIp=8.8.8.8&survHost=api.telegram.org",
-    )
+    expect(pushedUrl).toBe("/?tab=surveillance&survView=raw&survIp=8.8.8.8&survHost=api.telegram.org")
 
     const winUrlObj = buildSurveillanceWindowUrl(
       { viewMode: "raw", reverseIp: "1.0.0.1", benchHost: "fantasy402.com" },

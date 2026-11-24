@@ -72,10 +72,9 @@ const CALLER_HASH_RE = /^[a-f0-9]{8,64}$/i
 const TOOL_NAME_RE = /^[a-zA-Z0-9._:/-]{1,128}$/
 
 /**
- * Emits a zero-PII structured JSON log line.
- * Only allows pre-sanitized operational fields (hashed caller id, validated tool
- * name, status, error code, and monotonic/wall timing). Never emits raw tokens,
- * IPs, emails, cookies, or request headers.
+ * Emits a zero-PII structured JSON log line. Only allows pre-sanitized operational fields (hashed
+ * caller id, validated tool name, status, error code, and monotonic/wall timing). Never emits raw
+ * tokens, IPs, emails, cookies, or request headers.
  */
 export function emitStructuredMcpLog(
   entry: StructuredMcpLogEntry,

@@ -1,11 +1,13 @@
 /**
- * @file packages/ui/src/panels/ProfileFormulaDrilldownPanel.tsx
- * @description Deep quantitative formula & countermeasure drill-downs for Profiled Bettors:
+ * Deep quantitative formula & countermeasure drill-downs for Profiled Bettors:
+ *
  * - Interactive 5-axis sharpness conservation & input attribution audit
  * - Cohort percentile benchmarking & concrete risk-driver attribution strip
  * - Empirical Beta-Binomial Bayesian skill & fractional Kelly credible-interval bar
  * - Desk exposure / CVaR tail severity & Countermeasure Policy Gap matrix
  * - Live What-If Countermeasure Simulator + Nearest Peer Cohort pivot list
+ *
+ * @file Packages/ui/src/panels/ProfileFormulaDrilldownPanel.tsx
  */
 
 import {
@@ -40,8 +42,8 @@ export interface OverviewFormulaAuditStripProps {
 }
 
 /**
- * Compact Cohort Benchmark + Risk Drivers + Expandable 5-Axis Formula Inspector
- * rendered inside the Overview drilldown tab.
+ * Compact Cohort Benchmark + Risk Drivers + Expandable 5-Axis Formula Inspector rendered inside the
+ * Overview drilldown tab.
  */
 export function OverviewFormulaAuditStrip({
   customer,
@@ -253,9 +255,7 @@ export interface ProfileFormulaDrilldownPanelProps {
   readonly onRunTerminalCommand?: ((cmd: string) => void) | undefined
 }
 
-/**
- * Full "Formulas & Sim" drilldown tab inside the Profiled Bettors inspector.
- */
+/** Full "Formulas & Sim" drilldown tab inside the Profiled Bettors inspector. */
 export function ProfileFormulaDrilldownPanel({
   customer,
   model,

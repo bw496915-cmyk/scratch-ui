@@ -1,14 +1,15 @@
 /**
- * @file packages/ui/src/live_stream.ts
- * @description Streaming bookkeeping for the wager feed: which tickets are new since the
- * previous snapshot. Kept pure so the "first load is not news" rule is testable.
+ * Streaming bookkeeping for the wager feed: which tickets are new since the previous snapshot. Kept
+ * pure so the "first load is not news" rule is testable.
+ *
+ * @file Packages/ui/src/live_stream.ts
  */
 
 /**
  * Ticket ids present in `next` but not in `previous`.
  *
- * `previous === null` means "the feed has not loaded yet", so nothing is new: the first
- * snapshot is the baseline, not an arrival burst.
+ * `previous === null` means "the feed has not loaded yet", so nothing is new: the first snapshot is
+ * the baseline, not an arrival burst.
  */
 export function newTicketIds(
   previous: ReadonlySet<string> | null,

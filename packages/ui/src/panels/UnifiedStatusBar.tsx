@@ -1,9 +1,10 @@
 /**
- * @file packages/ui/src/panels/UnifiedStatusBar.tsx
- * @description Unified Bloomberg-terminal persistent operational status bar using
- * strict `sd-` BEM classes, `data-status`/`data-severity`/`data-type` attributes,
- * tabular numerals (`.sd-tabular`), actionable re-auth/navigation CTAs, and pulse
- * animation strictly on critical/offline telemetry items.
+ * Unified Bloomberg-terminal persistent operational status bar using strict `sd-` BEM classes,
+ * `data-status`/`data-severity`/`data-type` attributes, tabular numerals (`.sd-tabular`),
+ * actionable re-auth/navigation CTAs, and pulse animation strictly on critical/offline telemetry
+ * items.
+ *
+ * @file Packages/ui/src/panels/UnifiedStatusBar.tsx
  */
 import { AlertTriangle, ExternalLink, Radio, RefreshCw, ShieldCheck } from "lucide-react"
 import type React from "react"

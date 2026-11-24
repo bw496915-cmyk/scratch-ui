@@ -1,17 +1,17 @@
 /**
- * @file tests/preload/snapshot_serializers.ts
- * @description Global `bun test` preload script registered in `bunfig.toml`
- * (`[test].preload`).
+ * Global `bun test` preload script registered in `bunfig.toml` (`[test].preload`). Semantics
+ * (matching Bun Snapshots specification):
  *
- * Semantics (matching Bun Snapshots specification):
  * - Serializers registered during preload apply to every test file after it.
- * - File-scoped serializers registered via `addFileSnapshotSerializer(...)`
- *   apply until that test file ends (cleaned up automatically via `afterAll`).
+ * - File-scoped serializers registered via `addFileSnapshotSerializer(...)` apply until that test
+ *   file ends (cleaned up automatically via `afterAll`).
  * - LIFO precedence: the last serializer added runs first.
- * - Automatically registers with native `expect.addSnapshotSerializer(...)`
- *   when supported by the active Bun runtime, and provides `prepareForSnapshot`
- *   for consistent LIFO serialization on runtimes (e.g. Bun 1.4.4) where native
- *   `expect.addSnapshotSerializer` throws `Not implemented`.
+ * - Automatically registers with native `expect.addSnapshotSerializer(...)` when supported by the
+ *   active Bun runtime, and provides `prepareForSnapshot` for consistent LIFO serialization on
+ *   runtimes (e.g. Bun 1.4.4) where native `expect.addSnapshotSerializer` throws `Not
+ *   implemented`.
+ *
+ * @file Tests/preload/snapshot_serializers.ts
  */
 
 import { afterAll, expect } from "bun:test"
@@ -76,17 +76,15 @@ export function isNativeSnapshotSerializerSupported(): boolean {
   return nativeSerializerSupported === true
 }
 
-/**
- * Register a global preload serializer that applies to every test file after it.
- */
+/** Register a global preload serializer that applies to every test file after it. */
 export function addPreloadSnapshotSerializer(plugin: SnapshotSerializerPlugin): void {
   preloadSerializers.push(plugin)
   tryRegisterNativeSerializer(plugin)
 }
 
 /**
- * Register a file-scoped serializer that applies until the current test file
- * finishes (`afterAll`), running before earlier serializers (LIFO).
+ * Register a file-scoped serializer that applies until the current test file finishes (`afterAll`),
+ * running before earlier serializers (LIFO).
  */
 export function addFileSnapshotSerializer(plugin: SnapshotSerializerPlugin): void {
   fileSerializers.push(plugin)
@@ -100,8 +98,8 @@ export function addFileSnapshotSerializer(plugin: SnapshotSerializerPlugin): voi
 }
 
 /**
- * Apply active snapshot serializers recursively in strict LIFO order
- * (file-scoped serializers newest-first, then preload serializers newest-first).
+ * Apply active snapshot serializers recursively in strict LIFO order (file-scoped serializers
+ * newest-first, then preload serializers newest-first).
  */
 export function prepareForSnapshot(root: unknown): unknown {
   const ordered = [...fileSerializers.slice().reverse(), ...preloadSerializers.slice().reverse()]

@@ -1,6 +1,7 @@
 /**
- * @file packages/backend/src/cache.ts
- * @description Stat-stamped bounded caches and JSON readers for the SportsDesk dashboard backend.
+ * Stat-stamped bounded caches and JSON readers for the SportsDesk dashboard backend.
+ *
+ * @file Packages/backend/src/cache.ts
  */
 
 import { readFile, stat } from "node:fs/promises"
@@ -60,14 +61,17 @@ function getBunPeek(): BunPeekFn | undefined {
 export interface CachedJsonReader {
   readCachedJson: <T>(filePath: string) => Promise<{ stamp: string; value: T } | null>
   /**
-   * Synchronous zero-microtask read of the most recently cached or already-settled
-   * in-flight JSON payload (leverages `Bun.peek` / `Bun.peek.status` under Bun).
+   * Synchronous zero-microtask read of the most recently cached or already-settled in-flight JSON
+   * payload (leverages `Bun.peek` / `Bun.peek.status` under Bun).
    */
   peekCachedJson: <T>(filePath: string) => { stamp: string; value: T } | null
   clear: () => void
 }
 
-/** Create a stat-stamped JSON file reader bounded to `maxEntries` paths with in-flight dedup & `Bun.peek` fast path. */
+/**
+ * Create a stat-stamped JSON file reader bounded to `maxEntries` paths with in-flight dedup &
+ * `Bun.peek` fast path.
+ */
 export function createCachedJsonReader(maxEntries = 24): CachedJsonReader {
   const cache = new BoundedStampCache<unknown>(maxEntries)
   const latestStamps = new Map<string, string>()

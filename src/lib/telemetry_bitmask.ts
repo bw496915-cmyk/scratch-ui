@@ -1,13 +1,14 @@
 /**
- * @file src/lib/telemetry_bitmask.ts
- * @description Bitwise SoA telemetry encoder & cross-feed correlator uniting
- * Weblogs (`WebLogEntry`), Live Wagers (`LiveWager`), and Profiles (`ProfileInspectRecord`).
+ * Bitwise SoA telemetry encoder & cross-feed correlator uniting Weblogs (`WebLogEntry`), Live
+ * Wagers (`LiveWager`), and Profiles (`ProfileInspectRecord`). Design mirrors
+ * `packages/contracts/src/slice_data_table.ts`:
  *
- * Design mirrors `packages/contracts/src/slice_data_table.ts`:
  * - Single-pass `Uint32` bitmasks (`>>> 0`) computed once per parsed record.
  * - Fixed-width `Uint32Array` SoA columns + `(count + 31) >>> 5` entity bitsets.
- * - 64-bit (2x `Uint32`) FNV-1a Bloom signature per entity for O(1) candidate pruning
- *   before exact ID/game/subnet correlation joins.
+ * - 64-bit (2x `Uint32`) FNV-1a Bloom signature per entity for O(1) candidate pruning before exact
+ *   ID/game/subnet correlation joins.
+ *
+ * @file Src/lib/telemetry_bitmask.ts
  */
 
 import { isIP } from "node:net"
@@ -83,9 +84,7 @@ export const CORR_BIT_ESTIMATED_PROFILE_GAP = 1 << 5
 
 // ── 5. Bitwise Primitives (SWAR Popcount, FNV-1a 64-bit Bloom, Bitsets) ──────
 
-/**
- * 32-bit SWAR Hamming weight (number of set bits in unsigned 32-bit integer).
- */
+/** 32-bit SWAR Hamming weight (number of set bits in unsigned 32-bit integer). */
 export function popcount32(x: number): number {
   let v = x >>> 0
   v = v - ((v >>> 1) & 0x55555555)
@@ -93,9 +92,7 @@ export function popcount32(x: number): number {
   return (((v + (v >>> 4)) & 0x0f0f0f0f) * 0x01010101) >>> 24
 }
 
-/**
- * Dual-hash 64-bit (lo, hi) FNV-1a token signature for fast bitwise Bloom overlap tests.
- */
+/** Dual-hash 64-bit (lo, hi) FNV-1a token signature for fast bitwise Bloom overlap tests. */
 export function fnv1a32(input: string, seed = 0x811c9dc5): number {
   let h = seed >>> 0
   for (let i = 0; i < input.length; i += 1) {
@@ -105,9 +102,7 @@ export function fnv1a32(input: string, seed = 0x811c9dc5): number {
   return h >>> 0
 }
 
-/**
- * Sets 2 bits across a `[lo, hi]` 64-bit Bloom word pair for an arbitrary string key.
- */
+/** Sets 2 bits across a `[lo, hi]` 64-bit Bloom word pair for an arbitrary string key. */
 export function setBloom64(lo: Uint32Array, hi: Uint32Array, rowIdx: number, key: string): void {
   const h1 = fnv1a32(key, 0x811c9dc5)
   const h2 = fnv1a32(key, 0x9e3779b9)
@@ -129,9 +124,7 @@ export function bloomMayOverlap64(aLo: number, aHi: number, bLo: number, bHi: nu
   return (aLo & bLo) !== 0 || (aHi & bHi) !== 0
 }
 
-/**
- * Packed `Uint32Array` row-index bitset (`(capacity + 31) >>> 5` words).
- */
+/** Packed `Uint32Array` row-index bitset (`(capacity + 31) >>> 5` words). */
 export function createRowBitset(capacity: number): Uint32Array {
   return new Uint32Array(Math.max(1, (capacity + 31) >>> 5))
 }
@@ -183,8 +176,8 @@ function parseLineNumberToken(raw: string): number | null {
 }
 
 /**
- * Extracts normalized numeric line (including `½` and Asian split `2½,3` -> `2.75`)
- * and American odds (`-140`, `+115`) from a `LiveWagerLeg.pick` string.
+ * Extracts normalized numeric line (including `½` and Asian split `2½,3` -> `2.75`) and American
+ * odds (`-140`, `+115`) from a `LiveWagerLeg.pick` string.
  */
 export function parseWagerLineAndOdds(pick: string): ParsedLineAndOdds {
   const trimmed = pick
@@ -462,8 +455,8 @@ function resolveIpHash(rawIpOrRedacted: string): string | null {
 }
 
 /**
- * Joins parsed Weblogs, Live Wagers, and Profiles into a unified SoA bitwise
- * correlation spine for sub-millisecond multi-predicate filtering & scoring.
+ * Joins parsed Weblogs, Live Wagers, and Profiles into a unified SoA bitwise correlation spine for
+ * sub-millisecond multi-predicate filtering & scoring.
  */
 export function buildSurveillanceBitmaskIndex(input: {
   readonly weblogs: readonly WebLogEntry[]

@@ -1,7 +1,8 @@
 /**
- * @file packages/ui/src/SliceMetricsViews.tsx
- * @description Feature-gated Typed `SliceMetrics` SoA DataTable, Ex-Blocked /
- * Ex-Directional Blended Hold SLO strip, and Pre/Post-Trade `{policy, block_enforced}` DiffView.
+ * Feature-gated Typed `SliceMetrics` SoA DataTable, Ex-Blocked / Ex-Directional Blended Hold SLO
+ * strip, and Pre/Post-Trade `{policy, block_enforced}` DiffView.
+ *
+ * @file Packages/ui/src/SliceMetricsViews.tsx
  */
 
 import React, { useEffect, useRef, useState } from "react"

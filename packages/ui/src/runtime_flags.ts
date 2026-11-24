@@ -1,9 +1,9 @@
 /**
- * @file packages/ui/src/runtime_flags.ts
- * @description Compile-time bun:bundle feature evaluation for the SportsDesk Dashboard.
+ * Compile-time bun:bundle feature evaluation for the SportsDesk Dashboard. AST Constraint
+ * (AGENTS.md): `feature()` from `"bun:bundle"` MUST appear ONLY directly inside an `if` condition
+ * or ternary condition (`feature("FLAG") ? a : b`).
  *
- * AST Constraint (AGENTS.md): `feature()` from `"bun:bundle"` MUST appear ONLY
- * directly inside an `if` condition or ternary condition (`feature("FLAG") ? a : b`).
+ * @file Packages/ui/src/runtime_flags.ts
  */
 
 import { feature } from "bun:bundle"
@@ -80,9 +80,9 @@ export function getDashboardRuntimeFlags(): DashboardRuntimeFlags {
 }
 
 /**
- * Feature-flag gate for the typed `SliceMetrics` SoA DataTable + DiffView:
- * enabled in `dev` (`EXPERIMENTAL`) and unbundled HMR by default, gated off in
- * `prod` unless `?sliceMetrics=1` is explicitly supplied.
+ * Feature-flag gate for the typed `SliceMetrics` SoA DataTable + DiffView: enabled in `dev`
+ * (`EXPERIMENTAL`) and unbundled HMR by default, gated off in `prod` unless `?sliceMetrics=1` is
+ * explicitly supplied.
  */
 export function resolveSliceMetricsFeatureDefault(searchOverride?: string): boolean {
   let rawSearch = searchOverride
@@ -106,9 +106,7 @@ export function resolveSliceMetricsFeatureDefault(searchOverride?: string): bool
   return true
 }
 
-/**
- * Emits debug trace output in `dev`/`test` builds; completely dead-code eliminated in `prod`.
- */
+/** Emits debug trace output in `dev`/`test` builds; completely dead-code eliminated in `prod`. */
 export function debugDashboardTrace(event: string, detail?: unknown): void {
   if (feature("DEBUG")) {
     if (detail !== undefined) {

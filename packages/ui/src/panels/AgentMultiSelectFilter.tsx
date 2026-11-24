@@ -55,8 +55,8 @@ export function normalizeAgentIdList(ids: readonly string[]): readonly string[] 
 }
 
 /**
- * Parse Agent IDs from free-text input, comma/whitespace lists, or a pasted
- * Fantasy402 `getTransactionHistory` query string (`agentID=BILLY666&...&agentOwner=BILLY666`).
+ * Parse Agent IDs from free-text input, comma/whitespace lists, or a pasted Fantasy402
+ * `getTransactionHistory` query string (`agentID=BILLY666&...&agentOwner=BILLY666`).
  */
 export function parseAgentIdsFromInput(raw: string): readonly string[] {
   const trimmed = raw.trim()
@@ -84,8 +84,8 @@ export function parseAgentIdsFromInput(raw: string): readonly string[] {
 }
 
 /**
- * Build the Fantasy402 Manager `getTransactionHistory` query string for an
- * office conduit using a dedicated `URLSearchParams` instance.
+ * Build the Fantasy402 Manager `getTransactionHistory` query string for an office conduit using a
+ * dedicated `URLSearchParams` instance.
  */
 export function buildF402TransactionHistoryParams(
   input: F402TransactionHistoryQueryInput,
@@ -118,8 +118,8 @@ export function buildF402TransactionHistoryParams(
 }
 
 /**
- * Filter available agent options by scope (`ALL`, `CONDUITS`, `SUB_AGENTS`, `MASTERS`)
- * and either plain text search or a pasted Fantasy402 `agentID=...` query string.
+ * Filter available agent options by scope (`ALL`, `CONDUITS`, `SUB_AGENTS`, `MASTERS`) and either
+ * plain text search or a pasted Fantasy402 `agentID=...` query string.
  */
 export function filterAgentOptions(
   options: readonly AgentFilterOption[],

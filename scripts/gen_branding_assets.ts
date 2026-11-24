@@ -1,14 +1,15 @@
 #!/usr/bin/env bun
 /**
- * @file scripts/gen_branding_assets.ts
- * @description Deterministic SportsDesk Ops branding & contextual metadata asset generator.
+ * Deterministic SportsDesk Ops branding & contextual metadata asset generator. Reads
+ * `design/branding.toml` via native `Bun.TOML` (`lib/bun_toml.ts`), renders all
+ * emblem/favicon/PWA/OpenGraph derivatives with native `Bun.Image`, stamps PNG/WebP outputs with
+ * rich Dublin Core + XMP Core + `sportsdesk:*` operational context metadata, verifies every binary
+ * with `inspectImageProvenance`, and emits:
  *
- * Reads `design/branding.toml` via native `Bun.TOML` (`lib/bun_toml.ts`), renders all
- * emblem/favicon/PWA/OpenGraph derivatives with native `Bun.Image`, stamps PNG/WebP
- * outputs with rich Dublin Core + XMP Core + `sportsdesk:*` operational context metadata,
- * verifies every binary with `inspectImageProvenance`, and emits:
- *   - `public/assets/branding/branding-metadata.json`
- *   - `public/manifest.webmanifest`
+ * - `public/assets/branding/branding-metadata.json`
+ * - `public/manifest.webmanifest`
+ *
+ * @file Scripts/gen_branding_assets.ts
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
@@ -296,8 +297,8 @@ async function encodeBrandDerivative(
 }
 
 /**
- * Generates all branding assets from `design/branding.toml`, stamps PNG/WebP derivatives
- * with rich contextual XMP metadata, and writes `branding-metadata.json` + `manifest.webmanifest`.
+ * Generates all branding assets from `design/branding.toml`, stamps PNG/WebP derivatives with rich
+ * contextual XMP metadata, and writes `branding-metadata.json` + `manifest.webmanifest`.
  */
 export async function generateBrandingAssets(rootDir: string): Promise<{
   readonly catalog: BrandingMetadataCatalog
@@ -311,7 +312,9 @@ export async function generateBrandingAssets(rootDir: string): Promise<{
   for (const asset of spec.assets) {
     const masterRelPath = spec.sources[asset.source_key]
     if (!masterRelPath) {
-      throw new Error(`Branding asset ${asset.id} references unknown source_key=${asset.source_key}`)
+      throw new Error(
+        `Branding asset ${asset.id} references unknown source_key=${asset.source_key}`,
+      )
     }
     let cached = masterCache.get(masterRelPath)
     if (!cached) {
@@ -442,8 +445,8 @@ export async function generateBrandingAssets(rootDir: string): Promise<{
 }
 
 /**
- * Verifies every branding asset in `public/assets/branding/branding-metadata.json`
- * matches on-disk byte size, SHA-256 hash, and embedded XMP provenance metadata.
+ * Verifies every branding asset in `public/assets/branding/branding-metadata.json` matches on-disk
+ * byte size, SHA-256 hash, and embedded XMP provenance metadata.
  */
 export async function auditBrandingAssetsMetadata(rootDir: string): Promise<BrandingAuditResult> {
   const fullCatalog = resolve(rootDir, CATALOG_REL_PATH)

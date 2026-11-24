@@ -1,12 +1,11 @@
 /**
- * @file packages/ui/src/url_state.ts
- * @description Shareable dashboard URL state.
+ * Shareable dashboard URL state. Owns only the state that is safe to put in a link: the active tab,
+ * the build matrix overlay, the selected agent, wagers-table filters/sort, and surveillance tab
+ * state (`survView`, `survIp`, `survHost`). Customer and ticket deep links, shadow-pricing slice
+ * params (`sport`, `period`, …) and `apiBase` are preserved untouched; free-text search stays out
+ * of the URL.
  *
- * Owns only the state that is safe to put in a link: the active tab, the build
- * matrix overlay, the selected agent, wagers-table filters/sort, and
- * surveillance tab state (`survView`, `survIp`, `survHost`). Customer and ticket
- * deep links, shadow-pricing slice params (`sport`, `period`, …) and `apiBase`
- * are preserved untouched; free-text search stays out of the URL.
+ * @file Packages/ui/src/url_state.ts
  */
 
 import { isLocalDevLocation, sanitizeApiBaseParam } from "./api_base_validation.ts"
@@ -208,11 +207,10 @@ export function readDashboardUrlState(search = "", pathname = "/", hash = ""): D
 }
 
 /**
- * Merge state into a query string using a dedicated `URLSearchParams` instance.
- * Unknown params (`ticket`, `sport`, `apiBase`, …) are preserved.
- * The `tab` param is omitted when the path already resolves to that tab (so
- * `/live-bets` stays clean), and set explicitly when the desired tab differs
- * from the path.
+ * Merge state into a query string using a dedicated `URLSearchParams` instance. Unknown params
+ * (`ticket`, `sport`, `apiBase`, …) are preserved. The `tab` param is omitted when the path already
+ * resolves to that tab (so `/live-bets` stays clean), and set explicitly when the desired tab
+ * differs from the path.
  */
 export function buildDashboardSearch(
   state: DashboardUrlState,
@@ -331,14 +329,14 @@ export function buildDashboardSearch(
 }
 
 /**
- * Documented RFC 2606 non-routable, non-mDNS synthetic parser base.
- * Used solely for resolving relative dashboard paths — NEVER fetched.
+ * Documented RFC 2606 non-routable, non-mDNS synthetic parser base. Used solely for resolving
+ * relative dashboard paths — NEVER fetched.
  */
 export const NON_FETCHING_PARSE_BASE = "https://non-fetching.invalid" as const
 
 /**
- * Construct a separate `URL` object for a dashboard state without mutating
- * `Window.location`. Unknown params (`apiBase`, `customer`, `ticket`) survive.
+ * Construct a separate `URL` object for a dashboard state without mutating `Window.location`.
+ * Unknown params (`apiBase`, `customer`, `ticket`) survive.
  */
 export function buildDashboardUrlObject(
   state: DashboardUrlState,
@@ -349,7 +347,8 @@ export function buildDashboardUrlObject(
   const url = new URL(currentHref, originBase)
   url.search = buildDashboardSearch(state, url.search, url.pathname)
   if (canonicalHash !== undefined) {
-    url.hash = canonicalHash.startsWith("#") || canonicalHash === "" ? canonicalHash : `#${canonicalHash}`
+    url.hash =
+      canonicalHash.startsWith("#") || canonicalHash === "" ? canonicalHash : `#${canonicalHash}`
   }
   return url
 }
@@ -391,8 +390,8 @@ function defaultHistoryWindow(): DashboardHistoryWindow | null {
 }
 
 /**
- * Replace or push the current `Window.history` entry using a separate `URL`
- * object when the serialized path+query+hash changes. No-op during SSR.
+ * Replace or push the current `Window.history` entry using a separate `URL` object when the
+ * serialized path+query+hash changes. No-op during SSR.
  */
 export function writeDashboardUrl(
   state: DashboardUrlState,

@@ -1,6 +1,7 @@
 /**
- * @file packages/api/src/types.ts
- * @description Dependency-injection interfaces for `createDashboardApi(deps)`.
+ * Dependency-injection interfaces for `createDashboardApi(deps)`.
+ *
+ * @file Packages/api/src/types.ts
  */
 
 import type {
@@ -25,9 +26,9 @@ import type { ConfigStatusStore } from "./config_status.ts"
 import type { ShiftSessionLogStore } from "./shift_logs.ts"
 
 /**
- * One completed `Bun.build` DCE probe. `generatedAt` is the probe's completion
- * time, not the response time: the server caches the probe and re-serves it, so a
- * response timestamp would make a stale probe look fresh.
+ * One completed `Bun.build` DCE probe. `generatedAt` is the probe's completion time, not the
+ * response time: the server caches the probe and re-serves it, so a response timestamp would make a
+ * stale probe look fresh.
  */
 export interface BuildMatrixStaticDirProbe {
   readonly wildcardPath: string
@@ -97,8 +98,8 @@ export interface DashboardApiDeps {
   /** Required fail-closed authentication hook guarding all non-public routes. */
   readonly enforceAuth: (req: Request) => Promise<Response | null>
   /**
-   * Independent admin elevation hook guarding `POST /api/terminal/exec` and
-   * high-impact operations. If omitted at runtime, the router fails closed (`403`).
+   * Independent admin elevation hook guarding `POST /api/terminal/exec` and high-impact operations.
+   * If omitted at runtime, the router fails closed (`403`).
    */
   readonly enforceAdminAuth?: ((req: Request) => Promise<Response | null>) | undefined
   /** Optional custom terminal command validator (router applies a strict allowlist by default). */
@@ -121,7 +122,10 @@ export interface DashboardApiDeps {
     ((req: Request, spec: EncodedResponseSpec) => Response | Promise<Response>) | undefined
   /** Full internal health payload (served ONLY on authenticated `/api/health/detail`). */
   readonly getHealthPayload: () => Promise<object> | object
-  /** Minimal unauthenticated liveness payload (`{ status, version }`) for `/health` and `/api/health`. */
+  /**
+   * Minimal unauthenticated liveness payload (`{ status, version }`) for `/health` and
+   * `/api/health`.
+   */
   readonly getPublicHealthPayload?:
     | (() =>
         | Promise<{ readonly status: string; readonly version: string }>
@@ -169,9 +173,9 @@ export interface DashboardApiDeps {
   }
   readonly getLiveWagersPayload: () => Promise<object>
   /**
-   * Panel-policy stamp merged into `/api/wagers` and `/api/live-wagers`.
-   * Optional so hermetic API tests need no policy file; when absent the feed
-   * response is unchanged. The host wires `loadWagersTabPolicyStamp()`.
+   * Panel-policy stamp merged into `/api/wagers` and `/api/live-wagers`. Optional so hermetic API
+   * tests need no policy file; when absent the feed response is unchanged. The host wires
+   * `loadWagersTabPolicyStamp()`.
    */
   readonly getWagersTabPolicy?: (() => Promise<WagersTabPolicyStamp | null>) | undefined
   readonly getTiersConfig: () => Promise<unknown>
@@ -190,13 +194,13 @@ export interface DashboardApiDeps {
     readonly getShiftSummary: (operatorId: string) => unknown
   }
   /**
-   * Optional shift session action log store powering `GET/POST /api/shift/logs`.
-   * When omitted, `createDashboardApi` creates a process-local ring-buffered store.
+   * Optional shift session action log store powering `GET/POST /api/shift/logs`. When omitted,
+   * `createDashboardApi` creates a process-local ring-buffered store.
    */
   readonly shiftLogs?: ShiftSessionLogStore | undefined
   /**
-   * Optional configuration status & component traceability store powering
-   * `GET/POST/DELETE /api/config/status`.
+   * Optional configuration status & component traceability store powering `GET/POST/DELETE
+   * /api/config/status`.
    */
   readonly configStatus?: ConfigStatusStore | undefined
   readonly getTaxonomyCatalog: () => unknown
@@ -204,8 +208,8 @@ export interface DashboardApiDeps {
   readonly shadowDbPath?: string | undefined
   readonly forceShadowFixture?: boolean | undefined
   /**
-   * DCE build-matrix probe. `force` recompiles the three targets instead of
-   * returning the process-wide cached probe.
+   * DCE build-matrix probe. `force` recompiles the three targets instead of returning the
+   * process-wide cached probe.
    */
   readonly getBuildMatrix: (force?: boolean) => Promise<BuildMatrixProbe>
   readonly handleMcp?: ((req: Request) => Response | Promise<Response>) | undefined
@@ -221,9 +225,9 @@ export interface DashboardApiDeps {
       }) => Promise<R2PipelineApiResponse> | R2PipelineApiResponse)
     | undefined
   /**
-   * Process-local freshness samples for the R2 sinks. Optional so hermetic API
-   * tests need no service; when absent the route reports an empty series
-   * (`source: "process-memory"`, no samples) instead of inventing points.
+   * Process-local freshness samples for the R2 sinks. Optional so hermetic API tests need no
+   * service; when absent the route reports an empty series (`source: "process-memory"`, no samples)
+   * instead of inventing points.
    */
   readonly getR2PipelineHistoryPayload?:
     | ((options?: {
@@ -232,8 +236,8 @@ export interface DashboardApiDeps {
       }) => Promise<R2PipelineHistoryApiResponse> | R2PipelineHistoryApiResponse)
     | undefined
   /**
-   * Header-only `sportsdesk:*` provenance for one public R2 PNG/WebP key.
-   * Optional: when absent the route reports an explicit "not configured" issue.
+   * Header-only `sportsdesk:*` provenance for one public R2 PNG/WebP key. Optional: when absent the
+   * route reports an explicit "not configured" issue.
    */
   readonly getR2ImageProvenancePayload?:
     | ((options: {
@@ -251,8 +255,8 @@ export interface DashboardApiDeps {
 }
 
 /**
- * Stable, build-independent identity of the wagers-tab policy the server carries.
- * Read from `packages/ui/src/config/wagers.toml` at request time.
+ * Stable, build-independent identity of the wagers-tab policy the server carries. Read from
+ * `packages/ui/src/config/wagers.toml` at request time.
  */
 export interface WagersTabPolicyStamp {
   /** `[table].policy_tag`, e.g. `wagers-policy/v1`. */

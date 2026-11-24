@@ -1,7 +1,8 @@
 /**
- * @file packages/ui/src/panels/LiveTickerOverlay.tsx
- * @description Optional dockable Bloomberg-style Live Wager Ticker overlay so operators
- * can monitor sharp/whale wager flow without leaving the Profiles or Downlines context.
+ * Optional dockable Bloomberg-style Live Wager Ticker overlay so operators can monitor sharp/whale
+ * wager flow without leaving the Profiles or Downlines context.
+ *
+ * @file Packages/ui/src/panels/LiveTickerOverlay.tsx
  */
 import { ArrowUpRight, Dock, Filter, Radio, X } from "lucide-react"
 import type React from "react"

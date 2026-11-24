@@ -1,8 +1,9 @@
 /**
- * @file packages/backend/src/markdown.ts
- * @description Stat-cached Markdown -> HTML renderer for repo-owned `dashboard.md`.
- * Uses native `Bun.markdown.html()` + `Bun.nanoseconds()` when running under Bun,
- * falling back to `marked` + `process.hrtime.bigint()` under Node.js.
+ * Stat-cached Markdown -> HTML renderer for repo-owned `dashboard.md`. Uses native
+ * `Bun.markdown.html()` + `Bun.nanoseconds()` when running under Bun, falling back to `marked` +
+ * `process.hrtime.bigint()` under Node.js.
+ *
+ * @file Packages/backend/src/markdown.ts
  */
 
 import { readFile } from "node:fs/promises"

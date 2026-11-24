@@ -1,7 +1,8 @@
 /**
- * @file src/profile/validate.ts
- * @description Strict allowlist validation for incoming ProfileTheme payloads.
- * Nothing from the request body is coerced or written raw.
+ * Strict allowlist validation for incoming ProfileTheme payloads. Nothing from the request body is
+ * coerced or written raw.
+ *
+ * @file Src/profile/validate.ts
  */
 
 import type { ColorDepth, ProfileTheme, ThemeMode } from "./types.ts"

@@ -64,9 +64,7 @@ describe("Header Light/Dark Theme Toggle", () => {
     expect(tokensCss).toContain("--neutral-11: #0f172a;")
 
     expect(deskCss).toContain('[data-dashboard-theme="light"] > header')
-    expect(deskCss).toContain(
-      '[data-dashboard-theme="light"] > section[aria-label="Operations Command Ribbon"]',
-    )
+    expect(deskCss).toContain('[data-dashboard-theme="light"] > section[aria-label="Operations Command Ribbon"]')
     expect(deskCss).toContain('[data-dashboard-theme="light"] > main.sd-main-canvas')
   })
 })

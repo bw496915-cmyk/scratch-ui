@@ -79,6 +79,21 @@ export {
 } from "./HeaderSectionViews.tsx"
 export { RiskExposureChart, type RiskExposureChartProps } from "./RiskExposureChart.tsx"
 export {
+  RiskExposureD3Chart,
+  computeRiskExposureD3Layout,
+  findNearestExposureBucketIndex,
+  primaryValueForMode,
+  secondaryValueForMode,
+  type RiskExposureD3ChartProps,
+  type RiskExposureD3Dimensions,
+  type RiskExposureD3HeatRect,
+  type RiskExposureD3Layout,
+  type RiskExposureD3Mode,
+  type RiskExposureD3ReferenceLine,
+  type RiskExposureD3SpikeNode,
+  type RiskExposureD3Tick,
+} from "../viz/RiskExposureD3Chart.tsx"
+export {
   KeyboardShortcutsPanel,
   GLOBAL_KEYBOARD_SHORTCUTS,
   type KeyboardShortcutEntry,

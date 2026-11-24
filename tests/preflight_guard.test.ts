@@ -1,8 +1,8 @@
 /**
- * @file tests/preflight_guard.test.ts
- * @description Comprehensive tests for `assertSafeExecArgv` plus a live Bun 1.4.4
- * runtime contract assertion proving `--no-env-file` does NOT suppress explicit
- * `--env-file=<path>` loading (so the pairing exemption stays permanently deleted).
+ * Comprehensive tests for `assertSafeExecArgv` plus a live Bun 1.4.4 runtime contract assertion proving `--no-env-file`
+ * does NOT suppress explicit `--env-file=<path>` loading (so the pairing exemption stays permanently deleted).
+ *
+ * @file Tests/preflight_guard.test.ts
  */
 
 import { describe, expect, test } from "bun:test"
@@ -16,9 +16,7 @@ const BLEED = ERR_CF_TOKEN_BLEED_10000
 
 describe("term-profile startup preflight (fail-closed, no --no-env-file pairing exemption)", () => {
   test("allows clean execArgv without --env-file", () => {
-    expect(() =>
-      assertSafeExecArgv(["--smol", "--disallow-code-generation-from-strings=strict"]),
-    ).not.toThrow()
+    expect(() => assertSafeExecArgv(["--smol", "--disallow-code-generation-from-strings=strict"])).not.toThrow()
   })
 
   test("allows --no-env-file alone (disables auto-loading .env)", () => {
@@ -33,12 +31,8 @@ describe("term-profile startup preflight (fail-closed, no --no-env-file pairing 
   test("rejects bare or empty --env-file (even when an allowlist is configured)", () => {
     expect(() => assertSafeExecArgv(["--env-file"])).toThrow(BLEED)
     expect(() => assertSafeExecArgv(["--env-file="])).toThrow(BLEED)
-    expect(() => assertSafeExecArgv(["--env-file"], "", { allowedEnvFiles: ["safe.env"] })).toThrow(
-      BLEED,
-    )
-    expect(() =>
-      assertSafeExecArgv(["--env-file="], "", { allowedEnvFiles: ["safe.env"] }),
-    ).toThrow(BLEED)
+    expect(() => assertSafeExecArgv(["--env-file"], "", { allowedEnvFiles: ["safe.env"] })).toThrow(BLEED)
+    expect(() => assertSafeExecArgv(["--env-file="], "", { allowedEnvFiles: ["safe.env"] })).toThrow(BLEED)
   })
 
   test("rejects --env-file even when paired with --no-env-file in EITHER order (Bun loads --env-file unconditionally)", () => {
@@ -60,9 +54,7 @@ describe("term-profile startup preflight (fail-closed, no --no-env-file pairing 
   })
 
   test("rejects multiple --env-file flags unless EVERY path is explicitly allowlisted", () => {
-    expect(() =>
-      assertSafeExecArgv(["--no-env-file", "--env-file=a.env", "--env-file=b.env"]),
-    ).toThrow(BLEED)
+    expect(() => assertSafeExecArgv(["--no-env-file", "--env-file=a.env", "--env-file=b.env"])).toThrow(BLEED)
     expect(() =>
       assertSafeExecArgv(["--env-file=safe.env", "--env-file=r2.env"], "", {
         allowedEnvFiles: ["safe.env"],

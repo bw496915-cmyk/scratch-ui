@@ -1,7 +1,8 @@
 /**
- * @file lib/image_avif_fallback.ts
- * @description Capability-cached AVIF -> WebP encoder fallback (`ERR_IMAGE_FORMAT_UNSUPPORTED`)
- * that preserves `outBlob.type` for R2 (`s3.file(key, { type })`) and `string | Blob` RPC payloads.
+ * Capability-cached AVIF -> WebP encoder fallback (`ERR_IMAGE_FORMAT_UNSUPPORTED`) that preserves
+ * `outBlob.type` for R2 (`s3.file(key, { type })`) and `string | Blob` RPC payloads.
+ *
+ * @file Lib/image_avif_fallback.ts
  */
 import { type BinaryInput, toBytes } from "./binary.ts"
 import { injectXmp } from "./xmp_container.ts"
@@ -45,8 +46,8 @@ export interface ImageEncoderPipeline {
 }
 
 /**
- * Minimal S3/R2 client contract supporting `s3.file(key, { type })` so `outBlob.type`
- * flows cleanly into R2 `Content-Type` headers without ambient globals.
+ * Minimal S3/R2 client contract supporting `s3.file(key, { type })` so `outBlob.type` flows cleanly
+ * into R2 `Content-Type` headers without ambient globals.
  */
 export interface R2FileClientLike {
   file(
@@ -103,12 +104,13 @@ function toTypedBlob(bytes: Uint8Array, mimeType: string): Blob {
 
 /**
  * Encodes an image pipeline with capability-cached AVIF -> WebP fallback:
+ *
  * - On the first `ERR_IMAGE_FORMAT_UNSUPPORTED` from `pipeline.avif(...)`, caches
- *   `cachedAvifEncodeSupported = false` and immediately re-encodes via a fresh WebP pipeline
- *   with strict `{ lossless: false, quality }`.
+ *   `cachedAvifEncodeSupported = false` and immediately re-encodes via a fresh WebP pipeline with
+ *   strict `{ lossless: false, quality }`.
  * - Subsequent `"avif"` requests skip the failing native call immediately and go straight to WebP.
- * - Preserves the true output MIME type on `outBlob.type` (`"image/avif"` or `"image/webp"`),
- *   and stamps optional UTF-8 XMP whenever the resolved output format is `"webp"` or `"png"`.
+ * - Preserves the true output MIME type on `outBlob.type` (`"image/avif"` or `"image/webp"`), and
+ *   stamps optional UTF-8 XMP whenever the resolved output format is `"webp"` or `"png"`.
  */
 export async function encodeImageWithAvifFallback(
   createPipeline: () => ImageEncoderPipeline,
@@ -191,9 +193,9 @@ export async function encodeImageWithAvifFallback(
 }
 
 /**
- * Writes an encoded image `Blob` to R2 using `s3.file(key, { type: outBlob.type })`
- * so the stored R2 `Content-Type` always reflects the resolved output format
- * (e.g. `image/webp` after an AVIF -> WebP fallback rather than a stale `image/avif`).
+ * Writes an encoded image `Blob` to R2 using `s3.file(key, { type: outBlob.type })` so the stored
+ * R2 `Content-Type` always reflects the resolved output format (e.g. `image/webp` after an AVIF ->
+ * WebP fallback rather than a stale `image/avif`).
  */
 export async function writeImageBlobToR2(
   s3: R2FileClientLike,
@@ -212,6 +214,7 @@ export async function writeImageBlobToR2(
 
 /**
  * Formats an encoded image `Blob` for `string | Blob` RPC boundaries:
+ *
  * - `"blob"` returns the `Blob` directly with `outBlob.type` intact.
  * - `"data-url"` encodes as `data:${outBlob.type};base64,...` preserving the resolved MIME type.
  */

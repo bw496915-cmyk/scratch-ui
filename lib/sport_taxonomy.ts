@@ -1,15 +1,14 @@
 /**
- * @file lib/sport_taxonomy.ts
- * @description The portal's top-level sport taxonomy, plus a mapping from the wire values the
- * reports actually carry (`SportType`, `SportSubType`) onto it.
+ * The portal's top-level sport taxonomy, plus a mapping from the wire values the reports actually
+ * carry (`SportType`, `SportSubType`) onto it. Two entries in the portal's list are not sports:
  *
- * Two entries in the portal's list are not sports:
- *  - `All Sports` is the absence of a filter, so it is not a category here.
- *  - `LIVE` is a *state*, not a sport. It is modelled as {@link LIVE_FILTER} and applied to
- *    `status`, so a live NFL game is filterable as Football *and* as live without pretending
- *    "Live" is a league.
- * `Virtual` is a genuine product line, so it stays a category even though no captured row
- * maps to it yet.
+ * - `All Sports` is the absence of a filter, so it is not a category here.
+ * - `LIVE` is a _state_, not a sport. It is modelled as {@link LIVE_FILTER} and applied to `status`,
+ *   so a live NFL game is filterable as Football _and_ as live without pretending "Live" is a
+ *   league. `Virtual` is a genuine product line, so it stays a category even though no captured row
+ *   maps to it yet.
+ *
+ * @file Lib/sport_taxonomy.ts
  */
 
 export const SPORT_CATEGORIES = [
@@ -78,8 +77,8 @@ const WIRE_MAP: Readonly<Record<string, SportCategory>> = {
 }
 
 /**
- * League hints for rows whose `SportType` is present but unrecognised. These are *fallbacks*
- * only: an exact `SportType` match always wins.
+ * League hints for rows whose `SportType` is present but unrecognised. These are _fallbacks_ only:
+ * an exact `SportType` match always wins.
  */
 const SUBSPORT_HINTS: Readonly<Record<string, SportCategory>> = {
   nfl: "Football",
@@ -107,8 +106,8 @@ function key(raw: unknown): string {
 }
 
 /**
- * Maps a journal row or scoreboard game onto the taxonomy. Unknown sports become `Other`
- * rather than being dropped, so a new league still appears in the UI under an honest label.
+ * Maps a journal row or scoreboard game onto the taxonomy. Unknown sports become `Other` rather
+ * than being dropped, so a new league still appears in the UI under an honest label.
  */
 export function sportCategoryFor(input: {
   readonly sportType?: unknown

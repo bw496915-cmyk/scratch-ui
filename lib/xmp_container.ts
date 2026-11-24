@@ -1,8 +1,9 @@
 /**
- * @file lib/xmp_container.ts
- * @description Single-source image container sniffer, metadata reader, and zero-dependency UTF-8
- * XMP injector for WebP (RIFF VP8/VP8L -> VP8X with 0x04 | 0x10, even-padded `XMP `),
- * PNG (`tEXt` + `iTXt` before `IEND`), and explicit AVIF (`image/avif` ISOBMFF) handling.
+ * Single-source image container sniffer, metadata reader, and zero-dependency UTF-8 XMP injector
+ * for WebP (RIFF VP8/VP8L -> VP8X with 0x04 | 0x10, even-padded `XMP `), PNG (`tEXt` + `iTXt`
+ * before `IEND`), and explicit AVIF (`image/avif` ISOBMFF) handling.
+ *
+ * @file Lib/xmp_container.ts
  */
 import { type BinaryInput, concatBytes, crc32Bytes, toBytes } from "./binary.ts"
 
@@ -18,8 +19,7 @@ export const VP8X_FLAG_ALPHA = 0x10
 
 // Standard Adobe XMP UUID box identifier inside ISO-BMFF containers (AVIF/HEIF)
 const XMP_ISOBMFF_UUID = new Uint8Array([
-  0xbe, 0x7a, 0xcf, 0xcb, 0x97, 0xa9, 0x42, 0xe8,
-  0x9c, 0x71, 0x99, 0x94, 0x91, 0xe3, 0xaf, 0xac,
+  0xbe, 0x7a, 0xcf, 0xcb, 0x97, 0xa9, 0x42, 0xe8, 0x9c, 0x71, 0x99, 0x94, 0x91, 0xe3, 0xaf, 0xac,
 ])
 
 const AVIF_BRANDS = new Set(["avif", "avis"])
@@ -36,9 +36,7 @@ export interface XmpContainerHandlingRow {
   readonly notes: string
 }
 
-/**
- * Explicit container handling matrix covering WebP, PNG, and AVIF (`image/avif`).
- */
+/** Explicit container handling matrix covering WebP, PNG, and AVIF (`image/avif`). */
 export const XMP_CONTAINER_MATRIX: readonly XmpContainerHandlingRow[] = [
   {
     format: "webp",
@@ -80,12 +78,7 @@ export interface SniffedImageInfo {
 }
 
 function readFourCC(buf: Uint8Array, offset: number): string {
-  return String.fromCharCode(
-    buf[offset]!,
-    buf[offset + 1]!,
-    buf[offset + 2]!,
-    buf[offset + 3]!,
-  )
+  return String.fromCharCode(buf[offset]!, buf[offset + 1]!, buf[offset + 2]!, buf[offset + 3]!)
 }
 
 function writeFourCC(buf: Uint8Array, offset: number, fourCC: string): void {
@@ -127,9 +120,7 @@ function readAvifFtypBrands(bytes: Uint8Array): readonly string[] {
   return brands
 }
 
-/**
- * Magic-byte format sniffer for WebP, PNG, AVIF (`image/avif`), JPEG, and GIF.
- */
+/** Magic-byte format sniffer for WebP, PNG, AVIF (`image/avif`), JPEG, and GIF. */
 export function sniffImageFormat(bytes: Uint8Array): SniffedImageFormat {
   if (startsWith(bytes, 0, PNG_SIGNATURE)) return "png"
   if (
@@ -211,16 +202,12 @@ export function sniffImageInfo(bytes: Uint8Array): SniffedImageInfo {
 }
 
 /**
- * Injects or replaces a UTF-8 XMP packet in a WebP RIFF container.
- * Promotes simple `VP8 ` / `VP8L` containers to `VP8X` (`0x04 | 0x10` when alpha present),
- * writes an even-padded `XMP ` chunk, and sets RIFF size = `totalBytes - 8`.
+ * Injects or replaces a UTF-8 XMP packet in a WebP RIFF container. Promotes simple `VP8 ` / `VP8L`
+ * containers to `VP8X` (`0x04 | 0x10` when alpha present), writes an even-padded `XMP ` chunk, and
+ * sets RIFF size = `totalBytes - 8`.
  */
 export function injectWebpXmp(webp: Uint8Array, xmpXml: string): Uint8Array {
-  if (
-    webp.byteLength < 12 ||
-    readFourCC(webp, 0) !== "RIFF" ||
-    readFourCC(webp, 8) !== "WEBP"
-  ) {
+  if (webp.byteLength < 12 || readFourCC(webp, 0) !== "RIFF" || readFourCC(webp, 8) !== "WEBP") {
     throw new Error("ERR_XMP_INVALID_WEBP: Missing RIFF/WEBP header")
   }
 
@@ -327,15 +314,11 @@ export interface ExtractedWebpXmp {
 }
 
 /**
- * Walks a WebP RIFF container to extract dimensions, `VP8X` flags, chunk sequence,
- * RIFF length integrity (`riffSize === total - 8`), and UTF-8 `XMP ` payload.
+ * Walks a WebP RIFF container to extract dimensions, `VP8X` flags, chunk sequence, RIFF length
+ * integrity (`riffSize === total - 8`), and UTF-8 `XMP ` payload.
  */
 export function extractWebpXmp(webp: Uint8Array): ExtractedWebpXmp {
-  if (
-    webp.byteLength < 12 ||
-    readFourCC(webp, 0) !== "RIFF" ||
-    readFourCC(webp, 8) !== "WEBP"
-  ) {
+  if (webp.byteLength < 12 || readFourCC(webp, 0) !== "RIFF" || readFourCC(webp, 8) !== "WEBP") {
     return {
       xmp: null,
       vp8xFlags: null,
@@ -400,8 +383,8 @@ export function extractWebpXmp(webp: Uint8Array): ExtractedWebpXmp {
 }
 
 /**
- * Injects or replaces a UTF-8 XMP packet in a PNG `iTXt` chunk immediately before `IEND`,
- * computing the chunk CRC-32 via `crc32Bytes` from `lib/binary.ts`.
+ * Injects or replaces a UTF-8 XMP packet in a PNG `iTXt` chunk immediately before `IEND`, computing
+ * the chunk CRC-32 via `crc32Bytes` from `lib/binary.ts`.
  */
 export function injectPngXmp(png: Uint8Array, xmpXml: string): Uint8Array {
   if (!startsWith(png, 0, PNG_SIGNATURE)) {
@@ -474,8 +457,8 @@ function decodeLatin1(bytes: Uint8Array): string {
 }
 
 /**
- * Walks a PNG stream once to read `IHDR` geometry/color-type, `tEXt` key/value pairs,
- * and uncompressed UTF-8 `iTXt` chunks (both `XML:com.adobe.xmp` and key/value text entries).
+ * Walks a PNG stream once to read `IHDR` geometry/color-type, `tEXt` key/value pairs, and
+ * uncompressed UTF-8 `iTXt` chunks (both `XML:com.adobe.xmp` and key/value text entries).
  */
 export function extractPngMetadata(png: Uint8Array): ExtractedPngMetadata {
   if (!startsWith(png, 0, PNG_SIGNATURE)) {
@@ -585,8 +568,8 @@ export interface ExtractedAvifInfo {
 }
 
 /**
- * Explicit read-only ISOBMFF handler for `image/avif`: inspects `ftyp` brands,
- * optional `ispe` spatial extent dimensions, and Adobe XMP UUID boxes if present.
+ * Explicit read-only ISOBMFF handler for `image/avif`: inspects `ftyp` brands, optional `ispe`
+ * spatial extent dimensions, and Adobe XMP UUID boxes if present.
  */
 export function extractAvifMetadata(avif: Uint8Array): ExtractedAvifInfo {
   const brands = readAvifFtypBrands(avif)
@@ -615,11 +598,7 @@ export function extractAvifMetadata(avif: Uint8Array): ExtractedAvifInfo {
     const boxSize = rawSize === 0 ? avif.byteLength - offset : rawSize
     if (boxSize < 8 || offset + boxSize > avif.byteLength) break
 
-    if (
-      boxType === "uuid" &&
-      boxSize >= 24 &&
-      startsWith(avif, offset + 8, XMP_ISOBMFF_UUID)
-    ) {
+    if (boxType === "uuid" && boxSize >= 24 && startsWith(avif, offset + 8, XMP_ISOBMFF_UUID)) {
       xmp = textDecoder.decode(avif.subarray(offset + 24, offset + boxSize))
     } else if (boxType === "meta") {
       // Scan inside meta box for `ispe` (ImageSpatialExtentsProperty: 12-byte fullbox header + u32 w + u32 h)
@@ -655,9 +634,9 @@ export function extractAvifMetadata(avif: Uint8Array): ExtractedAvifInfo {
 }
 
 /**
- * Auto-detects WebP, PNG, or AVIF by magic bytes and injects UTF-8 XMP.
- * AVIF (`image/avif`) is explicitly rejected with `ERR_XMP_AVIF_UNSUPPORTED`
- * so callers route through the AVIF -> WebP fallback rather than corrupting ISOBMFF boxes.
+ * Auto-detects WebP, PNG, or AVIF by magic bytes and injects UTF-8 XMP. AVIF (`image/avif`) is
+ * explicitly rejected with `ERR_XMP_AVIF_UNSUPPORTED` so callers route through the AVIF -> WebP
+ * fallback rather than corrupting ISOBMFF boxes.
  */
 export function injectXmp(imageBytes: Uint8Array, xmpXml: string): Uint8Array {
   const format = sniffImageFormat(imageBytes)
@@ -703,8 +682,8 @@ export interface ContainerMetadataSnapshot {
 }
 
 /**
- * Single delegated container metadata inspector used by `lib/image_provenance.ts`.
- * Avoids duplicating RIFF/PNG/ISOBMFF walkers across consumers.
+ * Single delegated container metadata inspector used by `lib/image_provenance.ts`. Avoids
+ * duplicating RIFF/PNG/ISOBMFF walkers across consumers.
  */
 export async function extractContainerMetadata(
   input: BinaryInput,

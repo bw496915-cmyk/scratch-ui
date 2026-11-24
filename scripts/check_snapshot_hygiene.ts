@@ -1,13 +1,15 @@
 /**
- * @file scripts/check_snapshot_hygiene.ts
- * @description Zero-dependency lexical static checker enforcing Bun `bun:test`
- * snapshot lint rules across `tests/`:
- * - `bun:test/prefer-snapshot-hint`: requires an explicit hint string when a
- *   single `test(...)` / `it(...)` block contains multiple `toMatchSnapshot` calls.
+ * Zero-dependency lexical static checker enforcing Bun `bun:test` snapshot lint rules across
+ * `tests/`:
+ *
+ * - `bun:test/prefer-snapshot-hint`: requires an explicit hint string when a single `test(...)` /
+ *   `it(...)` block contains multiple `toMatchSnapshot` calls.
  * - `bun:test/no-large-snapshots`: enforces max 50 lines for inline snapshots.
  * - `bun:test/no-interpolation-in-snapshots`: bans `${...}` inside inline snapshots.
- * - Verifies every `.snap` file starts with a recognized runner header
- *   (`// Bun Snapshot v1`, `// Vitest Snapshot v1`, or `// Jest Snapshot v1`).
+ * - Verifies every `.snap` file starts with a recognized runner header (`// Bun Snapshot v1`, `//
+ *   Vitest Snapshot v1`, or `// Jest Snapshot v1`).
+ *
+ * @file Scripts/check_snapshot_hygiene.ts
  */
 
 import { readdirSync, readFileSync, statSync } from "node:fs"
@@ -38,8 +40,8 @@ interface LexToken {
 }
 
 /**
- * Lightweight JS/TS lexer skipping comments and tokenizing strings, template
- * literals (with `${...}` detection), identifiers, and punctuation.
+ * Lightweight JS/TS lexer skipping comments and tokenizing strings, template literals (with
+ * `${...}` detection), identifiers, and punctuation.
  */
 function tokenizeSource(source: string): readonly LexToken[] {
   const tokens: LexToken[] = []
@@ -175,9 +177,7 @@ function findMatchingClose(
   return tokens.length - 1
 }
 
-/**
- * Scan a test file source string for Bun snapshot lint rule violations.
- */
+/** Scan a test file source string for Bun snapshot lint rule violations. */
 export function lintSnapshotTestSource(
   source: string,
   fileLabel: string,

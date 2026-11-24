@@ -142,9 +142,8 @@ export const TERMINAL_COMMAND_SPECS = commandSpecs
   }))
 
 /**
- * Canonical commands first, then shortcodes: `handleAutocomplete` uses
- * `startsWith` order, so a prefix that names a command must not be shadowed by
- * a shortcode defined earlier in the list.
+ * Canonical commands first, then shortcodes: `handleAutocomplete` uses `startsWith` order, so a
+ * prefix that names a command must not be shadowed by a shortcode defined earlier in the list.
  */
 export const CLIENT_AUTOCOMPLETE_COMMANDS: readonly string[] = [
   ...new Set([
@@ -166,10 +165,10 @@ export interface TerminalCommandSuggestion {
 export const TERMINAL_SUGGESTION_LIMIT = 6
 
 /**
- * Inline palette suggestions for the token being typed. Returns nothing once
- * the operator has started on arguments (a space is present) or has typed a
- * complete canonical command, so the palette neither covers the output nor
- * captures the ↑/↓ history keys while a real command is being composed.
+ * Inline palette suggestions for the token being typed. Returns nothing once the operator has
+ * started on arguments (a space is present) or has typed a complete canonical command, so the
+ * palette neither covers the output nor captures the ↑/↓ history keys while a real command is being
+ * composed.
  */
 export function suggestTerminalCommands(
   rawInput: string,

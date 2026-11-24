@@ -1,6 +1,7 @@
 /**
- * @file src/lib/dns_boundary.ts
- * @description L1 boundary module for strict hostname validation and IP-family-enforced Bun.dns lookups.
+ * L1 boundary module for strict hostname validation and IP-family-enforced Bun.dns lookups.
+ *
+ * @file Src/lib/dns_boundary.ts
  */
 
 import { lookup as nodeDnsLookup } from "node:dns/promises"
@@ -61,7 +62,8 @@ const DNS_LABEL_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/
 const DEFAULT_LOOKUP_TIMEOUT_MS = 5_000
 
 /**
- * Validates and normalizes a bare hostname or literal IP (no schemes, ports, brackets, or IPv6 zone IDs).
+ * Validates and normalizes a bare hostname or literal IP (no schemes, ports, brackets, or IPv6 zone
+ * IDs).
  */
 export function assertCleanHostname(raw: string): string {
   if (typeof raw !== "string" || raw.length === 0) {
@@ -190,9 +192,7 @@ async function resolveWithAdapter(
   }))
 }
 
-/**
- * Resolves a validated hostname strictly enforcing the requested IP family (4 or 6) and timeout.
- */
+/** Resolves a validated hostname strictly enforcing the requested IP family (4 or 6) and timeout. */
 export async function lookupStrictFamily(
   hostname: string,
   options: LookupStrictFamilyOptions = {},

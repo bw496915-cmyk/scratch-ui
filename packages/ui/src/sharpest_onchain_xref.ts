@@ -1,7 +1,7 @@
 /**
- * Browser-safe cross-reference engine comparing Sharpest SportsDesk profiles against
- * live on-chain wager tracking (`GET /api/graph/live-feed`) and cross-domain bridge
- * P&L divergence leads (`GET /api/bridge/value`).
+ * Browser-safe cross-reference engine comparing Sharpest SportsDesk profiles against live on-chain
+ * wager tracking (`GET /api/graph/live-feed`) and cross-domain bridge P&L divergence leads (`GET
+ * /api/bridge/value`).
  */
 import type { CustomerFlaggedTicketForensics, ShowcaseCustomer } from "./types.ts"
 
@@ -221,8 +221,8 @@ export function parseCrossDomainBridgeSnapshot(raw: unknown): CrossDomainBridgeS
 }
 
 /**
- * Index live on-chain wallet tracking records and pending/shadow on-chain wagers
- * from `docs/graph-live-feed.json` (`GET /api/graph/live-feed`) by uppercase customer ID.
+ * Index live on-chain wallet tracking records and pending/shadow on-chain wagers from
+ * `docs/graph-live-feed.json` (`GET /api/graph/live-feed`) by uppercase customer ID.
  */
 export function indexOnChainWalletTracking(
   rawGraphFeed: unknown,
@@ -350,8 +350,8 @@ export interface BuildSharpestOnChainXrefInput {
 }
 
 /**
- * Cross-reference sharpest SportsDesk profiles against on-chain wallet tracking and
- * cross-domain Polymarket bridge P&L divergence leads.
+ * Cross-reference sharpest SportsDesk profiles against on-chain wallet tracking and cross-domain
+ * Polymarket bridge P&L divergence leads.
  */
 export function buildSharpestOnChainXrefReport(
   input: BuildSharpestOnChainXrefInput,

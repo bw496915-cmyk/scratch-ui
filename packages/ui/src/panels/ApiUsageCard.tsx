@@ -1,12 +1,11 @@
 /**
- * @file packages/ui/src/panels/ApiUsageCard.tsx
- * @description Enhanced Session API usage & Base URL telemetry meter rendered
- * in the Surveillance/Telemetry tab.
+ * Enhanced Session API usage & Base URL telemetry meter rendered in the Surveillance/Telemetry tab.
+ * Shows active Base URL properties (`origin`, `protocol`, `host`, `hostname`, `port`, `pathname`,
+ * `href`, `source`, `sameOrigin`), filterable/sortable normalized endpoints (method + path + base
+ * URL + headers + latency + status), expandable per-endpoint URL/header inspection, and JSON Blob
+ * export.
  *
- * Shows active Base URL properties (`origin`, `protocol`, `host`, `hostname`,
- * `port`, `pathname`, `href`, `source`, `sameOrigin`), filterable/sortable
- * normalized endpoints (method + path + base URL + headers + latency + status),
- * expandable per-endpoint URL/header inspection, and JSON Blob export.
+ * @file Packages/ui/src/panels/ApiUsageCard.tsx
  */
 
 import {

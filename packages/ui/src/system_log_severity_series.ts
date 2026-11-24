@@ -1,8 +1,9 @@
 /**
- * @file packages/ui/src/system_log_severity_series.ts
- * @description Aggregates System Logs entries (`WebLogEntry` and `UnifiedSystemLogRow`)
- * into 24 hourly buckets over the last 24 hours broken down by severity tier
- * (`CRITICAL`, `HIGH`, `WATCH`, `NORMAL`) for the System Logs Recharts bar chart.
+ * Aggregates System Logs entries (`WebLogEntry` and `UnifiedSystemLogRow`) into 24 hourly buckets
+ * over the last 24 hours broken down by severity tier (`CRITICAL`, `HIGH`, `WATCH`, `NORMAL`) for
+ * the System Logs Recharts bar chart.
+ *
+ * @file Packages/ui/src/system_log_severity_series.ts
  */
 
 import type { UnifiedSystemLogRow } from "./system_logs_json_export.ts"
@@ -95,8 +96,8 @@ export function normalizeLogSeverityLevel(rawLevel: string): SystemLogSeverityLe
 }
 
 /**
- * Parses epoch milliseconds from a WebLog entry (`sourceSortMs`, `sourceTime`,
- * or `dateLabel` + `timeEst`) or a UnifiedSystemLogRow (`timestamp`).
+ * Parses epoch milliseconds from a WebLog entry (`sourceSortMs`, `sourceTime`, or `dateLabel` +
+ * `timeEst`) or a UnifiedSystemLogRow (`timestamp`).
  */
 export function parseSystemLogEntryTimestampMs(entry: {
   readonly sourceSortMs?: number | undefined
@@ -165,8 +166,8 @@ export interface Build24HourSeveritySeriesOptions {
 }
 
 /**
- * Buckets arbitrary log records into 24 consecutive 1-hour bins spanning the last
- * 24 hours, counting `CRITICAL`, `HIGH`, `WATCH`, and `NORMAL` severities.
+ * Buckets arbitrary log records into 24 consecutive 1-hour bins spanning the last 24 hours,
+ * counting `CRITICAL`, `HIGH`, `WATCH`, and `NORMAL` severities.
  */
 export function build24HourSeveritySeries<T>(
   rows: readonly T[],

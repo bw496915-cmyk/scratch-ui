@@ -1,7 +1,8 @@
 /**
- * @file packages/ui/src/shadow_pricing/ShadowLadderControlsSection.tsx
- * @description Catalog lockout banner (when point buys are blocked) OR Calibrated
- * Ladder Presets, 5 parameter sliders, 4 cohort KPI cards, and Desk Policy directive.
+ * Catalog lockout banner (when point buys are blocked) OR Calibrated Ladder Presets, 5 parameter
+ * sliders, 4 cohort KPI cards, and Desk Policy directive.
+ *
+ * @file Packages/ui/src/shadow_pricing/ShadowLadderControlsSection.tsx
  */
 
 import React from "react"

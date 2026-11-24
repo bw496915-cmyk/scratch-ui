@@ -1,6 +1,7 @@
 /**
- * @file packages/ui/src/ansi.tsx
- * @description Client-side ANSI parser & React renderer for Terminal Emulator.
+ * Client-side ANSI parser & React renderer for Terminal Emulator.
+ *
+ * @file Packages/ui/src/ansi.tsx
  */
 
 import React from "react"
@@ -51,9 +52,9 @@ const ANSI_BG_MAP: Record<number, string> = {
 }
 
 /**
- * Convert an xterm-256 palette index (0..255) emitted by `Bun.markdown.ansi`
- * (e.g. `38;5;215` / `48;5;236` for dark inline code or `38;5;124` / `48;5;254`
- * for `AnsiTheme.light: true`) into a CSS color string.
+ * Convert an xterm-256 palette index (0..255) emitted by `Bun.markdown.ansi` (e.g. `38;5;215` /
+ * `48;5;236` for dark inline code or `38;5;124` / `48;5;254` for `AnsiTheme.light: true`) into a
+ * CSS color string.
  */
 export function ansi256ToCss(index: number): string | undefined {
   if (!Number.isInteger(index) || index < 0 || index > 255) return undefined

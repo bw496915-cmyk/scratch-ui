@@ -1,13 +1,11 @@
 /**
- * @file packages/ui/src/bun_utilities.ts
- * @description Browser-safe + Bun-native Utilities engine and SPA origin
- * decoupling resolver for the SportsDesk Operations shell.
+ * Browser-safe + Bun-native Utilities engine and SPA origin decoupling resolver for the SportsDesk
+ * Operations shell. Resolves the architectural tension on `● Local :4022 SPA` by decoupling the
+ * frontend SPA origin from hardcoded port assumptions, inspecting live `URLPattern`-validated
+ * `?apiBase=` overrides, and exposing all 19 Bun Runtime Utilities with zero bare `Bun` / `process`
+ * type references (compiles cleanly under `packages/ui/tsconfig.json`'s `types: ["vite/client"]`).
  *
- * Resolves the architectural tension on `● Local :4022 SPA` by decoupling the
- * frontend SPA origin from hardcoded port assumptions, inspecting live
- * `URLPattern`-validated `?apiBase=` overrides, and exposing all 19 Bun Runtime
- * Utilities with zero bare `Bun` / `process` type references (compiles cleanly
- * under `packages/ui/tsconfig.json`'s `types: ["vite/client"]`).
+ * @file Packages/ui/src/bun_utilities.ts
  */
 
 import {
@@ -26,12 +24,7 @@ import {
 } from "./config/dashboard.ts"
 
 export type BunUtilityCategory =
-  | "runtime"
-  | "crypto-encoding"
-  | "compression"
-  | "strings-equality"
-  | "paths-shell"
-  | "module-meta"
+  "runtime" | "crypto-encoding" | "compression" | "strings-equality" | "paths-shell" | "module-meta"
 
 export type BunUtilityId =
   | "upgrade-bun"
@@ -83,7 +76,8 @@ export const BUN_UTILITIES_CATALOG: readonly BunUtilityDescriptor[] = Object.fre
     bunApi: "process.versions.bun / typeof Bun !== 'undefined'",
     browserFallback: "isBunRuntime() via globalThis (zero extra TS types)",
     snippet: "if (process.versions.bun) { /* Bun runtime */ }",
-    summary: "Detects Bun execution via process.versions.bun first, falling back to globalThis.Bun.",
+    summary:
+      "Detects Bun execution via process.versions.bun first, falling back to globalThis.Bun.",
     interactive: true,
   },
   {
@@ -259,10 +253,7 @@ export const BUN_UTILITIES_CATALOG: readonly BunUtilityDescriptor[] = Object.fre
 ])
 
 export type SpaDecoupleMode =
-  | "local-4022-spa"
-  | "decoupled-origin"
-  | "query-override"
-  | "override-rejected"
+  "local-4022-spa" | "decoupled-origin" | "query-override" | "override-rejected"
 
 export interface SpaDecoupleStatus {
   readonly mode: SpaDecoupleMode
@@ -293,7 +284,10 @@ interface BunUtilitiesRuntimeGlobal {
     ) => string
     readonly gzipSync?: (data: Uint8Array) => Uint8Array
     readonly deflateSync?: (data: Uint8Array) => Uint8Array
-    readonly zstdCompressSync?: (data: Uint8Array, options?: { readonly level?: number }) => Uint8Array
+    readonly zstdCompressSync?: (
+      data: Uint8Array,
+      options?: { readonly level?: number },
+    ) => Uint8Array
     readonly escapeHTML?: (value: string) => string
     readonly stripANSI?: (value: string) => string
     readonly sliceAnsi?: (value: string, start: number, end?: number) => string
@@ -304,7 +298,10 @@ interface BunUtilitiesRuntimeGlobal {
     readonly pathToFileURL?: (path: string) => URL
     readonly which?: (bin: string) => string | null
     readonly password?: {
-      readonly hash?: (password: string, options?: { readonly algorithm?: string }) => Promise<string>
+      readonly hash?: (
+        password: string,
+        options?: { readonly algorithm?: string },
+      ) => Promise<string>
     }
     readonly XML?: {
       readonly parse?: (input: string, options?: Record<string, unknown>) => unknown
@@ -318,9 +315,9 @@ function getBunRuntimeObj(): BunUtilitiesRuntimeGlobal["Bun"] {
 }
 
 /**
- * Resolves the decoupling relationship between the browser SPA origin (historically
- * assumed to be `:4022`) and the active validated API base URL, alongside live
- * `URLPattern` startup compilation and Bun runtime detection state.
+ * Resolves the decoupling relationship between the browser SPA origin (historically assumed to be
+ * `:4022`) and the active validated API base URL, alongside live `URLPattern` startup compilation
+ * and Bun runtime detection state.
  */
 export function resolveSpaDecoupleStatus(
   win?: DashboardWindowLocationLike | null,
@@ -654,8 +651,8 @@ export function pathToFileUrlSafe(input: string): string {
 const ALLOWED_WHICH_BINS = new Set(["bun", "node", "git", "sh", "tsc"])
 
 /**
- * Safely probes `Bun.which(bin)` for a fixed allowlist of read-only developer
- * tool names (never passes arbitrary strings to PATH lookups).
+ * Safely probes `Bun.which(bin)` for a fixed allowlist of read-only developer tool names (never
+ * passes arbitrary strings to PATH lookups).
  */
 export function findAllowlistedExecutable(bin: string): {
   readonly bin: string
@@ -699,8 +696,8 @@ export interface ModuleMetaSnapshot {
 }
 
 /**
- * Inspects `import.meta.dir`, `import.meta.file`, `import.meta.path`,
- * `import.meta.main`, and `Bun.main` with graceful browser-URL derivation.
+ * Inspects `import.meta.dir`, `import.meta.file`, `import.meta.path`, `import.meta.main`, and
+ * `Bun.main` with graceful browser-URL derivation.
  */
 export function inspectModuleMetaSnapshot(): ModuleMetaSnapshot {
   const meta = import.meta as unknown as {
@@ -733,9 +730,8 @@ export function inspectModuleMetaSnapshot(): ModuleMetaSnapshot {
 }
 
 /**
- * Demonstrates password hashing using `Bun.password.hash` (Argon2id) under Bun,
- * or a browser-only Web Crypto PBKDF2-SHA-256 preview (production password
- * hashing always executes server-side).
+ * Demonstrates password hashing using `Bun.password.hash` (Argon2id) under Bun, or a browser-only
+ * Web Crypto PBKDF2-SHA-256 preview (production password hashing always executes server-side).
  */
 export async function hashPasswordPreview(sampleInput: string): Promise<{
   readonly algorithm: string
@@ -768,13 +764,14 @@ export async function hashPasswordPreview(sampleInput: string): Promise<{
       256,
     )
     const saltHex = Array.from(salt, (b) => b.toString(16).padStart(2, "0")).join("")
-    const hashHex = Array.from(new Uint8Array(derived), (b) => b.toString(16).padStart(2, "0")).join(
-      "",
-    )
+    const hashHex = Array.from(new Uint8Array(derived), (b) =>
+      b.toString(16).padStart(2, "0"),
+    ).join("")
     return {
       algorithm: "PBKDF2-SHA256 (Web Crypto preview)",
       hash: `$pbkdf2-sha256$i=100000$${saltHex}$${hashHex}`,
-      serverSideNote: "Browser preview only — real password hashing runs server-side with Bun.password.hash.",
+      serverSideNote:
+        "Browser preview only — real password hashing runs server-side with Bun.password.hash.",
     }
   }
 
@@ -793,8 +790,8 @@ export interface BunRuntimeReleaseEnhancement {
 }
 
 /**
- * Curated Bun runtime release guarantees relevant to SportsDesk Ops
- * compiled builds, isolated tests, streaming I/O, and S3/R2 endpoint hardening.
+ * Curated Bun runtime release guarantees relevant to SportsDesk Ops compiled builds, isolated
+ * tests, streaming I/O, and S3/R2 endpoint hardening.
  */
 export const BUN_RUNTIME_RELEASE_ENHANCEMENTS: readonly BunRuntimeReleaseEnhancement[] =
   Object.freeze([
@@ -809,7 +806,8 @@ export const BUN_RUNTIME_RELEASE_ENHANCEMENTS: readonly BunRuntimeReleaseEnhance
       id: "esm-node-addon-fix",
       area: "Bundler",
       title: "ESM .node addon bundling fix",
-      detail: 'import addon from "./x.node" no longer throws __require is not defined in ESM bundles.',
+      detail:
+        'import addon from "./x.node" no longer throws __require is not defined in ESM bundles.',
     },
     {
       id: "test-isolate-no-leak",
@@ -856,12 +854,16 @@ export function isMemoryAllocationError(error: unknown): boolean {
 
 export type SafeTextDecodeResult =
   | { readonly ok: true; readonly encoding: string; readonly text: string }
-  | { readonly ok: false; readonly code: "ERR_MEMORY_ALLOCATION_FAILED" | "ERR_TEXT_DECODE_FAILED"; readonly error: string }
+  | {
+      readonly ok: false
+      readonly code: "ERR_MEMORY_ALLOCATION_FAILED" | "ERR_TEXT_DECODE_FAILED"
+      readonly error: string
+    }
 
 /**
- * Decodes raw bytes using any runtime-supported `TextDecoder` label (e.g.
- * `"utf-8"`, `"windows-1251"`, `"iso-8859-1"`) and surfaces
- * `ERR_MEMORY_ALLOCATION_FAILED` explicitly when allocation fails.
+ * Decodes raw bytes using any runtime-supported `TextDecoder` label (e.g. `"utf-8"`,
+ * `"windows-1251"`, `"iso-8859-1"`) and surfaces `ERR_MEMORY_ALLOCATION_FAILED` explicitly when
+ * allocation fails.
  */
 export function safeDecodeTextBytes(
   bytes: Uint8Array,
@@ -877,21 +879,25 @@ export function safeDecodeTextBytes(
   } catch (err) {
     return {
       ok: false,
-      code: isMemoryAllocationError(err) ? "ERR_MEMORY_ALLOCATION_FAILED" : "ERR_TEXT_DECODE_FAILED",
+      code: isMemoryAllocationError(err)
+        ? "ERR_MEMORY_ALLOCATION_FAILED"
+        : "ERR_TEXT_DECODE_FAILED",
       error: err instanceof Error ? err.message : String(err),
     }
   }
 }
 
 /**
- * Reads a `Blob` or `Response` body as UTF-8 text while classifying
- * `ERR_MEMORY_ALLOCATION_FAILED` explicitly.
+ * Reads a `Blob` or `Response` body as UTF-8 text while classifying `ERR_MEMORY_ALLOCATION_FAILED`
+ * explicitly.
  */
-export async function safeReadBlobText(
-  source: Pick<Blob, "text">,
-): Promise<
+export async function safeReadBlobText(source: Pick<Blob, "text">): Promise<
   | { readonly ok: true; readonly text: string }
-  | { readonly ok: false; readonly code: "ERR_MEMORY_ALLOCATION_FAILED" | "ERR_TEXT_READ_FAILED"; readonly error: string }
+  | {
+      readonly ok: false
+      readonly code: "ERR_MEMORY_ALLOCATION_FAILED" | "ERR_TEXT_READ_FAILED"
+      readonly error: string
+    }
 > {
   try {
     const text = await source.text()
@@ -912,7 +918,10 @@ export async function safeReadBlobText(
 /** Deterministic RFC 4122 URL namespace used for SportsDesk UUIDv5 idempotency keys. */
 export const SPORTSDESK_UI_UUID_NAMESPACE = "6ba7b811-9dad-11d1-80b4-00c04fd430c8" as const
 
-/** Compress UTF-8 text via native `Bun.zstdCompressSync` (returns `unavailable` in browsers without Zstd). */
+/**
+ * Compress UTF-8 text via native `Bun.zstdCompressSync` (returns `unavailable` in browsers without
+ * Zstd).
+ */
 export async function compressZstdText(input: string): Promise<CompressionProbeResult> {
   const raw = new TextEncoder().encode(input)
   const bun = getBunRuntimeObj()
@@ -960,7 +969,12 @@ export function sliceAnsiSafe(input: string, start: number, end?: number): strin
 
 function fallbackDeepMatchUi(subset: unknown, target: unknown): boolean {
   if (Object.is(subset, target)) return true
-  if (subset === null || target === null || typeof subset !== "object" || typeof target !== "object") {
+  if (
+    subset === null ||
+    target === null ||
+    typeof subset !== "object" ||
+    typeof target !== "object"
+  ) {
     return false
   }
   if (Array.isArray(subset)) {
@@ -977,7 +991,10 @@ function fallbackDeepMatchUi(subset: unknown, target: unknown): boolean {
   return true
 }
 
-/** Subset deep match via `Bun.deepMatch` (returns true when `target` contains all properties of `subset`). */
+/**
+ * Subset deep match via `Bun.deepMatch` (returns true when `target` contains all properties of
+ * `subset`).
+ */
 export function deepMatchSafe(subset: unknown, target: unknown): boolean {
   const bun = getBunRuntimeObj()
   if (typeof bun?.deepMatch === "function") {
@@ -1017,7 +1034,11 @@ export async function generateUuidV5(
   combined.set(nsBytes, 0)
   combined.set(nameBytes, nsBytes.byteLength)
 
-  if (typeof crypto !== "undefined" && crypto.subtle && typeof crypto.subtle.digest === "function") {
+  if (
+    typeof crypto !== "undefined" &&
+    crypto.subtle &&
+    typeof crypto.subtle.digest === "function"
+  ) {
     const digest = new Uint8Array(await crypto.subtle.digest("SHA-1", combined))
     const bytes = digest.slice(0, 16)
     bytes[6] = (bytes[6]! & 0x0f) | 0x50 // version 5
@@ -1032,7 +1053,7 @@ export async function generateUuidV5(
     h1 = Math.imul(h1 ^ combined[i]!, 0x01000193) >>> 0
     h2 = Math.imul(h2 ^ (combined[i]! + i), 0x85ebca6b) >>> 0
   }
-  const hex = `${h1.toString(16).padStart(8, "0")}${h2.toString(16).padStart(8, "0")}${(h1 ^ h2).toString(16).padStart(8, "0")}${(h1 + h2 >>> 0).toString(16).padStart(8, "0")}`
+  const hex = `${h1.toString(16).padStart(8, "0")}${h2.toString(16).padStart(8, "0")}${(h1 ^ h2).toString(16).padStart(8, "0")}${((h1 + h2) >>> 0).toString(16).padStart(8, "0")}`
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20, 32)}`
 }
 
@@ -1044,8 +1065,8 @@ export interface BunExtendedUtilDescriptor {
 }
 
 /**
- * Extended `bun.com/docs/runtime/utils.md` APIs actively wired into SportsDesk Ops
- * server hot paths and UI workbench (separate from the 19-entry `BUN_UTILITIES_CATALOG`).
+ * Extended `bun.com/docs/runtime/utils.md` APIs actively wired into SportsDesk Ops server hot paths
+ * and UI workbench (separate from the 19-entry `BUN_UTILITIES_CATALOG`).
  */
 export const BUN_RUNTIME_UTILS_EXTENDED: readonly BunExtendedUtilDescriptor[] = Object.freeze([
   {
@@ -1172,7 +1193,9 @@ export function parseXmlSafe(xml: string): XmlProbeResult {
         const child = root.children[i]
         if (child) children[child.tagName] = child.textContent ?? ""
       }
-      const parsed = { [root.tagName]: Object.keys(children).length > 0 ? children : root.textContent ?? "" }
+      const parsed = {
+        [root.tagName]: Object.keys(children).length > 0 ? children : (root.textContent ?? ""),
+      }
       return { ok: true, engine: "dom-parser", parsed, roundTrip: xml.trim() }
     } catch (err) {
       return {
@@ -1185,8 +1208,15 @@ export function parseXmlSafe(xml: string): XmlProbeResult {
   return { ok: true, engine: "fallback", parsed: { raw: xml.trim() }, roundTrip: xml.trim() }
 }
 
-/** Serialize an object to XML via native `Bun.XML.stringify` or deterministic tag serializer fallback. */
-export function stringifyXmlSafe(rootTag: string, attrs: Record<string, string>, text?: string): string {
+/**
+ * Serialize an object to XML via native `Bun.XML.stringify` or deterministic tag serializer
+ * fallback.
+ */
+export function stringifyXmlSafe(
+  rootTag: string,
+  attrs: Record<string, string>,
+  text?: string,
+): string {
   const bun = getBunRuntimeObj()
   if (typeof bun?.XML?.stringify === "function") {
     const node: Record<string, string> = {}
@@ -1203,6 +1233,3 @@ export function stringifyXmlSafe(rootTag: string, attrs: Record<string, string>,
     ? `<${rootTag}${attrStr}>${escapeXmlAttr(text)}</${rootTag}>`
     : `<${rootTag}${attrStr}/>`
 }
-
-
-

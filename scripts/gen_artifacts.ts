@@ -1,20 +1,20 @@
 /**
- * @file scripts/gen_artifacts.ts
- * @description Deterministic Bun artifact generator & drift gate for SportsDesk Ops Dashboard:
- *  1. Compiles `design/tokens.toml` -> `packages/ui/src/tokens.registry.generated.ts`
- *     and `src/dashboard/tokens.generated.css` (zero drift).
- *  2. Verifies SHA-256 & byte-size integrity of all pipeline diagram artifacts in
- *     `docs/assets/pipeline-artifacts-metadata.json`.
- *  3. Audits all repository Markdown files for broken local links and stale legacy references.
- *  4. Emits deterministic generated artifacts:
- *     - `docs/generated/artifacts-manifest.json`
- *     - `docs/generated/ARTIFACTS_AND_CLI.md`
+ * Deterministic Bun artifact generator & drift gate for SportsDesk Ops Dashboard:
  *
- * Usage:
- *   bun scripts/gen_artifacts.ts                 # regenerate all artifacts
- *   bun scripts/gen_artifacts.ts --check         # fail non-zero on drift or broken links
- *   bun scripts/gen_artifacts.ts --tokens-only   # regenerate token artifacts only
- *   bun scripts/gen_artifacts.ts --tokens-only --check
+ * 1. Compiles `design/tokens.toml` -> `packages/ui/src/tokens.registry.generated.ts` and
+ *    `src/dashboard/tokens.generated.css` (zero drift).
+ * 2. Verifies SHA-256 & byte-size integrity of all pipeline diagram artifacts in
+ *    `docs/assets/pipeline-artifacts-metadata.json`.
+ * 3. Audits all repository Markdown files for broken local links and stale legacy references.
+ * 4. Emits deterministic generated artifacts:
+ *
+ * - `docs/generated/artifacts-manifest.json`
+ * - `docs/generated/ARTIFACTS_AND_CLI.md` Usage: bun scripts/gen_artifacts.ts # regenerate all
+ *   artifacts bun scripts/gen_artifacts.ts --check # fail non-zero on drift or broken links bun
+ *   scripts/gen_artifacts.ts --tokens-only # regenerate token artifacts only bun
+ *   scripts/gen_artifacts.ts --tokens-only --check
+ *
+ * @file Scripts/gen_artifacts.ts
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
@@ -313,8 +313,8 @@ function asNumber(value: unknown): number {
 }
 
 /**
- * Parses `design/tokens.toml` and validates canonical tokens, aliases, layout/motion
- * constants, and CAS state slots.
+ * Parses `design/tokens.toml` and validates canonical tokens, aliases, layout/motion constants, and
+ * CAS state slots.
  */
 export function parseDesignTokensToml(rootDir: string): ParsedDesignTokens {
   const tomlPath = resolve(rootDir, "design/tokens.toml")
@@ -489,7 +489,8 @@ function formatDeclarationLiteral(decl: string): string {
 }
 
 /**
- * Emits `packages/ui/src/tokens.registry.generated.ts` matching `bun fmt` (printWidth=100, semi=false).
+ * Emits `packages/ui/src/tokens.registry.generated.ts` matching `bun fmt` (printWidth=100,
+ * semi=false).
  */
 export function emitTokensRegistryTs(parsed: ParsedDesignTokens): string {
   const canonicalLines = parsed.canonicalTokens.map(
@@ -545,8 +546,8 @@ ${optionLines.join("\n")}
 }
 
 /**
- * Emits `src/dashboard/tokens.generated.css` matching the exact Houdini `@property`
- * and `:root` emission order.
+ * Emits `src/dashboard/tokens.generated.css` matching the exact Houdini `@property` and `:root`
+ * emission order.
  */
 export function emitTokensGeneratedCss(parsed: ParsedDesignTokens): string {
   const canonicalProps = parsed.canonicalTokens
@@ -724,9 +725,9 @@ export interface BrandingAssetSyncEntry {
 
 /**
  * Synchronously verifies every branding asset declared in
- * `public/assets/branding/branding-metadata.json` against on-disk byte sizes,
- * SHA-256 digests, `design/branding.toml`, `public/manifest.webmanifest`, and
- * embedded XMP `sportsdesk:*` + `dc:*` context packets.
+ * `public/assets/branding/branding-metadata.json` against on-disk byte sizes, SHA-256 digests,
+ * `design/branding.toml`, `public/manifest.webmanifest`, and embedded XMP `sportsdesk:*` + `dc:*`
+ * context packets.
  */
 export function auditBrandingAssetsSync(rootDir: string): {
   readonly specPath: string
@@ -1099,8 +1100,8 @@ export function auditMarkdownDocs(
 }
 
 /**
- * Async Markdown link & GFM meta ID auditor using `Bun.Glob.scan()`, `HTMLRewriter` over `Response`,
- * `Bun.markdown.render(..., { headings: { ids: true } })`, and `Bun.file().exists()`.
+ * Async Markdown link & GFM meta ID auditor using `Bun.Glob.scan()`, `HTMLRewriter` over
+ * `Response`, `Bun.markdown.render(..., { headings: { ids: true } })`, and `Bun.file().exists()`.
  */
 export async function auditMarkdownDocsAsync(
   rootDir: string,
@@ -1230,9 +1231,7 @@ function formatAlignedMarkdownTable(
   ].join("\n")
 }
 
-/**
- * Renders deterministic `docs/generated/ARTIFACTS_AND_CLI.md` from the manifest.
- */
+/** Renders deterministic `docs/generated/ARTIFACTS_AND_CLI.md` from the manifest. */
 export function emitArtifactsAndCliMarkdown(manifest: ArtifactsManifest): string {
   const cliTable = formatAlignedMarkdownTable(
     ["Command", "Purpose"],
@@ -1400,9 +1399,7 @@ function syncFile(
   writtenFiles.push(relPath)
 }
 
-/**
- * Runs the unified artifact generator or drift-check gate.
- */
+/** Runs the unified artifact generator or drift-check gate. */
 export function runArtifactPipeline(options: {
   readonly rootDir?: string | undefined
   readonly check?: boolean | undefined

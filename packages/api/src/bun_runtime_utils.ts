@@ -1,7 +1,7 @@
 /**
- * @file packages/api/src/bun_runtime_utils.ts
- * @description Native Bun 1.4.4 Runtime Utilities (`bun.com/docs/runtime/utils.md`)
- * wired for SportsDesk Ops hot paths with portable Node.js 22 fallbacks:
+ * Native Bun 1.4.4 Runtime Utilities (`bun.com/docs/runtime/utils.md`) wired for SportsDesk Ops hot
+ * paths with portable Node.js 22 fallbacks:
+ *
  * - Zstd / Gzip / Deflate compression & HTTP `Accept-Encoding` negotiation
  * - SIMD `Bun.stripANSI`, `Bun.sliceAnsi`, `Bun.stringWidth`, `Bun.wrapAnsi`
  * - SIMD `Bun.indexOfLine` byte-level line scanning (NDJSON / AccessLog ingest)
@@ -9,6 +9,8 @@
  * - `Bun.deepMatch` subset predicate matching
  * - Deterministic `Bun.randomUUIDv5` namespace UUIDs
  * - `Bun.readableStreamTo*` stream consumers
+ *
+ * @file Packages/api/src/bun_runtime_utils.ts
  */
 
 import { createHash } from "node:crypto"
@@ -22,7 +24,10 @@ type BunPeekFn = (<T>(promise: Promise<T> | T) => T | Promise<T>) & {
 }
 
 interface BunUtilsRuntime {
-  readonly zstdCompressSync?: (data: Uint8Array, options?: { readonly level?: number }) => Uint8Array
+  readonly zstdCompressSync?: (
+    data: Uint8Array,
+    options?: { readonly level?: number },
+  ) => Uint8Array
   readonly zstdDecompressSync?: (data: Uint8Array) => Uint8Array
   readonly zstdCompress?: (
     data: Uint8Array,
@@ -72,10 +77,7 @@ export function hasNativeZstd(): boolean {
   )
 }
 
-export function zstdCompressBytes(
-  input: Uint8Array | string,
-  level?: number,
-): Uint8Array | null {
+export function zstdCompressBytes(input: Uint8Array | string, level?: number): Uint8Array | null {
   const bun = getBunUtils()
   if (typeof bun?.zstdCompressSync !== "function") return null
   const raw = typeof input === "string" ? textEncoder.encode(input) : input
@@ -128,8 +130,8 @@ export function gzipDecompressBytes(compressed: Uint8Array): Uint8Array {
 export type NegotiatedEncoding = "zstd" | "gzip" | "identity"
 
 /**
- * Negotiate best supported HTTP response encoding from `Accept-Encoding`.
- * Prefers native `zstd` (Bun 1.4.4) over `gzip`, falling back to `identity`.
+ * Negotiate best supported HTTP response encoding from `Accept-Encoding`. Prefers native `zstd`
+ * (Bun 1.4.4) over `gzip`, falling back to `identity`.
  */
 export function negotiateResponseEncoding(acceptEncoding: string | null): NegotiatedEncoding {
   if (!acceptEncoding) return "identity"
@@ -227,8 +229,8 @@ export function wrapAnsiNative(input: string, columns: number): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Find the next newline byte offset (`0x0a`) in a byte buffer starting at `offset`,
- * using native SIMD `Bun.indexOfLine` when available. Returns `-1` if no newline remains.
+ * Find the next newline byte offset (`0x0a`) in a byte buffer starting at `offset`, using native
+ * SIMD `Bun.indexOfLine` when available. Returns `-1` if no newline remains.
  */
 export function indexOfLineNative(buffer: Uint8Array, offset = 0): number {
   const start = Math.max(0, Math.trunc(offset))
@@ -241,8 +243,8 @@ export function indexOfLineNative(buffer: Uint8Array, offset = 0): number {
 }
 
 /**
- * Split a UTF-8 byte buffer into trimmed non-empty lines using SIMD `Bun.indexOfLine`,
- * avoiding full-buffer UTF-16 `.split("\n")` allocations on large AccessLog / NDJSON inputs.
+ * Split a UTF-8 byte buffer into trimmed non-empty lines using SIMD `Bun.indexOfLine`, avoiding
+ * full-buffer UTF-16 `.split("\n")` allocations on large AccessLog / NDJSON inputs.
  */
 export function splitByteLines(buffer: Uint8Array, maxLines = 100_000): string[] {
   const lines: string[] = []
@@ -276,10 +278,12 @@ export function peekPromiseStatus(
 }
 
 /**
- * Synchronously return the resolved value of an already-fulfilled Promise via
- * `Bun.peek()` without scheduling a microtask, or `undefined` if pending/rejected/unavailable.
+ * Synchronously return the resolved value of an already-fulfilled Promise via `Bun.peek()` without
+ * scheduling a microtask, or `undefined` if pending/rejected/unavailable.
  */
-export function peekFulfilledValue<T>(promise: Promise<T>): { readonly settled: true; readonly value: T } | { readonly settled: false } {
+export function peekFulfilledValue<T>(
+  promise: Promise<T>,
+): { readonly settled: true; readonly value: T } | { readonly settled: false } {
   const peek = getBunUtils()?.peek
   if (typeof peek !== "function") {
     return { settled: false }
@@ -302,8 +306,8 @@ export function peekFulfilledValue<T>(promise: Promise<T>): { readonly settled: 
 // ---------------------------------------------------------------------------
 
 /**
- * Returns `true` when every property in `subset` exists on `target` with deeply
- * equal values, delegating to native `Bun.deepMatch(subset, target)` under Bun.
+ * Returns `true` when every property in `subset` exists on `target` with deeply equal values,
+ * delegating to native `Bun.deepMatch(subset, target)` under Bun.
  */
 export function deepMatchNative(subset: unknown, target: unknown): boolean {
   const bun = getBunUtils()
@@ -356,13 +360,10 @@ function uuidHexToBytes(uuid: string): Uint8Array {
 }
 
 /**
- * Generate a deterministic RFC 4122 UUIDv5 via native `Bun.randomUUIDv5(name, namespace)`
- * (or SHA-1 RFC 4122 fallback under Node.js). Ideal for idempotent alert/archive keys.
+ * Generate a deterministic RFC 4122 UUIDv5 via native `Bun.randomUUIDv5(name, namespace)` (or SHA-1
+ * RFC 4122 fallback under Node.js). Ideal for idempotent alert/archive keys.
  */
-export function randomUuidV5(
-  name: string,
-  namespace: string = SPORTSDESK_UUID_NAMESPACE,
-): string {
+export function randomUuidV5(name: string, namespace: string = SPORTSDESK_UUID_NAMESPACE): string {
   const bun = getBunUtils()
   if (typeof bun?.randomUUIDv5 === "function") {
     return bun.randomUUIDv5(name, namespace)

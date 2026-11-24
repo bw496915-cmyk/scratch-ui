@@ -1,16 +1,17 @@
 /**
- * @file packages/contracts/src/bun_lockfile.ts
- * @description Typed `BunLockFile` schema, pure JSONC parser, install linker
- * strategy resolver (`configVersion`), and lockfile audit summarizer.
+ * Typed `BunLockFile` schema, pure JSONC parser, install linker strategy resolver
+ * (`configVersion`), and lockfile audit summarizer. Matches Bun's `BunLockFile` reference
+ * specification:
  *
- * Matches Bun's `BunLockFile` reference specification:
  * - `lockfileVersion`: lockfile schema version (e.g. `2` for `hasInstallScript` & `libc`).
  * - `configVersion`: governs the default **install linker strategy**:
- *   - `0` or `undefined` (pre-Bun 1.3.2): defaults to `"hoisted"`.
- *   - `1` (Bun 1.3.2+): defaults to `"isolated"` for workspace/monorepo projects
- *     (`Object.keys(workspaces).length > 1`), and `"hoisted"` for single-package projects.
- * - Explicit overrides (`.npmrc` `node-linker`/`install-strategy`, `bunfig.toml`
- *   `install.linker`, or CLI `--linker`) take precedence over `configVersion`.
+ * - `0` or `undefined` (pre-Bun 1.3.2): defaults to `"hoisted"`.
+ * - `1` (Bun 1.3.2+): defaults to `"isolated"` for workspace/monorepo projects
+ *   (`Object.keys(workspaces).length > 1`), and `"hoisted"` for single-package projects.
+ * - Explicit overrides (`.npmrc` `node-linker`/`install-strategy`, `bunfig.toml` `install.linker`, or
+ *   CLI `--linker`) take precedence over `configVersion`.
+ *
+ * @file Packages/contracts/src/bun_lockfile.ts
  */
 
 import type { NormalizedNodeLinker } from "./npmrc.ts"
@@ -41,6 +42,7 @@ export interface BunLockFilePackageInfo extends BunLockFileBasePackageInfo {
 
 /**
  * Tuple representation inside `bun.lock` `"packages"` map:
+ *
  * - Registry / tarball package: `[identifier, registryUrl, info, integrity?]`
  * - Workspace / symlink / minimal entry: `[identifier, ...]`
  */
@@ -57,9 +59,7 @@ export interface BunLockFilePatchedDependency {
   readonly hash?: string | undefined
 }
 
-/**
- * Typed structure of Bun's text-based JSONC lockfile (`bun.lock`).
- */
+/** Typed structure of Bun's text-based JSONC lockfile (`bun.lock`). */
 export interface BunLockFile {
   readonly lockfileVersion: number
   readonly configVersion?: 0 | 1 | number | undefined
@@ -107,8 +107,8 @@ export interface BunLockFileSummary {
 }
 
 /**
- * Strip JSONC single-line comments, block comments, and trailing commas outside
- * string literals so `bun.lock` parses cleanly in Bun, Node.js, and browsers.
+ * Strip JSONC single-line comments, block comments, and trailing commas outside string literals so
+ * `bun.lock` parses cleanly in Bun, Node.js, and browsers.
  */
 export function stripJsoncCommentsAndTrailingCommas(raw: string): string {
   let noComments = ""
@@ -202,9 +202,7 @@ export function stripJsoncCommentsAndTrailingCommas(raw: string): string {
   return clean
 }
 
-/**
- * Parse a `bun.lock` JSONC document into a typed `BunLockFile` object.
- */
+/** Parse a `bun.lock` JSONC document into a typed `BunLockFile` object. */
 export function parseBunLockFile(rawText: string): BunLockFile {
   const normalizedJson = stripJsoncCommentsAndTrailingCommas(rawText)
   const parsed = JSON.parse(normalizedJson) as Partial<BunLockFile> | null
@@ -241,8 +239,9 @@ export function parseBunLockFile(rawText: string): BunLockFile {
 }
 
 /**
- * Determine Bun's default install linker strategy from `BunLockFile.configVersion`
- * and workspace topology:
+ * Determine Bun's default install linker strategy from `BunLockFile.configVersion` and workspace
+ * topology:
+ *
  * - `configVersion >= 1` + multiple workspaces => `"isolated"`
  * - `configVersion >= 1` + single package => `"hoisted"`
  * - `configVersion === 0` or omitted (pre-1.3.2) => `"hoisted"`
@@ -302,8 +301,8 @@ function extractPackageInfoFromTuple(
 }
 
 /**
- * Produce a compact, read-only summary of a parsed `BunLockFile` suitable for
- * `/api/config/status` and Status Dashboard inspection.
+ * Produce a compact, read-only summary of a parsed `BunLockFile` suitable for `/api/config/status`
+ * and Status Dashboard inspection.
  */
 export function summarizeBunLockFile(lockfile: BunLockFile): BunLockFileSummary {
   const linkerRes = resolveDefaultInstallLinkerStrategy(lockfile)

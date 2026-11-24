@@ -1,28 +1,19 @@
 /**
- * @file tests/unit/branding_metadata_and_assets.test.ts
- * @description End-to-end verification of SportsDesk Ops branding assets,
- * declarative `design/branding.toml` SSOT, enhanced Dublin Core + XMP Core +
- * `sportsdesk:*` provenance metadata, Bun.Image Format Studio contextual stamping,
- * and index.html SEO/OpenGraph/JSON-LD + Web App Manifest integrity.
+ * End-to-end verification of SportsDesk Ops branding assets, declarative `design/branding.toml` SSOT, enhanced Dublin
+ * Core + XMP Core + `sportsdesk:*` provenance metadata, Bun.Image Format Studio contextual stamping, and index.html
+ * SEO/OpenGraph/JSON-LD + Web App Manifest integrity.
+ *
+ * @file Tests/unit/branding_metadata_and_assets.test.ts
  */
 import { describe, expect, test } from "bun:test"
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 
-import {
-  buildSportsdeskProvenanceXmp,
-  inspectImageProvenance,
-} from "../../lib/image_provenance.ts"
+import { buildSportsdeskProvenanceXmp, inspectImageProvenance } from "../../lib/image_provenance.ts"
 import { injectPngXmp, injectWebpXmp } from "../../lib/xmp_container.ts"
 import { auditBrandingAssetsSync } from "../../scripts/gen_artifacts.ts"
-import {
-  auditBrandingAssetsMetadata,
-  loadBrandingSpec,
-} from "../../scripts/gen_branding_assets.ts"
-import {
-  scanBunImageAssets,
-  transformBunImageAsset,
-} from "../../server/bun_image_engine.ts"
+import { auditBrandingAssetsMetadata, loadBrandingSpec } from "../../scripts/gen_branding_assets.ts"
+import { scanBunImageAssets, transformBunImageAsset } from "../../server/bun_image_engine.ts"
 
 const WORKSPACE_ROOT = resolve(import.meta.dir, "../..")
 
@@ -123,9 +114,7 @@ describe("Enhanced Branding & Contextual XMP Provenance Metadata", () => {
     expect(scan.ok).toBe(true)
     expect(scan.xmpAssetCount).toBeGreaterThanOrEqual(5)
 
-    const emblemRow = scan.assets.find(
-      (a) => a.source === "public/assets/branding/sportsdesk-emblem.webp",
-    )
+    const emblemRow = scan.assets.find((a) => a.source === "public/assets/branding/sportsdesk-emblem.webp")
     expect(emblemRow?.hasXmpMetadata).toBe(true)
     expect(emblemRow?.provenance?.streamId).toBe("brand:sportsdesk-emblem:webp")
     expect(emblemRow?.provenance?.assetRole).toBe("app-emblem")
@@ -167,9 +156,7 @@ describe("Enhanced Branding & Contextual XMP Provenance Metadata", () => {
       readonly name: string
       readonly description: string
     }
-    const webManifest = JSON.parse(
-      readFileSync(resolve(WORKSPACE_ROOT, "public/manifest.webmanifest"), "utf8"),
-    ) as {
+    const webManifest = JSON.parse(readFileSync(resolve(WORKSPACE_ROOT, "public/manifest.webmanifest"), "utf8")) as {
       readonly name: string
       readonly short_name: string
       readonly theme_color: string
@@ -191,8 +178,6 @@ describe("Enhanced Branding & Contextual XMP Provenance Metadata", () => {
 
     expect(webManifest.theme_color).toBe("#070b14")
     expect(webManifest.icons.some((i) => i.sizes === "512x512")).toBe(true)
-    expect(webManifest.icons.some((i) => i.src === "/assets/branding/sportsdesk-emblem.webp")).toBe(
-      true,
-    )
+    expect(webManifest.icons.some((i) => i.src === "/assets/branding/sportsdesk-emblem.webp")).toBe(true)
   })
 })

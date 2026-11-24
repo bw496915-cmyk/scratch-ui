@@ -88,9 +88,7 @@ describe("Downlines Searchable Multi-Select Agent ID Filter", () => {
     ]
 
     expect(filterAgentOptions(options, "conduit").map((o) => o.agentId)).toEqual(["SYNTH_AGENT_01"])
-    expect(filterAgentOptions(options, "", "CONDUITS").map((o) => o.agentId)).toEqual([
-      "SYNTH_AGENT_01",
-    ])
+    expect(filterAgentOptions(options, "", "CONDUITS").map((o) => o.agentId)).toEqual(["SYNTH_AGENT_01"])
     expect(filterAgentOptions(options, "", "MASTERS").map((o) => o.agentId)).toEqual(["BILLY666"])
     expect(filterAgentOptions(options, "", "SUB_AGENTS").map((o) => o.agentId)).toEqual([
       "SYNTH_AGENT_01",

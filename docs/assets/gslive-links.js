@@ -1,10 +1,10 @@
 /**
- * @file docs/assets/gslive-links.js
- * @description Pure GSLive Manager link assembly for the live portal (browser + Bun-testable).
- *
- * The portal no longer stores per-wallet URLs in HTML: each `[data-gslive]` anchor is hydrated
- * from `graph-live-feed.json` on every poll, so the desk-day window and the `t` cache-buster roll
+ * Pure GSLive Manager link assembly for the live portal (browser + Bun-testable). The portal no
+ * longer stores per-wallet URLs in HTML: each `[data-gslive]` anchor is hydrated from
+ * `graph-live-feed.json` on every poll, so the desk-day window and the `t` cache-buster roll
  * forward without a redeploy. No DOM access lives here, which keeps the logic unit-testable.
+ *
+ * @file Docs/assets/gslive-links.js
  */
 
 export const GSLIVE_CHURN_WINDOW = {
@@ -62,15 +62,12 @@ function withPlayerText(url, login) {
 }
 
 /**
- * Resolves a `#/reports/users` deep link for a window.
- * `windowKey`: "1" (today) | "7" | "14" | "churn".
- * Uses the wallet's prebuilt URL when present; otherwise substitutes the login into the
+ * Resolves a `#/reports/users` deep link for a window. `windowKey`: "1" (today) | "7" | "14" |
+ * "churn". Uses the wallet's prebuilt URL when present; otherwise substitutes the login into the
  * descriptor's canonical template, which keeps untracked accounts (the CHURN cohort, internal
  * logins) on the live day window instead of a frozen fallback.
  */
-/**
- * @param {{ wallet?: any, descriptor?: any, login?: string, windowKey?: string }} input
- */
+/** @param {{ wallet?: any; descriptor?: any; login?: string; windowKey?: string }} input */
 export function buildReportUrl({ wallet, descriptor, login, windowKey }) {
   const wallet14 = wallet && wallet.gsLivePlayerReportUrl
   const template14 = descriptor && descriptor.usersReportDeepLink14Day
@@ -101,11 +98,17 @@ export function buildReportUrl({ wallet, descriptor, login, windowKey }) {
 }
 
 /**
- * Resolves a `#/events/bet-history` sidecar URL with a fresh `t` cache-buster.
- * `dateFilterBy`: "calcTime" (settling/populating) | "betTime" (placement).
+ * Resolves a `#/events/bet-history` sidecar URL with a fresh `t` cache-buster. `dateFilterBy`:
+ * "calcTime" (settling/populating) | "betTime" (placement).
  */
 /**
- * @param {{ wallet?: any, descriptor?: any, login?: string, dateFilterBy?: string, tickEpochMs?: number }} options
+ * @param {{
+ *   wallet?: any
+ *   descriptor?: any
+ *   login?: string
+ *   dateFilterBy?: string
+ *   tickEpochMs?: number
+ * }} options
  */
 export function buildSidecarUrl({
   wallet,
@@ -152,8 +155,17 @@ export function indexWallets(feed) {
  * Extracts the registry-row values the portal renders: cost basis, open legs, top-position summary,
  * and the provenance of those numbers. Rows without a feed entry are simply absent.
  *
- * @param {{ walletProfiles?: Array<any> } | null} feed
- * @returns {Record<string, { volumeUsd: number, legs: number, summary: string, dataSource: string, lastError: string | null }>}
+ * @param {{ walletProfiles?: any[] } | null} feed
+ * @returns {Record<
+ *   string,
+ *   {
+ *     volumeUsd: number
+ *     legs: number
+ *     summary: string
+ *     dataSource: string
+ *     lastError: string | null
+ *   }
+ * >}
  */
 export function buildWalletStats(feed) {
   const stats = {}
@@ -175,8 +187,8 @@ export function buildWalletStats(feed) {
  * Computes `{ element, url }` updates for every `[data-gslive]` node. DOM-agnostic: any object
  * exposing `getAttribute` works, which keeps the portal's hydration path unit-testable.
  *
- * @param {Array<any>} elements
- * @param {{ feed?: any, activeReportWindow?: string, tickEpochMs?: number }} options
+ * @param {any[]} elements
+ * @param {{ feed?: any; activeReportWindow?: string; tickEpochMs?: number }} options
  */
 export function planGsLiveLinks(
   elements,

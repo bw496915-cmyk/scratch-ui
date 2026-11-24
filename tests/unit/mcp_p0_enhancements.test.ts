@@ -2,11 +2,7 @@ import { describe, expect, test } from "bun:test"
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 
-import {
-  MCP_LIMITER_CONSUME_URL,
-  McpLimiterDO,
-  type McpLimiterStateLike,
-} from "../../src/do/mcp_limiter.ts"
+import { MCP_LIMITER_CONSUME_URL, McpLimiterDO, type McpLimiterStateLike } from "../../src/do/mcp_limiter.ts"
 import { MCP_ERROR_CATALOG } from "../../src/mcp/errors.ts"
 import { handleMcpRequest } from "../../src/mcp/handler.ts"
 import type { SportsOpsDeskEnv } from "../../src/types/env.ts"
@@ -149,10 +145,7 @@ describe("P0 Cloudflare Wrangler Configs", () => {
   })
 
   test("fantasy402-bet-ingest wrangler.jsonc aligns compatibility_date to 2026-10-07 with ANALYTICS and BETS_BUCKET intact", () => {
-    const raw = readFileSync(
-      resolve(process.cwd(), "workers/fantasy402-bet-ingest/wrangler.jsonc"),
-      "utf8",
-    )
+    const raw = readFileSync(resolve(process.cwd(), "workers/fantasy402-bet-ingest/wrangler.jsonc"), "utf8")
     const cfg = Bun.JSONC.parse(raw) as {
       name: string
       compatibility_date: string

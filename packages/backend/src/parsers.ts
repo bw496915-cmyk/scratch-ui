@@ -1,6 +1,7 @@
 /**
- * @file packages/backend/src/parsers.ts
- * @description Query parameter and auth-gate helpers shared by the dashboard backend and API.
+ * Query parameter and auth-gate helpers shared by the dashboard backend and API.
+ *
+ * @file Packages/backend/src/parsers.ts
  */
 
 import type { RouterAuditMode, ShadowRepriceMode } from "@sportsdesk-ops/contracts"
@@ -33,10 +34,11 @@ export function parseRouterAuditMode(
  * Determine whether dashboard API auth is required for the current environment.
  *
  * Fail-closed default:
+ *
  * - `NODE_ENV=production` ALWAYS requires auth (SPORTSDESK_AUTH_DISABLED cannot opt out).
  * - Unset or unknown `NODE_ENV` requires auth.
- * - Explicit opt-out (`SPORTSDESK_AUTH_DISABLED=1`) is honored ONLY when
- *   `NODE_ENV` is explicitly `"development"` or `"test"`.
+ * - Explicit opt-out (`SPORTSDESK_AUTH_DISABLED=1`) is honored ONLY when `NODE_ENV` is explicitly
+ *   `"development"` or `"test"`.
  */
 export function isDashboardAuthRequired(
   env: Record<string, string | undefined> = process.env,

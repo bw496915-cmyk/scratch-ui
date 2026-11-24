@@ -1,15 +1,16 @@
 /**
- * @file packages/contracts/src/bun_runtime_surface.ts
- * @description Canonical Bun Runtime Surface catalog & cross-runtime live surface
- * audit engine covering:
- *  1. Globals (Bun-Specific, Node.js Compat, Web Standards)
- *  2. Bun Utilities (`Bun.*` across Timing/Memory, Paths/Inspection, Strings/Terminal/IDs, Compression/Buffers)
- *  3. Core Bun APIs (`Bun.*` & `bun:*` across 7 domains)
- *  4. Live Surface Audit (`Object.getOwnPropertyNames(Bun)` + `Bun.inspect.table`)
+ * Canonical Bun Runtime Surface catalog & cross-runtime live surface audit engine covering:
  *
- * Security invariant:
+ * 1. Globals (Bun-Specific, Node.js Compat, Web Standards)
+ * 2. Bun Utilities (`Bun.*` across Timing/Memory, Paths/Inspection, Strings/Terminal/IDs,
+ *    Compression/Buffers)
+ * 3. Core Bun APIs (`Bun.*` & `bun:*` across 7 domains)
+ * 4. Live Surface Audit (`Object.getOwnPropertyNames(Bun)` + `Bun.inspect.table`) Security invariant:
+ *
  * - Strictly read-only metadata introspection (`typeof` and property names only).
  * - NEVER reads, serializes, or transmits `Bun.env`, `process.env`, or `Bun.secrets` values.
+ *
+ * @file Packages/contracts/src/bun_runtime_surface.ts
  */
 
 import type { BunFileLoaderLiveProbe } from "./bun_file_loader.ts"
@@ -170,7 +171,10 @@ export interface LiveCoreApiDomainProbeEntry {
 }
 
 export interface BunRuntimeSurfaceAuditSnapshot {
-  /** Whether the snapshot was gathered directly from a live Bun runtime, via the installed Bun binary, or Node/browser fallback. */
+  /**
+   * Whether the snapshot was gathered directly from a live Bun runtime, via the installed Bun
+   * binary, or Node/browser fallback.
+   */
   readonly source: "bun-in-process" | "bun-binary-probe" | "node-fallback" | "browser-fallback"
   readonly hostRuntime: string
   readonly bunDetected: boolean
@@ -1133,9 +1137,9 @@ console.log("bun:sqlite:", Object.getOwnPropertyNames(await import("bun:sqlite")
 console.log("bun:ffi:", Object.getOwnPropertyNames(await import("bun:ffi")));`
 
 /**
- * Deterministic Unicode table renderer matching `Bun.inspect.table(rows, columns)`.
- * Uses native `Bun.inspect.table` when available on Bun; falls back to an identical
- * box-drawing renderer in Node.js and browser contexts.
+ * Deterministic Unicode table renderer matching `Bun.inspect.table(rows, columns)`. Uses native
+ * `Bun.inspect.table` when available on Bun; falls back to an identical box-drawing renderer in
+ * Node.js and browser contexts.
  */
 export function formatInspectTable(
   rows: readonly object[],
@@ -1329,8 +1333,8 @@ const KNOWN_CLASS_CONSTRUCTORS = new Set([
 const FUNCTION_OWN_IGNORED = new Set(["length", "name", "prototype", "arguments", "caller"])
 
 /**
- * Classifies a runtime export into its semantic symbol kind without executing
- * or leaking secret values.
+ * Classifies a runtime export into its semantic symbol kind without executing or leaking secret
+ * values.
  */
 export function classifyBunSymbolKind(value: unknown, key?: string): BunExportKind {
   if (key && REDACTED_BUN_KEYS.has(key)) return "namespace"
@@ -1432,8 +1436,8 @@ function summarizeKindCounts(exportsList: readonly BunNamespaceExportEntry[]): B
 }
 
 /**
- * Inspects a single Bun namespace, class, or built-in module into structured
- * member entries (`export`, `static`, `prototype`, `constant`). Strictly read-only.
+ * Inspects a single Bun namespace, class, or built-in module into structured member entries
+ * (`export`, `static`, `prototype`, `constant`). Strictly read-only.
  */
 export function inspectBunDeepTarget(
   target: unknown,
@@ -1597,8 +1601,8 @@ export function inspectBunDeepTarget(
 }
 
 /**
- * Inspects nested `Bun.*` namespaces and core `Bun.*` classes from a live `Bun`
- * object, and merges optional `bun:*` built-in module inspections.
+ * Inspects nested `Bun.*` namespaces and core `Bun.*` classes from a live `Bun` object, and merges
+ * optional `bun:*` built-in module inspections.
  */
 export function inspectBunDeepSurface(
   bunObj: Record<string, unknown> | null,
@@ -1663,8 +1667,8 @@ export function inspectBunDeepSurface(
 }
 
 /**
- * Executes a read-only Live Surface Audit against the current JS runtime
- * (`globalThis` and `globalThis.Bun`). Never accesses secret values.
+ * Executes a read-only Live Surface Audit against the current JS runtime (`globalThis` and
+ * `globalThis.Bun`). Never accesses secret values.
  */
 export function runBunSurfaceAudit(
   scope: Record<string, unknown> = globalThis as unknown as Record<string, unknown>,
@@ -1835,9 +1839,9 @@ export function runBunSurfaceAudit(
 }
 
 /**
- * Hydrates a `BunRuntimeSurfaceAuditSnapshot` from raw Bun binary probe JSON
- * (used when the Express server runs under Node.js and invokes the installed
- * `bun` binary read-only with a scrubbed environment).
+ * Hydrates a `BunRuntimeSurfaceAuditSnapshot` from raw Bun binary probe JSON (used when the Express
+ * server runs under Node.js and invokes the installed `bun` binary read-only with a scrubbed
+ * environment).
  */
 export function buildAuditSnapshotFromBinaryProbe(
   probe: {
@@ -1915,9 +1919,8 @@ export function buildAuditSnapshotFromBinaryProbe(
 // ── Cross-Runtime Interactive Utility Helpers (for the Live Utility Sandbox) ──
 
 /**
- * Generates an RFC 9562 time-ordered UUIDv7.
- * Delegates to native `Bun.randomUUIDv7()` when running under Bun, and uses
- * a cryptographically random RFC 9562 v7 implementation in browser/Node.
+ * Generates an RFC 9562 time-ordered UUIDv7. Delegates to native `Bun.randomUUIDv7()` when running
+ * under Bun, and uses a cryptographically random RFC 9562 v7 implementation in browser/Node.
  */
 export function generateBunUuidV7(timestampMs: number = Date.now()): string {
   const bunObj = (globalThis as Record<string, unknown>).Bun as
@@ -1959,9 +1962,7 @@ export function generateBunUuidV7(timestampMs: number = Date.now()): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
 
-/**
- * Extracts the embedded 48-bit Unix millisecond timestamp from a UUIDv7 string.
- */
+/** Extracts the embedded 48-bit Unix millisecond timestamp from a UUIDv7 string. */
 export function decodeUuidV7TimestampIso(uuid: string): string | null {
   const clean = uuid.replace(/-/g, "")
   if (!/^[0-9a-fA-F]{32}$/.test(clean)) return null
@@ -1971,9 +1972,7 @@ export function decodeUuidV7TimestampIso(uuid: string): string | null {
   return new Date(ms).toISOString()
 }
 
-/**
- * Structural deep equality matching `Bun.deepEquals(a, b, strict?)`.
- */
+/** Structural deep equality matching `Bun.deepEquals(a, b, strict?)`. */
 export function bunDeepEquals(a: unknown, b: unknown, strict = false): boolean {
   const bunObj = (globalThis as Record<string, unknown>).Bun as
     { readonly deepEquals?: (x: unknown, y: unknown, strict?: boolean) => boolean } | undefined
@@ -2039,9 +2038,7 @@ export interface BunColorConversionResult {
   readonly ansi16m: string | null
 }
 
-/**
- * Parses hex (`#rgb`, `#rrggbb`) or `rgb(r, g, b)` inputs into Bun.color formats.
- */
+/** Parses hex (`#rgb`, `#rrggbb`) or `rgb(r, g, b)` inputs into Bun.color formats. */
 export function evaluateBunColorConversions(input: string): BunColorConversionResult {
   const trimmed = input.trim()
   const bunObj = (globalThis as Record<string, unknown>).Bun as
@@ -2258,9 +2255,9 @@ export interface BunCliAnsiProfileSpec {
 }
 
 /**
- * Deterministic `[cli.markdown_ansi.*]` `Bun.markdown.AnsiTheme` profiles
- * matching `design/tokens.toml` with explicit `light: false` to prevent
- * ambient `COLORFGBG` drift on `#04070e`.
+ * Deterministic `[cli.markdown_ansi.*]` `Bun.markdown.AnsiTheme` profiles matching
+ * `design/tokens.toml` with explicit `light: false` to prevent ambient `COLORFGBG` drift on
+ * `#04070e`.
  */
 export const BUN_CLI_ANSI_PROFILES: readonly BunCliAnsiProfileSpec[] = [
   {
@@ -2927,10 +2924,9 @@ function fallbackMarkdownToSafeHtml(markdown: string): string {
 }
 
 /**
- * Evaluates Markdown through `Bun.markdown.render(md, callbacks)`,
- * `Bun.markdown.ansi(md, AnsiTheme)`, or `Bun.markdown.html(md)` natively under
- * Bun 1.4+, with a faithful, control-char-safe cross-runtime fallback for
- * browser and Node.js contexts.
+ * Evaluates Markdown through `Bun.markdown.render(md, callbacks)`, `Bun.markdown.ansi(md,
+ * AnsiTheme)`, or `Bun.markdown.html(md)` natively under Bun 1.4+, with a faithful,
+ * control-char-safe cross-runtime fallback for browser and Node.js contexts.
  */
 export function renderBunMarkdownStudio(
   markdown: string,

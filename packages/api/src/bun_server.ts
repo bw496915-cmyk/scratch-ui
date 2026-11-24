@@ -1,8 +1,9 @@
 /**
- * @file packages/api/src/bun_server.ts
- * @description Testable `Bun.serve` factory wrapping `createDashboardApi(deps)`
- * with pre-serialized static route support, native Zig radix-tree `routes`,
- * and ephemeral `port: 0` binding with resolved `server.url`.
+ * Testable `Bun.serve` factory wrapping `createDashboardApi(deps)` with pre-serialized static route
+ * support, native Zig radix-tree `routes`, and ephemeral `port: 0` binding with resolved
+ * `server.url`.
+ *
+ * @file Packages/api/src/bun_server.ts
  */
 
 import { DASHBOARD_ROUTES } from "./bun_routes.ts"
@@ -36,8 +37,8 @@ export interface CreateDashboardBunServerOptions<TWs extends WsLike = WsLike> {
   /** Maximum request body size in bytes (defaults to 5 MB). */
   readonly maxRequestBodySize?: number | undefined
   /**
-   * Pre-serialized static response mounted directly at `GET /` and `GET /app`
-   * in Bun's native Zig router (zero JS execution per request).
+   * Pre-serialized static response mounted directly at `GET /` and `GET /app` in Bun's native Zig
+   * router (zero JS execution per request).
    */
   readonly rootResponse?: Response | string | undefined
   /** Optional additional Lane A/C/D routes to merge into the explicit routes table. */
@@ -56,6 +57,7 @@ export interface DashboardBunServerHandle<TWs extends WsLike = WsLike> {
  * Create a real `Bun.serve` HTTP server backed by `createDashboardApi(deps)`.
  *
  * The `routes` map IS the inventory:
+ *
  * - Lane A: `/`, `/app`, `/live-bets` (308 -> `/wagers`), plus optional `extraRoutes`
  * - Lane B/C/D: exact and `:param` routes from `api.routes`
  * - Deliberately NO `/api/*` catch-all: unmatched paths 404 via `fetch`.

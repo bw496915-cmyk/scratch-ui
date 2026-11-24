@@ -1,14 +1,12 @@
 /**
- * @file packages/api/src/egress_config.ts
- * @description Boot-time validated origin constants for Lanes D, E, F, and G.
+ * Boot-time validated origin constants for Lanes D, E, F, and G. Every env-controlled origin is
+ * parsed and validated once at module / server startup rather than per request, failing fast with
+ * an explicit Error on bad URLs, unsupported schemes, embedded credentials, queries, or hash
+ * fragments. Invariant: signed R2 S3 requests (`R2_S3_ENDPOINT` / `R2_ENDPOINT`) stay on a
+ * dedicated policy and origin constant — never shared with the read-only public fallback bucket
+ * (`R2_PUBLIC_ORIGIN`).
  *
- * Every env-controlled origin is parsed and validated once at module / server
- * startup rather than per request, failing fast with an explicit Error on bad
- * URLs, unsupported schemes, embedded credentials, queries, or hash fragments.
- *
- * Invariant: signed R2 S3 requests (`R2_S3_ENDPOINT` / `R2_ENDPOINT`) stay on
- * a dedicated policy and origin constant — never shared with the read-only
- * public fallback bucket (`R2_PUBLIC_ORIGIN`).
+ * @file Packages/api/src/egress_config.ts
  */
 
 export const DEFAULT_API_ORIGIN = "http://127.0.0.1:4020" as const
@@ -33,9 +31,8 @@ function canParseUrl(raw: string): boolean {
 }
 
 /**
- * Validate an env-controlled origin at startup. Throws immediately on malformed
- * URLs, non-HTTP(S) protocols, embedded credentials, query strings, hashes, or
- * backslashes.
+ * Validate an env-controlled origin at startup. Throws immediately on malformed URLs, non-HTTP(S)
+ * protocols, embedded credentials, query strings, hashes, or backslashes.
  */
 export function validatedOrigin(
   name: string,
@@ -61,8 +58,8 @@ export function validatedOrigin(
 }
 
 /**
- * Validate an optional env-controlled origin (returns `null` when unset/blank,
- * throws immediately when configured with an invalid URL).
+ * Validate an optional env-controlled origin (returns `null` when unset/blank, throws immediately
+ * when configured with an invalid URL).
  */
 export function validatedOptionalOrigin(
   name: string,
@@ -90,9 +87,7 @@ export interface ValidatedEgressOrigins {
   readonly POLYGONSCAN: URL
 }
 
-/**
- * Validate and freeze all egress origins once at server startup.
- */
+/** Validate and freeze all egress origins once at server startup. */
 export function loadValidatedEgressOrigins(
   env: Record<string, string | undefined> = process.env,
 ): ValidatedEgressOrigins {
@@ -109,8 +104,8 @@ export function loadValidatedEgressOrigins(
 }
 
 /**
- * Lane D helper: derive `ws://` or `wss://` automatically from an HTTP(S) base URL
- * (`server.url` or `window.location.href`) so TLS deployments never emit mixed-content `ws://`.
+ * Lane D helper: derive `ws://` or `wss://` automatically from an HTTP(S) base URL (`server.url` or
+ * `window.location.href`) so TLS deployments never emit mixed-content `ws://`.
  */
 export function deriveWebSocketUrl(
   baseHref: string | URL,

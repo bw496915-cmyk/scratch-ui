@@ -1,6 +1,7 @@
 /**
- * @file packages/backend/src/customers.ts
- * @description Indexed customer lookup and dynamic cohort aggregation for `/api/customers*`.
+ * Indexed customer lookup and dynamic cohort aggregation for `/api/customers*`.
+ *
+ * @file Packages/backend/src/customers.ts
  */
 
 import { readFile } from "node:fs/promises"
@@ -146,7 +147,10 @@ export function createCustomerRowFinder<TRow extends GenericCustomerRow = Generi
 
 type JsonRow = Record<string, unknown>
 
-/** A synthesized row: `customer_id` is required; every other field is optional and unmeasured unless mapped. */
+/**
+ * A synthesized row: `customer_id` is required; every other field is optional and unmeasured unless
+ * mapped.
+ */
 type SourcedRow = Record<string, unknown> & { customer_id: string }
 
 const jsonRow = (value: unknown): JsonRow | null =>
@@ -247,8 +251,8 @@ function liveTicket(row: JsonRow): Record<string, unknown> {
 }
 
 /**
- * Map one harvested profile. `ltvUsd` is the DOD6 lifetime net and `dodClvBps` is null when CLV
- * was never measured; the harvester publishes no lifetime volume, so that field stays absent.
+ * Map one harvested profile. `ltvUsd` is the DOD6 lifetime net and `dodClvBps` is null when CLV was
+ * never measured; the harvester publishes no lifetime volume, so that field stays absent.
  */
 function harvestedCustomerRow(value: unknown): SourcedRow | null {
   const profile = jsonRow(value)

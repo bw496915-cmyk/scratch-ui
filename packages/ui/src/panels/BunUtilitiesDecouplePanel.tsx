@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react"
 import { Check, Copy, Play, RefreshCw, ShieldCheck, Terminal, X } from "lucide-react"
+import React, { useEffect, useMemo, useState } from "react"
 
 import { validateApiBase } from "../api_base_validation.ts"
 import {
@@ -7,9 +7,9 @@ import {
   BUN_RUNTIME_UTILS_EXTENDED,
   BUN_UTILITIES_CATALOG,
   type BunUtilityCategory,
-  type CompressionProbeResult,
   compressDeflateText,
   compressGzipText,
+  type CompressionProbeResult,
   compressZstdText,
   decodeBase64Utf8,
   deepEqualsSafe,
@@ -26,8 +26,8 @@ import {
   pathToFileUrlSafe,
   resolveSpaDecoupleStatus,
   sleepMs,
-  stringifyXmlSafe,
   type SpaDecoupleStatus,
+  stringifyXmlSafe,
 } from "../bun_utilities.ts"
 import { copyText } from "../clipboard.ts"
 import { BRAND_ASSETS } from "../operator_profiles.ts"
@@ -856,7 +856,9 @@ export function BunUtilitiesDecouplePanel({
                     fontSize: "10px",
                     cursor: "pointer",
                     background:
-                      whichBin === bin ? "rgba(56, 189, 248, 0.2)" : "var(--sd-surface-card, #1e293b)",
+                      whichBin === bin
+                        ? "rgba(56, 189, 248, 0.2)"
+                        : "var(--sd-surface-card, #1e293b)",
                     color: whichBin === bin ? "#38bdf8" : "var(--sd-text-secondary, #cbd5e1)",
                     border: "1px solid var(--sd-border-subtle, #334155)",
                   }}

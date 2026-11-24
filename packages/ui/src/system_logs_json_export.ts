@@ -1,8 +1,9 @@
 /**
- * @file packages/ui/src/system_logs_json_export.ts
- * @description Pure helpers for selecting currently filtered System Logs / Weblogs
- * rows via the active bitwise filter index, serializing a formatted JSON export
- * envelope with filter metadata, and triggering client-side JSON file downloads.
+ * Pure helpers for selecting currently filtered System Logs / Weblogs rows via the active bitwise
+ * filter index, serializing a formatted JSON export envelope with filter metadata, and triggering
+ * client-side JSON file downloads.
+ *
+ * @file Packages/ui/src/system_logs_json_export.ts
  */
 
 import {
@@ -65,8 +66,8 @@ export interface SystemLogsJsonExportPayload<TEntry> extends SystemLogsJsonExpor
 }
 
 /**
- * Evaluates the active bitwise filter query against a pre-built SoA index
- * and returns the exact matching slice of log rows in current display order.
+ * Evaluates the active bitwise filter query against a pre-built SoA index and returns the exact
+ * matching slice of log rows in current display order.
  */
 export function selectBitwiseFilteredRows<T>(
   rows: readonly T[],
@@ -85,9 +86,7 @@ export function selectBitwiseFilteredRows<T>(
   return out
 }
 
-/**
- * Maps an effective 4-bit severity mask into human-readable active severity labels.
- */
+/** Maps an effective 4-bit severity mask into human-readable active severity labels. */
 export function describeBitwiseMaskSeverities(
   effectiveMask: number,
   mode: SystemLogsExportMode,
@@ -116,8 +115,8 @@ export interface BuildSystemLogsJsonPayloadOptions<TEntry> {
 }
 
 /**
- * Builds the structured JSON export envelope containing filtered log entries
- * and active filter metadata for operator audit trails.
+ * Builds the structured JSON export envelope containing filtered log entries and active filter
+ * metadata for operator audit trails.
  */
 export function buildSystemLogsJsonExportPayload<TEntry>(
   options: BuildSystemLogsJsonPayloadOptions<TEntry>,
@@ -149,9 +148,7 @@ export function buildSystemLogsJsonExportPayload<TEntry>(
   }
 }
 
-/**
- * Serializes a System Logs export payload into pretty-printed, formatted JSON.
- */
+/** Serializes a System Logs export payload into pretty-printed, formatted JSON. */
 export function formatSystemLogsJson<TEntry>(payload: SystemLogsJsonExportPayload<TEntry>): string {
   return `${JSON.stringify(payload, null, 2)}\n`
 }
@@ -179,8 +176,8 @@ export interface BuildSystemLogsJsonFilenameOptions {
 }
 
 /**
- * Builds a deterministic, filesystem-safe `.json` download filename reflecting
- * the active log mode and narrowed filters.
+ * Builds a deterministic, filesystem-safe `.json` download filename reflecting the active log mode
+ * and narrowed filters.
  */
 export function buildSystemLogsJsonFilename(options: BuildSystemLogsJsonFilenameOptions): string {
   const isoDate = (options.date ?? new Date()).toISOString().slice(0, 10)
@@ -239,8 +236,8 @@ export interface JsonDownloadEnv {
 }
 
 /**
- * Triggers a client-side formatted JSON download and revokes the temporary
- * object URL in all execution paths.
+ * Triggers a client-side formatted JSON download and revokes the temporary object URL in all
+ * execution paths.
  */
 export function downloadSystemLogsJsonBlob(
   jsonContent: string,

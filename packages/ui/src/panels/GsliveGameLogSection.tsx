@@ -1,8 +1,9 @@
 /**
- * @file packages/ui/src/panels/GsliveGameLogSection.tsx
- * @description GSLIVE drill-down: a sortable game log (one row per game) beside an event
- * log (the latest GSLIVE tickets). Selecting a game scopes the event log and the wager
- * table; selecting an event opens that ticket in the wager inspector.
+ * GSLIVE drill-down: a sortable game log (one row per game) beside an event log (the latest GSLIVE
+ * tickets). Selecting a game scopes the event log and the wager table; selecting an event opens
+ * that ticket in the wager inspector.
+ *
+ * @file Packages/ui/src/panels/GsliveGameLogSection.tsx
  */
 
 import type React from "react"

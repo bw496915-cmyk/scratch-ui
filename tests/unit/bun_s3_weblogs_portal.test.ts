@@ -16,11 +16,7 @@ import {
   type WebMcpModelContext,
   type WebMcpToolRegistration,
 } from "../../packages/ui/src/web_mcp.ts"
-import {
-  archiveWebLogsToR2,
-  buildRedactedWebLogsNdjson,
-  getBunS3Capabilities,
-} from "../../server/bun_r2_inspect.ts"
+import { archiveWebLogsToR2, buildRedactedWebLogsNdjson, getBunS3Capabilities } from "../../server/bun_r2_inspect.ts"
 import { createWebLogStore } from "../../server/weblog_inspect.ts"
 import {
   isAllowedS3StorageClass,
@@ -68,12 +64,8 @@ describe("Fantasy402 Portal Session Tab Reuse (portal_link.ts)", () => {
     expect(props.target).toBe(FANTASY402_PORTAL_WINDOW_TARGET)
     expect("rel" in props).toBe(false)
 
-    expect(buildFantasy402CustomerUrl("  DF8821  ")).toBe(
-      "https://fantasy402.com/manager.html?customer=DF8821",
-    )
-    expect(buildFantasy402CustomerUrl("DF 88&21")).toBe(
-      "https://fantasy402.com/manager.html?customer=DF%2088%2621",
-    )
+    expect(buildFantasy402CustomerUrl("  DF8821  ")).toBe("https://fantasy402.com/manager.html?customer=DF8821")
+    expect(buildFantasy402CustomerUrl("DF 88&21")).toBe("https://fantasy402.com/manager.html?customer=DF%2088%2621")
     expect(buildFantasy402CustomerUrl("   ")).toBe(buildFantasy402PortalEntryUrl())
   })
 })
@@ -90,9 +82,7 @@ describe("Bun 1.4.4 New S3Client Enhancements & Weblogs Archival", () => {
     expect(isAllowedS3StorageClass("GLACIER")).toBe(true)
     expect(isAllowedS3StorageClass("INVALID_CLASS")).toBe(false)
 
-    expect(sanitizeContentDispositionFilename('report"\r\nX-Inject: 1.csv')).toBe(
-      "reportX-Inject: 1.csv",
-    )
+    expect(sanitizeContentDispositionFilename('report"\r\nX-Inject: 1.csv')).toBe("reportX-Inject: 1.csv")
     expect(sanitizeContentDispositionFilename('""\r\n')).toBe("export.bin")
   })
 
@@ -105,9 +95,7 @@ describe("Bun 1.4.4 New S3Client Enhancements & Weblogs Archival", () => {
     })
 
     // Non-admin viewer denied fail-closed
-    expect(() => handle.presignDownload("weblogs/archives/2026-11-21/weblogs.ndjson")).toThrow(
-      "ERR_INSP_ROLE_DENIED",
-    )
+    expect(() => handle.presignDownload("weblogs/archives/2026-11-21/weblogs.ndjson")).toThrow("ERR_INSP_ROLE_DENIED")
 
     const signed = withInspectRole("ROLE_OPS_ADMIN", () =>
       handle.presignDownload("weblogs/archives/2026-11-21/weblogs.ndjson", {
@@ -130,9 +118,9 @@ describe("Bun 1.4.4 New S3Client Enhancements & Weblogs Archival", () => {
     )
 
     // Key traversal rejected
-    expect(() =>
-      withInspectRole("ROLE_OPS_ADMIN", () => handle.presignDownload("weblogs/../secret.ndjson")),
-    ).toThrow("ERR_S3_INVALID_KEY")
+    expect(() => withInspectRole("ROLE_OPS_ADMIN", () => handle.presignDownload("weblogs/../secret.ndjson"))).toThrow(
+      "ERR_S3_INVALID_KEY",
+    )
   })
 
   test("getBunS3Capabilities reports Bun S3 features cleanly with zero credentials, and archiveWebLogsToR2 builds redacted NDJSON", async () => {
@@ -165,9 +153,7 @@ describe("Bun 1.4.4 New S3Client Enhancements & Weblogs Archival", () => {
 
     // Archive fails closed when unconfigured
     await expect(
-      withInspectRole("ROLE_OPS_ADMIN", () =>
-        archiveWebLogsToR2({ state: "not-configured" }, result),
-      ),
+      withInspectRole("ROLE_OPS_ADMIN", () => archiveWebLogsToR2({ state: "not-configured" }, result)),
     ).rejects.toThrow("ERR_R2_CLIENT_UNAVAILABLE")
   })
 })
@@ -308,20 +294,14 @@ describe("Enhanced WebMCP Weblogs & Bun S3 Tools", () => {
     // 4. desk_archive_weblogs_to_s3 — cancelled by user blocks POST
     const cancelled = await tools
       .get("desk_archive_weblogs_to_s3")!
-      .execute(
-        { account: "DF8821", storageClass: "GLACIER" },
-        { requestUserInteraction: async () => false as never },
-      )
+      .execute({ account: "DF8821", storageClass: "GLACIER" }, { requestUserInteraction: async () => false as never })
     expect(cancelled.isError).toBe(true)
     expect(fetchedRequests.some((r) => r.path === "/api/weblogs/archive-s3")).toBe(false)
 
     // Approved by user triggers POST with storageClass
     const archived = await tools
       .get("desk_archive_weblogs_to_s3")!
-      .execute(
-        { account: "DF8821", storageClass: "GLACIER" },
-        { requestUserInteraction: async (cb) => cb() },
-      )
+      .execute({ account: "DF8821", storageClass: "GLACIER" }, { requestUserInteraction: async (cb) => cb() })
     expect(archived.isError).toBeUndefined()
     const archData = JSON.parse(archived.content[0]!.text) as {
       archived: boolean

@@ -1,26 +1,22 @@
 /**
- * @file packages/ui/src/api_base_validation.ts
- * @description Strict `URLPattern`-backed allowlist validator and cross-runtime
- * `URLSearchParams` sanitizer for `?apiBase=` overrides and external API base origins.
+ * Strict `URLPattern`-backed allowlist validator and cross-runtime `URLSearchParams` sanitizer for
+ * `?apiBase=` overrides and external API base origins. Production policy:
  *
- * Production policy:
- *   - `https://<sub >.bookdeskops.com[/optional/path]` only
- *   - No credentials, no non-default ports, no query string, no hash fragment,
- *     no backslashes, bounded input length (`MAX_API_BASE_INPUT = 2048`)
- *   - Single DNS label `<sub >` enforcing RFC 1123 (1–63 chars, alnum ends,
- *     no punycode `xn--`, and not in `DENIED_SUBS` such as `staging`)
+ * - `https://<sub >.bookdeskops.com[/optional/path]` only
+ * - No credentials, no non-default ports, no query string, no hash fragment, no backslashes, bounded
+ *   input length (`MAX_API_BASE_INPUT = 2048`)
+ * - Single DNS label `<sub >` enforcing RFC 1123 (1–63 chars, alnum ends, no punycode `xn--`, and not
+ *   in `DENIED_SUBS` such as `staging`) Local development policy (`isLocalDev === true`):
+ * - Also permits `http://localhost[:port]`, `http://127.0.0.1[:port]`, and `http://[::1][:port]` with
+ *   valid ports `1..65535` Cross-runtime hardening (Bun / WebKit / V8 / Gecko / polyfills):
+ * - Never uses `instanceof URLSearchParams` (Web global vs `node:url`)
+ * - Never reads `URLSearchParams.prototype.size` (omitted in polyfills)
+ * - Always reads `getAll("apiBase")` to block duplicate-key query smuggling
+ * - Asserts `hasRegExpGroups === true` at `URLPattern` construction time
+ * - Rejects backslashes and collapses repeated path slashes before emitting normalized URLs to close
+ *   `URL` vs `fetch` parser differentials
  *
- * Local development policy (`isLocalDev === true`):
- *   - Also permits `http://localhost[:port]`, `http://127.0.0.1[:port]`,
- *     and `http://[::1][:port]` with valid ports `1..65535`
- *
- * Cross-runtime hardening (Bun / WebKit / V8 / Gecko / polyfills):
- *   - Never uses `instanceof URLSearchParams` (Web global vs `node:url`)
- *   - Never reads `URLSearchParams.prototype.size` (omitted in polyfills)
- *   - Always reads `getAll("apiBase")` to block duplicate-key query smuggling
- *   - Asserts `hasRegExpGroups === true` at `URLPattern` construction time
- *   - Rejects backslashes and collapses repeated path slashes before emitting
- *     normalized URLs to close `URL` vs `fetch` parser differentials
+ * @file Packages/ui/src/api_base_validation.ts
  */
 
 export const MAX_API_BASE_INPUT = 2048
@@ -57,9 +53,10 @@ type URLPatternConstructor = typeof URLPattern
 let prodPattern: URLPattern | undefined
 let devPattern: URLPattern | undefined
 
-function createPatterns(
-  PatternCtor: URLPatternConstructor | undefined,
-): { prod?: URLPattern; dev?: URLPattern } {
+function createPatterns(PatternCtor: URLPatternConstructor | undefined): {
+  prod?: URLPattern
+  dev?: URLPattern
+} {
   if (typeof PatternCtor !== "function") {
     return {}
   }
@@ -107,9 +104,10 @@ function createPatterns(
   }
 }
 
-function getPatterns(
-  patternCtorOverride?: URLPatternConstructor | null,
-): { prod?: URLPattern; dev?: URLPattern } {
+function getPatterns(patternCtorOverride?: URLPatternConstructor | null): {
+  prod?: URLPattern
+  dev?: URLPattern
+} {
   if (patternCtorOverride !== undefined) {
     return createPatterns(patternCtorOverride ?? undefined)
   }
@@ -126,8 +124,8 @@ function getPatterns(
 }
 
 /**
- * Returns `true` when the active runtime's `URLPattern` compiled both the
- * production and dev allowlist patterns with active custom regex groups.
+ * Returns `true` when the active runtime's `URLPattern` compiled both the production and dev
+ * allowlist patterns with active custom regex groups.
  */
 export function hasCompiledApiBasePatterns(
   patternCtorOverride?: URLPatternConstructor | null,
@@ -137,8 +135,8 @@ export function hasCompiledApiBasePatterns(
 }
 
 /**
- * Duck-typed `URLSearchParams` guard that works identically across Web globals,
- * `node:url`, Bun, browsers, and polyfills without relying on `instanceof`.
+ * Duck-typed `URLSearchParams` guard that works identically across Web globals, `node:url`, Bun,
+ * browsers, and polyfills without relying on `instanceof`.
  */
 export function isURLSearchParams(value: unknown): value is URLSearchParams {
   return (
@@ -150,26 +148,22 @@ export function isURLSearchParams(value: unknown): value is URLSearchParams {
   )
 }
 
-/**
- * Polyfill-safe emptiness check for `URLSearchParams` (avoids `.size`).
- */
+/** Polyfill-safe emptiness check for `URLSearchParams` (avoids `.size`). */
 export function hasEmptySearchParams(params: URLSearchParams): boolean {
   return [...params].length === 0
 }
 
 /**
- * Extracts `?apiBase=` using `getAll("apiBase")` so duplicate-key smuggling
- * (e.g. `?apiBase=https://good.bookdeskops.com&apiBase=https://evil.example`)
- * is rejected fail-closed instead of silently trusting the first occurrence.
+ * Extracts `?apiBase=` using `getAll("apiBase")` so duplicate-key smuggling (e.g.
+ * `?apiBase=https://good.bookdeskops.com&apiBase=https://evil.example`) is rejected fail-closed
+ * instead of silently trusting the first occurrence.
  */
 export function extractSingleApiBaseParam(
   searchOrParams: string | URLSearchParams,
 ): ApiBaseParamExtraction {
   const params = isURLSearchParams(searchOrParams)
     ? searchOrParams
-    : new URLSearchParams(
-        searchOrParams.startsWith("?") ? searchOrParams.slice(1) : searchOrParams,
-      )
+    : new URLSearchParams(searchOrParams.startsWith("?") ? searchOrParams.slice(1) : searchOrParams)
   const values = params.getAll("apiBase")
   if (values.length === 0) {
     return { present: false }
@@ -181,8 +175,8 @@ export function extractSingleApiBaseParam(
 }
 
 /**
- * Deletes every occurrence of `apiBase` from a `URLSearchParams` instance
- * (`delete` removes all matching keys per the WHATWG URL spec).
+ * Deletes every occurrence of `apiBase` from a `URLSearchParams` instance (`delete` removes all
+ * matching keys per the WHATWG URL spec).
  */
 export function stripApiBaseParam(params: URLSearchParams): void {
   params.delete("apiBase")
@@ -190,6 +184,7 @@ export function stripApiBaseParam(params: URLSearchParams): void {
 
 /**
  * Validates and canonicalizes `?apiBase=` in place on a `URLSearchParams` object.
+ *
  * - Duplicate `?apiBase=` keys are purged and rejected with `ERR_API_BASE_DUPLICATE_PARAM`.
  * - Untrusted or malformed values are deleted completely.
  * - Single valid values are replaced with their canonical normalized URL.
@@ -248,9 +243,9 @@ function hasForbiddenQueryOrHash(trimmed: string, url: URL): boolean {
 }
 
 /**
- * Validates an untrusted `apiBase` string strictly via WHATWG `URLPattern`.
- * Fails closed with `ERR_API_BASE_PATTERN_UNAVAILABLE` if `URLPattern` is not
- * available or did not compile custom regex groups in the current runtime.
+ * Validates an untrusted `apiBase` string strictly via WHATWG `URLPattern`. Fails closed with
+ * `ERR_API_BASE_PATTERN_UNAVAILABLE` if `URLPattern` is not available or did not compile custom
+ * regex groups in the current runtime.
  */
 export function validateApiBaseWithPattern(
   raw: string | null | undefined,
@@ -319,8 +314,8 @@ export function validateApiBaseWithPattern(
 }
 
 /**
- * Equivalent pure-`URL` validator used ONLY as a browser fallback when
- * `URLPattern` is unavailable (`ERR_API_BASE_PATTERN_UNAVAILABLE`).
+ * Equivalent pure-`URL` validator used ONLY as a browser fallback when `URLPattern` is unavailable
+ * (`ERR_API_BASE_PATTERN_UNAVAILABLE`).
  */
 export function validateApiBaseFallback(
   raw: string | null | undefined,
@@ -369,8 +364,8 @@ export function validateApiBaseFallback(
 }
 
 /**
- * Validates an `apiBase` URL using `validateApiBaseWithPattern`, falling back
- * to `validateApiBaseFallback` only when the browser lacks `URLPattern`.
+ * Validates an `apiBase` URL using `validateApiBaseWithPattern`, falling back to
+ * `validateApiBaseFallback` only when the browser lacks `URLPattern`.
  */
 export function validateApiBase(
   raw: string | null | undefined,
@@ -391,8 +386,8 @@ export interface LocationOriginLike {
 }
 
 /**
- * Determines whether the current runtime context permits loopback local-dev
- * `?apiBase=` targets (loopback browser origin, Vite dev mode, or non-production runtime).
+ * Determines whether the current runtime context permits loopback local-dev `?apiBase=` targets
+ * (loopback browser origin, Vite dev mode, or non-production runtime).
  */
 export function isLocalDevLocation(win?: LocationOriginLike | null): boolean {
   const originOrHref = win?.location?.origin || win?.location?.href
@@ -448,8 +443,8 @@ export function parseValidatedApiBaseUrl(
 }
 
 /**
- * Resolve a relative endpoint path under a validated base `URL` with strict
- * post-join origin and pathname containment.
+ * Resolve a relative endpoint path under a validated base `URL` with strict post-join origin and
+ * pathname containment.
  */
 export function resolveUnder(base: URL | string, rel: string): URL {
   if (/%2f|%5c|\\/i.test(rel)) {
@@ -474,4 +469,3 @@ export function resolveUnder(base: URL | string, rel: string): URL {
   }
   return out
 }
-

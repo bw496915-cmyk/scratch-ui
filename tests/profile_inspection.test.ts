@@ -1,11 +1,7 @@
 import { expect, test } from "bun:test"
 
 import { projectRetainedCustomerHistory } from "../packages/backend/src/retained_customer_history.ts"
-import {
-  backtestRowsToProfiles,
-  bookRowsToProfiles,
-  mergeProfileRows,
-} from "../packages/ui/src/profile_rows.ts"
+import { backtestRowsToProfiles, bookRowsToProfiles, mergeProfileRows } from "../packages/ui/src/profile_rows.ts"
 import { executeNodeTerminalQuery } from "../server/adapters.ts"
 import { stripAnsi } from "../server/desk_inspect.ts"
 import {
@@ -98,15 +94,9 @@ test("terminal lookup fallback and list path preserve live unavailable values", 
     getTiersConfig: async () => ({}),
     getLiveWagers: async () => ({ wagers: [] }),
   }
-  for (const dependencies of [
-    baseDependencies,
-    { ...baseDependencies, listProfileRecords: async () => [record] },
-  ]) {
+  for (const dependencies of [baseDependencies, { ...baseDependencies, listProfileRecords: async () => [record] }]) {
     for (const suffix of ["", " --json", " --table", " --radar"]) {
-      const result = await executeNodeTerminalQuery(
-        `profile ACCOUNT1 --no-color${suffix}`,
-        dependencies,
-      )
+      const result = await executeNodeTerminalQuery(`profile ACCOUNT1 --no-color${suffix}`, dependencies)
       expect(result.exitCode).toBe(0)
       expect(result.stdout).toContain("ACCOUNT1")
       expect(result.stdout).not.toMatch(/48,?500|BILLY666|NaN/)
@@ -168,10 +158,7 @@ test("radar renders retained evidence through Bun and Node and keeps unmatched a
     Operation: "private example activity",
   }
   try {
-    await writeFile(
-      join(directory, "11-10-2026.jsonl"),
-      [JSON.stringify(row), "{invalid"].join("\n"),
-    )
+    await writeFile(join(directory, "11-10-2026.jsonl"), [JSON.stringify(row), "{invalid"].join("\n"))
     await writeFile(
       join(directory, "11-11-2026.jsonl"),
       [JSON.stringify(row), JSON.stringify({ ...row, LoginID: "ACCOUNT10" })].join("\n"),
@@ -233,9 +220,9 @@ test("backtest BGD101 takes precedence over synthetic duplicate fixture and norm
   const backtestJson = (await Bun.file("docs/backtest-4wk-cfb-nba.json").json()) as {
     customerLeaderboard: Array<Record<string, unknown>>
   }
-  const fixtureRows = (await Bun.file(
-    "tests/fixtures/backtest/enriched_customers_full.json",
-  ).json()) as Array<Record<string, unknown>>
+  const fixtureRows = (await Bun.file("tests/fixtures/backtest/enriched_customers_full.json").json()) as Array<
+    Record<string, unknown>
+  >
 
   const merged = mergeProfileRows(
     backtestRowsToProfiles(backtestJson.customerLeaderboard),
@@ -271,13 +258,7 @@ test("backtest BGD101 takes precedence over synthetic duplicate fixture and norm
   expect(record.unknown).toContain("copy")
 
   const axisSum = Number(
-    (
-      record.clvScore +
-      record.skillScore +
-      record.sizingScore +
-      record.sigScore +
-      record.timingScore
-    ).toFixed(2),
+    (record.clvScore + record.skillScore + record.sizingScore + record.sigScore + record.timingScore).toFixed(2),
   )
   expect(axisSum).toBeCloseTo(record.score, 2)
 })
@@ -292,13 +273,7 @@ test("5-axis sharpness decomposition reconciles cleanly up to 10.0/10.0", () => 
   ] as const) {
     const axes = deriveSharpnessAxes(score, clvBps)
     const sum = Number(
-      (
-        axes.clvScore +
-        axes.skillScore +
-        axes.sizingScore +
-        axes.sigScore +
-        axes.timingScore
-      ).toFixed(2),
+      (axes.clvScore + axes.skillScore + axes.sizingScore + axes.sigScore + axes.timingScore).toFixed(2),
     )
     expect(axes.clvScore).toBeLessThanOrEqual(3.0)
     expect(axes.skillScore).toBeLessThanOrEqual(2.5)
@@ -390,18 +365,9 @@ test("ProfileView omits fabricated unmeasured telemetry and aligns --options CLI
 
   // Bottom --options banner CLI line must include --options to match top profileCliCommand
   expect(payload.cliFlags).toContain("--options")
-  expect(payload.profileCliCommand).toBe(
-    "profile SPARSE_SHARP --no-color --getters --max-array=20 --options",
-  )
+  expect(payload.profileCliCommand).toBe("profile SPARSE_SHARP --no-color --getters --max-array=20 --options")
   expect(plainProfile).toContain("CLI: --no-color --getters --max-array=20 --options")
-  expect(stripAnsi(payload.cohortAnsi)).toContain(
-    "CLI: --no-color --getters --max-array=20 --options",
-  )
-  expect(stripAnsi(payload.radarAnsi)).toContain(
-    "CLI: --no-color --getters --max-array=20 --options",
-  )
-  expect(stripAnsi(payload.tableAnsi)).toContain(
-    "CLI: --no-color --getters --max-array=20 --options",
-  )
+  expect(stripAnsi(payload.cohortAnsi)).toContain("CLI: --no-color --getters --max-array=20 --options")
+  expect(stripAnsi(payload.radarAnsi)).toContain("CLI: --no-color --getters --max-array=20 --options")
+  expect(stripAnsi(payload.tableAnsi)).toContain("CLI: --no-color --getters --max-array=20 --options")
 })
-

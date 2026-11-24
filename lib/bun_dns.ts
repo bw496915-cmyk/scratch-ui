@@ -1,6 +1,7 @@
 /**
- * @file lib/bun_dns.ts
- * @description Node.js DNS telemetry & reverse IP forensics adapter (replaces Bun native dns module).
+ * Node.js DNS telemetry & reverse IP forensics adapter (replaces Bun native dns module).
+ *
+ * @file Lib/bun_dns.ts
  */
 
 export type DnsResolverBackend = "c-ares" | "system" | "getaddrinfo" | "libc"

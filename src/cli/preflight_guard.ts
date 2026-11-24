@@ -1,24 +1,22 @@
 /**
- * @file src/cli/preflight_guard.ts
- * @description Startup preflight guard preventing unintended `--env-file` token bleed
- * (`ERR_CF_TOKEN_BLEED_10000`) via `process.execArgv` or `process.env.BUN_OPTIONS`.
+ * Startup preflight guard preventing unintended `--env-file` token bleed
+ * (`ERR_CF_TOKEN_BLEED_10000`) via `process.execArgv` or `process.env.BUN_OPTIONS`. Security
+ * invariant (empirically verified on Bun 1.4.4): `--no-env-file` ONLY disables auto-loading `.env`
+ * / `.env.local`. Explicit `--env-file=<path>` flags are ALWAYS loaded unconditionally by Bun
+ * regardless of flag order or whether `--no-env-file` is present in `execArgv` or `BUN_OPTIONS`.
+ * Therefore `--no-env-file` NEVER exempts `--env-file`. Every `--env-file` flag across both
+ * `execArgv` and `BUN_OPTIONS` is rejected fail-closed unless its exact target path appears in an
+ * explicit `allowedEnvFiles` allowlist (default: empty).
  *
- * Security invariant (empirically verified on Bun 1.4.4):
- * `--no-env-file` ONLY disables auto-loading `.env` / `.env.local`. Explicit
- * `--env-file=<path>` flags are ALWAYS loaded unconditionally by Bun regardless of
- * flag order or whether `--no-env-file` is present in `execArgv` or `BUN_OPTIONS`.
- *
- * Therefore `--no-env-file` NEVER exempts `--env-file`. Every `--env-file` flag
- * across both `execArgv` and `BUN_OPTIONS` is rejected fail-closed unless its exact
- * target path appears in an explicit `allowedEnvFiles` allowlist (default: empty).
+ * @file Src/cli/preflight_guard.ts
  */
 
 export const ERR_CF_TOKEN_BLEED_10000 = "ERR_CF_TOKEN_BLEED_10000"
 
 export interface PreflightGuardOptions {
   /**
-   * Explicit allowlist of permitted `--env-file` paths.
-   * Defaults to empty (deny all `--env-file` flags).
+   * Explicit allowlist of permitted `--env-file` paths. Defaults to empty (deny all `--env-file`
+   * flags).
    */
   readonly allowedEnvFiles?: ReadonlySet<string> | readonly string[] | undefined
   /**
@@ -32,8 +30,8 @@ export interface PreflightGuardOptions {
 }
 
 /**
- * Split a `BUN_OPTIONS` environment string into argv-like tokens, stripping simple
- * surrounding single/double quotes without invoking a shell.
+ * Split a `BUN_OPTIONS` environment string into argv-like tokens, stripping simple surrounding
+ * single/double quotes without invoking a shell.
  */
 export function tokenizeBunOptions(raw: string | undefined): string[] {
   if (!raw || !raw.trim()) return []
@@ -103,8 +101,8 @@ function scanSourceForEnvFile(
 /**
  * Assert that neither `execArgv` nor `BUN_OPTIONS` injects an unallowlisted `--env-file`.
  *
- * When invoked with no arguments (`assertSafeExecArgv()`), reads `process.execArgv`
- * and `process.env.BUN_OPTIONS` directly.
+ * When invoked with no arguments (`assertSafeExecArgv()`), reads `process.execArgv` and
+ * `process.env.BUN_OPTIONS` directly.
  */
 export function assertSafeExecArgv(
   execArgv?: readonly string[],

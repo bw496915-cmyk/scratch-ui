@@ -1,19 +1,20 @@
 /**
- * @file src/runtime-preflight.ts
- * @description Runtime security & invariant preflight audit for SportsDesk Ops:
- *  1. `sealGlobalBunS3`: seals the ambient `Bun.s3` singleton (locks methods &
- *     descriptor) so ambient AWS/S3/R2 env vars cannot leak through `Bun.s3`
- *     while leaving explicit `new Bun.S3Client(...)` instances unaffected.
- *  2. TLS 1.3 cipher pinning: enforces AEAD TLS 1.3-only cipher suites
- *     (`TLS_AES_256_GCM_SHA384`, `TLS_CHACHA20_POLY1305_SHA256`,
- *     `TLS_AES_128_GCM_SHA256`), rejects `rejectUnauthorized: false` and legacy
- *     versions/ciphers, and validates `tls.createSecureContext`.
- *  3. Lazy `Bun.file` `TypeError` checks: guards against passing lazy
- *     `Bun.file()` / `Blob` handles into Bun's native text parsers (`TOML`,
- *     `YAML`, `JSON5`, `XML`) and probes the runtime `TypeError` contract.
- *  4. `runRuntimePreflightAudit`: composite audit combining `--env-file`
- *     token-bleed preflight (`assertSafeExecArgv`), `sealGlobalBunS3`, TLS 1.3
- *     cipher pinning, and lazy `Bun.file` `TypeError` checks.
+ * Runtime security & invariant preflight audit for SportsDesk Ops:
+ *
+ * 1. `sealGlobalBunS3`: seals the ambient `Bun.s3` singleton (locks methods & descriptor) so ambient
+ *    AWS/S3/R2 env vars cannot leak through `Bun.s3` while leaving explicit `new Bun.S3Client(...)`
+ *    instances unaffected.
+ * 2. TLS 1.3 cipher pinning: enforces AEAD TLS 1.3-only cipher suites (`TLS_AES_256_GCM_SHA384`,
+ *    `TLS_CHACHA20_POLY1305_SHA256`, `TLS_AES_128_GCM_SHA256`), rejects `rejectUnauthorized: false`
+ *    and legacy versions/ciphers, and validates `tls.createSecureContext`.
+ * 3. Lazy `Bun.file` `TypeError` checks: guards against passing lazy `Bun.file()` / `Blob` handles
+ *    into Bun's native text parsers (`TOML`, `YAML`, `JSON5`, `XML`) and probes the runtime
+ *    `TypeError` contract.
+ * 4. `runRuntimePreflightAudit`: composite audit combining `--env-file` token-bleed preflight
+ *    (`assertSafeExecArgv`), `sealGlobalBunS3`, TLS 1.3 cipher pinning, and lazy `Bun.file`
+ *    `TypeError` checks.
+ *
+ * @file Src/runtime-preflight.ts
  */
 
 import tls from "node:tls"
@@ -133,10 +134,9 @@ export function isGlobalBunS3Sealed(bun?: BunRuntimeLike | null): boolean {
 }
 
 /**
- * Seal the ambient `Bun.s3` global singleton so no module can implicitly read
- * ambient AWS/S3/R2 env credentials via `Bun.s3` or reassign `Bun.s3`.
- * Explicit `new Bun.S3Client(...)` instances inherit from `S3Client.prototype`
- * and remain unaffected. Idempotent across repeated calls.
+ * Seal the ambient `Bun.s3` global singleton so no module can implicitly read ambient AWS/S3/R2 env
+ * credentials via `Bun.s3` or reassign `Bun.s3`. Explicit `new Bun.S3Client(...)` instances inherit
+ * from `S3Client.prototype` and remain unaffected. Idempotent across repeated calls.
  */
 export function sealGlobalBunS3(options: SealGlobalBunS3Options = {}): SealGlobalBunS3Result {
   const targetBun = options.bun === undefined ? getGlobalBun() : options.bun
@@ -254,7 +254,10 @@ export interface Tls13CipherPinOptions {
   readonly enforceDefaultMaxTls13?: boolean | undefined
   /** Reject insecure `rejectUnauthorized: false` configuration. Default: `true`. */
   readonly rejectUnauthorized?: boolean | undefined
-  /** Instantiate a real `tls.createSecureContext` to verify OpenSSL/BoringSSL support. Default: `true`. */
+  /**
+   * Instantiate a real `tls.createSecureContext` to verify OpenSSL/BoringSSL support. Default:
+   * `true`.
+   */
   readonly testSecureContext?: boolean | undefined
   /** Injectable TLS adapter for testing. */
   readonly tlsModule?: {
@@ -280,9 +283,9 @@ export interface Tls13CipherPinReport {
 }
 
 /**
- * Validate and build pinned TLS 1.3 client/server options (`minVersion: "TLSv1.3"`,
- * `maxVersion: "TLSv1.3"`, AEAD-only ciphers, `rejectUnauthorized: true`).
- * Throws `ERR_TLS_CIPHER_PIN_FAILED` on downgrade or weak-cipher overrides.
+ * Validate and build pinned TLS 1.3 client/server options (`minVersion: "TLSv1.3"`, `maxVersion:
+ * "TLSv1.3"`, AEAD-only ciphers, `rejectUnauthorized: true`). Throws `ERR_TLS_CIPHER_PIN_FAILED` on
+ * downgrade or weak-cipher overrides.
  */
 export function createPinnedTlsOptions(
   overrides: {
@@ -347,8 +350,8 @@ export function createPinnedTlsOptions(
 }
 
 /**
- * Verify that the active runtime TLS stack supports all pinned TLS 1.3 ciphers
- * and accepts a pinned `TLSv1.3` `SecureContext`.
+ * Verify that the active runtime TLS stack supports all pinned TLS 1.3 ciphers and accepts a pinned
+ * `TLSv1.3` `SecureContext`.
  */
 export function verifyTls13CipherPinning(
   options: Tls13CipherPinOptions = {},
@@ -493,9 +496,9 @@ export function isLazyFileBlob(value: unknown): boolean {
 }
 
 /**
- * Guard helper for parser adapters: rejects lazy `Bun.file(...)` / `Blob`
- * handles with a deterministic `TypeError` (`ERR_LAZY_BUN_FILE_BLOB`) so callers
- * materialize text via `await file.text()` or `readFileSync()` first.
+ * Guard helper for parser adapters: rejects lazy `Bun.file(...)` / `Blob` handles with a
+ * deterministic `TypeError` (`ERR_LAZY_BUN_FILE_BLOB`) so callers materialize text via `await
+ * file.text()` or `readFileSync()` first.
  */
 export function assertTextNotLazyBunFile(input: unknown, parserLabel = "parser"): string {
   if (isLazyFileBlob(input)) {
@@ -549,9 +552,9 @@ const SAFE_TEXT_FIXTURES: Record<BunNativeTextParserName, string> = {
 }
 
 /**
- * Probe both the defensive `assertTextNotLazyBunFile` guard and Bun's native
- * parsers (`TOML`, `YAML`, `JSON5`, `XML`) to verify lazy `Bun.file()` handles
- * fail with `TypeError` rather than silently coercing `[object Blob]`.
+ * Probe both the defensive `assertTextNotLazyBunFile` guard and Bun's native parsers (`TOML`,
+ * `YAML`, `JSON5`, `XML`) to verify lazy `Bun.file()` handles fail with `TypeError` rather than
+ * silently coercing `[object Blob]`.
  */
 export function probeLazyBunFileTypeErrors(
   options: LazyBunFileProbeOptions = {},
@@ -709,6 +712,7 @@ export interface RuntimePreflightAuditReport {
 
 /**
  * Execute all runtime security & contract preflight checks:
+ *
  * - `--env-file` token-bleed guard (`assertSafeExecArgv`)
  * - Global `Bun.s3` singleton sealing (`sealGlobalBunS3`)
  * - TLS 1.3 AEAD cipher pinning (`verifyTls13CipherPinning`)
@@ -789,7 +793,9 @@ export function runRuntimePreflightAudit(
   const report: RuntimePreflightAuditReport = {
     ok,
     runtime: isBun ? "bun" : "node",
-    runtimeVersion: isBun ? (processBunVersion ?? globalBun?.version ?? "unknown") : process.version,
+    runtimeVersion: isBun
+      ? (processBunVersion ?? globalBun?.version ?? "unknown")
+      : process.version,
     checkedAt: new Date().toISOString(),
     checks: {
       execArgv: execArgvCheck,

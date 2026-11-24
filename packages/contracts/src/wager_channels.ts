@@ -1,8 +1,9 @@
 /**
- * @file packages/contracts/src/wager_channels.ts
- * @description Ticket-writer channel vocabulary, shared by the ingest projection
- * (`lib/live_wagers.ts`) and the dashboard, so a writer is classified once and the same
- * GSLIVE / GS Builder split holds on both sides.
+ * Ticket-writer channel vocabulary, shared by the ingest projection (`lib/live_wagers.ts`) and the
+ * dashboard, so a writer is classified once and the same GSLIVE / GS Builder split holds on both
+ * sides.
+ *
+ * @file Packages/contracts/src/wager_channels.ts
  */
 
 export const WAGER_CHANNEL_FAMILIES = [
@@ -29,7 +30,7 @@ const CHANNEL_BY_WRITER: Readonly<Record<string, WagerChannel>> = {
   blocked: "blocked",
 }
 
-/** `"GSBUILDER   "` → `"gsbuilder"`; unknown or missing writers → `"other"`. */
+/** `"GSBUILDER "` → `"gsbuilder"`; unknown or missing writers → `"other"`. */
 export function wagerChannelOf(ticketWriter: unknown): WagerChannel {
   if (ticketWriter === null || ticketWriter === undefined) return "other"
   const key = String(ticketWriter).trim().toLowerCase()

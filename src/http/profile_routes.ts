@@ -1,7 +1,8 @@
 /**
- * @file src/http/profile_routes.ts
- * @description Authenticated profile theme HTTP routes (`/api/profile`,
- * `/api/profile/theme`, `/api/profile/render.md`) reusing the CSRF/Origin guard.
+ * Authenticated profile theme HTTP routes (`/api/profile`, `/api/profile/theme`,
+ * `/api/profile/render.md`) reusing the CSRF/Origin guard.
+ *
+ * @file Src/http/profile_routes.ts
  */
 
 import { parseCookieHeader, SESSION_COOKIE_NAME } from "../../lib/http_auth.ts"
@@ -23,8 +24,8 @@ type RequestWithOptionalCookies = Request & {
 
 export interface ProfileRoutesOptions {
   /**
-   * Optional authoritative session resolver (e.g. backed by `httpAuth.authenticateHeaders`).
-   * When omitted, falls back to reading `sd_session` or `session_id` cookie.
+   * Optional authoritative session resolver (e.g. backed by `httpAuth.authenticateHeaders`). When
+   * omitted, falls back to reading `sd_session` or `session_id` cookie.
    */
   readonly resolveSessionId?: (req: Request) => string | null
 }

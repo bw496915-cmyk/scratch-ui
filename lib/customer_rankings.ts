@@ -3,18 +3,18 @@
  *
  * WHY THIS EXISTS
  *
- * The CLI's `winners`, `losers` and `leaderboard` tables used to be literal arrays of demo
- * rows, so their numbers were fabricated and could never change. This module computes them
- * from the checked-in book instead: every customer count, volume, net and win rate below is a
- * function of the file. Nothing about how many customers or bets exist is written down here.
+ * The CLI's `winners`, `losers` and `leaderboard` tables used to be literal arrays of demo rows, so
+ * their numbers were fabricated and could never change. This module computes them from the
+ * checked-in book instead: every customer count, volume, net and win rate below is a function of
+ * the file. Nothing about how many customers or bets exist is written down here.
  *
  * HONESTY LIMITS, stated rather than hidden
  *
- * - The book carries `lifetime_*` rollups plus a SAMPLE of recent tickets per customer. The
- *   only windows it can answer are `7d` (`sports_7d_*`) and `lifetime`; `24h`/`48h`/`month`
- *   are refused instead of being silently mapped to a different window.
- * - `winPct` is computed over the sampled WIN/LOSS tickets only and is `null` when the sample
- *   has no decisive ticket; the CLI labels it as a sample.
+ * - The book carries `lifetime_*` rollups plus a SAMPLE of recent tickets per customer. The only
+ *   windows it can answer are `7d` (`sports_7d_*`) and `lifetime`; `24h`/`48h`/`month` are refused
+ *   instead of being silently mapped to a different window.
+ * - `winPct` is computed over the sampled WIN/LOSS tickets only and is `null` when the sample has no
+ *   decisive ticket; the CLI labels it as a sample.
  * - The "league"/"market" shown for a customer is the most frequent one in that sample.
  *
  * @module lib/customer_rankings
@@ -142,8 +142,8 @@ export interface TicketSample {
 }
 
 /**
- * Aggregate the per-customer ticket SAMPLE. Callers must present this as a sample: the book
- * does not carry full ticket history, and the CLI labels those columns with `*`.
+ * Aggregate the per-customer ticket SAMPLE. Callers must present this as a sample: the book does
+ * not carry full ticket history, and the CLI labels those columns with `*`.
  *
  * @param {readonly Ticket[]} tickets
  * @returns {TicketSample}
@@ -247,10 +247,10 @@ export interface SharpAudit {
 }
 
 /**
- * Derived sharp audit: customers at or above a sharp-score cutoff, OR with positive CLV.
- * No scripted "playbooks" and no canned names — the candidate set is a function of the book.
+ * Derived sharp audit: customers at or above a sharp-score cutoff, OR with positive CLV. No
+ * scripted "playbooks" and no canned names — the candidate set is a function of the book.
  *
- * @param {{ minSharpScore?: number, limit?: number }} [options]
+ * @param {{ minSharpScore?: number; limit?: number }} [options]
  * @returns {Promise<SharpAudit>}
  */
 export async function buildSharpAudit(
@@ -319,7 +319,7 @@ function dominantValue(values: (string | undefined)[]): string {
 /**
  * Rank customers by the derived window.
  *
- * @param {{ direction: RankingDirection, period: string, sortBy: RankingSort, limit: number }} options
+ * @param {{ direction: RankingDirection; period: string; sortBy: RankingSort; limit: number }} options
  * @returns {Promise<CustomerRankingRow[]>}
  */
 export async function buildCustomerRanking(options: {
@@ -443,8 +443,8 @@ function pickFiniteNumber(...values: readonly unknown[]): number | null {
 }
 
 /**
- * Derive a deterministic 24-hour handle performance shift (%) from recent
- * ticket velocity and 7d-vs-30d run-rate momentum.
+ * Derive a deterministic 24-hour handle performance shift (%) from recent ticket velocity and
+ * 7d-vs-30d run-rate momentum.
  */
 export function computeHandleDelta24hPct(input: {
   readonly lifetimeVolumeUsd: number

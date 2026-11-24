@@ -1,7 +1,8 @@
 /**
- * @file design/baked.ts
- * @description Zero-runtime-TOML baked design system entrypoint compiled via
- * Bun's `with { type: "macro" }` import attribute.
+ * Zero-runtime-TOML baked design system entrypoint compiled via Bun's `with { type: "macro" }`
+ * import attribute.
+ *
+ * @file Design/baked.ts
  */
 import { bakeCanonicalColorHex, bakeDesignSystemSnapshot } from "./macros.ts" with { type: "macro" }
 

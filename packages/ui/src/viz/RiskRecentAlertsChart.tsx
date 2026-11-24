@@ -44,10 +44,10 @@ function TrendIcon({ trend }: { readonly trend: AlertFrequencyTrend }): React.Re
 }
 
 /**
- * D3 stacked bar & severity-momentum visualization inside the 'Recent Alerts'
- * sidebar showing 60-minute breach/warning frequency across 12 five-minute bins,
- * overlaid with a vertical USD threshold limit marker showing where rolling
- * exposure crossed (or approaches) the configured limit.
+ * D3 stacked bar & severity-momentum visualization inside the 'Recent Alerts' sidebar showing
+ * 60-minute breach/warning frequency across 12 five-minute bins, overlaid with a vertical USD
+ * threshold limit marker showing where rolling exposure crossed (or approaches) the configured
+ * limit.
  */
 export function RiskRecentAlertsChart({
   series,

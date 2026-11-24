@@ -1,16 +1,13 @@
 /**
- * @file packages/ui/src/discovery_hash.ts
- * @description Canonical structured hash routing, deep-linking codec, and SoA
- * Discovery Dimension registry for SportsDesk Operations.
+ * Canonical structured hash routing, deep-linking codec, and SoA Discovery Dimension registry for
+ * SportsDesk Operations. Canonical hash grammar:
+ * #/{section}/{tab}[/tier:{tier}][/customer:{id}][/ch:{channel}][/sport:{sport}]
+ * [/ticket:{ticketId}][/agent:{agentId}][/alert:{filter}][/sev:{severity}]
+ * [/rot:{rotId}][/pair:{accountI}~{accountJ}][/dim:{discoveryDimensionId}] Legacy flat hashes (e.g.
+ * `#customers`, `#risk-overview`, `#wagers`, `#shadow`) remain 100% supported on read and upgrade
+ * seamlessly to structured canonical hashes on navigation.
  *
- * Canonical hash grammar:
- *   #/{section}/{tab}[/tier:{tier}][/customer:{id}][/ch:{channel}][/sport:{sport}]
- *     [/ticket:{ticketId}][/agent:{agentId}][/alert:{filter}][/sev:{severity}]
- *     [/rot:{rotId}][/pair:{accountI}~{accountJ}][/dim:{discoveryDimensionId}]
- *
- * Legacy flat hashes (e.g. `#customers`, `#risk-overview`, `#wagers`, `#shadow`)
- * remain 100% supported on read and upgrade seamlessly to structured canonical
- * hashes on navigation.
+ * @file Packages/ui/src/discovery_hash.ts
  */
 
 import {
@@ -26,10 +23,7 @@ import { type DashboardTabId, resolveDashboardTabId } from "./types.ts"
 // ---------------------------------------------------------------------------
 
 export type DashboardSectionId =
-  | "risk-exposure"
-  | "bettor-intelligence"
-  | "operations-telemetry"
-  | "platform-infrastructure"
+  "risk-exposure" | "bettor-intelligence" | "operations-telemetry" | "platform-infrastructure"
 
 export interface DashboardSectionMeta {
   readonly id: DashboardSectionId
@@ -100,7 +94,8 @@ export const DISCOVERY_DIMENSION_IDS = [
 
 export type DiscoveryDimensionId = (typeof DISCOVERY_DIMENSION_IDS)[number]
 
-export type DiscoveryDimensionTone = "sky" | "amber" | "violet" | "emerald" | "slate" | "red" | "cyan"
+export type DiscoveryDimensionTone =
+  "sky" | "amber" | "violet" | "emerald" | "slate" | "red" | "cyan"
 
 export interface DiscoveryDimensionSpec {
   readonly id: DiscoveryDimensionId
@@ -138,7 +133,8 @@ export const DISCOVERY_DIMENSIONS: Readonly<Record<DiscoveryDimensionId, Discove
       estimator: "Conditional Intensity Ratio (Λ_ij|E)",
       symbol: "Λᵢⱼ|E",
       shortCode: "Lambda_ij|E",
-      formula: "Λ_ij|E = P(j in W | i, E) / P(j in W | E) where E = external sharp line move within W",
+      formula:
+        "Λ_ij|E = P(j in W | i, E) / P(j in W | E) where E = external sharp line move within W",
       soaSlabs: ["tsMs:Float64Array", "extSharpMoveMask:Uint8Array", "rotId:Uint32Array"],
       whatItSurfaces:
         "Separates direct account-to-account coupling (Λ ≫ 1) from independent reactions to the same public line move (Λ ≈ 1).",
@@ -278,8 +274,8 @@ function sortedQuantile(sorted: readonly number[], q: number): number | null {
 }
 
 /**
- * Computes Signed Lead-Lag Index A_ij ∈ [-1, 1] and timing dispersion (p50, p95, IQR)
- * directly over a slab of signed timestamp deltas Δt_ij = t_j - t_i (in ms).
+ * Computes Signed Lead-Lag Index A_ij ∈ [-1, 1] and timing dispersion (p50, p95, IQR) directly over
+ * a slab of signed timestamp deltas Δt_ij = t_j - t_i (in ms).
  */
 export function computeLeadLagIndex(deltasMs: ArrayLike<number>): LeadLagEstimate {
   const valid: number[] = []
@@ -329,8 +325,8 @@ export interface BurstinessEstimate {
 }
 
 /**
- * Computes Goh-Barabási Burstiness B_ij = (σ - μ) / (σ + μ) ∈ [-1, 1]
- * and Fano Factor σ² / μ over positive inter-event intervals Δt (ms).
+ * Computes Goh-Barabási Burstiness B_ij = (σ - μ) / (σ + μ) ∈ [-1, 1] and Fano Factor σ² / μ over
+ * positive inter-event intervals Δt (ms).
  */
 export function computeBurstinessIndex(intervalsMs: ArrayLike<number>): BurstinessEstimate {
   const valid: number[] = []
@@ -369,9 +365,7 @@ export interface HypergeometricLiftEstimate {
   readonly lift: number | null
 }
 
-/**
- * Computes Hypergeometric Lift L_ij = O_ij / E[O_ij] where E[O_ij] = (degI * degJ) / totalRots.
- */
+/** Computes Hypergeometric Lift L_ij = O_ij / E[O_ij] where E[O_ij] = (degI * degJ) / totalRots. */
 export function computeHypergeometricLift(
   observedCoOccur: number,
   degI: number,
@@ -397,9 +391,7 @@ export function computeHypergeometricLift(
   }
 }
 
-/**
- * Computes Conditional Intensity Ratio Λ_ij|E = P(j in W | i, E) / P(j in W | E).
- */
+/** Computes Conditional Intensity Ratio Λ_ij|E = P(j in W | i, E) / P(j in W | E). */
 export function computeConditionalIntensityRatio(
   pJGivenIAndE: number,
   pJGivenE: number,
@@ -411,7 +403,8 @@ export function computeConditionalIntensityRatio(
 }
 
 /**
- * Computes Live Executable Delta Δ_exec = realizedClvBps_ij - (liveVwapSlipBps_ROT + liveTakerFeeBps_ROT).
+ * Computes Live Executable Delta Δ_exec = realizedClvBps_ij - (liveVwapSlipBps_ROT +
+ * liveTakerFeeBps_ROT).
  */
 export function computeLiveExecutableDeltaBps(
   realizedClvBps: number,
@@ -477,9 +470,8 @@ function safeDecode(raw: string): string {
 }
 
 /**
- * Serializes a dashboard view + entity context + optional Discovery Dimension
- * into a deterministic, human-readable canonical hash fragment:
- *   `#/{section}/{tab}[/tier:...][/customer:...][/dim:...]`
+ * Serializes a dashboard view + entity context + optional Discovery Dimension into a deterministic,
+ * human-readable canonical hash fragment: `#/{section}/{tab}[/tier:...][/customer:...][/dim:...]`
  */
 export function serializeDashboardHash(ctx: DashboardHashRouteContext): string {
   const section = getSectionForTab(ctx.activeTab)
@@ -545,8 +537,8 @@ export function serializeDashboardHash(ctx: DashboardHashRouteContext): string {
 const VALID_SECTION_IDS: ReadonlySet<string> = new Set(Object.keys(DASHBOARD_SECTIONS))
 
 /**
- * Parses either a structured canonical hash (`#/{section}/{tab}/...`) or a
- * legacy flat hash (`#customers`, `#wagers`, `#risk-overview`) back into typed state.
+ * Parses either a structured canonical hash (`#/{section}/{tab}/...`) or a legacy flat hash
+ * (`#customers`, `#wagers`, `#risk-overview`) back into typed state.
  */
 export function parseDashboardHash(
   rawHash: string,
@@ -694,9 +686,9 @@ export function parseDashboardHash(
 }
 
 /**
- * Builds a shareable relative URL (`?tab=...&...#/{section}/{tab}/...`) for any
- * breadcrumb crumb, entity header link, or Discovery Dimension deep link.
- * Preserves loopback `?apiBase=` when present in `currentSearch`.
+ * Builds a shareable relative URL (`?tab=...&...#/{section}/{tab}/...`) for any breadcrumb crumb,
+ * entity header link, or Discovery Dimension deep link. Preserves loopback `?apiBase=` when present
+ * in `currentSearch`.
  */
 export function buildCanonicalDashboardHref(
   ctx: DashboardHashRouteContext,
@@ -744,8 +736,8 @@ export function buildCanonicalDashboardHref(
 }
 
 /**
- * Builds an absolute shareable permalink (origin + pathname + query + canonical hash)
- * safe for clipboard copy and external sharing.
+ * Builds an absolute shareable permalink (origin + pathname + query + canonical hash) safe for
+ * clipboard copy and external sharing.
  */
 export function buildAbsoluteDiscoveryPermalink(
   ctx: DashboardHashRouteContext,
@@ -757,8 +749,7 @@ export function buildAbsoluteDiscoveryPermalink(
 ): string {
   const search = locationLike?.search ?? ""
   const relative = buildCanonicalDashboardHref(ctx, search)
-  const origin =
-    locationLike?.origin && locationLike.origin !== "null" ? locationLike.origin : ""
+  const origin = locationLike?.origin && locationLike.origin !== "null" ? locationLike.origin : ""
   const pathname = locationLike?.pathname || "/"
   return origin ? `${origin}${pathname}${relative}` : `${pathname}${relative}`
 }

@@ -76,9 +76,9 @@ const MAX_S3_PRESIGN_EXPIRES_SEC = 900
 const DEFAULT_S3_PRESIGN_EXPIRES_SEC = 60
 
 /**
- * Hardened `Bun.S3Client` endpoint parser matching WHATWG `new URL()` semantics.
- * Rejects oversized strings, control chars, backslashes, bare `?`/`#`, embedded
- * credentials, non-HTTPS schemes, invalid ports, and non-root path prefixes.
+ * Hardened `Bun.S3Client` endpoint parser matching WHATWG `new URL()` semantics. Rejects oversized
+ * strings, control chars, backslashes, bare `?`/`#`, embedded credentials, non-HTTPS schemes,
+ * invalid ports, and non-root path prefixes.
  */
 export function parseHardenedS3Endpoint(raw: string): URL {
   if (
@@ -446,8 +446,8 @@ export class SealedR2Handle {
   }
 
   /**
-   * Native Bun `S3Client.prototype.stat()` wrapper with strict key validation
-   * and optional Requester Pays (`requestPayer: true`) support.
+   * Native Bun `S3Client.prototype.stat()` wrapper with strict key validation and optional
+   * Requester Pays (`requestPayer: true`) support.
    */
   async statObject(
     key: string,
@@ -504,8 +504,8 @@ export class SealedR2Handle {
   }
 
   /**
-   * Native Bun `S3Client.prototype.list()` wrapper (ListObjectsV2) with strict
-   * prefix validation and bounded page sizes.
+   * Native Bun `S3Client.prototype.list()` wrapper (ListObjectsV2) with strict prefix validation
+   * and bounded page sizes.
    */
   async listObjects(query: S3ListObjectsQuery = {}): Promise<S3ListObjectsSummary> {
     requireR2AdminScope()
@@ -566,8 +566,8 @@ export class SealedR2Handle {
   }
 
   /**
-   * Native Bun `S3Client.prototype.write()` wrapper supporting Bun 1.3/1.4
-   * `storageClass`, `type`, and `requestPayer` options with a 5 MiB safety cap.
+   * Native Bun `S3Client.prototype.write()` wrapper supporting Bun 1.3/1.4 `storageClass`, `type`,
+   * and `requestPayer` options with a 5 MiB safety cap.
    */
   async writeObject(
     key: string,
@@ -617,8 +617,8 @@ export class SealedR2Handle {
 
   /**
    * Native Bun 1.3.7+ `S3File.prototype.presign()` wrapper supporting
-   * `response-content-disposition` and `response-content-type` query parameters
-   * with strict TTL bounds (1..900s) and endpoint host verification.
+   * `response-content-disposition` and `response-content-type` query parameters with strict TTL
+   * bounds (1..900s) and endpoint host verification.
    */
   presignDownload(key: string, options: S3PresignDownloadOptions = {}): S3PresignedDownloadResult {
     requireR2AdminScope()

@@ -1,10 +1,10 @@
 /**
- * @file packages/ui/src/ShadowPricingPanel.tsx
- * @description Interactive 4-Axis Hierarchical Taxonomy Cube (Sport -> SubSport -> Period per SubSport -> Market)
- * & Point-Buy Shadow-Pricing / Retail Elasticity Simulator (#135).
+ * Interactive 4-Axis Hierarchical Taxonomy Cube (Sport -> SubSport -> Period per SubSport ->
+ * Market) & Point-Buy Shadow-Pricing / Retail Elasticity Simulator (#135). Uses `import type`
+ * exclusively for shared contracts so `bun:sqlite` stays strictly server-only. Styled with
+ * specification-grade CSS Houdini tokens from `./tokens.generated.css`.
  *
- * Uses `import type` exclusively for shared contracts so `bun:sqlite` stays strictly server-only.
- * Styled with specification-grade CSS Houdini tokens from `./tokens.generated.css`.
+ * @file Packages/ui/src/ShadowPricingPanel.tsx
  */
 
 import React, { useCallback, useEffect, useState } from "react"

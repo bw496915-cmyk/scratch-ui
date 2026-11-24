@@ -1,8 +1,9 @@
 /**
- * @file src/profile/render.ts
- * @description Bridges `ProfileTheme` to Bun terminal surfaces (`Bun.markdown.ansi`,
- * `Bun.inspect`, `Bun.color`) with deterministic Node.js fallbacks so both
- * Bun (`bun test` / `Bun.serve`) and Node.js (`tsx server.ts`) work seamlessly.
+ * Bridges `ProfileTheme` to Bun terminal surfaces (`Bun.markdown.ansi`, `Bun.inspect`, `Bun.color`)
+ * with deterministic Node.js fallbacks so both Bun (`bun test` / `Bun.serve`) and Node.js (`tsx
+ * server.ts`) work seamlessly.
+ *
+ * @file Src/profile/render.ts
  */
 
 import { inspect as nodeInspect } from "node:util"
@@ -35,9 +36,7 @@ function getBunRuntime(): BunRuntimeLike | undefined {
   return g.Bun
 }
 
-/**
- * Build an `AnsiTheme`, omitting `light` when `"auto"` so `COLORFGBG` probing kicks in.
- */
+/** Build an `AnsiTheme`, omitting `light` when `"auto"` so `COLORFGBG` probing kicks in. */
 export function ansiThemeFor(p: ProfileTheme): AnsiTheme {
   const theme: AnsiTheme = {
     colors: p.terminal.colors,

@@ -1,7 +1,8 @@
 /**
- * @file packages/ui/src/operator_profiles.ts
- * @description Operator profile roster, studio avatar registry, branding asset
- * manifest, and 8-hour rolling Shift Handoff summary report generator.
+ * Operator profile roster, studio avatar registry, branding asset manifest, and 8-hour rolling
+ * Shift Handoff summary report generator.
+ *
+ * @file Packages/ui/src/operator_profiles.ts
  */
 import type { DashboardAlertRecord, LiveWager, ShiftSummaryData } from "./types.ts"
 

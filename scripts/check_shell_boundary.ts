@@ -1,7 +1,8 @@
 /**
- * @file scripts/check_shell_boundary.ts
- * @description CI security guardrail verifying zero `{ raw: ... }` Bun.$ escapes,
- * zero `shell: true` / `sh -c` / `bash -c` subshells, and clean terminal boundary wiring.
+ * CI security guardrail verifying zero `{ raw: ... }` Bun.$ escapes, zero `shell: true` / `sh -c` /
+ * `bash -c` subshells, and clean terminal boundary wiring.
+ *
+ * @file Scripts/check_shell_boundary.ts
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"

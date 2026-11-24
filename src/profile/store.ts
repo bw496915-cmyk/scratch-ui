@@ -1,6 +1,7 @@
 /**
- * @file src/profile/store.ts
- * @description Session-scoped profile theme store and in-memory implementation.
+ * Session-scoped profile theme store and in-memory implementation.
+ *
+ * @file Src/profile/store.ts
  */
 
 import type { Profile, ProfileTheme } from "./types.ts"

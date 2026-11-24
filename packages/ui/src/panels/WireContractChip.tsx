@@ -11,10 +11,9 @@ export interface WireContractChipProps {
 /**
  * Vendor wire-contract badge for the wagers tab header.
  *
- * The chip is a `<details>` so the evidence is one click away without a modal
- * or extra state: the summary answers "is the feed conformant", the panel lists
- * the capture it was checked against, how many rows were skipped as sentinel
- * noise, and every violation with rendered examples.
+ * The chip is a `<details>` so the evidence is one click away without a modal or extra state: the
+ * summary answers "is the feed conformant", the panel lists the capture it was checked against, how
+ * many rows were skipped as sentinel noise, and every violation with rendered examples.
  */
 export function WireContractChip({
   summary,

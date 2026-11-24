@@ -1,25 +1,26 @@
 /**
- * @file design/domain-branded-types.ts
- * @description Specification-Grade Domain Branded Primitives & Identity Guardrails (Bun v1.4+).
+ * Specification-Grade Domain Branded Primitives & Identity Guardrails (Bun v1.4+). Implements the
+ * 16 core Domain-Specific Branded Types for SportsDesk Operations and Fantasy402, plus the
+ * transport/binary brands in section 6b:
  *
- * Implements the 16 core Domain-Specific Branded Types for SportsDesk Operations and Fantasy402,
- * plus the transport/binary brands in section 6b:
- *  1.  Cents                - Strict integer cents (Math.round(d * 100)); SQLite storage unit.
- *  2.  Dollars              - Display-boundary float; never used in internal risk math.
- *  3.  CustomerIdentifier   - Trimmed uppercase bettor login without abbreviations.
- *  4.  PaddedCustomerId     - 11-char space-padded canonical ID for Fantasy402 Manager/updateByColumn.
- *  5.  AgentIdentifier      - Direct owning sub-agent identifier (never master BILLY666 on player writes).
- *  6.  TicketIdentifier     - Composite parent key ${login}|${wagerNumber}.
- *  7.  EpochSec             - Monotonic unix seconds integer for time-delta joins and SLA windows.
- *  8.  EpochMs              - Monotonic unix milliseconds for high-resolution latency evaluation.
- *  9.  ColorHexInt          - Single-parse 24-bit RGB packed integer (0x000000..0xFFFFFF) discarding alpha.
- *  10. BetGroupIdentifier   - Cross-book GS Buckeye Partner 118 join key matching /^M\.G\d+$/.
- *  11. ParlayLegCount       - Explicit proposition leg count integer strictly > 1 on GSBUILDER.
- *  12. RotationNumber       - 3-to-6 digit board rotation integer (100..999999).
- *  13. AmericanOdds         - American odds integer validated outside the [-99..+99] deadband.
- *  14. HalfPointLine        - Preserved half-point string with Unicode ½ (\u00BD) hook.
- *  15. SharpScore           - Empirical Bayes shrunk score [0.00..100.00] with N_min=8 shrinkage.
- *  16. BasisPoints          - Integer basis points (100 bps = 1.00%, 10,000 bps = 100%).
+ * 1. Cents - Strict integer cents (Math.round(d * 100)); SQLite storage unit.
+ * 2. Dollars - Display-boundary float; never used in internal risk math.
+ * 3. CustomerIdentifier - Trimmed uppercase bettor login without abbreviations.
+ * 4. PaddedCustomerId - 11-char space-padded canonical ID for Fantasy402 Manager/updateByColumn.
+ * 5. AgentIdentifier - Direct owning sub-agent identifier (never master BILLY666 on player writes).
+ * 6. TicketIdentifier - Composite parent key ${login}|${wagerNumber}.
+ * 7. EpochSec - Monotonic unix seconds integer for time-delta joins and SLA windows.
+ * 8. EpochMs - Monotonic unix milliseconds for high-resolution latency evaluation.
+ * 9. ColorHexInt - Single-parse 24-bit RGB packed integer (0x000000..0xFFFFFF) discarding alpha.
+ * 10. BetGroupIdentifier - Cross-book GS Buckeye Partner 118 join key matching /^M.G\d+$/.
+ * 11. ParlayLegCount - Explicit proposition leg count integer strictly > 1 on GSBUILDER.
+ * 12. RotationNumber - 3-to-6 digit board rotation integer (100..999999).
+ * 13. AmericanOdds - American odds integer validated outside the [-99..+99] deadband.
+ * 14. HalfPointLine - Preserved half-point string with Unicode ½ (\u00BD) hook.
+ * 15. SharpScore - Empirical Bayes shrunk score [0.00..100.00] with N_min=8 shrinkage.
+ * 16. BasisPoints - Integer basis points (100 bps = 1.00%, 10,000 bps = 100%).
+ *
+ * @file Design/domain-branded-types.ts
  */
 
 // ============================================================================
@@ -49,8 +50,8 @@ export {
 // ============================================================================
 
 /**
- * Strict integer cents. Always Math.round() before construction.
- * Used exclusively for SQLite storage, ledger math, and risk accounting.
+ * Strict integer cents. Always Math.round() before construction. Used exclusively for SQLite
+ * storage, ledger math, and risk accounting.
  */
 export type Cents = Brand<number, "Cents">
 
@@ -70,8 +71,8 @@ export function parseAsCents(dollarsOrCents: number, isAlreadyCents: boolean = t
 }
 
 /**
- * Display-boundary decimal dollars.
- * Permitted ONLY at human display surfaces and formatting layers; never in internal risk math.
+ * Display-boundary decimal dollars. Permitted ONLY at human display surfaces and formatting layers;
+ * never in internal risk math.
  */
 export type Dollars = Brand<number, "Dollars">
 
@@ -97,9 +98,7 @@ export function formatDollarsString(dollarsValue: Dollars): string {
 // 3. IDENTIFIER & DOWNLINE ENTITY BRANDED PRIMITIVES
 // ============================================================================
 
-/**
- * Trimmed uppercase customer login identifier (e.g. "RF2003", "BGD101", "MM800").
- */
+/** Trimmed uppercase customer login identifier (e.g. "RF2003", "BGD101", "MM800"). */
 export type CustomerIdentifier = Brand<string, "CustomerIdentifier">
 
 // Backward-compatible alias
@@ -120,8 +119,8 @@ export function customerIdentifier(rawIdentifier: string): CustomerIdentifier {
 }
 
 /**
- * Space-padded 11-character canonical ID for Fantasy402 Manager/updateByColumn mutations.
- * Enforces exact 11-character invariant to prevent silent non-persisting Result: 0 drops.
+ * Space-padded 11-character canonical ID for Fantasy402 Manager/updateByColumn mutations. Enforces
+ * exact 11-character invariant to prevent silent non-persisting Result: 0 drops.
  */
 export type PaddedCustomerId = Brand<string, "PaddedCustomerId">
 
@@ -139,9 +138,7 @@ export function padCustomerIdCanonical(rawIdentifier: string): PaddedCustomerId 
   return trimmed.padEnd(11, " ") as PaddedCustomerId
 }
 
-/**
- * Direct owning sub-agent identifier (e.g. "CUB22HR", "BIGDAD", "ATEAM").
- */
+/** Direct owning sub-agent identifier (e.g. "CUB22HR", "BIGDAD", "ATEAM"). */
 export type AgentIdentifier = Brand<string, "AgentIdentifier">
 
 // Backward-compatible alias
@@ -159,9 +156,7 @@ export function agentIdentifier(rawIdentifier: string): AgentIdentifier {
   return trimmed as AgentIdentifier
 }
 
-/**
- * Composite parent ticket identifier: `${Login.trim()}|${WagerNumber}`.
- */
+/** Composite parent ticket identifier: `${Login.trim()}|${WagerNumber}`. */
 export type TicketIdentifier = Brand<string, "TicketIdentifier">
 
 // Backward-compatible alias
@@ -185,9 +180,7 @@ export function ticketIdentifier(
   return `${cleanLogin}|${cleanWagerNumber}` as TicketIdentifier
 }
 
-/**
- * Cross-book GS Buckeye Partner 118 join key from M.G(\d+) header.
- */
+/** Cross-book GS Buckeye Partner 118 join key from M.G(\d+) header. */
 export type BetGroupIdentifier = Brand<string, "BetGroupIdentifier">
 
 // Backward-compatible alias
@@ -215,8 +208,8 @@ export function extractBetGroupIdentifier(rawDescription: string): BetGroupIdent
 // ============================================================================
 
 /**
- * Whole seconds Unix epoch timestamp (Math.floor(ms / 1000)).
- * Used for ALERT twin gapDurationSeconds and <=300s Weblog joins.
+ * Whole seconds Unix epoch timestamp (Math.floor(ms / 1000)). Used for ALERT twin
+ * gapDurationSeconds and <=300s Weblog joins.
  */
 export type EpochSec = Brand<number, "EpochSec">
 
@@ -233,9 +226,7 @@ export function parseAsEpochSec(dateOrMs: number | string | Date): EpochSec {
   return Math.floor(ms / 1000) as EpochSec
 }
 
-/**
- * High-precision milliseconds Unix epoch timestamp.
- */
+/** High-precision milliseconds Unix epoch timestamp. */
 export type EpochMs = Brand<number, "EpochMs">
 
 export function isEpochMs(value: unknown): value is EpochMs {
@@ -255,8 +246,8 @@ export function parseAsEpochMs(dateOrMs: number | string | Date): EpochMs {
 // ============================================================================
 
 /**
- * Single-parse 24-bit packed RGB integer derived from Bun.color(c, "number") or CSS hex.
- * Strict domain invariant: 0x000000 <= color <= 0xFFFFFF (0..16777215). Alpha is discarded by design.
+ * Single-parse 24-bit packed RGB integer derived from Bun.color(c, "number") or CSS hex. Strict
+ * domain invariant: 0x000000 <= color <= 0xFFFFFF (0..16777215). Alpha is discarded by design.
  */
 export type ColorHexInt = Brand<number, "ColorHexInt">
 
@@ -579,15 +570,15 @@ export const SOURCE_BRIDGE_IDS = {
 export type SourceBridgeId2 = (typeof SOURCE_BRIDGE_IDS)[keyof typeof SOURCE_BRIDGE_IDS]
 
 /**
- * Axis 1 Transport SLA Discriminated Union.
- * Eliminates synthetic "0 ms" latency sentinels: sentinel drops represent an un-executed filtering policy.
+ * Axis 1 Transport SLA Discriminated Union. Eliminates synthetic "0 ms" latency sentinels: sentinel
+ * drops represent an un-executed filtering policy.
  */
 export type TransportSla =
   { readonly kind: "latency"; readonly latencySlaMs: number } | { readonly kind: "sentinel_drop" }
 
 /**
- * Axis 2 Algorithmic Threshold Discriminated Union.
- * Zero unbranded IEEE-754 floats: shrinkage thresholds use branded integer BasisPoints.
+ * Axis 2 Algorithmic Threshold Discriminated Union. Zero unbranded IEEE-754 floats: shrinkage
+ * thresholds use branded integer BasisPoints.
  */
 export type RouteThreshold =
   | { readonly kind: "consensus_lag"; readonly maxLagMs: number }
@@ -604,9 +595,7 @@ export type RouteThreshold =
       readonly maxDeficitCents: Cents
     }
 
-/**
- * Axis 1: Ingestion Signal Channels (Layers 17-24D).
- */
+/** Axis 1: Ingestion Signal Channels (Layers 17-24D). */
 export interface IngestionChannelDefinition {
   readonly channelId: number
   readonly sourceBridgeId: SourceBridgeId2
@@ -627,9 +616,7 @@ export interface IngestionChannelDefinition {
   readonly operationalRole: string
 }
 
-/**
- * Axis 2: Risk Decision & Route Continuum (Layers 25-28).
- */
+/** Axis 2: Risk Decision & Route Continuum (Layers 25-28). */
 export interface RouteCircuitDefinition {
   readonly routeId: number
   readonly layerId: `L${number}.N${string}`
@@ -643,9 +630,7 @@ export interface RouteCircuitDefinition {
   readonly operationalRole: string
 }
 
-/**
- * Axis 3: Telemetry Viewports & Rendering Surfaces.
- */
+/** Axis 3: Telemetry Viewports & Rendering Surfaces. */
 export interface SurfaceDefinition {
   readonly layerId: "SURFACE.DOM" | "SURFACE.CLI"
   readonly tokenName: string
@@ -660,10 +645,7 @@ export interface SurfaceDefinition {
 export type AnyQwenNeuronDefinition =
   IngestionChannelDefinition | RouteCircuitDefinition | SurfaceDefinition
 
-/**
- * Ingestion Signal Channels (Layers 17-24D).
- * Generated directly from tokens.toml.
- */
+/** Ingestion Signal Channels (Layers 17-24D). Generated directly from tokens.toml. */
 export const INGESTION_CHANNELS: readonly IngestionChannelDefinition[] = [
   {
     channelId: 0,
@@ -871,9 +853,9 @@ export const SIGNAL_SLA_MS: Readonly<Record<SignalChannelCode, number | undefine
   ) as Record<SignalChannelCode, number | undefined>
 
 /**
- * Packed channel-handle word: [4b channelId | 8b slaTensOfMs | 20b rowIndex].
- * Generated, dependency-free writer. `lib/nsh_frame_schema.ts` keeps the validating
- * codec wrapper for frame I/O; the bit layout here is the single generated copy.
+ * Packed channel-handle word: [4b channelId | 8b slaTensOfMs | 20b rowIndex]. Generated,
+ * dependency-free writer. `lib/nsh_frame_schema.ts` keeps the validating codec wrapper for frame
+ * I/O; the bit layout here is the single generated copy.
  */
 export type ChannelPackedHandle32 = Brand<number, "ChannelPackedHandle32">
 
@@ -901,8 +883,8 @@ export function packChannelHandle32(
 }
 
 /**
- * One metadata word per ingestion channel, in `INGESTION_CHANNELS` order. The row index is 0:
- * this column carries channel provenance + SLA, not a customer row.
+ * One metadata word per ingestion channel, in `INGESTION_CHANNELS` order. The row index is 0: this
+ * column carries channel provenance + SLA, not a customer row.
  */
 export const CHANNEL_META_PACKED32_COL: Uint32Array = Uint32Array.from(
   INGESTION_CHANNELS.map((channel) =>
@@ -910,10 +892,7 @@ export const CHANNEL_META_PACKED32_COL: Uint32Array = Uint32Array.from(
   ),
 )
 
-/**
- * Decision & Route Continuum (Layers 25-28).
- * Generated directly from tokens.toml.
- */
+/** Decision & Route Continuum (Layers 25-28). Generated directly from tokens.toml. */
 export const ROUTE_CIRCUITS: readonly RouteCircuitDefinition[] = [
   {
     routeId: 0,
@@ -974,10 +953,7 @@ export const ROUTE_CIRCUITS: readonly RouteCircuitDefinition[] = [
   },
 ]
 
-/**
- * Telemetry Viewports & Rendering Surfaces.
- * Generated directly from tokens.toml.
- */
+/** Telemetry Viewports & Rendering Surfaces. Generated directly from tokens.toml. */
 export const TELEMETRY_SURFACES: readonly SurfaceDefinition[] = [
   {
     layerId: "SURFACE.DOM",
@@ -1002,8 +978,8 @@ export const TELEMETRY_SURFACES: readonly SurfaceDefinition[] = [
 ]
 
 /**
- * Dashboard UI chrome tokens (cards, borders, focus rings, text). Not neurons:
- * excluded from the pairwise ΔE00 floor, gated by role-specific WCAG contrast instead.
+ * Dashboard UI chrome tokens (cards, borders, focus rings, text). Not neurons: excluded from the
+ * pairwise ΔE00 floor, gated by role-specific WCAG contrast instead.
  */
 export interface UiTokenDefinition {
   readonly tokenName: string
@@ -1352,15 +1328,13 @@ export const OPERATOR_KEYMAP: readonly OperatorKeymapSlot[] = [
 ]
 
 /**
- * Slot-indexed bit column for the 10-key operator keymap:
- * `KEYMAP_SLOTS[slotIndex] === OPERATOR_KEYMAP[slotIndex].bitMask` (1 << slotIndex).
- * The array order is the bijection itself; do not sort or compact it.
+ * Slot-indexed bit column for the 10-key operator keymap: `KEYMAP_SLOTS[slotIndex] ===
+ * OPERATOR_KEYMAP[slotIndex].bitMask` (1 << slotIndex). The array order is the bijection itself; do
+ * not sort or compact it.
  */
 export const KEYMAP_SLOTS: Uint32Array = Uint32Array.from([1, 2, 4, 8, 16, 32, 64, 128, 256, 512])
 
-/**
- * Complete registry across all decoupled axes (Ingestion + Routes + Surfaces).
- */
+/** Complete registry across all decoupled axes (Ingestion + Routes + Surfaces). */
 export const ALL_QWEN_TOKENS: readonly AnyQwenNeuronDefinition[] = [
   ...INGESTION_CHANNELS,
   ...ROUTE_CIRCUITS,

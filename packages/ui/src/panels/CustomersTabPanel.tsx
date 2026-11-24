@@ -26,19 +26,19 @@ import {
 } from "../customer_drilldown_summary.ts"
 import { styles } from "../dashboard_styles.ts"
 import {
-  type CustomerCohortKpiTone,
-  deriveCustomerCohortKpiCards,
-  formatProvenanceBadge,
-  type NormalizedRankingsResult,
-  PENDING_COHORTS_PROVENANCE,
-} from "../hydration.ts"
-import {
   buildCanonicalDashboardHref,
   DISCOVERY_DIMENSION_LIST,
   DISCOVERY_DIMENSIONS,
   type DiscoveryDimensionId,
   serializeDashboardHash,
 } from "../discovery_hash.ts"
+import {
+  type CustomerCohortKpiTone,
+  deriveCustomerCohortKpiCards,
+  formatProvenanceBadge,
+  type NormalizedRankingsResult,
+  PENDING_COHORTS_PROVENANCE,
+} from "../hydration.ts"
 import { getLocalAgentHref } from "../links.ts"
 import {
   buildFantasy402PortalEntryUrl,
@@ -236,8 +236,8 @@ export interface SurveillancePulseSummary {
 }
 
 /**
- * Derive real-time surveillance summary statistics (Active Alerts, Ticket Velocity,
- * Open Tape Risk, and Sizing Gini concentration) directly from live in-memory props.
+ * Derive real-time surveillance summary statistics (Active Alerts, Ticket Velocity, Open Tape Risk,
+ * and Sizing Gini concentration) directly from live in-memory props.
  */
 export function summarizeSurveillancePulse(
   rows: readonly ShowcaseCustomer[],

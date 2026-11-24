@@ -137,9 +137,7 @@ describe("Rankings Row-Click & Agent Inspector Modal Telemetry", () => {
     expect(subTelemetry?.handleDelta24hPct).toBe(7.2)
     expect(subTelemetry?.isProxyConduit).toBe(true)
     expect(subTelemetry?.subConduits.length).toBe(2)
-    expect(
-      subTelemetry?.subConduits.find((s) => s.agentId === "BILLY666_SUB1")?.isCurrentAgent,
-    ).toBe(true)
+    expect(subTelemetry?.subConduits.find((s) => s.agentId === "BILLY666_SUB1")?.isCurrentAgent).toBe(true)
   })
 
   test("buildAgentHandleTrendSeries derives deterministic 7-day cadence matching 24h delta", () => {

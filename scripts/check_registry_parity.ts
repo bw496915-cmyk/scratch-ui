@@ -1,7 +1,8 @@
 /**
- * @file scripts/check_registry_parity.ts
- * @description Workspace manifest, Bun version pin, `.npmrc`, `bunfig.toml`,
- * and `NPM_CONFIG_USERCONFIG` registry parity audit & CI gate.
+ * Workspace manifest, Bun version pin, `.npmrc`, `bunfig.toml`, and `NPM_CONFIG_USERCONFIG`
+ * registry parity audit & CI gate.
+ *
+ * @file Scripts/check_registry_parity.ts
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
@@ -142,8 +143,8 @@ function normalizeScopeMap(
 }
 
 /**
- * Audit workspace manifests, Bun version pins, `bunfig.toml`, project `.npmrc`,
- * and optional `NPM_CONFIG_USERCONFIG` for configuration parity.
+ * Audit workspace manifests, Bun version pins, `bunfig.toml`, project `.npmrc`, and optional
+ * `NPM_CONFIG_USERCONFIG` for configuration parity.
  */
 export function auditWorkspaceRegistryParity(
   options: AuditRegistryParityOptions = {},

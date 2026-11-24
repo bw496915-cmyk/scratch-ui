@@ -22,9 +22,26 @@ env = "PUBLIC_*" # inline only literal process.env.PUBLIC_* references in static
 [fmt]
 printWidth = 100
 semi = false
-ignorePatterns = ["bun.lock", "bun.lockb", "vendor/", "**/*.gen.ts", ".aistudio/"]
+sortTailwindcss = true
+sortPackageJson = true
+jsdoc = true
+ignorePatterns = [
+  "bun.lock",
+  "bun.lockb",
+  "vendor/",
+  "**/*.gen.ts",
+  "**/*.generated.ts",
+  "**/*.generated.css",
+  "**/worker-configuration.d.ts",
+  "docs/generated/",
+  ".aistudio/",
+]
 
 [fmt.sortImports]
 internalPattern = ["@sportsdesk-ops/", "@/"]
 newlinesBetween = true
 sortSideEffects = false
+
+[[fmt.overrides]]
+files = ["*.test.ts"]
+options = { printWidth = 120 }

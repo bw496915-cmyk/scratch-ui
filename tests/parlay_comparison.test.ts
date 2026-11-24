@@ -7,8 +7,7 @@ import { createParlayComparison } from "../server/parlay_comparison.ts"
 import { createRetainedWeblogReader } from "../server/profile_weblog_evidence.ts"
 import { parseFantasy402Action } from "../server/weblog_inspect.ts"
 
-const quote =
-  "Football #451 Example +130 - For Game Hockey #471 Sample 3½ -135 - buying &amp;#189; For Game"
+const quote = "Football #451 Example +130 - For Game Hockey #471 Sample 3½ -135 - buying &amp;#189; For Game"
 const time = "2026-11-19 23:38:13.530"
 const earlierTime = "2026-11-18 23:38:13.530"
 const tickerWager = {
@@ -37,8 +36,7 @@ test("concurrent readers share a retained weblog scan and pick up the next file 
 
     await writeFile(
       capture,
-      [row, { ...row, Operation: "View Lines" }].map((entry) => JSON.stringify(entry)).join("\n") +
-        "\n",
+      [row, { ...row, Operation: "View Lines" }].map((entry) => JSON.stringify(entry)).join("\n") + "\n",
     )
     expect((await read()).rows).toHaveLength(2)
   } finally {

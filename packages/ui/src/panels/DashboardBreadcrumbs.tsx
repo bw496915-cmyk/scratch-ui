@@ -80,9 +80,7 @@ export interface DashboardBreadcrumbContext {
 }
 
 function isPlainLeftClick(event: React.MouseEvent<HTMLAnchorElement>): boolean {
-  return (
-    event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey
-  )
+  return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey
 }
 
 function buildCrumbLink(
@@ -96,9 +94,9 @@ function buildCrumbLink(
 }
 
 /**
- * Builds the deterministic hierarchical breadcrumb trail for the active dashboard view
- * and any nested filter, inspected entity, or SoA Discovery Dimension, attaching
- * canonical hashed `href` links and parent-level navigation actions to every node.
+ * Builds the deterministic hierarchical breadcrumb trail for the active dashboard view and any
+ * nested filter, inspected entity, or SoA Discovery Dimension, attaching canonical hashed `href`
+ * links and parent-level navigation actions to every node.
  */
 export function buildDashboardBreadcrumbs(
   ctx: DashboardBreadcrumbContext,
@@ -286,8 +284,8 @@ export function buildDashboardBreadcrumbs(
 }
 
 /**
- * Resolves the immediate navigable parent crumb above the current location,
- * or `null` when already at the root dashboard landing.
+ * Resolves the immediate navigable parent crumb above the current location, or `null` when already
+ * at the root dashboard landing.
  */
 export function resolveParentBreadcrumb(items: readonly BreadcrumbItem[]): BreadcrumbItem | null {
   for (let i = items.length - 2; i >= 0; i -= 1) {
@@ -470,7 +468,10 @@ export function DashboardBreadcrumbs({
           </button>
 
           {/* SoA Discovery Dimension Quick Selector */}
-          <label className="sd-breadcrumb-dim-picker" title="Pin a Discovery Dimension estimator into the breadcrumb trail & canonical URL hash">
+          <label
+            className="sd-breadcrumb-dim-picker"
+            title="Pin a Discovery Dimension estimator into the breadcrumb trail & canonical URL hash"
+          >
             <Compass size={12} aria-hidden="true" className="sd-breadcrumb-dim-icon" />
             <select
               aria-label="Discovery Dimension estimator"
@@ -540,10 +541,7 @@ export function DashboardBreadcrumbs({
 
       {/* Active Discovery Dimension Formula Banner (compact single-line summary when pinned) */}
       {activeDimSpec && !matrixOpen ? (
-        <div
-          className="sd-breadcrumb-active-dim"
-          data-active-discovery-strip={activeDimSpec.id}
-        >
+        <div className="sd-breadcrumb-active-dim" data-active-discovery-strip={activeDimSpec.id}>
           <span className={`sd-dim-pill sd-dim-pill--${activeDimSpec.tone} sd-tabular`}>
             {activeDimSpec.symbol}
           </span>
@@ -575,7 +573,8 @@ export function DashboardBreadcrumbs({
                 SoA Slab Discovery Dimensions &amp; Hashed Deep Links
               </span>
               <span className="sd-discovery-matrix__scope sd-tabular">
-                Scoped to <code>{serializeDashboardHash({ ...routeContext, discoveryDimension: null })}</code>
+                Scoped to{" "}
+                <code>{serializeDashboardHash({ ...routeContext, discoveryDimension: null })}</code>
               </span>
             </div>
             {activeDimSpec ? (

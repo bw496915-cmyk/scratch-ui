@@ -44,7 +44,9 @@ describe("Mobile-First Responsive Dashboard Shell (375px–430px)", () => {
     expect(appSource).toContain("<WsSyncStatusIndicator")
 
     expect(deskCss).toMatch(/\.sd-telemetry-strip\s*\{[^}]*flex-wrap:\s*nowrap;[^}]*overflow-x:\s*auto;/s)
-    expect(deskCss).toMatch(/\.sd-telemetry-item,\s*\.sd-telemetry-sep\s*\{[^}]*white-space:\s*nowrap;[^}]*flex-shrink:\s*0;/s)
+    expect(deskCss).toMatch(
+      /\.sd-telemetry-item,\s*\.sd-telemetry-sep\s*\{[^}]*white-space:\s*nowrap;[^}]*flex-shrink:\s*0;/s,
+    )
   })
 
   test("2. Collapsible mobile navigation drawer (< 1024px) hides <kbd> shortcuts and sorts tabs Ctrl+1 through Ctrl+0", () => {
@@ -73,12 +75,18 @@ describe("Mobile-First Responsive Dashboard Shell (375px–430px)", () => {
     // Below 1024px: desktop tab bar and <kbd> shortcuts hidden; >= 1024px: restored
     expect(deskCss).toMatch(/\.sd-desktop-tab-bar\s*\{\s*display:\s*none\s*!important;\s*\}/)
     expect(deskCss).toMatch(/\.sd-kbd-shortcut\s*\{\s*display:\s*none\s*!important;\s*\}/)
-    expect(deskCss).toMatch(/@media\s*\(min-width:\s*1024px\)\s*\{[\s\S]*\.sd-desktop-tab-bar\s*\{\s*display:\s*flex\s*!important;\s*\}[\s\S]*\.sd-kbd-shortcut\s*\{\s*display:\s*inline-flex\s*!important;/s)
-    expect(deskCss).toMatch(/@media\s*\(min-width:\s*1024px\)\s*\{[\s\S]*\.sd-mobile-menu-btn\s*\{\s*display:\s*none\s*!important;\s*\}/s)
+    expect(deskCss).toMatch(
+      /@media\s*\(min-width:\s*1024px\)\s*\{[\s\S]*\.sd-desktop-tab-bar\s*\{\s*display:\s*flex\s*!important;\s*\}[\s\S]*\.sd-kbd-shortcut\s*\{\s*display:\s*inline-flex\s*!important;/s,
+    )
+    expect(deskCss).toMatch(
+      /@media\s*\(min-width:\s*1024px\)\s*\{[\s\S]*\.sd-mobile-menu-btn\s*\{\s*display:\s*none\s*!important;\s*\}/s,
+    )
   })
 
   test("3. Primary tab bar scrolls horizontally and Light-mode GlobalHeaderSearch uses surface/border tokens (not solid black)", () => {
-    expect(deskCss).toMatch(/\.sd-primary-nav\s*\{[^}]*flex-wrap:\s*nowrap;[^}]*overflow-x:\s*auto;[^}]*white-space:\s*nowrap;/s)
+    expect(deskCss).toMatch(
+      /\.sd-primary-nav\s*\{[^}]*flex-wrap:\s*nowrap;[^}]*overflow-x:\s*auto;[^}]*white-space:\s*nowrap;/s,
+    )
 
     const searchHtml = renderToStaticMarkup(
       React.createElement(GlobalHeaderSearch, {
@@ -145,15 +153,14 @@ describe("Mobile-First Responsive Dashboard Shell (375px–430px)", () => {
     expect(stylesSource).toContain("minWidth: 0")
 
     expect(deskCss).toMatch(/html,\s*body\s*\{[^}]*max-width:\s*100%;[^}]*overflow-x:\s*clip;/s)
-    expect(deskCss).toMatch(/\.sd-app-shell,\s*\[data-dashboard-theme\]\s*\{[^}]*overflow-x:\s*clip;[^}]*max-width:\s*100%;/s)
+    expect(deskCss).toMatch(
+      /\.sd-app-shell,\s*\[data-dashboard-theme\]\s*\{[^}]*overflow-x:\s*clip;[^}]*max-width:\s*100%;/s,
+    )
     expect(deskCss).toMatch(/\.sd-quickjump-meta\s*\{[^}]*max-width:\s*100%;[^}]*min-width:\s*0;/s)
   })
 
   test("7. Light mode clears dark main canvas gradient and binds Fantasy402 Portal Session Notice to >= 4.5:1 tokens", () => {
-    const customersPanelSource = readFileSync(
-      resolve(UI_ROOT, "panels/CustomersTabPanel.tsx"),
-      "utf8",
-    )
+    const customersPanelSource = readFileSync(resolve(UI_ROOT, "panels/CustomersTabPanel.tsx"), "utf8")
 
     expect(deskCss).toMatch(
       /\[data-dashboard-theme="light"\]\s*>\s*main\.sd-main-canvas\s*\{[^}]*background-color:\s*var\(--surface-page,\s*#f1f5f9\)\s*!important;[^}]*background-image:\s*none\s*!important;/s,
@@ -171,10 +178,7 @@ describe("Mobile-First Responsive Dashboard Shell (375px–430px)", () => {
   })
 
   test("8. Breadcrumb Ctrl+1 shortcut hint next to Up to Profiles is hidden below 1024px (sd-kbd-shortcut)", () => {
-    const breadcrumbsSource = readFileSync(
-      resolve(UI_ROOT, "panels/DashboardBreadcrumbs.tsx"),
-      "utf8",
-    )
+    const breadcrumbsSource = readFileSync(resolve(UI_ROOT, "panels/DashboardBreadcrumbs.tsx"), "utf8")
 
     expect(breadcrumbsSource).toContain('<kbd className="sd-breadcrumb-meta sd-kbd-shortcut"')
     expect(breadcrumbsSource).not.toContain('<span className="sd-breadcrumb-meta"')

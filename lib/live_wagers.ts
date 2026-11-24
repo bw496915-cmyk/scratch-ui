@@ -1,21 +1,21 @@
 /**
- * @file lib/live_wagers.ts
- * @description The live wager list (`{LIST: [...]}`) — the bet-ticker shape, which is a
- * different feed from `Report/Pending`.
+ * The live wager list (`{LIST: [...]}`) — the bet-ticker shape, which is a different feed from
+ * `Report/Pending`. Field notes that matter, all evidenced by the paste this was built from:
  *
- * Field notes that matter, all evidenced by the paste this was built from:
- *  - `WagerNumber` is the ticket id here; `Report/Pending` calls the same concept `TicketNumber`.
- *  - `ShortDesc` carries one line per leg. A straight bet is one line; a parlay is several, one
- *    per selection. Each line reads:
- *      `M.G319748909\r\nFootball - Rams vs Chargers / Game / Winner (2 way) / Rams -140`
- *    with an optional leading code (`S.`, `M.G…`, `P.G…`) before the first newline.
- *  - `WagerType` uses codes `S`, `P` and `M` in this feed. `M` has no documented meaning in this
- *    repository, so it is carried as a raw code rather than guessed into a name.
- *  - `VolumeAmount` is sometimes far below `AmountWagered` (a $3,500 wager with $2,188 volume),
- *    so both are kept and the difference is reported instead of one being treated as a typo.
- *  - `TicketWriter` names the channel: `GSLIVE`, `GSBUILDER`, `Internet`, `ALERT`, `BLOCKED`.
- *    `ALERT` rows mirror a real ticket within seconds with `VolumeAmount` 0, and `BLOCKED` rows
- *    are sentinels rather than wagers, so neither may be summed into stake.
+ * - `WagerNumber` is the ticket id here; `Report/Pending` calls the same concept `TicketNumber`.
+ * - `ShortDesc` carries one line per leg. A straight bet is one line; a parlay is several, one per
+ *   selection. Each line reads: `M.G319748909\r\nFootball - Rams vs Chargers / Game / Winner (2
+ *   way) / Rams -140` with an optional leading code (`S.`, `M.G…`, `P.G…`) before the first
+ *   newline.
+ * - `WagerType` uses codes `S`, `P` and `M` in this feed. `M` has no documented meaning in this
+ *   repository, so it is carried as a raw code rather than guessed into a name.
+ * - `VolumeAmount` is sometimes far below `AmountWagered` (a $3,500 wager with $2,188 volume), so
+ *   both are kept and the difference is reported instead of one being treated as a typo.
+ * - `TicketWriter` names the channel: `GSLIVE`, `GSBUILDER`, `Internet`, `ALERT`, `BLOCKED`. `ALERT`
+ *   rows mirror a real ticket within seconds with `VolumeAmount` 0, and `BLOCKED` rows are
+ *   sentinels rather than wagers, so neither may be summed into stake.
+ *
+ * @file Lib/live_wagers.ts
  */
 
 import type { WagerChannel } from "@sportsdesk-ops/contracts"
@@ -36,17 +36,17 @@ export interface LiveWagerLeg {
   /** The raw line as printed, for anything the split above loses. */
   readonly raw: string
   /**
-   * True for the portal's compact grammar (`S:Basketball #540 Warriors -2 -110 - For Game`),
-   * which has no `/ Period / Market / Pick` segments. Sport is still recognised; the rest of
-   * the line lands in `pick` rather than being guessed into fields it does not have.
+   * True for the portal's compact grammar (`S:Basketball #540 Warriors -2 -110 - For Game`), which
+   * has no `/ Period / Market / Pick` segments. Sport is still recognised; the rest of the line
+   * lands in `pick` rather than being guessed into fields it does not have.
    */
   readonly compact: boolean
   /**
    * `LIVE #9263 …` / `… (Live)` — the only live marker in the feed.
    *
    * `WagerType` is **not** it: the page carries `M.LIVE`, `S:LIVE` and `L.LIVE` rows, so `M` and
-   * `S` are live too, and `L` also appears on ordinary soccer/half markets. The word in
-   * `ShortDesc` is the signal; the type code is not.
+   * `S` are live too, and `L` also appears on ordinary soccer/half markets. The word in `ShortDesc`
+   * is the signal; the type code is not.
    */
   readonly live: boolean
   /** The portal's `#<id>` game number when the line carries one, else `null`. */
@@ -91,8 +91,8 @@ export interface WagerListFile {
 }
 
 /**
- * What the committed file says about itself. Served alongside the rows so a count of 17 can
- * never be read as "the ticker showed 17".
+ * What the committed file says about itself. Served alongside the rows so a count of 17 can never
+ * be read as "the ticker showed 17".
  */
 export interface WagerListProvenance {
   /** `capture:<operation>@<id>`, `paste:…`, or `unlabelled` when the file declares nothing. */
@@ -103,8 +103,8 @@ export interface WagerListProvenance {
   readonly captureNote: string | null
   /**
    * True when the list is a subset of what the portal showed. An explicit `partial` flag wins;
-   * otherwise the presence of any capture note is enough, because a file that needed a caveat
-   * is not a clean capture.
+   * otherwise the presence of any capture note is enough, because a file that needed a caveat is
+   * not a clean capture.
    */
   readonly partial: boolean
 }
@@ -119,8 +119,8 @@ function text(value: unknown): string {
 }
 
 /**
- * The compact XML shape collapses a one-item list to the item (`LIST: {...}`), while JSON
- * captures keep `LIST: [{...}]`. Normalize both before iterating.
+ * The compact XML shape collapses a one-item list to the item (`LIST: {...}`), while JSON captures
+ * keep `LIST: [{...}]`. Normalize both before iterating.
  */
 function oneOrMany(value: unknown): unknown[] | undefined {
   if (Array.isArray(value)) return value
@@ -142,7 +142,10 @@ const WRITERS: Readonly<Record<string, WagerChannel>> = {
   blocked: "blocked",
 }
 
-/** `GSLIVE   ` → `gslive`; anything unknown → `other` (must match `@sportsdesk-ops/contracts` without runtime `packages/` import on VPS). */
+/**
+ * `GSLIVE ` → `gslive`; anything unknown → `other` (must match `@sportsdesk-ops/contracts` without
+ * runtime `packages/` import on VPS).
+ */
 export function writerOf(ticketWriter: unknown): WagerChannel {
   const normalized = text(ticketWriter).toLowerCase()
   return Object.hasOwn(WRITERS, normalized) ? (WRITERS[normalized] ?? "other") : "other"
@@ -232,8 +235,8 @@ function escapeRegex(text: string): string {
 
 /**
  * Internet compact parlays/teasers (`P.Basketball #503 76ers +115 - For Game Tennis #8103 …`)
- * concatenate legs on one line with no `\r\n`. Split right after `- For <Period>` when followed
- * by the next leg's `[Sport] [LIVE] #<GameNumber>`.
+ * concatenate legs on one line with no `\r\n`. Split right after `- For <Period>` when followed by
+ * the next leg's `[Sport] [LIVE] #<GameNumber>`.
  */
 const COMPACT_LEG_BOUNDARY = new RegExp(
   `(\\s+-\\s+For\\s+(?:${COMPACT_PERIOD_LABELS.map(escapeRegex).join("|")}))\\s+(?=(?:(?:${SPORT_PREFIXES.map(escapeRegex).join("|")})\\s+)?(?:LIVE\\s+)?#\\d+)`,
@@ -250,8 +253,9 @@ function splitCompactLegs(line: string): string[] {
 
 /**
  * The compact grammar has no `/` segments: it is `[Sport] [#id] [LIVE #id] <selection> <odds>
- * - For <period>`. Everything after the odds is the period, the `#id` is the game number, and the
- * `LIVE` token is the only live marker the feed carries.
+ *
+ * - For <period>`. Everything after the odds is the period, the `#id`is the game number, and
+ *   the`LIVE` token is the only live marker the feed carries.
  */
 function parseCompactLeg(header: string): {
   sport: string
@@ -301,19 +305,19 @@ function parseCompactLeg(header: string): {
 /**
  * Splits `ShortDesc` into legs and each leg into sport / game / period / market / pick.
  *
- * Lines are separated by `\r\n` (and stray `&#x0D;\n` artefacts); a leg is
- * `"Sport - Game / Period / Market / Pick"`. Segments are taken positionally, and a leg with
- * fewer segments keeps what it has rather than inventing the rest.
+ * Lines are separated by `\r\n` (and stray `&#x0D;\n` artefacts); a leg is `"Sport - Game / Period
+ * / Market / Pick"`. Segments are taken positionally, and a leg with fewer segments keeps what it
+ * has rather than inventing the rest.
  *
  * The client's bet-ticker renderer strips non-ASCII from `ShortDesc` before painting the DOM
- * (`replace(/[^(\x20-\x7F)½]+/g, "")`), so DOM captures mangle names like `Culiacán`. This
- * parser deliberately preserves them: the JSON source is correct, and if the client bug is
- * fixed the two stay aligned.
+ * (`replace(/[^(\x20-\x7F)½]+/g, "")`), so DOM captures mangle names like `Culiacán`. This parser
+ * deliberately preserves them: the JSON source is correct, and if the client bug is fixed the two
+ * stay aligned.
  */
 /**
- * Fast zero-allocation leg counter for bet descriptions.
- * Semantically identical to `parseShortDesc(shortDesc).legs.length` without allocating
- * intermediate `LiveWagerLeg` objects or performing per-segment regex/string splitting.
+ * Fast zero-allocation leg counter for bet descriptions. Semantically identical to
+ * `parseShortDesc(shortDesc).legs.length` without allocating intermediate `LiveWagerLeg` objects or
+ * performing per-segment regex/string splitting.
  */
 export function countShortDescLegs(shortDesc: unknown): number {
   if (shortDesc === null || shortDesc === undefined) return 0
@@ -551,8 +555,8 @@ export function readWagerListArtifact(payload: unknown): WagerListArtifact {
 }
 
 /**
- * `count`, `byWriter` and `byType` cover every row, because the filter chips show every row.
- * Every other figure covers only the `counted` rows — those `isTickerNoise` does not reject.
+ * `count`, `byWriter` and `byType` cover every row, because the filter chips show every row. Every
+ * other figure covers only the `counted` rows — those `isTickerNoise` does not reject.
  */
 export interface LiveWagerSummary {
   /** All rows, noise included. */

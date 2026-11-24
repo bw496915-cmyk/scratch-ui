@@ -1,11 +1,13 @@
 /**
- * @file tests/unit/bun_semver_version_cli.test.ts
- * @description Verifies unified Bun.semver versioning under the SportsDesk Bun CLI:
- *  - `Bun.semver.satisfies` & `Bun.semver.order` reference cases
- *  - `sortSemver`, `maxSatisfying`, `minSatisfying`, `bumpSemver`, `normalizeSemver`
- *  - `auditUnifiedVersions` across the live repo and isolated drift fixtures
- *  - `bumpWorkspaceVersions` lockstep bumping (dry-run and real temp workspace writes)
- *  - `runSportsdeskCli(["version", ...])` subcommands
+ * Verifies unified Bun.semver versioning under the SportsDesk Bun CLI:
+ *
+ * - `Bun.semver.satisfies` & `Bun.semver.order` reference cases
+ * - `sortSemver`, `maxSatisfying`, `minSatisfying`, `bumpSemver`, `normalizeSemver`
+ * - `auditUnifiedVersions` across the live repo and isolated drift fixtures
+ * - `bumpWorkspaceVersions` lockstep bumping (dry-run and real temp workspace writes)
+ * - `runSportsdeskCli(["version", ...])` subcommands
+ *
+ * @file Tests/unit/bun_semver_version_cli.test.ts
  */
 
 import { describe, expect, test } from "bun:test"
@@ -108,13 +110,7 @@ describe("Bun.semver primitives & unified Bun CLI versioning", () => {
     expect(safeSemverOrder("1.0.1", "1.0.0")).toBe(1)
 
     const unsorted = ["1.0.0", "1.0.1", "1.0.0-alpha", "1.0.0-beta", "1.0.0-rc"]
-    expect(sortSemver(unsorted)).toEqual([
-      "1.0.0-alpha",
-      "1.0.0-beta",
-      "1.0.0-rc",
-      "1.0.0",
-      "1.0.1",
-    ])
+    expect(sortSemver(unsorted)).toEqual(["1.0.0-alpha", "1.0.0-beta", "1.0.0-rc", "1.0.0", "1.0.1"])
     expect(sortSemver(unsorted, "desc")[0]).toBe("1.0.1")
     expect(maxSatisfying(unsorted, "^1.0.0")).toBe("1.0.1")
     expect(minSatisfying(unsorted, "^1.0.0")).toBe("1.0.0")
@@ -168,15 +164,9 @@ describe("Bun.semver primitives & unified Bun CLI versioning", () => {
       expect(real.nextVersion).toBe("1.3.0")
       expect(real.changes.every((c) => c.written)).toBe(true)
       expect(JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).version).toBe("1.3.0")
-      expect(JSON.parse(readFileSync(join(dir, "packages/api/package.json"), "utf8")).version).toBe(
-        "1.3.0",
-      )
-      expect(JSON.parse(readFileSync(join(dir, "packages/ui/package.json"), "utf8")).version).toBe(
-        "1.3.0",
-      )
-      expect(
-        JSON.parse(readFileSync(join(dir, "tools/registry/package.json"), "utf8")).version,
-      ).toBe("1.3.0")
+      expect(JSON.parse(readFileSync(join(dir, "packages/api/package.json"), "utf8")).version).toBe("1.3.0")
+      expect(JSON.parse(readFileSync(join(dir, "packages/ui/package.json"), "utf8")).version).toBe("1.3.0")
+      expect(JSON.parse(readFileSync(join(dir, "tools/registry/package.json"), "utf8")).version).toBe("1.3.0")
       expect(auditUnifiedVersions({ rootDir: dir, activeBunVersion: "1.4.4" }).ok).toBe(true)
 
       // Reject downgrade without explicit flag

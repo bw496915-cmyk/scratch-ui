@@ -32,17 +32,8 @@ import { StatusDashboardPanel } from "../../packages/ui/src/panels/StatusDashboa
 
 describe("Bun Runtime Surface catalog & live audit engine", () => {
   test("catalogs all 3 global tiers, 28 Bun.* utilities across 4 categories, and 7 core API domains", () => {
-    expect(BUN_GLOBAL_TIERS.map((t) => t.id)).toEqual([
-      "bun-specific",
-      "node-compat",
-      "web-standards",
-    ])
-    expect(BUN_GLOBAL_TIERS[0]?.globals).toEqual([
-      "Bun",
-      "HTMLRewriter",
-      "ShadowRealm",
-      "WebSocket",
-    ])
+    expect(BUN_GLOBAL_TIERS.map((t) => t.id)).toEqual(["bun-specific", "node-compat", "web-standards"])
+    expect(BUN_GLOBAL_TIERS[0]?.globals).toEqual(["Bun", "HTMLRewriter", "ShadowRealm", "WebSocket"])
     expect(BUN_GLOBAL_TIERS[1]?.globals).toContain("process")
     expect(BUN_GLOBAL_TIERS[1]?.globals).toContain("Buffer")
     expect(BUN_GLOBAL_TIERS[2]?.globals).toContain("CompressionStream")
@@ -165,9 +156,7 @@ describe("Bun Runtime Surface catalog & live audit engine", () => {
 
     const mdDeep = loaded.deepInspections.find((d) => d.id === "Bun.markdown")
     expect(mdDeep?.available).toBe(true)
-    expect(mdDeep?.members.map((m) => m.name)).toEqual(
-      expect.arrayContaining(["html", "ansi", "render", "react"]),
-    )
+    expect(mdDeep?.members.map((m) => m.name)).toEqual(expect.arrayContaining(["html", "ansi", "render", "react"]))
 
     const sqliteDeep = loaded.deepInspections.find((d) => d.id === "bun:sqlite")
     expect(sqliteDeep?.available).toBe(true)
@@ -188,9 +177,7 @@ describe("Bun Runtime Surface catalog & live audit engine", () => {
 
     const secretsDeep = loaded.deepInspections.find((d) => d.id === "Bun.secrets")
     expect(secretsDeep?.available).toBe(true)
-    expect(secretsDeep?.members.map((m) => m.name)).toEqual(
-      expect.arrayContaining(["delete", "get", "set"]),
-    )
+    expect(secretsDeep?.members.map((m) => m.name)).toEqual(expect.arrayContaining(["delete", "get", "set"]))
     expect(secretsDeep?.members.every((m) => m.safePreview === undefined)).toBe(true)
 
     const matrix = probeBunCapabilityMatrix(loaded)
@@ -301,14 +288,10 @@ describe("Bun Runtime Surface catalog & live audit engine", () => {
     expect(audit.globalProbes.find((g) => g.name === "Bun")?.present).toBe(false)
 
     const fallbackMatrix = probeBunCapabilityMatrix(audit)
-    const fetchItem = fallbackMatrix
-      .find((p) => p.id === "http-websockets")
-      ?.items.find((i) => i.id === "fetch-http2")
+    const fetchItem = fallbackMatrix.find((p) => p.id === "http-websockets")?.items.find((i) => i.id === "fetch-http2")
     expect(fetchItem?.available).toBe(true)
     expect(fetchItem?.matchedSymbols).toEqual(["fetch"])
-    const sqlItem = fallbackMatrix
-      .find((p) => p.id === "data")
-      ?.items.find((i) => i.id === "bun-sql")
+    const sqlItem = fallbackMatrix.find((p) => p.id === "data")?.items.find((i) => i.id === "bun-sql")
     expect(sqlItem?.available).toBe(false)
   })
 

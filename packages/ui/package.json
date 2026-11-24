@@ -26,6 +26,12 @@
     "./styles/tokens.css": "./src/styles/tokens.css",
     "./styles/reset.css": "./src/styles/reset.css"
   },
+  "scripts": {
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "lint": "tsc --noEmit --project tsconfig.json",
+    "format": "bun fmt .",
+    "format:check": "bun fmt --check ."
+  },
   "dependencies": {
     "@sportsdesk-ops/contracts": "*"
   }

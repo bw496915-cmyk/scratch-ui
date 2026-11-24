@@ -2,15 +2,8 @@ import { describe, expect, test } from "bun:test"
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 
-import {
-  parseBunLockFile,
-  summarizeBunLockFile,
-} from "../../packages/contracts/src/bun_lockfile.ts"
-import {
-  parseBunYaml,
-  stringifyBunYaml,
-  summarizeBetFlagsYamlDocument,
-} from "../../packages/contracts/src/bun_yaml.ts"
+import { parseBunLockFile, summarizeBunLockFile } from "../../packages/contracts/src/bun_lockfile.ts"
+import { parseBunYaml, stringifyBunYaml, summarizeBetFlagsYamlDocument } from "../../packages/contracts/src/bun_yaml.ts"
 import {
   buildRegistryCredentialLookupKeys,
   convertNpmrcToBunfigToml,
@@ -19,10 +12,7 @@ import {
   redactResolvedBunPackageConfig,
   resolveBunPackageConfig,
 } from "../../packages/contracts/src/npmrc.ts"
-import {
-  lintSnapshotTestSource,
-  validateSnapshotFileHeader,
-} from "../../scripts/check_snapshot_hygiene.ts"
+import { lintSnapshotTestSource, validateSnapshotFileHeader } from "../../scripts/check_snapshot_hygiene.ts"
 import {
   addFileSnapshotSerializer,
   createRedactedSnapshotCredential,
@@ -36,10 +26,7 @@ interface DeskAgentRecord {
   readonly active: boolean
 }
 
-function generateDeskReport(
-  records: readonly DeskAgentRecord[],
-  fixedTimestamp = "2024-01-01T00:00:00.000Z",
-) {
+function generateDeskReport(records: readonly DeskAgentRecord[], fixedTimestamp = "2024-01-01T00:00:00.000Z") {
   const totalHandleUsd = records.reduce((acc, item) => acc + item.handleUsd, 0)
   return {
     total: records.length,
@@ -48,8 +35,7 @@ function generateDeskReport(
     summary: records.map((item) => ({
       id: item.id,
       name: item.name,
-      sharePct:
-        totalHandleUsd > 0 ? Number(((item.handleUsd / totalHandleUsd) * 100).toFixed(2)) : 0,
+      sharePct: totalHandleUsd > 0 ? Number(((item.handleUsd / totalHandleUsd) * 100).toFixed(2)) : 0,
     })),
     timestamp: fixedTimestamp,
   }
@@ -115,13 +101,7 @@ describe("Bun test snapshots — Complex Objects", () => {
     )
 
     const projectBunfig = parseBunfigInstallToml(
-      [
-        "[install]",
-        'minimumReleaseAge = "3d"',
-        "globalStore = true",
-        "[run]",
-        "noOrphans = true",
-      ].join("\n"),
+      ["[install]", 'minimumReleaseAge = "3d"', "globalStore = true", "[run]", "noOrphans = true"].join("\n"),
       "project-bunfig",
     )
 
@@ -166,9 +146,7 @@ describe("Bun test snapshots — Array Snapshots", () => {
   })
 
   test("snapshots registry credential path-segment fallback lookup keys", () => {
-    const lookupKeys = buildRegistryCredentialLookupKeys(
-      new URL("https://npm.example.com:443/org/team/a/"),
-    )
+    const lookupKeys = buildRegistryCredentialLookupKeys(new URL("https://npm.example.com:443/org/team/a/"))
     expect(lookupKeys).toMatchSnapshot()
   })
 
@@ -269,11 +247,7 @@ interface LifoSnapshotMetric {
 describe("Bun test snapshots — Preload Serializers, LIFO Order, Inline & Lint Rules", () => {
   test("applies preload serializers from bunfig.toml across test files to redact secrets & URL credentials", () => {
     const payload = prepareForSnapshot({
-      credential: createRedactedSnapshotCredential(
-        "registry-auth",
-        "Bearer",
-        "top-secret-never-serialized",
-      ),
+      credential: createRedactedSnapshotCredential("registry-auth", "Bearer", "top-secret-never-serialized"),
       registryUrl: new URL("https://operator:secretpass@npm.example.com/team/"),
     })
 
@@ -324,14 +298,9 @@ describe("Bun test snapshots — Preload Serializers, LIFO Order, Inline & Lint 
     expect(snapContent.startsWith("// Bun Snapshot v1")).toBe(true)
     expect(validateSnapshotFileHeader(snapContent, "bun_snapshots.test.ts.snap")).toBeNull()
     expect(
-      validateSnapshotFileHeader(
-        "// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html\n",
-        "v.snap",
-      ),
+      validateSnapshotFileHeader("// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html\n", "v.snap"),
     ).toBeNull()
-    expect(
-      validateSnapshotFileHeader("// Jest Snapshot v1, https://goo.gl/fbAQLP\n", "j.snap"),
-    ).toBeNull()
+    expect(validateSnapshotFileHeader("// Jest Snapshot v1, https://goo.gl/fbAQLP\n", "j.snap")).toBeNull()
     expect(validateSnapshotFileHeader("exports[`bad`] = `1`;\n", "bad.snap")?.rule).toBe(
       "bun:test/valid-snapshot-header",
     )
@@ -346,10 +315,7 @@ describe("Bun test snapshots — Preload Serializers, LIFO Order, Inline & Lint 
       `,
       "sample.test.ts",
     )
-    expect(missingHints.map((v) => v.rule)).toEqual([
-      "bun:test/prefer-snapshot-hint",
-      "bun:test/prefer-snapshot-hint",
-    ])
+    expect(missingHints.map((v) => v.rule)).toEqual(["bun:test/prefer-snapshot-hint", "bun:test/prefer-snapshot-hint"])
 
     // 2. no-large-snapshots catches inline snapshots > 50 lines
     const largeInline = `test("huge", () => {\n  expect(x).toMatchInlineSnapshot(\`${"line\n".repeat(55)}\`);\n});`
@@ -357,11 +323,8 @@ describe("Bun test snapshots — Preload Serializers, LIFO Order, Inline & Lint 
     expect(largeViolations.some((v) => v.rule === "bun:test/no-large-snapshots")).toBe(true)
 
     // 3. no-interpolation-in-snapshots catches ${...} inside inline snapshots
-    const interpolated =
-      'test("interp", () => {\n  expect(x).toMatchInlineSnapshot(`value: ${dynamic}`);\n});'
+    const interpolated = 'test("interp", () => {\n  expect(x).toMatchInlineSnapshot(`value: ${dynamic}`);\n});'
     const interpViolations = lintSnapshotTestSource(interpolated, "interp.test.ts")
-    expect(interpViolations.some((v) => v.rule === "bun:test/no-interpolation-in-snapshots")).toBe(
-      true,
-    )
+    expect(interpViolations.some((v) => v.rule === "bun:test/no-interpolation-in-snapshots")).toBe(true)
   })
 })

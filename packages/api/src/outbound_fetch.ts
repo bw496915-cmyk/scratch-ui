@@ -1,21 +1,21 @@
 /**
- * @file packages/api/src/outbound_fetch.ts
- * @description Single outbound egress wrapper for Lanes E (internal services),
- * F (external fixed-host templates), and G (read-only public R2 fallback).
+ * Single outbound egress wrapper for Lanes E (internal services), F (external fixed-host
+ * templates), and G (read-only public R2 fallback). Security & Bun 1.4.4 runtime invariants:
  *
- * Security & Bun 1.4.4 runtime invariants:
- * - Exact hostname allowlist (`policy.allow`) checked after WHATWG URL parsing;
- *   never interpolates user input into the host component.
- * - `redirect: "manual"` + immediate body cancel & throw on any `3xx` response
- *   so an upstream 302 can never pivot into loopback `:4020` or internal metadata.
+ * - Exact hostname allowlist (`policy.allow`) checked after WHATWG URL parsing; never interpolates
+ *   user input into the host component.
+ * - `redirect: "manual"` + immediate body cancel & throw on any `3xx` response so an upstream 302 can
+ *   never pivot into loopback `:4020` or internal metadata.
  * - `AbortSignal.any([AbortSignal.timeout(timeoutMs), init.signal])` bounded timeouts.
- * - Proxy hop TLS (`proxy.tls`) is kept strictly separate from target origin TLS
- *   (`tls`) so a corporate proxy CA never widens trust for external origins and
- *   origin client certs never leak to the proxy.
- * - Practical note: `http://` proxy + `CONNECT` is the stable tunnel path;
- *   `https://` proxy URLs can stall TLS-in-TLS handshakes and are flagged accordingly.
- * - Lane G (`allowCredentials: false`) strips `Authorization` and `Cookie` headers
- *   and disables proxy forwarding so signed credentials never reach public R2.
+ * - Proxy hop TLS (`proxy.tls`) is kept strictly separate from target origin TLS (`tls`) so a
+ *   corporate proxy CA never widens trust for external origins and origin client certs never leak
+ *   to the proxy.
+ * - Practical note: `http://` proxy + `CONNECT` is the stable tunnel path; `https://` proxy URLs can
+ *   stall TLS-in-TLS handshakes and are flagged accordingly.
+ * - Lane G (`allowCredentials: false`) strips `Authorization` and `Cookie` headers and disables proxy
+ *   forwarding so signed credentials never reach public R2.
+ *
+ * @file Packages/api/src/outbound_fetch.ts
  */
 
 import { readFileSync } from "node:fs"
@@ -52,8 +52,8 @@ export interface EgressPolicy {
   /** Target-only TLS settings (kept isolated from `proxy.tls`). */
   readonly tls?: EgressTlsConfig | undefined
   /**
-   * When `false` (Lane G public read-only tier), strips `Authorization` and
-   * `Cookie` headers before sending and enforces `credentials: "omit"`.
+   * When `false` (Lane G public read-only tier), strips `Authorization` and `Cookie` headers before
+   * sending and enforces `credentials: "omit"`.
    */
   readonly allowCredentials?: boolean | undefined
   /** Optional fetch implementation override for unit tests. */
@@ -89,6 +89,7 @@ export interface LoadedEgressTransport {
 
 /**
  * Load proxy and target TLS configuration from env with strict CA separation:
+ *
  * - `PROXY_CA` only configures `proxy.tls.ca`
  * - `ORIGIN_CA` only configures `targetTls.ca`
  * - Prefers `http://` proxy URLs (CONNECT tunnel) over `https://` proxy URLs.
@@ -168,8 +169,8 @@ function sanitizeHeadersForPolicy(
 }
 
 /**
- * Copy response headers via `Object.fromEntries(headers)` (fast-path in Bun 1.4.4)
- * while stripping hop-by-hop `transfer-encoding`.
+ * Copy response headers via `Object.fromEntries(headers)` (fast-path in Bun 1.4.4) while stripping
+ * hop-by-hop `transfer-encoding`.
  */
 export function proxyResponseHeaders(headers: Headers): Record<string, string> {
   const entries = Object.fromEntries(headers as unknown as Iterable<[string, string]>)
@@ -179,9 +180,8 @@ export function proxyResponseHeaders(headers: Headers): Record<string, string> {
 }
 
 /**
- * Unified egress fetch enforcing exact-host allowlist, manual redirects,
- * bounded `AbortSignal.any` timeouts, credential isolation, and separate
- * proxy vs. target TLS configuration.
+ * Unified egress fetch enforcing exact-host allowlist, manual redirects, bounded `AbortSignal.any`
+ * timeouts, credential isolation, and separate proxy vs. target TLS configuration.
  */
 export async function outboundFetch(
   target: URL,

@@ -1,12 +1,11 @@
 /**
- * @file packages/ui/src/build_info.ts
- * @description Build-time metadata injected by `Bun.build({ define })` in
- * `scripts/build_dashboard.ts`.
+ * Build-time metadata injected by `Bun.build({ define })` in `scripts/build_dashboard.ts`. In an
+ * unbundled HMR session these identifiers are undeclared; the `typeof` guard is intentional and
+ * keeps `getDashboardBuildInfo()` null there. The bundler replaces each identifier with a JSON
+ * string literal, which lets the footer show exactly which build is running without a runtime
+ * fetch.
  *
- * In an unbundled HMR session these identifiers are undeclared; the `typeof`
- * guard is intentional and keeps `getDashboardBuildInfo()` null there. The
- * bundler replaces each identifier with a JSON string literal, which lets the
- * footer show exactly which build is running without a runtime fetch.
+ * @file Packages/ui/src/build_info.ts
  */
 
 declare const __DASHBOARD_BUILD_TARGET__: string

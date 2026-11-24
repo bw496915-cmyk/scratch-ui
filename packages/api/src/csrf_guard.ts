@@ -1,15 +1,15 @@
 /**
- * @file packages/api/src/csrf_guard.ts
- * @description Lane C destructive-endpoint CSRF guard bound to `sessionId` via
- * native `Bun.CSRF` (`expiresIn` + `maxAge`) with a Node.js HMAC-SHA256 fallback.
+ * Lane C destructive-endpoint CSRF guard bound to `sessionId` via native `Bun.CSRF` (`expiresIn` +
+ * `maxAge`) with a Node.js HMAC-SHA256 fallback. Security invariants:
  *
- * Security invariants:
- * - Always binds tokens to an explicit `sessionId` on both `generate` and `verify`
- *   so tokens never validate across different user sessions.
- * - Enforces an explicit `maxAge` (default 15 minutes) at verification time
- *   independently of token-embedded expiry.
- * - Requires a stable `CSRF_SECRET` at boot when `requireCsrfSecret()` or
- *   `createCsrfGuard()` is constructed with strict secret validation.
+ * - Always binds tokens to an explicit `sessionId` on both `generate` and `verify` so tokens never
+ *   validate across different user sessions.
+ * - Enforces an explicit `maxAge` (default 15 minutes) at verification time independently of
+ *   token-embedded expiry.
+ * - Requires a stable `CSRF_SECRET` at boot when `requireCsrfSecret()` or `createCsrfGuard()` is
+ *   constructed with strict secret validation.
+ *
+ * @file Packages/api/src/csrf_guard.ts
  */
 
 import { createHmac, timingSafeEqual } from "node:crypto"
@@ -45,9 +45,8 @@ export interface CsrfGuardOptions {
   readonly headerName?: string | undefined
   readonly sessionCookieNames?: readonly string[] | undefined
   /**
-   * Optional custom session extractor (for example, resolving a session ID from
-   * `httpAuth` or `BunRequest.cookies`). Falls back to `req.cookies` then the
-   * raw `Cookie` header.
+   * Optional custom session extractor (for example, resolving a session ID from `httpAuth` or
+   * `BunRequest.cookies`). Falls back to `req.cookies` then the raw `Cookie` header.
    */
   readonly resolveSessionId?: ((req: CsrfRequestLike) => string | null) | undefined
 }
@@ -61,13 +60,11 @@ function getBunCsrf(): BunCsrfRuntime | undefined {
 }
 
 /**
- * Require a non-empty `CSRF_SECRET` from the supplied environment map at boot.
- * Fails closed by throwing so multi-worker deployments never fall back to an
- * ephemeral per-thread random key silently.
+ * Require a non-empty `CSRF_SECRET` from the supplied environment map at boot. Fails closed by
+ * throwing so multi-worker deployments never fall back to an ephemeral per-thread random key
+ * silently.
  */
-export function requireCsrfSecret(
-  env: Record<string, string | undefined> = process.env,
-): string {
+export function requireCsrfSecret(env: Record<string, string | undefined> = process.env): string {
   const secret = env.CSRF_SECRET?.trim()
   if (!secret) {
     throw new Error("CSRF_SECRET required")
@@ -182,8 +179,8 @@ export function issueCsrf(
 }
 
 /**
- * Verify a session-bound CSRF token via native `Bun.CSRF.verify(token, { secret, sessionId, maxAge })`
- * (or HMAC-SHA256 fallback under Node.js).
+ * Verify a session-bound CSRF token via native `Bun.CSRF.verify(token, { secret, sessionId, maxAge
+ * })` (or HMAC-SHA256 fallback under Node.js).
  */
 export function verifyCsrfToken(
   token: string,
@@ -237,13 +234,10 @@ function forbiddenCsrfResponse(reason: string): Response {
 }
 
 /**
- * Wrap a Lane C destructive route handler with `Bun.CSRF` verification bound
- * to the caller's session cookie (`BunRequest.cookies` or `Cookie` header).
+ * Wrap a Lane C destructive route handler with `Bun.CSRF` verification bound to the caller's
+ * session cookie (`BunRequest.cookies` or `Cookie` header).
  */
-export function withCsrf<
-  TReq extends CsrfRequestLike,
-  TRest extends readonly unknown[],
->(
+export function withCsrf<TReq extends CsrfRequestLike, TRest extends readonly unknown[]>(
   handler: (req: TReq, ...rest: TRest) => Response | Promise<Response>,
   options: CsrfGuardOptions,
 ): (req: TReq, ...rest: TRest) => Promise<Response> {
@@ -275,8 +269,8 @@ export function withCsrf<
 }
 
 /**
- * Factory creating a reusable CSRF issuer/verifier/middleware bound to one
- * boot-validated `CSRF_SECRET`.
+ * Factory creating a reusable CSRF issuer/verifier/middleware bound to one boot-validated
+ * `CSRF_SECRET`.
  */
 export function createCsrfGuard(options: CsrfGuardOptions) {
   const secret = options.secret.trim()
